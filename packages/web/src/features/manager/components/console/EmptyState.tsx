@@ -37,7 +37,7 @@ const EmptyState = ({
   >
     <span
       aria-hidden
-      className="flex size-14 items-center justify-center rounded-full bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+      className="flex size-14 items-center justify-center rounded-full bg-accent-tint text-accent-contrast"
     >
       <Icon className="size-7" strokeWidth={2} />
     </span>

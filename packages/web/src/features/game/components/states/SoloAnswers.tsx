@@ -18,6 +18,8 @@ import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGr
 import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
 import MultiSelectGrid from "@razzoozle/web/features/game/components/answers/MultiSelectGrid"
 import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answers/SentenceBuilderBoard"
+import { SlotDropdownBoard, type SlotSelections } from "@razzoozle/web/features/game/components/answers/SlotDropdownBoard"
+import { HotspotImage, type PinPoint } from "@razzoozle/web/features/game/components/answers/HotspotImage"
 import { SequencingBoard } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
 import type { SequencingItem } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
@@ -69,6 +71,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       ? new Array(question.tokens?.length ?? 0).fill(null)
       : [],
   )
+  const [slotSelections, setSlotSelections] = useState<SlotSelections>([])
+  const [pinPoint, setPinPoint] = useState<PinPoint | null>(null)
   const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [countdown, setCountdown] = useState(question.time)
@@ -104,6 +108,17 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isSequencing = question.type === "sequencing" && question.shuffledItems?.length
   const isMathematik = question.type === "mathematik"
   const isWortarten = question.type === "wortarten"
+  const isFillBlank = question.type === "fill-blank" && !!question.slots?.length
+  const isMatching = question.type === "matching" && !!question.leftItems?.length
+  const isDropPin = question.type === "drop-pin" && !!question.media?.url
+
+  useEffect(() => {
+    if (isFillBlank && question.slots) {
+      setSlotSelections(new Array(question.slots.length).fill(null))
+    } else if (isMatching && question.leftItems) {
+      setSlotSelections(new Array(question.leftItems.length).fill(null))
+    }
+  }, [isFillBlank, isMatching, question.slots, question.leftItems])
 
   const isTokenDisabled = (i: number): boolean => {
     const disabledTokens = question.disabledTokens ?? []
@@ -215,6 +230,10 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
     } else if (isSequencing) {
       void submitAnswer(quizzId, { answerText: JSON.stringify(placedSequencingItems.map(item => item.id)) })
+    } else if (isFillBlank || isMatching) {
+      void submitAnswer(quizzId, { answerText: JSON.stringify(slotSelections) })
+    } else if (isDropPin) {
+      void submitAnswer(quizzId, { answerText: JSON.stringify(pinPoint) })
     } else if (isMathematik) {
       void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
     } else if (isWortarten) {
@@ -247,6 +266,16 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
+  }
+
+  const submitDropPin = () => {
+    if (!pinPoint) return
+    void submitAnswer(quizzId, { answerText: JSON.stringify(pinPoint) })
+  }
+
+  const submitSlotAnswer = () => {
+    if (slotSelections.some((v) => v === null || v === undefined)) return
+    void submitAnswer(quizzId, { answerText: JSON.stringify(slotSelections) })
   }
 
   const submitSequencing = () => {
@@ -404,7 +433,34 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             feedback={resultReady ? { correct: lastResult.correct } : undefined}
             testIdPrefix="solo-"
           />
-        ) : isSequencing ? (
+        ) : isDropPin ? (
+        <HotspotImage
+          value={pinPoint}
+          onChange={setPinPoint}
+          onSubmit={submitDropPin}
+          disabled={submitted}
+          testIdPrefix="solo-"
+          imageUrl={question.media!.url}
+          feedback={resultReady ? { correct: lastResult.correct } : undefined}
+        />
+      ) : isFillBlank || isMatching ? (
+        <SlotDropdownBoard
+          value={slotSelections}
+          onChange={setSlotSelections}
+          onSubmit={submitSlotAnswer}
+          disabled={submitted}
+          testIdPrefix="solo-"
+          slotOptions={
+            isFillBlank
+              ? (question.slots ?? []).map((s) => s.options)
+              : (question.leftItems ?? []).map((m) => m.options)
+          }
+          labels={isMatching ? (question.leftItems ?? []).map((m) => m.label) : undefined}
+          segments={isFillBlank ? question.segments : undefined}
+          i18nPrefix={isMatching ? "matching" : "fillBlank"}
+          feedback={resultReady ? { correct: lastResult.correct } : undefined}
+        />
+      ) : isSequencing ? (
           <SequencingBoard
             value={{ bank: bankSequencingItems, placed: placedSequencingItems }}
             onChange={(next) => {

@@ -81,6 +81,18 @@ if [[ -x "$(dirname "$0")/../scripts/check-locales.sh" ]] || [[ -f "$(dirname "$
   else say "NO-GO: invalid locale JSON (see above)"; fail=1; fi
 fi
 
+# --- 6. Unified Design System Gate (BLOCKING) --------------------------------
+# Runs the FULL token verification chain: lint, AST, WASM, morph, neural,
+# AI-audit, daemon, and agent rule sync — in one deterministic pipeline.
+GATE_SCRIPT="$(dirname "$0")/../scripts/design-gate.mjs"
+if [[ -f "$GATE_SCRIPT" ]]; then
+  if node "$GATE_SCRIPT" >/dev/null 2>&1; then
+    say "ok: unified design system gate passed"
+  else
+    say "NO-GO: unified design system gate failed (run 'pnpm tokens:gate' for details)"; fail=1
+  fi
+fi
+
 # --- verdict ------------------------------------------------------------------
 if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests compile, all batch markers intact)"; exit 0
 else say "GATE FAILED ❌ — DISCARD worker output (drop the worktree, or git checkout HEAD -- rust/server/src)"; exit 1; fi

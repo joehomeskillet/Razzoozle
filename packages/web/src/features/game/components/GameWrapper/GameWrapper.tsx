@@ -202,7 +202,7 @@ const GameWrapper = ({
                       onClick={toggleAuto}
                       aria-pressed={autoOn}
                       className={clsx("min-h-11", {
-                        "border-[var(--accent-tint)] bg-[var(--accent-tint)] text-[var(--accent-contrast)] hover:bg-[var(--accent-tint)]":
+                        "border-[var(--accent-tint)] bg-accent-tint text-accent-contrast hover:bg-accent-tint":
                           autoOn,
                       })}
                       title={t("game:controls.autoTitle")}

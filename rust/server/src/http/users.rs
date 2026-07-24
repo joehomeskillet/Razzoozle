@@ -29,50 +29,6 @@ pub struct UserResponse {
     pub role: String,
 }
 
-// ── HTTP auth helper ───────────────────────────────────────────────────────
-
-/// Extract Authorization: Bearer token and verify it's an admin session.
-/// Returns Some(AuthUser) iff token is valid and role=="admin", else None.
-/// Fail closed: any error → None.
-async fn require_admin_http(headers: &HeaderMap, pool: &Option<PgPool>) -> Option<db::users::AuthUser> {
-    let token = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|auth| auth.strip_prefix("Bearer "))
-        .unwrap_or("");
-
-    if token.is_empty() {
-        return None;
-    }
-
-    let pool = pool.as_ref()?;
-    let user = db::users::session_user(pool, token).await.ok().flatten()?;
-
-    if user.role == "admin" {
-        Some(user)
-    } else {
-        None
-    }
-}
-
-/// Extract Authorization: Bearer token and verify it's ANY valid session.
-/// Returns Some(AuthUser) iff token is valid, else None.
-/// Fail closed: any error → None.
-async fn require_user_http(headers: &HeaderMap, pool: &Option<PgPool>) -> Option<db::users::AuthUser> {
-    let token = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|auth| auth.strip_prefix("Bearer "))
-        .unwrap_or("");
-
-    if token.is_empty() {
-        return None;
-    }
-
-    let pool = pool.as_ref()?;
-    db::users::session_user(pool, token).await.ok().flatten()
-}
-
 // ── Self-modification guard ────────────────────────────────────────────────
 
 /// True when the authenticated admin targets their own account.
@@ -90,7 +46,7 @@ pub async fn list(
     headers: HeaderMap,
 ) -> Result<Json<Vec<db::users::UserDetail>>, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
     }
 
@@ -115,7 +71,7 @@ pub async fn create(
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
     }
 
@@ -162,7 +118,7 @@ pub async fn disable(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    let admin = match require_admin_http(&headers, &state.db_pool).await {
+    let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
     };
@@ -215,7 +171,7 @@ pub async fn enable(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
     }
 
@@ -240,7 +196,7 @@ pub async fn delete_user_handler(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    let admin = match require_admin_http(&headers, &state.db_pool).await {
+    let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
     };
@@ -314,7 +270,7 @@ pub async fn bulk_activate(
     headers: HeaderMap,
     Json(req): Json<BulkRequestIds>,
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
     }
 
@@ -349,7 +305,7 @@ pub async fn bulk_deactivate(
     headers: HeaderMap,
     Json(req): Json<BulkRequestIds>,
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
-    let admin = match require_admin_http(&headers, &state.db_pool).await {
+    let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
     };
@@ -393,7 +349,7 @@ pub async fn bulk_delete(
     headers: HeaderMap,
     Json(req): Json<BulkRequestIds>,
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
-    let admin = match require_admin_http(&headers, &state.db_pool).await {
+    let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
     };
@@ -443,7 +399,7 @@ pub async fn reset_password(
     Json(req): Json<ResetPasswordRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if require_admin_http(&headers, &state.db_pool).await.is_none() {
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
         return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
     }
 
@@ -487,7 +443,7 @@ pub async fn change_password(
     Json(req): Json<ChangePasswordRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify authenticated session (any logged-in user, not admin-gated)
-    let session_user = match require_user_http(&headers, &state.db_pool).await {
+    let session_user = match crate::auth::ensure_manager_user(&headers, &state.db_pool).await {
         Some(user) => user,
         None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Authentication required")),
     };

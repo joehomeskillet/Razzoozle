@@ -24,6 +24,36 @@ pub struct SequencingItem {
     pub label: String,
 }
 
+/// Shared dropdown slot for fill-blank and matching (options + correct index).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct Slot {
+    pub options: Vec<String>,
+    pub correct_index: i32,
+}
+
+/// Matching left-item row: label + dropdown options + correct option index.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchingItem {
+    pub label: String,
+    pub options: Vec<String>,
+    pub correct_index: i32,
+}
+
+/// Drop-pin hotspot rectangle in relative [0–1] image space.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct Hotspot {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
 /// Question type enum
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -48,6 +78,12 @@ pub enum QuestionType {
     Wortarten,
     #[serde(rename = "sequencing")]
     Sequencing,
+    #[serde(rename = "fill-blank")]
+    FillBlank,
+    #[serde(rename = "matching")]
+    Matching,
+    #[serde(rename = "drop-pin")]
+    DropPin,
 }
 
 /// A single question in a quiz
@@ -127,6 +163,22 @@ pub struct Question {
     #[serde(skip_serializing_if = "Option::is_none", rename = "correctOrder")]
     #[ts(optional)]
     pub correct_order: Option<Vec<String>>,
+    /// Fill-blank: text segments around slots (len == slots.len() + 1).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub segments: Option<Vec<String>>,
+    /// Fill-blank: per-slot options + correctIndex.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub slots: Option<Vec<Slot>>,
+    /// Matching: left labels with dropdown options.
+    #[serde(skip_serializing_if = "Option::is_none", rename = "leftItems")]
+    #[ts(optional)]
+    pub left_items: Option<Vec<MatchingItem>>,
+    /// Drop-pin: relative [0–1] hit zones on media.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub hotspots: Option<Vec<Hotspot>>,
 }
 
 /// A complete quiz definition

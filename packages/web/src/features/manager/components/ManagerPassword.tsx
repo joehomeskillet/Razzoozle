@@ -84,7 +84,7 @@ const ManagerPassword = ({ onSubmit }: Props) => {
     >
       <Card>
         <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] bg-[var(--accent-tint)] text-[var(--color-primary)]">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-theme)] bg-accent-tint text-[var(--color-primary)]">
             <Lock className="size-5" aria-hidden />
           </div>
           <div className="min-w-0">

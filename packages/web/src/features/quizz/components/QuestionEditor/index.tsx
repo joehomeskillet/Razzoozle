@@ -1,3 +1,4 @@
+import QuestionEditorDropPin from "./QuestionEditorDropPin"
 import type { QuestionType } from "@razzoozle/common/types/game"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
@@ -5,6 +6,8 @@ import QuestionEditorAnswers from "@razzoozle/web/features/quizz/components/Ques
 import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorConfig"
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
+import QuestionEditorFillBlank from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorFillBlank"
+import QuestionEditorMatching from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMatching"
 import QuestionEditorSequencing from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSequencing"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
 import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
@@ -65,6 +68,9 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isTypeAnswer = currentQuestion.type === "type-answer"
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
   const isSequencing = currentQuestion.type === "sequencing"
+  const isFillBlank = currentQuestion.type === "fill-blank"
+  const isMatching = currentQuestion.type === "matching"
+  const isDropPin = currentQuestion.type === "drop-pin"
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
   const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
@@ -88,6 +94,9 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
           !isTypeAnswer &&
           !isSentenceBuilder &&
           !isSequencing &&
+          !isFillBlank &&
+          !isMatching &&
+          !isDropPin &&
           !isMathematik &&
           !isWortarten &&
           !isVokabelliste && (
@@ -103,6 +112,21 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
         {isSentenceBuilder && (
           <Reveal index={2}>
             <QuestionEditorSentence />
+          </Reveal>
+        )}
+        {isFillBlank && (
+          <Reveal index={2}>
+            <QuestionEditorFillBlank />
+          </Reveal>
+        )}
+        {isDropPin && (
+          <Reveal index={2}>
+            <QuestionEditorDropPin />
+          </Reveal>
+        )}
+        {isMatching && (
+          <Reveal index={2}>
+            <QuestionEditorMatching />
           </Reveal>
         )}
         {isSequencing && (

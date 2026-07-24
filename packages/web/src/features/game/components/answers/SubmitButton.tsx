@@ -31,7 +31,7 @@ export default function SubmitButton({
       disabled={disabled}
       data-testid={testId}
       className={clsx(
-        "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+        "bg-[var(--color-primary)] rounded-[var(--radius-theme)] px-8 py-3 text-xl font-bold text-white disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
         PRESS_FEEDBACK,
       )}
     >

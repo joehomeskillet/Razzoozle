@@ -102,7 +102,7 @@ const QuestionEditorVokabel = () => {
             className={clsx(
               "flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
               direction === "word-to-translation"
-                ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] text-[var(--accent-contrast)]"
+                ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] text-accent-contrast"
                 : "bg-gray-50 text-gray-700 hover:bg-gray-100",
             )}
           >
@@ -114,7 +114,7 @@ const QuestionEditorVokabel = () => {
             className={clsx(
               "flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
               direction === "translation-to-word"
-                ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] text-[var(--accent-contrast)]"
+                ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] text-accent-contrast"
                 : "bg-gray-50 text-gray-700 hover:bg-gray-100",
             )}
           >

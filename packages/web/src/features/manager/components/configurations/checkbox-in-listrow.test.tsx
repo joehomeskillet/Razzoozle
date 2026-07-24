@@ -117,14 +117,14 @@ describe("ClassList — Checkbox-in-ListRow", () => {
     )
 
     // Extract rowSelectedState classes and check they appear in markup
-    // rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
+    // rowSelectedState = "bg-accent-tint outline-[var(--color-primary)]"
     const classes1 = rowSelectedState.split(" ")
     for (const cls of classes1) {
       expect(markup).toContain(cls)
     }
 
     // Verify the card for the selected class contains at least one of these tokens
-    expect(/bg-\[var\(--accent-tint\)\]/.exec(markup)).not.toBeNull()
+    expect(/(bg-accent-tint|bg-\[var\(--accent-tint\)\])/.exec(markup)).not.toBeNull()
     expect(/outline-\[var\(--color-primary\)\]/.exec(markup)).not.toBeNull()
   })
 
@@ -353,7 +353,7 @@ describe("StudentList — Checkbox-in-ListRow", () => {
     for (const cls of classes1) {
       expect(markup).toContain(cls)
     }
-    expect(/bg-\[var\(--accent-tint\)\]/.exec(markup)).not.toBeNull()
+    expect(/(bg-accent-tint|bg-\[var\(--accent-tint\)\])/.exec(markup)).not.toBeNull()
     expect(/outline-\[var\(--color-primary\)\]/.exec(markup)).not.toBeNull()
   })
 

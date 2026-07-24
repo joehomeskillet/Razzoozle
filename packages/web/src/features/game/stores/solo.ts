@@ -107,6 +107,7 @@ interface SoloState {
   nextQuestion: () => void
   toggleAutoAdvance: () => void
   finishGame: (id: string) => Promise<void>
+  finishPractice: (id: string) => Promise<void>
   reset: () => void
 }
 
@@ -328,6 +329,32 @@ export const useSoloStore = create<SoloState>((set, get) => ({
       }
     } catch {
       // Score submission failure is non-fatal; show what we have.
+    }
+  },
+
+  // Practice: same payload shape, never ranks (practice-score sink).
+  finishPractice: async (id: string) => {
+    const { playerName, totalPoints, answers } = get()
+    try {
+      const url = `/api/quizz/${encodeURIComponent(id)}/practice-score`
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerName: playerName.trim() || "Anonym",
+          score: totalPoints,
+          answers: answers.map((a) => ({
+            questionIndex: a.questionIndex,
+            correct: a.correct,
+            ...(a.answerId !== undefined ? { answerId: a.answerId } : {}),
+            ...(a.answerIds ? { answerIds: a.answerIds } : {}),
+            ...(a.answerText !== undefined ? { answerText: a.answerText } : {}),
+          })),
+        }),
+      })
+      set({ leaderboard: [] })
+    } catch {
+      // non-fatal
     }
   },
 

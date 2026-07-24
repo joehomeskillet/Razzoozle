@@ -11,7 +11,9 @@ pub const SLIDER_TOLERANCE_FRACTION: f64 = 0.05;
 pub struct AnswerInput {
     pub answer_key: Option<i32>,           // for choice, boolean, slider (as i32)
     pub answer_keys: Option<Vec<i32>>,     // for multiple-select
-    pub answer_text: Option<String>,       // for type-answer, sentence-builder, wortarten
+    // type-answer, sentence-builder, wortarten, sequencing,
+    // fill-blank/matching (JSON selectedIndices), drop-pin (JSON {x,y})
+    pub answer_text: Option<String>,
 }
 
 /// Result of evaluating an answer
@@ -326,6 +328,18 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
             base: 0.0,
         };
     }
+
+    // Fill-blank + matching: shared slot scoring.
+    // answerText = JSON array of selected option indices; base = correct/total.
+    if q_type == &Some(QuestionType::FillBlank) || q_type == &Some(QuestionType::Matching) {
+        return eval_slot_answer(question, answer);
+    }
+
+    // Drop-pin: JSON {x,y} relative 0–1; hit if point lies in ANY hotspot rect.
+    if q_type == &Some(QuestionType::DropPin) {
+        return eval_drop_pin(question, answer);
+    }
+
     // Choice / Boolean (default): index-based solutions lookup
     if let Some(answer_key) = answer.answer_key {
         if let Some(solutions) = &question.solutions {
@@ -343,9 +357,107 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
     }
 }
 
+/// Shared slot-index scoring for fill-blank and matching.
+///
+/// - fill-blank: correct indices from `question.slots[*].correct_index`
+/// - matching: correct indices from `question.left_items[*].correct_index`
+/// - answerText: `JSON.stringify(selectedIndices: number[])`
+/// - base = correct_slots / total_slots (partial credit); fully correct iff base == 1.0
+fn eval_slot_answer(question: &Question, answer: &AnswerInput) -> EvalResult {
+    let correct_indices: Vec<i32> = if question.r#type == Some(QuestionType::FillBlank) {
+        match &question.slots {
+            Some(slots) if !slots.is_empty() => slots.iter().map(|s| s.correct_index).collect(),
+            _ => {
+                return EvalResult {
+                    correct: false,
+                    base: 0.0,
+                };
+            }
+        }
+    } else {
+        match &question.left_items {
+            Some(items) if !items.is_empty() => items.iter().map(|s| s.correct_index).collect(),
+            _ => {
+                return EvalResult {
+                    correct: false,
+                    base: 0.0,
+                };
+            }
+        }
+    };
+
+    let Some(answer_text) = &answer.answer_text else {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    };
+
+    let Ok(selected) = serde_json::from_str::<Vec<i32>>(answer_text) else {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    };
+
+    if selected.len() != correct_indices.len() {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
+
+    let total = correct_indices.len();
+    let correct_count = selected
+        .iter()
+        .zip(correct_indices.iter())
+        .filter(|(s, c)| s == c)
+        .count();
+
+    let base = correct_count as f64 / total as f64;
+    EvalResult {
+        correct: correct_count == total,
+        base,
+    }
+}
+
+
+/// Point-in-rectangle check for drop-pin. Rect is [x, y, x+w, y+h] in unit square.
+fn eval_drop_pin(question: &Question, answer: &AnswerInput) -> EvalResult {
+    let Some(hotspots) = question.hotspots.as_ref() else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    if hotspots.is_empty() {
+        return EvalResult { correct: false, base: 0.0 };
+    }
+    let Some(answer_text) = &answer.answer_text else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(answer_text) else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    let (Some(x), Some(y)) = (
+        v.get("x").and_then(|n| n.as_f64()),
+        v.get("y").and_then(|n| n.as_f64()),
+    ) else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
+        return EvalResult { correct: false, base: 0.0 };
+    }
+    let hit = hotspots.iter().any(|h| {
+        x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h
+    });
+    EvalResult {
+        correct: hit,
+        base: if hit { 1.0 } else { 0.0 },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use razzoozle_protocol::quizz::{Hotspot, MatchingItem, Slot};
 
     fn test_question(q_type: QuestionType) -> Question {
         Question {
@@ -375,6 +487,10 @@ mod tests {
         disabled_tokens: None,
         items: None,
         correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
+            hotspots: None,
         }
     }
 
@@ -761,4 +877,182 @@ mod tests {
         assert_eq!(normalize_text("   "), "");
         assert_eq!(normalize_text(""), "");
     }
+
+    fn fill_blank_slots() -> Vec<Slot> {
+        vec![
+            Slot {
+                options: vec!["a".into(), "b".into(), "c".into()],
+                correct_index: 1,
+            },
+            Slot {
+                options: vec!["x".into(), "y".into()],
+                correct_index: 0,
+            },
+            Slot {
+                options: vec!["p".into(), "q".into(), "r".into()],
+                correct_index: 2,
+            },
+        ]
+    }
+
+    #[test]
+    fn slot_scoring_fill_blank_all_correct() {
+        let mut q = test_question(QuestionType::FillBlank);
+        q.slots = Some(fill_blank_slots());
+        q.segments = Some(vec!["".into(), "".into(), "".into(), "".into()]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[1,0,2]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn slot_scoring_fill_blank_partial_credit() {
+        // 2 of 3 slots correct → base 2/3 ≈ 0.667
+        let mut q = test_question(QuestionType::FillBlank);
+        q.slots = Some(fill_blank_slots());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[1,0,0]"#.to_string()), // last wrong
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert!((result.base - 2.0 / 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn slot_scoring_fill_blank_all_wrong() {
+        let mut q = test_question(QuestionType::FillBlank);
+        q.slots = Some(fill_blank_slots());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[0,1,0]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn slot_scoring_fill_blank_length_mismatch() {
+        let mut q = test_question(QuestionType::FillBlank);
+        q.slots = Some(fill_blank_slots());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[1,0]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn slot_scoring_fill_blank_invalid_json() {
+        let mut q = test_question(QuestionType::FillBlank);
+        q.slots = Some(fill_blank_slots());
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("not-json".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn slot_scoring_matching_partial_and_full() {
+        let mut q = test_question(QuestionType::Matching);
+        q.left_items = Some(vec![
+            MatchingItem {
+                label: "Capital".into(),
+                options: vec!["Paris".into(), "Lyon".into()],
+                correct_index: 0,
+            },
+            MatchingItem {
+                label: "River".into(),
+                options: vec!["Seine".into(), "Rhine".into()],
+                correct_index: 0,
+            },
+        ]);
+        let partial = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[0,1]"#.to_string()),
+        };
+        let r = evaluate_answer(&q, &partial);
+        assert!(!r.correct);
+        assert_eq!(r.base, 0.5);
+
+        let full = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"[0,0]"#.to_string()),
+        };
+        let r = evaluate_answer(&q, &full);
+        assert!(r.correct);
+        assert_eq!(r.base, 1.0);
+    }
+    #[test]
+    fn drop_pin_hit_interior() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.35,"y":0.4}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(r.correct);
+        assert_eq!(r.base, 1.0);
+    }
+
+    #[test]
+    fn drop_pin_miss_outside() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.9,"y":0.9}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(!r.correct);
+        assert_eq!(r.base, 0.0);
+    }
+
+    #[test]
+    fn drop_pin_corner_inclusive() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.1, y: 0.1, w: 0.2, h: 0.2 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.1,"y":0.1}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(r.correct);
+    }
+
+    #[test]
+    fn drop_pin_invalid_json() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.0, y: 0.0, w: 1.0, h: 1.0 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("nope".into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(!r.correct);
+        assert_eq!(r.base, 0.0);
+    }
+
 }

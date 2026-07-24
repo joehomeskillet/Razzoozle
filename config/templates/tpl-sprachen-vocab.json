@@ -1,0 +1,38 @@
+{
+  "id": "tpl-sprachen-vocab",
+  "category": "sprachen",
+  "name": "Vokabel-Warmup",
+  "description": "Kurzes DE/EN Matching",
+  "tags": [
+    "english",
+    "vocab"
+  ],
+  "questions": [
+    {
+      "question": "Ordne die Begriffe zu",
+      "type": "matching",
+      "leftItems": [
+        {
+          "label": "apple",
+          "options": [
+            "Apfel",
+            "Birne",
+            "Banane"
+          ],
+          "correctIndex": 0
+        },
+        {
+          "label": "house",
+          "options": [
+            "Haus",
+            "Baum",
+            "Auto"
+          ],
+          "correctIndex": 0
+        }
+      ],
+      "cooldown": 5,
+      "time": 40
+    }
+  ]
+}

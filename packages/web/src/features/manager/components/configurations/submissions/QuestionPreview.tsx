@@ -88,7 +88,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
             {(question.acceptedAnswers ?? []).map((a) => (
               <Badge
                 key={a}
-                className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+                className="bg-status-online-bg text-status-online-text"
               >
                 {a}
               </Badge>
@@ -108,7 +108,7 @@ export const QuestionPreview = ({ question }: { question: Question }) => {
             {t("quizz:slider.max")}: {question.max}
             {unit}
           </span>
-          <span className="rounded-lg bg-[var(--status-online-bg)] px-3 py-1.5 font-semibold text-[var(--status-online-text)]">
+          <span className="rounded-lg bg-status-online-bg px-3 py-1.5 font-semibold text-status-online-text">
             {t("manager:result.slider.correctAnswer")} {question.correct}
             {unit}
           </span>

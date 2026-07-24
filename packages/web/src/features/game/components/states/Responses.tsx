@@ -38,6 +38,10 @@ const Responses = ({
     correctChunks,
     correctOrder,
     items,
+    media,
+    correctOptions,
+    correctMatches,
+    correctHotspotIndex,
   },
 }: Props) => {
   const isSlider = type === "slider"
@@ -46,6 +50,11 @@ const Responses = ({
   const isMathematik = type === "mathematik"
   const isWortarten = type === "wortarten"
   const isSequencing = type === "sequencing"
+  // Wire strings are kebab-case (server `question_type_wire`, serde-renamed to
+  // the `type` field on SHOW_RESPONSES).
+  const isFillBlank = type === "fill-blank"
+  const isMatching = type === "matching"
+  const isDropPin = type === "drop-pin"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -90,7 +99,10 @@ const Responses = ({
   }, [playMusic, stopMusic])
 
   return (
-    <div data-testid="responses-view" className="flex h-full flex-1 flex-col justify-between">
+    <div
+      data-testid="responses-view"
+      className="flex h-full flex-1 flex-col justify-between"
+    >
       <div className="mx-auto inline-flex h-full w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 lg:max-w-[85vw]">
         <h2 className="text-center text-2xl font-bold text-[color:var(--game-fg)] drop-shadow-lg md:text-4xl lg:text-[clamp(2rem,5.5vh,6rem)]">
           <Markdown>{question}</Markdown>
@@ -104,7 +116,7 @@ const Responses = ({
                 {(acceptedAnswers ?? []).map((a) => (
                   <span
                     key={a}
-                    className="rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)] font-semibold text-[var(--answer-text)]"
+                    className="text-answer-text rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base font-semibold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
                   >
                     {a}
                   </span>
@@ -135,14 +147,16 @@ const Responses = ({
                       className={clsx(
                         "flex items-center justify-between rounded-xl px-5 py-3 text-lg md:px-6 md:py-4 md:text-2xl lg:text-[clamp(1.25rem,3vh,2.5rem)]",
                         isMatch
-                          ? "bg-[var(--state-correct-soft)] text-[var(--answer-text)]"
+                          ? "text-answer-text bg-[var(--state-correct-soft)]"
                           : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
                       )}
                     >
                       <span className="font-semibold">{text}</span>
                       <span className="ml-4 flex shrink-0 items-center gap-2 font-bold">
                         {count}
-                        {isMatch && <Check className="size-6 md:size-8 lg:size-10 text-[var(--state-correct)]" />}
+                        {isMatch && (
+                          <Check className="size-6 text-[var(--state-correct)] md:size-8 lg:size-10" />
+                        )}
                       </span>
                     </motion.div>
                   )
@@ -161,7 +175,7 @@ const Responses = ({
                   {correctChunks.map((chunk, i) => (
                     <span
                       key={`${chunk}-${i}`}
-                      className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                      className="text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
                     >
                       {chunk}
                     </span>
@@ -184,7 +198,7 @@ const Responses = ({
                     return (
                       <li
                         key={`${itemId}-${index}`}
-                        className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                        className="text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
                       >
                         <span className="mr-2 font-bold">{index + 1}.</span>
                         <span>{item?.label}</span>
@@ -250,6 +264,90 @@ const Responses = ({
               {correctAnswer}
             </motion.div>
           </motion.div>
+        ) : isFillBlank || isMatching || isDropPin ? (
+          <motion.div
+            className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 px-4"
+            variants={reveal.container()}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Fill-blank: correct option per slot as green chips (mirrors the
+                sentence-builder correctChunks reveal block). */}
+            {isFillBlank && !!correctOptions?.length && (
+              <motion.div
+                className="w-full rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]"
+                variants={reveal.item()}
+                transition={reveal.spring}
+              >
+                <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+                  {t("game:fillBlank.correctAnswers")}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {correctOptions.map((option, i) => (
+                    <span
+                      key={`${option}-${i}`}
+                      className="text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                    >
+                      {option}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+            {/* Matching: correct option per left item as green chips. */}
+            {isMatching && !!correctMatches?.length && (
+              <motion.div
+                className="w-full rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]"
+                variants={reveal.item()}
+                transition={reveal.spring}
+              >
+                <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+                  {t("game:matching.correctMatches")}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {correctMatches.map((match, i) => (
+                    <span
+                      key={`${match}-${i}`}
+                      className="text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                    >
+                      {match}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+            {/* Drop-pin: reveal the image plus the correct-location label. The
+                hotspots array is NOT on the SHOW_RESPONSES payload, so no zone
+                overlay — correctHotspotIndex only gates whether a zone exists. */}
+            {isDropPin &&
+              !!(
+                media?.url ||
+                correctAnswer ||
+                correctHotspotIndex != null
+              ) && (
+                <motion.div
+                  className="flex w-full flex-col items-center gap-3 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]"
+                  variants={reveal.item()}
+                  transition={reveal.spring}
+                >
+                  {media?.url && (
+                    <img
+                      src={media.url}
+                      alt={t("game:dropPin.correctLocation")}
+                      className="max-h-[40vh] max-w-full rounded-[var(--radius-theme)] border border-[var(--border-hairline)] object-contain"
+                    />
+                  )}
+                  <p className="text-sm font-semibold text-[color:var(--game-fg)]">
+                    {t("game:dropPin.correctLocation")}
+                  </p>
+                  {correctAnswer && (
+                    <span className="text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                      {correctAnswer}
+                    </span>
+                  )}
+                </motion.div>
+              )}
+          </motion.div>
         ) : (
           <motion.div
             className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[clamp(16rem,45vh,32rem)]`}
@@ -282,7 +380,7 @@ const Responses = ({
                       : "height 320ms cubic-bezier(0.16,1,0.3,1)",
                   }}
                 >
-                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-[var(--color-field-ink)] tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                  <span className="text-color-field-ink w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                     {responses[key] || 0}
                   </span>
                 </div>
@@ -292,22 +390,32 @@ const Responses = ({
         )}
       </div>
 
-      {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isSequencing && !isMathematik && !isWortarten && (
-        <div>
-          <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-            {answerList.map((answer, key) => (
-              <AnswerButton
-                key={key}
-                colorIndex={key}
-                label={answerLabel(key)}
-                correct={type === "poll" ? undefined : solutionList.includes(key)}
-              >
-                <Markdown>{answer}</Markdown>
-              </AnswerButton>
-            ))}
+      {!isSlider &&
+        !isTypeAnswer &&
+        !isSentenceBuilder &&
+        !isSequencing &&
+        !isMathematik &&
+        !isWortarten &&
+        !isFillBlank &&
+        !isMatching &&
+        !isDropPin && (
+          <div>
+            <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+              {answerList.map((answer, key) => (
+                <AnswerButton
+                  key={key}
+                  colorIndex={key}
+                  label={answerLabel(key)}
+                  correct={
+                    type === "poll" ? undefined : solutionList.includes(key)
+                  }
+                >
+                  <Markdown>{answer}</Markdown>
+                </AnswerButton>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   )
 }

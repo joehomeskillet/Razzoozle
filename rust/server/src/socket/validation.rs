@@ -207,6 +207,53 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 }
             }
         }
+        Some(QuestionType::FillBlank) => {
+            let slots = match question.slots.as_ref() {
+                Some(slots) if !slots.is_empty() => slots,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for s in slots {
+                if s.options.len() < 2 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+                if s.correct_index < 0 || (s.correct_index as usize) >= s.options.len() {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+            if let Some(segs) = &question.segments {
+                if segs.len() != slots.len() + 1 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+        }
+        Some(QuestionType::Matching) => {
+            let items = match question.left_items.as_ref() {
+                Some(items) if !items.is_empty() => items,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for i in items {
+                if i.label.is_empty() || i.options.len() < 2 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+                if i.correct_index < 0 || (i.correct_index as usize) >= i.options.len() {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+        }
+        Some(QuestionType::DropPin) => {
+            if question.media.as_ref().map(|m| m.url.is_empty()).unwrap_or(true) {
+                return Err("errors:quizz.invalidPayload");
+            }
+            let spots = match question.hotspots.as_ref() {
+                Some(h) if !h.is_empty() => h,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for h in spots {
+                if h.w <= 0.0 || h.h <= 0.0 || h.x < 0.0 || h.y < 0.0 || h.x + h.w > 1.0 + 1e-9 || h.y + h.h > 1.0 + 1e-9 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+        }
         // choice / boolean / None → default
         _ => {
             if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {

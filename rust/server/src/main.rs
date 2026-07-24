@@ -30,6 +30,9 @@ pub(crate) fn question_type_wire(question_type: &QuestionType) -> &'static str {
         QuestionType::Mathematik => "mathematik",
         QuestionType::Wortarten => "wortarten",
         QuestionType::Sequencing => "sequencing",
+        QuestionType::FillBlank => "fill-blank",
+        QuestionType::Matching => "matching",
+        QuestionType::DropPin => "drop-pin",
     }
 }
 

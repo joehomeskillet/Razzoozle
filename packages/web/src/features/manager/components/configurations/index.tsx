@@ -391,8 +391,8 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
                   // contrast ink. Keep tint on hover/active so ghost defaults
                   // don't erase the selected state. Ring separates the chip
                   // from the header's own accent-tint gradient wash.
-                  "bg-[var(--accent-tint)] text-[var(--accent-contrast)] " +
-                    "hover:bg-[var(--accent-tint)] active:bg-[var(--accent-tint)] " +
+                  "bg-accent-tint text-accent-contrast " +
+                    "hover:bg-accent-tint active:bg-accent-tint " +
                     "ring-2 ring-[var(--accent-contrast)]/35"
                 : undefined
             }

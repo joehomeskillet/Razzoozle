@@ -74,6 +74,15 @@ pub struct SoloQuestion {
     pub items: Option<Vec<SequencingItem>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shuffledItems: Option<Vec<String>>,
+    /// Fill-blank text segments (play-time).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segments: Option<Vec<String>>,
+    /// Fill-blank slots with options only (correctIndex forced 0 — anti-cheat).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slots: Option<Vec<serde_json::Value>>,
+    /// Matching rows with options only (correctIndex forced 0).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub leftItems: Option<Vec<serde_json::Value>>,
     pub time: i32,
     pub cooldown: i32,
 }
@@ -227,6 +236,31 @@ pub async fn handle_get_quiz_solo(
                 shuffledChunks: shuffled_chunks,
                 items,
                 shuffledItems: shuffled_items,
+                segments: q.segments.clone(),
+                // Strip real correctIndex for client (scoring stays server-side).
+                slots: q.slots.as_ref().map(|slots| {
+                    slots
+                        .iter()
+                        .map(|s| {
+                            serde_json::json!({
+                                "options": s.options,
+                                "correctIndex": 0
+                            })
+                        })
+                        .collect()
+                }),
+                leftItems: q.left_items.as_ref().map(|items| {
+                    items
+                        .iter()
+                        .map(|i| {
+                            serde_json::json!({
+                                "label": i.label,
+                                "options": i.options,
+                                "correctIndex": 0
+                            })
+                        })
+                        .collect()
+                }),
                 time: q.time,
                 cooldown: q.cooldown,
             }
@@ -342,6 +376,49 @@ fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -
     }
 
     score
+}
+
+
+/// Study mode: return quiz questions WITH solutions for free-paced review.
+pub async fn handle_get_quiz_study(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Path(quiz_id): Path<String>,
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let client_ip = addr.ip().to_string();
+    if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+    let registry = state.registry.read().await;
+    let quiz = registry
+        .get_quiz_by_id(&quiz_id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
+    let questions = serde_json::to_value(&quiz.questions)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(serde_json::json!({
+        "subject": quiz.subject,
+        "questions": questions,
+        "mode": "study",
+    })))
+}
+
+/// Practice mode score sink: never writes leaderboard entries.
+pub async fn handle_practice_score(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Path(quiz_id): Path<String>,
+    Json(_payload): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let client_ip = addr.ip().to_string();
+    if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+    Ok(Json(serde_json::json!({
+        "leaderboard": [],
+        "message": "Practice score accepted (not ranked)",
+        "mode": "practice",
+    })))
 }
 
 pub async fn handle_solo_score(
@@ -536,6 +613,9 @@ mod tests {
             shuffledChunks: None,
             items: None,
             shuffledItems: None,
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -587,6 +667,9 @@ mod tests {
             shuffledChunks: None,
             items: Some(items.clone()),
             shuffledItems: Some(vec!["item-1".to_string(), "item-2".to_string(), "item-3".to_string(), "item-4".to_string()]),
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -669,6 +752,9 @@ mod tests {
             shuffledChunks: None,
             items: None,
             shuffledItems: None,
+            segments: None,
+            slots: None,
+            leftItems: None,
             time: 30,
             cooldown: 0,
         };
@@ -709,6 +795,10 @@ mod tests {
             disabled_tokens: None,
             items: None,
             correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
+            hotspots: None,
         }
     }
 

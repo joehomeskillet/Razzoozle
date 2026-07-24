@@ -30,7 +30,7 @@ const dotBgClass = (slug: string): string =>
 
 const stateClass = (active: boolean): string =>
   active
-    ? "outline-1 -outline-offset-1 outline-[var(--color-primary)] bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+    ? "outline-1 -outline-offset-1 outline-[var(--color-primary)] bg-accent-tint text-accent-contrast"
     : "border border-[var(--border-hairline)] bg-[var(--surface-3)] text-[var(--ink-medium)] hover:bg-[var(--surface-4)]"
 
 // Kompakte Filter-Chips (~24px sichtbar) mit Farbpunkt; Touch-Target ≥44px

@@ -24,6 +24,27 @@ export const sequencingItemValidator = z.object({
   label: z.string().min(1),
 })
 
+// Fill-blank / matching shared slot: option list + correct option index.
+// Transport: answerText = JSON.stringify(selectedIndices: number[])
+export const slotValidator = z.object({
+  options: z.array(z.string()).min(2).max(12),
+  correctIndex: z.number().int().min(0),
+})
+
+export const matchingItemValidator = z.object({
+  label: z.string().min(1),
+  options: z.array(z.string()).min(2).max(12),
+  correctIndex: z.number().int().min(0),
+})
+
+// Drop-pin: relative [0–1] rectangle zones on QuestionMedia.
+export const hotspotValidator = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  w: z.number().min(0.01).max(1),
+  h: z.number().min(0.01).max(1),
+})
+
 export const questionValidator = z
   .object({
     question: z.string().min(1, "errors:quizz.questionEmpty"),
@@ -78,6 +99,14 @@ export const questionValidator = z
     // Sequencing: items to reorder + correct order
     items: z.array(sequencingItemValidator).optional(),
     correctOrder: z.array(z.string()).optional(),
+    // Fill-blank: text segments around slots (length === slots.length + 1).
+    // segments[i] is text before slot i; segments[slots.length] is trailing text.
+    segments: z.array(z.string()).optional(),
+    slots: z.array(slotValidator).optional(),
+    // Matching: left label + dropdown options (one slot per left item).
+    leftItems: z.array(matchingItemValidator).optional(),
+    // Drop-pin: click zones on media (relative 0–1 rects)
+    hotspots: z.array(hotspotValidator).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -135,7 +164,89 @@ export const questionValidator = z
     } else if (q.type === "wortarten") {
       // Wortarten: parts of speech tagging (permissive stub for now)
     } else if (q.type === "sequencing") {
-      // Sequencing: item reordering (permissive stub for now)
+      if (!q.items || q.items.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.invalidPayload",
+          path: ["items"],
+        })
+      } else if (!q.correctOrder || q.correctOrder.length !== q.items.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.invalidPayload",
+          path: ["correctOrder"],
+        })
+      }
+    } else if (q.type === "fill-blank") {
+      // Fill-blank: >=1 slot; segments length must be slots.length + 1 when both set.
+      if (!q.slots || q.slots.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.fillBlankMinSlots",
+          path: ["slots"],
+        })
+      } else {
+        if (q.segments && q.segments.length !== q.slots.length + 1) {
+          ctx.addIssue({
+            code: "custom",
+            message: "errors:quizz.fillBlankSegmentCount",
+            path: ["segments"],
+          })
+        }
+        q.slots.forEach((slot, i) => {
+          if (slot.correctIndex >= slot.options.length) {
+            ctx.addIssue({
+              code: "custom",
+              message: "errors:quizz.slotCorrectIndex",
+              path: ["slots", i, "correctIndex"],
+            })
+          }
+        })
+      }
+    } else if (q.type === "drop-pin") {
+      if (!q.media?.url) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.dropPinMediaRequired",
+          path: ["media"],
+        })
+      }
+      if (!q.hotspots || q.hotspots.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.dropPinMinHotspots",
+          path: ["hotspots"],
+        })
+      } else {
+        q.hotspots.forEach((hs, i) => {
+          if (hs.x + hs.w > 1 + 1e-9 || hs.y + hs.h > 1 + 1e-9) {
+            ctx.addIssue({
+              code: "custom",
+              message: "errors:quizz.dropPinHotspotBounds",
+              path: ["hotspots", i],
+            })
+          }
+        })
+      }
+    } else if (q.type === "matching") {
+      // Matching: >=1 left item with valid correctIndex.
+      if (!q.leftItems || q.leftItems.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.matchingMinItems",
+          path: ["leftItems"],
+        })
+      } else {
+        q.leftItems.forEach((item, i) => {
+          if (item.correctIndex >= item.options.length) {
+            ctx.addIssue({
+              code: "custom",
+              message: "errors:quizz.slotCorrectIndex",
+              path: ["leftItems", i, "correctIndex"],
+            })
+          }
+        })
+      }
     } else {
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })

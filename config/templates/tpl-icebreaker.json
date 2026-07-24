@@ -1,0 +1,23 @@
+{
+  "id": "tpl-icebreaker",
+  "category": "custom",
+  "name": "Icebreaker-Poll",
+  "description": "Stimmungsbild zum Einstieg",
+  "tags": [
+    "icebreaker"
+  ],
+  "questions": [
+    {
+      "question": "Wie fit fühlt ihr euch heute?",
+      "type": "poll",
+      "answers": [
+        "Top",
+        "Okay",
+        "Müde",
+        "Kaffee bitte"
+      ],
+      "cooldown": 5,
+      "time": 20
+    }
+  ]
+}

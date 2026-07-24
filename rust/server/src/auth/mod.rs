@@ -1,4 +1,4 @@
-//! Centralized manager/admin session-token authorization (w2-6/w2-7).
+//! Centralized manager/admin session-token authorization (w2-6/w2-7, WP-0).
 //!
 //! Consolidates the `X-Manager-Token` → DB session-user resolution that used
 //! to be duplicated across `http/mod.rs`, `http/assignments.rs`, and
@@ -6,19 +6,34 @@
 //! lehrkraft only; skeleton/admin routes: admin-only) still get decided at
 //! their call sites, but now share this one lookup instead of each
 //! re-implementing header parsing + `session_user` calls.
+//!
+//! WP-0 extends `resolve_session_user` to accept `Authorization: Bearer <token>`
+//! **or** `X-Manager-Token` — both resolve via the same `session_user` lookup.
+//! Bearer is checked first; `X-Manager-Token` is the fallback.
 
 use axum::http::HeaderMap;
 
 use crate::db::users::AuthUser;
 
 fn manager_token(headers: &HeaderMap) -> &str {
+    // WP-0: Bearer token first, then X-Manager-Token fallback.
+    if let Some(auth_header) = headers.get("authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if let Some(token) = auth_str.strip_prefix("Bearer ") {
+                return token;
+            }
+        }
+    }
+
+    // Fallback to X-Manager-Token.
     headers
         .get("x-manager-token")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("")
 }
 
-/// Resolve `X-Manager-Token` to its DB session user, if any.
+/// Resolve session token (from `Authorization: Bearer` or `X-Manager-Token`) to its DB session user, if any.
+/// Bearer token is checked first; `X-Manager-Token` is the fallback.
 async fn resolve_session_user(
     headers: &HeaderMap,
     db_pool: &Option<sqlx::PgPool>,
@@ -58,4 +73,16 @@ pub async fn ensure_manager_user(
     db_pool: &Option<sqlx::PgPool>,
 ) -> Option<AuthUser> {
     resolve_session_user(headers, db_pool).await
+}
+
+/// Admin-only session user: resolves the authenticated session and verifies
+/// `role == "admin"`. Fail-closed: returns `None` if token is invalid, missing,
+/// or user role is not admin (WP-0).
+pub async fn ensure_admin_user(
+    headers: &HeaderMap,
+    db_pool: &Option<sqlx::PgPool>,
+) -> Option<AuthUser> {
+    resolve_session_user(headers, db_pool)
+        .await
+        .filter(|u| u.role == "admin")
 }

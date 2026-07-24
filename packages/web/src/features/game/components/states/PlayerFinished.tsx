@@ -180,7 +180,7 @@ const HighlightBadge = ({
 
   return (
     <motion.div
-      className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 px-5 py-4 text-center text-[var(--answer-text)]"
+      className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 px-5 py-4 text-center text-answer-text"
       style={{
         background:
           "linear-gradient(to bottom right, color-mix(in srgb, var(--tier-gold), white 18%), color-mix(in srgb, var(--tier-gold), black 22%))",

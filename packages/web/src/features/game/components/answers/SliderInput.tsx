@@ -28,7 +28,7 @@ export default function SliderInput({
     <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
       {/* Slider value display */}
       <div className={clsx(
-        "text-5xl font-bold text-[color:var(--game-fg)]",
+        "text-5xl font-bold text-[color:var(--game-fg)] [font-variant-numeric:tabular-nums_slashed-zero]",
         testIdPrefix === "solo-" && "drop-shadow-lg",
         feedback && (
           feedback.correct

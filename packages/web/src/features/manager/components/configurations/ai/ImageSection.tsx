@@ -42,7 +42,7 @@ const ImageSection = ({
     },
     ready: {
       label: t("manager:ai.status.ready"),
-      pill: "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
+      pill: "bg-status-online-bg text-status-online-text",
       dot: "bg-[var(--state-correct)]",
     },
   }[imageStatus]

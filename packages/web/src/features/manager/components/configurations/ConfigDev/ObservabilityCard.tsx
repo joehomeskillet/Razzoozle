@@ -50,7 +50,7 @@ export const ObservabilityCard = ({
         <Badge
           className={
             isConnected
-              ? "gap-1.5 py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+              ? "gap-1.5 py-1 bg-status-online-bg text-status-online-text"
               : "gap-1.5 py-1 bg-[var(--surface-3)] text-[var(--ink-subtle)]"
           }
         >

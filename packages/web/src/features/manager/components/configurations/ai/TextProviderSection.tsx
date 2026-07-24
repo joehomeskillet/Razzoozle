@@ -102,8 +102,8 @@ const TextProviderSection = ({
                 className={clsx(
                   "flex items-start gap-2 rounded-lg p-3 text-sm",
                   privacy.external
-                    ? "bg-[var(--status-pending-bg)] text-[var(--status-pending-text)] outline-1 -outline-offset-1 outline-[var(--status-pending-text)]"
-                    : "bg-[var(--status-online-bg)] text-[var(--status-online-text)] outline-1 -outline-offset-1 outline-[var(--status-online-text)]",
+                    ? "bg-status-pending-bg text-status-pending-text outline-1 -outline-offset-1 outline-[var(--status-pending-text)]"
+                    : "bg-status-online-bg text-status-online-text outline-1 -outline-offset-1 outline-[var(--status-online-text)]",
                 )}
               >
                 {privacy.external ? (

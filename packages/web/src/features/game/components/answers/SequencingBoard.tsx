@@ -54,9 +54,12 @@ export function SequencingBoard({
       {/* Placed/answer area */}
       <div
         className={clsx(
-          "flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]",
-          feedback?.correct && "bg-[var(--state-correct)]",
-          feedback && !feedback.correct && "bg-[var(--state-wrong)]",
+          "flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] p-4 shadow-[var(--shadow-flat)]",
+          feedback == null
+            ? "bg-[var(--surface)]"
+            : feedback.correct
+              ? "bg-[var(--state-correct)]"
+              : "bg-[var(--state-wrong)]",
         )}
         {...(isSolo && { "data-testid": "solo-sequencing-answer-bar" })}
       >
@@ -133,7 +136,7 @@ export function SequencingBoard({
         disabled={disabled || !isComplete}
         data-testid={isSolo ? "solo-sequencing-submit" : "sequencing-submit"}
         className={clsx(
-          "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+          "bg-[var(--color-primary)] rounded-[var(--radius-theme)] px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
           !disabled && PRESS_FEEDBACK,
         )}
       >

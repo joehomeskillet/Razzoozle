@@ -31,7 +31,7 @@ export const ApiExplorerCard = ({
       description={t("dev.redactionNotice")}
       actions={
         apiInfo !== null && apiInfo.valid ? (
-          <Badge className="py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
+          <Badge className="py-1 bg-status-online-bg text-status-online-text">
             {t("dev.api.schemaValid")}
           </Badge>
         ) : undefined

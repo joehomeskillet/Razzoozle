@@ -24,8 +24,11 @@ import { Route as DisplayPlayRouteImport } from './pages/display/play'
 import { Route as ManagerQuizzLayoutRouteImport } from './pages/manager/quizz/layout'
 import { Route as ManagerQuizzIndexRouteImport } from './pages/manager/quizz/index'
 import { Route as authManagerIndexRouteImport } from './pages/(auth)/manager/index'
+import { Route as QuizzIdStudyRouteImport } from './pages/quizz/$id/study'
 import { Route as QuizzIdSoloRouteImport } from './pages/quizz/$id/solo'
+import { Route as QuizzIdPracticeRouteImport } from './pages/quizz/$id/practice'
 import { Route as PartyManagerGameIdRouteImport } from './pages/party/manager/$gameId'
+import { Route as ManagerTemplateTemplateIdRouteImport } from './pages/manager/template.$templateId'
 import { Route as ManagerQuizzQuizzIdRouteImport } from './pages/manager/quizz/$quizzId'
 import { Route as ManagerConfigTabRouteImport } from './pages/manager/config.$tab'
 import { Route as QuizzIdAssignmentAssignmentIdRouteImport } from './pages/quizz/$id/assignment.$assignmentId'
@@ -104,9 +107,19 @@ const authManagerIndexRoute = authManagerIndexRouteImport.update({
   path: '/manager/',
   getParentRoute: () => authLayoutRoute,
 } as any)
+const QuizzIdStudyRoute = QuizzIdStudyRouteImport.update({
+  id: '/quizz/$id/study',
+  path: '/quizz/$id/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizzIdSoloRoute = QuizzIdSoloRouteImport.update({
   id: '/quizz/$id/solo',
   path: '/quizz/$id/solo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizzIdPracticeRoute = QuizzIdPracticeRouteImport.update({
+  id: '/quizz/$id/practice',
+  path: '/quizz/$id/practice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartyManagerGameIdRoute = PartyManagerGameIdRouteImport.update({
@@ -114,6 +127,12 @@ const PartyManagerGameIdRoute = PartyManagerGameIdRouteImport.update({
   path: '/party/manager/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagerTemplateTemplateIdRoute =
+  ManagerTemplateTemplateIdRouteImport.update({
+    id: '/manager/template/$templateId',
+    path: '/manager/template/$templateId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManagerQuizzQuizzIdRoute = ManagerQuizzQuizzIdRouteImport.update({
   id: '/$quizzId',
   path: '/$quizzId',
@@ -146,8 +165,11 @@ export interface FileRoutesByFullPath {
   '/trophies/': typeof TrophiesIndexRoute
   '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
+  '/manager/template/$templateId': typeof ManagerTemplateTemplateIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/practice': typeof QuizzIdPracticeRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
+  '/quizz/$id/study': typeof QuizzIdStudyRoute
   '/manager/': typeof authManagerIndexRoute
   '/manager/quizz/': typeof ManagerQuizzIndexRoute
   '/quizz/$id/assignment/$assignmentId': typeof QuizzIdAssignmentAssignmentIdRoute
@@ -165,8 +187,11 @@ export interface FileRoutesByTo {
   '/trophies': typeof TrophiesIndexRoute
   '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
+  '/manager/template/$templateId': typeof ManagerTemplateTemplateIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/practice': typeof QuizzIdPracticeRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
+  '/quizz/$id/study': typeof QuizzIdStudyRoute
   '/manager': typeof authManagerIndexRoute
   '/manager/quizz': typeof ManagerQuizzIndexRoute
   '/quizz/$id/assignment/$assignmentId': typeof QuizzIdAssignmentAssignmentIdRoute
@@ -188,8 +213,11 @@ export interface FileRoutesById {
   '/trophies/': typeof TrophiesIndexRoute
   '/manager/config/$tab': typeof ManagerConfigTabRoute
   '/manager/quizz/$quizzId': typeof ManagerQuizzQuizzIdRoute
+  '/manager/template/$templateId': typeof ManagerTemplateTemplateIdRoute
   '/party/manager/$gameId': typeof PartyManagerGameIdRoute
+  '/quizz/$id/practice': typeof QuizzIdPracticeRoute
   '/quizz/$id/solo': typeof QuizzIdSoloRoute
+  '/quizz/$id/study': typeof QuizzIdStudyRoute
   '/(auth)/manager/': typeof authManagerIndexRoute
   '/manager/quizz/': typeof ManagerQuizzIndexRoute
   '/quizz/$id/assignment/$assignmentId': typeof QuizzIdAssignmentAssignmentIdRoute
@@ -211,8 +239,11 @@ export interface FileRouteTypes {
     | '/trophies/'
     | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
+    | '/manager/template/$templateId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/practice'
     | '/quizz/$id/solo'
+    | '/quizz/$id/study'
     | '/manager/'
     | '/manager/quizz/'
     | '/quizz/$id/assignment/$assignmentId'
@@ -230,8 +261,11 @@ export interface FileRouteTypes {
     | '/trophies'
     | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
+    | '/manager/template/$templateId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/practice'
     | '/quizz/$id/solo'
+    | '/quizz/$id/study'
     | '/manager'
     | '/manager/quizz'
     | '/quizz/$id/assignment/$assignmentId'
@@ -252,8 +286,11 @@ export interface FileRouteTypes {
     | '/trophies/'
     | '/manager/config/$tab'
     | '/manager/quizz/$quizzId'
+    | '/manager/template/$templateId'
     | '/party/manager/$gameId'
+    | '/quizz/$id/practice'
     | '/quizz/$id/solo'
+    | '/quizz/$id/study'
     | '/(auth)/manager/'
     | '/manager/quizz/'
     | '/quizz/$id/assignment/$assignmentId'
@@ -270,8 +307,11 @@ export interface RootRouteChildren {
   SubmitIndexRoute: typeof SubmitIndexRoute
   ThemePreviewIndexRoute: typeof ThemePreviewIndexRoute
   TrophiesIndexRoute: typeof TrophiesIndexRoute
+  ManagerTemplateTemplateIdRoute: typeof ManagerTemplateTemplateIdRoute
   PartyManagerGameIdRoute: typeof PartyManagerGameIdRoute
+  QuizzIdPracticeRoute: typeof QuizzIdPracticeRoute
   QuizzIdSoloRoute: typeof QuizzIdSoloRoute
+  QuizzIdStudyRoute: typeof QuizzIdStudyRoute
   QuizzIdAssignmentAssignmentIdRoute: typeof QuizzIdAssignmentAssignmentIdRoute
 }
 
@@ -382,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authManagerIndexRouteImport
       parentRoute: typeof authLayoutRoute
     }
+    '/quizz/$id/study': {
+      id: '/quizz/$id/study'
+      path: '/quizz/$id/study'
+      fullPath: '/quizz/$id/study'
+      preLoaderRoute: typeof QuizzIdStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quizz/$id/solo': {
       id: '/quizz/$id/solo'
       path: '/quizz/$id/solo'
@@ -389,11 +436,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuizzIdSoloRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/quizz/$id/practice': {
+      id: '/quizz/$id/practice'
+      path: '/quizz/$id/practice'
+      fullPath: '/quizz/$id/practice'
+      preLoaderRoute: typeof QuizzIdPracticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/party/manager/$gameId': {
       id: '/party/manager/$gameId'
       path: '/party/manager/$gameId'
       fullPath: '/party/manager/$gameId'
       preLoaderRoute: typeof PartyManagerGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manager/template/$templateId': {
+      id: '/manager/template/$templateId'
+      path: '/manager/template/$templateId'
+      fullPath: '/manager/template/$templateId'
+      preLoaderRoute: typeof ManagerTemplateTemplateIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manager/quizz/$quizzId': {
@@ -484,8 +545,11 @@ const rootRouteChildren: RootRouteChildren = {
   SubmitIndexRoute: SubmitIndexRoute,
   ThemePreviewIndexRoute: ThemePreviewIndexRoute,
   TrophiesIndexRoute: TrophiesIndexRoute,
+  ManagerTemplateTemplateIdRoute: ManagerTemplateTemplateIdRoute,
   PartyManagerGameIdRoute: PartyManagerGameIdRoute,
+  QuizzIdPracticeRoute: QuizzIdPracticeRoute,
   QuizzIdSoloRoute: QuizzIdSoloRoute,
+  QuizzIdStudyRoute: QuizzIdStudyRoute,
   QuizzIdAssignmentAssignmentIdRoute: QuizzIdAssignmentAssignmentIdRoute,
 }
 export const routeTree = rootRouteImport

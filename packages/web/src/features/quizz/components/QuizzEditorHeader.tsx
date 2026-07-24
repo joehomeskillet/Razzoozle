@@ -10,7 +10,14 @@ import {
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
+import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import {
+  createTemplate,
+  updateTemplate,
+  type TemplateMeta,
+  type TemplateWriteBody,
+} from "@razzoozle/web/lib/templatesApi"
 import { useNavigate } from "@tanstack/react-router"
 import clsx from "clsx"
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react"
@@ -22,7 +29,14 @@ import { Play } from "lucide-react"
 const SUBJECT_INPUT_ID = "quizz-subject-input"
 const SUBJECT_ERROR_ID = "quizz-subject-error"
 
-const QuizzEditorHeader = () => {
+interface QuizzEditorHeaderProps {
+  templateMode?: {
+    templateId: string
+    meta: TemplateMeta
+  }
+}
+
+const QuizzEditorHeader = ({ templateMode }: QuizzEditorHeaderProps) => {
   const {
     quizzId,
     subject,
@@ -39,6 +53,7 @@ const QuizzEditorHeader = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
+  const { role } = useManagerStore()
 
   const [isSaving, setIsSaving] = useState(false)
   const [subjectError, setSubjectError] = useState<string | null>(null)
@@ -95,6 +110,38 @@ const QuizzEditorHeader = () => {
 
     setIsSaving(true)
 
+    // Template mode: use REST API instead of socket
+    if (templateMode) {
+      const body: TemplateWriteBody = {
+        name: templateMode.meta.name,
+        category: templateMode.meta.category,
+        description: templateMode.meta.description,
+        tags: templateMode.meta.tags,
+        questions: trimmedQuestions,
+      }
+
+      updateTemplate(templateMode.templateId, body)
+        .then(() => {
+          markSaved()
+          toast.success(t("manager:templates.saved"))
+          const shouldLeave = leaveAfterSaveRef.current
+          leaveAfterSaveRef.current = false
+          if (shouldLeave) {
+            navigate({ to: "/manager/config" })
+          }
+        })
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : t("manager:templates.saveError")
+          toast.error(message)
+          leaveAfterSaveRef.current = false
+        })
+        .finally(() => {
+          setIsSaving(false)
+        })
+      return
+    }
+
+    // Normal socket mode
     const themeFields = themeId ? { themeId } : {}
 
     if (quizzId) {
@@ -111,7 +158,7 @@ const QuizzEditorHeader = () => {
         ...themeFields,
       })
     }
-  }, [isSaving, subject, questions, themeId, quizzId, socket, setCurrentIndex, t])
+  }, [isSaving, subject, questions, themeId, quizzId, socket, setCurrentIndex, t, templateMode, markSaved, navigate])
 
   // Navigate to the manager target unless a save-then-leave is already pending.
   const handleExit = () => {
@@ -147,6 +194,7 @@ const QuizzEditorHeader = () => {
   }, [markSaved])
 
   useEvent(EVENTS.QUIZZ.SAVE_SUCCESS, () => {
+    if (templateMode) return
     setIsSaving(false)
     // Read the leave intent before onSaveSettled() clears it: only the Save
     // button / leave-dialog set it, so Ctrl+S saves and STAYS in the editor.
@@ -159,6 +207,7 @@ const QuizzEditorHeader = () => {
   })
 
   useEvent(EVENTS.QUIZZ.UPDATE_SUCCESS, (_data) => {
+    if (templateMode) return
     setIsSaving(false)
     const shouldLeave = leaveAfterSaveRef.current
     onSaveSettled()
@@ -169,6 +218,7 @@ const QuizzEditorHeader = () => {
   })
 
   useEvent(EVENTS.QUIZZ.ERROR, (message) => {
+    if (templateMode) return
     setIsSaving(false)
     leaveAfterSaveRef.current = false
     toast.error(t(message))
@@ -210,6 +260,25 @@ const QuizzEditorHeader = () => {
   const handleTestPlay = () => {
     if (quizzId) {
       window.open(`/quizz/${quizzId}/solo`, "_blank", "noopener,noreferrer")
+    }
+  }
+
+  const handleSaveAsTemplate = async () => {
+    if (!quizzId) return
+
+    try {
+      await createTemplate({
+        name: subject,
+        category: "custom",
+        description: "",
+        tags: [],
+        questions: [],
+        fromQuizId: quizzId,
+      })
+      toast.success(t("manager:templates.saved"))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("manager:templates.saveError")
+      toast.error(message)
     }
   }
 
@@ -270,6 +339,16 @@ const QuizzEditorHeader = () => {
             {t("quizz:editor.testPlay", {
               defaultValue: "Probe spielen",
             })}
+          </Button>
+        )}
+        {!templateMode && quizzId && role === "admin" && (
+          <Button
+            size="sm"
+            className="focus-visible:outline-primary min-h-11 bg-gray-100 px-4 font-semibold text-gray-700 hover:bg-gray-200"
+            onClick={handleSaveAsTemplate}
+            data-testid="editor-save-template-btn"
+          >
+            {t("manager:templates.saveAsTemplate")}
           </Button>
         )}
         <Button

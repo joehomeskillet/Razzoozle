@@ -13,6 +13,8 @@ import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answer
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
+import { SlotDropdownBoard, type SlotSelections } from "@razzoozle/web/features/game/components/answers/SlotDropdownBoard"
+import { HotspotImage, type PinPoint } from "@razzoozle/web/features/game/components/answers/HotspotImage"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
@@ -64,6 +66,9 @@ const Answers = ({
     posSet,
     // Wortarten: indices of tokens that are disabled (not scored/clickable).
     disabledTokens,
+    segments,
+    slotOptions,
+    matchItems,
     // Low-latency server-timing anchors (all OPTIONAL — undefined in normal
     // mode). Used ONLY to render the countdown, never for scoring.
     serverNowMs,
@@ -82,6 +87,12 @@ const Answers = ({
     (s) => s.alreadyAnswered && s.gameId === gameId,
   )
   const setSubmittedChunks = useAnswerStore((s) => s.setSubmittedChunks)
+  const setSubmittedText = useAnswerStore((s) => s.setSubmittedText)
+  const setSubmittedNumber = useAnswerStore((s) => s.setSubmittedNumber)
+  const setSubmittedPin = useAnswerStore((s) => s.setSubmittedPin)
+  const setSubmittedSlotIndices = useAnswerStore(
+    (s) => s.setSubmittedSlotIndices,
+  )
 
   // Low-latency mode is active for THIS question when the master flag is on and
   // the payload actually carried a server deadline to count down from.
@@ -95,6 +106,13 @@ const Answers = ({
   const isSequencing = type === "sequencing"
   const isMathematik = type === "mathematik"
   const isWortarten = type === "wortarten"
+  const isFillBlank = type === "fill-blank" && !!slotOptions?.length
+  const isMatching = type === "matching" && !!matchItems?.length
+  const isDropPin = type === "drop-pin" && !!media?.url
+  // choice / boolean / poll share the same tile grid; poll intentionally has no
+  // correct-answer reveal (server never marks a right option).
+  const isChoiceLike =
+    type === "choice" || type === "boolean" || type === "poll"
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -127,6 +145,8 @@ const Answers = ({
   >([])
   // Wortarten: which token's POS picker is currently open (one at a time).
   const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
+  const [slotSelections, setSlotSelections] = useState<SlotSelections>([])
+  const [pinPoint, setPinPoint] = useState<PinPoint | null>(null)
   const [bankChips, setBankChips] = useState<
     Array<{ text: string; originalIndex: number; id: string }>
   >([])
@@ -224,6 +244,34 @@ const Answers = ({
     setSubmittedChunks(undefined)
   }, [isWortarten, tokens, setSubmittedChunks])
 
+  useEffect(() => {
+    if (isFillBlank && slotOptions) {
+      setSlotSelections(new Array(slotOptions.length).fill(null))
+      return
+    }
+    if (isMatching && matchItems) {
+      setSlotSelections(new Array(matchItems.length).fill(null))
+    }
+  }, [isFillBlank, isMatching, slotOptions, matchItems])
+
+  // Fresh question mount (Answers remounts per SELECT_ANSWER): clear every
+  // reveal field so a previous question's submission can't leak into this
+  // question's SHOW_RESULT. `alreadyAnswered`/`gameId` stay untouched — they
+  // carry the reconnect/resume signal, not a reveal value.
+  useEffect(() => {
+    setSubmittedChunks(undefined)
+    setSubmittedText(undefined)
+    setSubmittedNumber(undefined)
+    setSubmittedPin(undefined)
+    setSubmittedSlotIndices(undefined)
+  }, [
+    setSubmittedChunks,
+    setSubmittedText,
+    setSubmittedNumber,
+    setSubmittedPin,
+    setSubmittedSlotIndices,
+  ])
+
   // Clear any pending ack timer on unmount so it can't fire after teardown.
   useEffect(
     () => () => {
@@ -291,6 +339,7 @@ const Answers = ({
     setSubmitted(true)
     sfxPop()
     hapticTap()
+    setSubmittedNumber(sliderValue)
 
     armAckPending(clientMessageId)
   }
@@ -343,6 +392,7 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+    setSubmittedText(trimmed)
 
     if (lowLatency) {
       armAckPending(clientMessageId)
@@ -369,6 +419,10 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+
+    // Persist for the client reveal; guard against non-numeric input (NaN).
+    const parsedAnswer = Number(mathematikAnswer.trim())
+    setSubmittedNumber(Number.isFinite(parsedAnswer) ? parsedAnswer : undefined)
 
     armAckPending(clientMessageId)
   }
@@ -443,6 +497,61 @@ const Answers = ({
 
     setSubmittedChunks(answerText.split(" "))
 
+    armAckPending(clientMessageId)
+  }
+
+
+  const submitDropPin = () => {
+    if (!player || !gameId || submitted || !pinPoint) return
+    const clientMessageId = lowLatency ? uuid() : undefined
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: JSON.stringify(pinPoint),
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    setSubmittedPin(pinPoint)
+    armAckPending(clientMessageId)
+  }
+
+  const submitSlotAnswer = () => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+    if (slotSelections.some((v) => v === null || v === undefined)) {
+      return
+    }
+    const clientMessageId = lowLatency ? uuid() : undefined
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    const labels = slotSelections.map((sel, i) => {
+      const opts = isFillBlank
+        ? (slotOptions?.[i] ?? [])
+        : (matchItems?.[i]?.options ?? [])
+      return sel != null ? (opts[sel] ?? String(sel)) : ""
+    })
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: JSON.stringify(slotSelections),
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    setSubmittedChunks(labels)
+    // Guard above proves every slot is filled — persist the raw option indices
+    // for the fill-blank/matching client reveal.
+    setSubmittedSlotIndices(
+      slotSelections.filter((sel): sel is number => sel != null),
+    )
     armAckPending(clientMessageId)
   }
 
@@ -688,6 +797,29 @@ const Answers = ({
           disabled={submitted}
           testIdPrefix=""
         />
+      ) : isDropPin ? (
+        <HotspotImage
+          value={pinPoint}
+          onChange={setPinPoint}
+          onSubmit={submitDropPin}
+          disabled={submitted}
+          imageUrl={media!.url}
+        />
+      ) : isFillBlank || isMatching ? (
+        <SlotDropdownBoard
+          value={slotSelections}
+          onChange={setSlotSelections}
+          onSubmit={submitSlotAnswer}
+          disabled={submitted}
+          slotOptions={
+            isFillBlank
+              ? (slotOptions ?? [])
+              : (matchItems ?? []).map((m) => m.options)
+          }
+          labels={isMatching ? (matchItems ?? []).map((m) => m.label) : undefined}
+          segments={isFillBlank ? segments : undefined}
+          i18nPrefix={isMatching ? "matching" : "fillBlank"}
+        />
       ) : isSequencing ? (
         <SequencingBoard
           value={{
@@ -728,7 +860,7 @@ const Answers = ({
           unit={unit}
           testIdPrefix=""
         />
-      ) : (
+      ) : isChoiceLike ? (
         <ChoiceGrid
           value={selectedKey}
           onChange={(key) => {
@@ -740,7 +872,7 @@ const Answers = ({
           answers={answers}
           displayOrder={displayOrder}
         />
-      )}
+      ) : null}
     </QuestionStage>
   )
 }

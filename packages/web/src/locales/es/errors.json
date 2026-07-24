@@ -100,7 +100,14 @@
     "questionEmpty": "La pregunta no puede estar vacía",
     "subjectEmpty": "El tema no puede estar vacío",
     "tooFewAnswers": "Una pregunta debe tener al menos 2 respuestas",
-    "tooManyAnswers": "Una pregunta no puede tener más de 4 respuestas"
+    "tooManyAnswers": "Una pregunta no puede tener más de 4 respuestas",
+    "fillBlankMinSlots": "Se requiere al menos un hueco",
+    "fillBlankSegmentCount": "Los segmentos de texto deben ser huecos + 1",
+    "matchingMinItems": "Se requiere al menos un par",
+    "slotCorrectIndex": "El índice de la opción correcta no es válido",
+    "dropPinMediaRequired": "Imagen requerida",
+    "dropPinMinHotspots": "Se requiere al menos una zona",
+    "dropPinHotspotBounds": "La zona está fuera de la imagen"
   },
   "route": {
     "back": "Volver al inicio",

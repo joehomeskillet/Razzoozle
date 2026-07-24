@@ -90,7 +90,8 @@
     "anonymizedPlayer": "Giocatore {{index}}",
     "stats": {
       "correctAnswers": "Risposte corrette",
-      "playersAnswered": "Giocatori che hanno risposto"
+      "playersAnswered": "Giocatori che hanno risposto",
+      "avgResponseTime": "Tempo medio"
     },
     "table": {
       "answered": "Risposto",
@@ -1045,5 +1046,43 @@
     "allSelected": "Tutte le {{count}} voci selezionate",
     "allFilteredSelected": "Tutte le {{count}} voci filtrate selezionate",
     "selectedOfTotal": "{{selected}} di {{total}} selezionati"
+  },
+  "templates": {
+    "title": "Modelli",
+    "use": "Usa",
+    "open": "Da Modello",
+    "dialogTitle": "Scegli Modello",
+    "searchPlaceholder": "Cerca modelli",
+    "allCategories": "Tutti",
+    "questionCount_one": "{{count}} domanda",
+    "questionCount_other": "{{count}} domande",
+    "empty": {
+      "title": "Nessun modello ancora",
+      "body": "Crea un modello per avviare quiz piu velocemente."
+    },
+    "noMatches": "Nessun modello corrisponde alla tua ricerca.",
+    "loading": "Caricamento modelli",
+    "loadError": "Impossibile caricare i modelli.",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "create": "Nuovo Modello",
+    "saveAsTemplate": "Salva come Modello",
+    "form": {
+      "name": "Nome",
+      "category": "Categoria",
+      "description": "Descrizione",
+      "tags": "Etichette",
+      "tagsHint": "Separate da virgole"
+    },
+    "deleteConfirm": {
+      "title": "Eliminare il modello?",
+      "body": "Il modello verra eliminato permanentemente. Questa azione non puo essere annullata.",
+      "confirm": "Elimina"
+    },
+    "saved": "Modello salvato",
+    "deleted": "Modello eliminato",
+    "createError": "Impossibile creare il modello.",
+    "saveError": "Impossibile salvare il modello.",
+    "deleteError": "Impossibile eliminare il modello."
   }
 }

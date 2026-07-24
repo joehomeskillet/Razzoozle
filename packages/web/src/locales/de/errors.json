@@ -105,7 +105,14 @@
     "questionEmpty": "Die Frage darf nicht leer sein",
     "subjectEmpty": "Das Thema darf nicht leer sein",
     "tooFewAnswers": "Eine Frage muss mindestens 2 Antworten haben",
-    "tooManyAnswers": "Eine Frage darf nicht mehr als 4 Antworten haben"
+    "tooManyAnswers": "Eine Frage darf nicht mehr als 4 Antworten haben",
+    "fillBlankMinSlots": "Mindestens eine Lücke erforderlich",
+    "fillBlankSegmentCount": "Textsegmente müssen Lücken+1 entsprechen",
+    "matchingMinItems": "Mindestens ein Paar erforderlich",
+    "slotCorrectIndex": "Richtige Option ist ungültig",
+    "dropPinMediaRequired": "Bild erforderlich",
+    "dropPinMinHotspots": "Mindestens eine Zone",
+    "dropPinHotspotBounds": "Zone liegt außerhalb des Bildes"
   },
   "route": {
     "back": "Zurück zur Startseite",

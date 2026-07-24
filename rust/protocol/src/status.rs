@@ -197,6 +197,27 @@ pub struct SelectAnswerData {
     #[serde(skip_serializing_if = "Option::is_none", rename = "disabledTokens")]
     #[ts(optional)]
     pub disabled_tokens: Option<Vec<i32>>,
+    /// Fill-blank: text segments around slots (no solutions).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub segments: Option<Vec<String>>,
+    /// Fill-blank: per-slot option lists only (correctIndex stripped — anti-cheat).
+    #[serde(skip_serializing_if = "Option::is_none", rename = "slotOptions")]
+    #[ts(optional)]
+    pub slot_options: Option<Vec<Vec<String>>>,
+    /// Matching: left labels + option lists only (correctIndex stripped).
+    #[serde(skip_serializing_if = "Option::is_none", rename = "matchItems")]
+    #[ts(optional)]
+    pub match_items: Option<Vec<MatchItemPlay>>,
+}
+
+/// Matching play-time row (no correctIndex — anti-cheat).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchItemPlay {
+    pub label: String,
+    pub options: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -239,6 +260,15 @@ pub struct ShowResultData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_options: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_matches: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_hotspot_index: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_order: Option<Vec<String>>,
@@ -324,6 +354,15 @@ pub struct ShowResponsesData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_options: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_matches: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_hotspot_index: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_order: Option<Vec<String>>,
@@ -463,6 +502,84 @@ pub enum GameStatus {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    fn show_result_data(
+        correct_options: Option<Vec<String>>,
+        correct_matches: Option<Vec<String>>,
+        correct_hotspot_index: Option<i32>,
+    ) -> ShowResultData {
+        ShowResultData {
+            correct: true,
+            message: "Correct".to_string(),
+            points: 100,
+            my_points: 500,
+            rank: 1,
+            ahead_of_me: None,
+            streak: None,
+            streak_bonus: None,
+            bonus: None,
+            first_correct: None,
+            poll: None,
+            achievements: None,
+            bonus_points: None,
+            player_count: None,
+            correct_answer: None,
+            correct_chunks: None,
+            correct_options,
+            correct_matches,
+            correct_hotspot_index,
+            correct_order: None,
+            items: None,
+            correct_token_pos: None,
+            auto_advance_ms: None,
+            round_recap: None,
+            scoring_mode: None,
+        }
+    }
+
+    #[test]
+    fn show_result_serializes_correct_options() {
+        let value = serde_json::to_value(show_result_data(
+            Some(vec!["Alpha".to_string(), "Beta".to_string()]),
+            None,
+            None,
+        ))
+        .unwrap();
+
+        assert_eq!(value.get("correctOptions"), Some(&json!(["Alpha", "Beta"])));
+    }
+
+    #[test]
+    fn show_result_omits_absent_additive_correctness_fields() {
+        let value = serde_json::to_value(show_result_data(None, None, None)).unwrap();
+
+        assert!(value.get("correctOptions").is_none());
+        assert!(value.get("correctMatches").is_none());
+        assert!(value.get("correctHotspotIndex").is_none());
+    }
+
+    #[test]
+    fn show_responses_deserializes_correct_matches_and_hotspot_index() {
+        let value = json!({
+            "question": "Match these",
+            "responses": {},
+            "solutions": [],
+            "answers": [],
+            "cooldown": 5,
+            "time": 20,
+            "correctMatches": ["A=1", "B=2"],
+            "correctHotspotIndex": 3
+        });
+
+        let data: ShowResponsesData = serde_json::from_value(value).unwrap();
+
+        assert_eq!(
+            data.correct_matches,
+            Some(vec!["A=1".to_string(), "B=2".to_string()])
+        );
+        assert_eq!(data.correct_hotspot_index, Some(3));
+        assert_eq!(data.correct_options, None);
+    }
 
     #[test]
     fn test_show_start_roundtrip() {

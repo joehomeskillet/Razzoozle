@@ -55,7 +55,7 @@ const NavItem = ({
           ? "w-full px-3 py-2.5 text-left"
           : "shrink-0 flex-col justify-center px-3 py-2 sm:flex-row",
         active
-          ? "bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+          ? "bg-accent-tint text-accent-contrast"
           : "text-[var(--ink-medium)] hover:bg-[var(--surface-3)] hover:text-[var(--ink)]",
         className,
       )}
@@ -80,7 +80,7 @@ const NavItem = ({
         className={clsx(
           "size-5 shrink-0 transition-colors",
           active
-            ? "text-[var(--accent-contrast)]"
+            ? "text-accent-contrast"
             : "text-[var(--ink-faint)] group-hover:text-[var(--ink-medium)]",
         )}
         strokeWidth={active ? 2.6 : 2}

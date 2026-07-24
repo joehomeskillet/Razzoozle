@@ -81,7 +81,13 @@
     "vokabelliste": "Vocabulary List",
     "vokabellisteDesc": "Bulk editor for word pairs → emits multiple text-input questions",
     "sequencing": "Sequencing",
-    "sequencingDesc": "Players arrange items in the correct order"
+    "sequencingDesc": "Players arrange items in the correct order",
+    "fillBlank": "Fill in the blank",
+    "fillBlankDesc": "Complete a sentence with dropdown blanks",
+    "matching": "Matching",
+    "matchingDesc": "Match items with dropdowns",
+    "dropPin": "Drop pin",
+    "dropPinDesc": "Place a pin on the image zone"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",
@@ -170,5 +176,29 @@
     "removeItem": "Remove item",
     "preview": "Players will order these items",
     "minItemsRequired": "At least 2 items required"
+  },
+  "fillBlank": {
+    "addSlot": "Add blank",
+    "placeholder": "Text or blank",
+    "optionPlaceholder": "Option",
+    "removeSlot": "Remove blank",
+    "optionsLabel": "Blank options",
+    "correctOption": "Correct option",
+    "minSlotsRequired": "At least 1 blank required"
+  },
+  "matching": {
+    "addItem": "Add pair",
+    "labelPlaceholder": "Left label",
+    "optionPlaceholder": "Right option",
+    "removeItem": "Remove pair",
+    "optionsLabel": "Options",
+    "correctOption": "Correct option",
+    "minItemsRequired": "At least 1 pair required"
+  },
+  "dropPin": {
+    "prompt": "Click the correct spot on the image",
+    "addZone": "Add zone",
+    "removeZone": "Remove zone",
+    "minZonesRequired": "At least one zone required"
   }
 }

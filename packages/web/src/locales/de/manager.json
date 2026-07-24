@@ -101,7 +101,8 @@
     "anonymizedPlayer": "Spieler {{index}}",
     "stats": {
       "correctAnswers": "Richtige Antworten",
-      "playersAnswered": "Spieler haben geantwortet"
+      "playersAnswered": "Spieler haben geantwortet",
+      "avgResponseTime": "Ø Antwortzeit"
     },
     "table": {
       "answered": "Beantwortet",
@@ -1045,5 +1046,43 @@
     "allSelected": "Alle {{count}} Einträge ausgewählt",
     "allFilteredSelected": "Alle {{count}} gefilterten Einträge ausgewählt",
     "selectedOfTotal": "{{selected}} von {{total}} ausgewählt"
+  },
+  "templates": {
+    "title": "Vorlagen",
+    "use": "Verwenden",
+    "open": "Aus Vorlage",
+    "dialogTitle": "Vorlage wählen",
+    "searchPlaceholder": "Vorlage suchen",
+    "allCategories": "Alle",
+    "questionCount_one": "{{count}} Frage",
+    "questionCount_other": "{{count}} Fragen",
+    "empty": {
+      "title": "Noch keine Vorlagen",
+      "body": "Lege eine Vorlage an, um Quizze schneller zu starten."
+    },
+    "noMatches": "Keine Vorlage passt zur Suche.",
+    "loading": "Vorlagen werden geladen",
+    "loadError": "Vorlagen konnten nicht geladen werden.",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "create": "Neue Vorlage",
+    "saveAsTemplate": "Als Vorlage speichern",
+    "form": {
+      "name": "Name",
+      "category": "Kategorie",
+      "description": "Beschreibung",
+      "tags": "Schlagwörter",
+      "tagsHint": "Kommasepariert"
+    },
+    "deleteConfirm": {
+      "title": "Vorlage löschen?",
+      "body": "Vorlage wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.",
+      "confirm": "Löschen"
+    },
+    "saved": "Vorlage gespeichert",
+    "deleted": "Vorlage gelöscht",
+    "createError": "Vorlage konnte nicht erstellt werden.",
+    "saveError": "Vorlage konnte nicht gespeichert werden.",
+    "deleteError": "Vorlage konnte nicht gelöscht werden."
   }
 }

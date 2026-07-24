@@ -71,6 +71,12 @@ export interface CommonStatusDataMap {
     posSet?: string[]
     // Wortarten: indices of tokens that are disabled (not scored/clickable).
     disabledTokens?: number[]
+    // Fill-blank: text segments around slots (len === slotOptions.length + 1).
+    segments?: string[]
+    // Fill-blank: option lists only (correctIndex stripped — anti-cheat).
+    slotOptions?: string[][]
+    // Matching: label + options only (correctIndex stripped).
+    matchItems?: Array<{ label: string; options: string[] }>
     // Low-latency mode: server-authoritative timing anchors. All OPTIONAL —
     // absent in normal mode and ignored by old clients. Client uses these only
     // to drive the countdown/UI (never for scoring — scoring is server-side).
@@ -105,6 +111,12 @@ export interface CommonStatusDataMap {
     correctAnswer?: string
     // Sentence-builder: authored correct order, revealed after the round.
     correctChunks?: string[]
+    // Fill-blank: correct option label per slot (additive; old clients ignore).
+    correctOptions?: string[]
+    // Matching: correct option label per left item (additive).
+    correctMatches?: string[]
+    // Drop-pin: primary correct hotspot index (additive).
+    correctHotspotIndex?: number
     // Sequencing: correct order and items, revealed after the round.
     correctOrder?: string[]
     items?: SequencingItem[]
@@ -176,6 +188,12 @@ interface ManagerExtraStatus {
     // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
     // excluded. OPTIONAL + additive; old clients ignore it.
     correctTokenPos?: { token: string; pos: string }[]
+    // Fill-blank: correct option label per slot (additive; old clients ignore).
+    correctOptions?: string[]
+    // Matching: correct option label per left item (additive).
+    correctMatches?: string[]
+    // Drop-pin: primary correct hotspot index (additive).
+    correctHotspotIndex?: number
     // Per-round recap awards (same as players see on SHOW_RESULT) so the
     // manager can display the round highlights during answer statistics.
     // OPTIONAL + additive.

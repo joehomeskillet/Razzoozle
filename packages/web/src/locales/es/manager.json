@@ -111,7 +111,8 @@
     },
     "stats": {
       "correctAnswers": "Respuestas correctas",
-      "playersAnswered": "Jugadores que respondieron"
+      "playersAnswered": "Jugadores que respondieron",
+      "avgResponseTime": "Tiempo medio"
     },
     "table": {
       "answered": "Respondido",
@@ -1045,5 +1046,43 @@
     "allSelected": "Todas las {{count}} entradas seleccionadas",
     "allFilteredSelected": "Todas las {{count}} entradas filtradas seleccionadas",
     "selectedOfTotal": "{{selected}} de {{total}} seleccionados"
+  },
+  "templates": {
+    "title": "Plantillas",
+    "use": "Usar",
+    "open": "Desde Plantilla",
+    "dialogTitle": "Seleccionar Plantilla",
+    "searchPlaceholder": "Buscar plantillas",
+    "allCategories": "Todas",
+    "questionCount_one": "{{count}} pregunta",
+    "questionCount_other": "{{count}} preguntas",
+    "empty": {
+      "title": "Sin plantillas todavia",
+      "body": "Crea una plantilla para iniciar cuestionarios mas rapido."
+    },
+    "noMatches": "Ninguna plantilla coincide con tu busqueda.",
+    "loading": "Cargando plantillas",
+    "loadError": "No se pudieron cargar las plantillas.",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Nueva Plantilla",
+    "saveAsTemplate": "Guardar como Plantilla",
+    "form": {
+      "name": "Nombre",
+      "category": "Categoria",
+      "description": "Descripcion",
+      "tags": "Etiquetas",
+      "tagsHint": "Separadas por comas"
+    },
+    "deleteConfirm": {
+      "title": "Eliminar plantilla?",
+      "body": "La plantilla se eliminara permanentemente. Esto no se puede deshacer.",
+      "confirm": "Eliminar"
+    },
+    "saved": "Plantilla guardada",
+    "deleted": "Plantilla eliminada",
+    "createError": "No se pudo crear la plantilla.",
+    "saveError": "No se pudo guardar la plantilla.",
+    "deleteError": "No se pudo eliminar la plantilla."
   }
 }

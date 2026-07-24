@@ -179,7 +179,7 @@ const ConfigMedia = () => {
       {dragActive && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-theme)] bg-[var(--accent-tint)]/90 text-[var(--accent-contrast)]"
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-theme)] bg-accent-tint/90 text-accent-contrast"
         >
           <UploadCloud className="size-8" aria-hidden />
           <span className="text-sm font-semibold">

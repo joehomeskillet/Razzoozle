@@ -36,7 +36,7 @@ const SectionCard = ({
   >
     <div className="flex items-start gap-2.5">
       <span
-        className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+        className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-tint text-accent-contrast"
         aria-hidden
       >
         {icon}

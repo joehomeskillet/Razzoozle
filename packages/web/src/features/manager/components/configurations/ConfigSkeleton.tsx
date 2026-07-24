@@ -391,7 +391,7 @@ const ConfigSkeleton = () => {
             {/* Prominent red warning — stored XSS by design (contract §1). */}
             <div
               role="alert"
-              className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-[var(--status-offline-bg)] p-3 text-sm font-medium text-[var(--status-offline-text)]"
+              className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-status-offline-bg p-3 text-sm font-medium text-status-offline-text"
             >
               <AlertTriangle
                 className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"

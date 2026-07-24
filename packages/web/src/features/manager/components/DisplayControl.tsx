@@ -95,7 +95,7 @@ const DisplayControl = () => {
         // host can see the beamer is bound at a glance; otherwise it reads as a
         // plain secondary control in the cluster.
         className={clsx("min-h-11", {
-          "border-[var(--status-online-bg)] bg-[var(--status-online-bg)] text-[var(--status-online-text)] hover:opacity-90 active:opacity-80":
+          "border-[var(--status-online-bg)] bg-status-online-bg text-status-online-text hover:opacity-90 active:opacity-80":
             paired,
         })}
       >
@@ -147,7 +147,7 @@ const DisplayControl = () => {
             </Button>
           </div>
           {paired && (
-            <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[var(--status-online-text)]">
+            <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-status-online-text">
               <MonitorCheck className="size-4" />
               {t("manager:satellite.paired")}
             </p>

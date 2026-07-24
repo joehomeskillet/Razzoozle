@@ -118,6 +118,10 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
         Some(QuestionType::TypeAnswer) => (None, None, Some(pick_type_answer(question))),
         Some(QuestionType::SentenceBuilder) => (None, None, Some(pick_sentence_builder(question))),
         Some(QuestionType::Sequencing) => (None, None, Some(pick_sequencing(question))),
+        Some(QuestionType::FillBlank) | Some(QuestionType::Matching) => {
+            (None, None, Some(pick_slots(question)))
+        }
+        Some(QuestionType::DropPin) => (None, None, Some(pick_drop_pin(question))),
         _ => (Some(pick_choice(question)), None, None),
     }
 }
@@ -254,6 +258,61 @@ fn pick_sequencing(question: &Question) -> String {
     serde_json::to_string(&order).unwrap_or_default()
 }
 
+/// Shared slot picker for fill-blank + matching (JSON selectedIndices).
+fn pick_slots(question: &Question) -> String {
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+    let indices: Vec<i32> = if let Some(slots) = &question.slots {
+        slots
+            .iter()
+            .map(|s| {
+                if want_correct || s.options.is_empty() {
+                    s.correct_index
+                } else {
+                    let n = s.options.len() as i32;
+                    let wrong = (0..n).filter(|&i| i != s.correct_index).collect::<Vec<_>>();
+                    if wrong.is_empty() {
+                        s.correct_index
+                    } else {
+                        wrong[rand::thread_rng().gen_range(0..wrong.len())]
+                    }
+                }
+            })
+            .collect()
+    } else if let Some(items) = &question.left_items {
+        items
+            .iter()
+            .map(|s| {
+                if want_correct || s.options.is_empty() {
+                    s.correct_index
+                } else {
+                    let n = s.options.len() as i32;
+                    let wrong = (0..n).filter(|&i| i != s.correct_index).collect::<Vec<_>>();
+                    if wrong.is_empty() {
+                        s.correct_index
+                    } else {
+                        wrong[rand::thread_rng().gen_range(0..wrong.len())]
+                    }
+                }
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+    serde_json::to_string(&indices).unwrap_or_else(|_| "[]".into())
+}
+
+fn pick_drop_pin(question: &Question) -> String {
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+    if want_correct {
+        if let Some(hs) = question.hotspots.as_ref().and_then(|h| h.first()) {
+            let x = hs.x + hs.w * 0.5;
+            let y = hs.y + hs.h * 0.5;
+            return serde_json::json!({"x": x, "y": y}).to_string();
+        }
+    }
+    serde_json::json!({"x": rand::thread_rng().gen::<f64>(), "y": rand::thread_rng().gen::<f64>()}).to_string()
+}
+
 async fn submit_bot_answer(
     game_ref: Arc<Mutex<Game>>,
     io: SocketIo,
@@ -322,5 +381,87 @@ impl Default for BotManager {
 impl std::fmt::Debug for BotManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BotManager").finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use razzoozle_protocol::quizz::{Hotspot, Slot};
+
+    fn test_question(q_type: QuestionType) -> Question {
+        Question {
+            question: "Test?".to_string(),
+            r#type: Some(q_type),
+            media: None,
+            answers: None,
+            solutions: None,
+            min: None,
+            max: None,
+            correct: None,
+            step: None,
+            unit: None,
+            chunks: None,
+            cooldown: 1,
+            time: 10,
+            practice: None,
+            bonus: None,
+            submitted_by: None,
+            accepted_answers: None,
+            match_mode: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+            items: None,
+            correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
+            hotspots: None,
+        }
+    }
+
+    #[test]
+    fn pick_slots_serializes_one_selection_per_slot() {
+        let mut question = test_question(QuestionType::FillBlank);
+        question.slots = Some(vec![
+            Slot {
+                options: vec!["only".into()],
+                correct_index: 0,
+            },
+            Slot {
+                options: vec!["also-only".into()],
+                correct_index: 0,
+            },
+        ]);
+
+        let selected: Vec<i32> = serde_json::from_str(&pick_slots(&question)).unwrap();
+
+        assert_eq!(selected, vec![0, 0]);
+    }
+
+    #[test]
+    fn pick_answer_routes_drop_pin_to_json_coordinates() {
+        let mut question = test_question(QuestionType::DropPin);
+        question.hotspots = Some(vec![Hotspot {
+            x: 0.2,
+            y: 0.3,
+            w: 0.2,
+            h: 0.2,
+        }]);
+
+        let (answer_key, answer_keys, answer_text) = pick_answer(&question);
+        let answer: serde_json::Value =
+            serde_json::from_str(answer_text.as_deref().unwrap()).unwrap();
+        let x = answer["x"].as_f64().unwrap();
+        let y = answer["y"].as_f64().unwrap();
+
+        assert!(answer_key.is_none());
+        assert!(answer_keys.is_none());
+        assert!((0.0..=1.0).contains(&x));
+        assert!((0.0..=1.0).contains(&y));
     }
 }
