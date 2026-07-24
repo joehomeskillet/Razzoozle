@@ -254,7 +254,7 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
       })
     } else if (next === "vokabelliste") {
       updateQuestion(currentIndex, {
-        type: "vokabelliste" as any,
+        type: "vokabelliste" as QuestionType,
         question: "",
         answers: undefined,
         solutions: undefined,
