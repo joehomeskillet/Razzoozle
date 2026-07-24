@@ -436,6 +436,7 @@ const Result = ({
       ) : (
         // W1-D FIX 1: the question is over, so reveal the correct answer on the
         // wrong-answer (Too bad) screen. Never shown for poll or correct.
+        // Covers choice, boolean, multiple-select (no per-type reveal branch).
         !poll &&
         !correct &&
         correctAnswer && (
