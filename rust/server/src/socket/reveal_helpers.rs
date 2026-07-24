@@ -115,6 +115,57 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
     }
 }
 
+/// Return per-slot correct option labels for fill-blank reveal payloads.
+pub fn format_correct_options(question: &Question) -> Option<Vec<String>> {
+    match question.r#type.as_ref() {
+        Some(QuestionType::FillBlank) => question.slots.as_ref().map(|slots| {
+            slots
+                .iter()
+                .map(|slot| {
+                    slot.options
+                        .get(slot.correct_index as usize)
+                        .cloned()
+                        .unwrap_or_default()
+                })
+                .collect()
+        }),
+        _ => None,
+    }
+}
+
+/// Return per-left-item correct option labels for matching reveal payloads.
+pub fn format_correct_matches(question: &Question) -> Option<Vec<String>> {
+    match question.r#type.as_ref() {
+        Some(QuestionType::Matching) => question.left_items.as_ref().map(|items| {
+            items
+                .iter()
+                .map(|item| {
+                    item.options
+                        .get(item.correct_index as usize)
+                        .cloned()
+                        .unwrap_or_default()
+                })
+                .collect()
+        }),
+        _ => None,
+    }
+}
+
+/// Return the primary hotspot index when a drop-pin question has hit zones.
+pub fn format_correct_hotspot_index(question: &Question) -> Option<i32> {
+    match question.r#type.as_ref() {
+        Some(QuestionType::DropPin)
+            if question
+                .hotspots
+                .as_ref()
+                .is_some_and(|hotspots| !hotspots.is_empty()) =>
+        {
+            Some(0)
+        }
+        _ => None,
+    }
+}
+
 /// Format per-token POS pairs for wortarten reveal (correctTokenPos field).
 /// Returns None for non-wortarten questions. Disabled token positions are
 /// excluded from the result (disabled tokens do not get a POS pair).
@@ -326,9 +377,9 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
-        correct_options: None,
-        correct_matches: None,
-        correct_hotspot_index: None,
+        correct_options: format_correct_options(&question),
+        correct_matches: format_correct_matches(&question),
+        correct_hotspot_index: format_correct_hotspot_index(&question),
         correct_order: if is_sequencing {
             question.correct_order.clone()
         } else {
@@ -380,6 +431,9 @@ pub async fn perform_reveal_and_broadcast(
 
             // STEP 1: One-time extraction of constant fields (same across all players)
             let question = game.engine.current_question().clone();
+            let correct_options = format_correct_options(&question);
+            let correct_matches = format_correct_matches(&question);
+            let correct_hotspot_index = format_correct_hotspot_index(&question);
             let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
             let bonus_flag = question.bonus.unwrap_or(false);
             let is_practice = question.practice == Some(true);
@@ -416,29 +470,9 @@ pub async fn perform_reveal_and_broadcast(
                 })
             } else if matches!(question.r#type.as_ref(), Some(QuestionType::FillBlank)) {
                 // Per-slot correct option labels (reuse correctChunks chip UI).
-                question.slots.as_ref().map(|slots| {
-                    slots
-                        .iter()
-                        .map(|s| {
-                            s.options
-                                .get(s.correct_index as usize)
-                                .cloned()
-                                .unwrap_or_default()
-                        })
-                        .collect()
-                })
+                correct_options.clone()
             } else if matches!(question.r#type.as_ref(), Some(QuestionType::Matching)) {
-                question.left_items.as_ref().map(|items| {
-                    items
-                        .iter()
-                        .map(|i| {
-                            i.options
-                                .get(i.correct_index as usize)
-                                .cloned()
-                                .unwrap_or_default()
-                        })
-                        .collect()
-                })
+                correct_matches.clone()
             } else {
                 None
             };
@@ -548,6 +582,9 @@ pub async fn perform_reveal_and_broadcast(
                     // STEP 1 parity fields
                     show_result_data.correct_answer = correct_answer.clone();
                     show_result_data.correct_chunks = correct_chunks.clone();
+                    show_result_data.correct_options = correct_options.clone();
+                    show_result_data.correct_matches = correct_matches.clone();
+                    show_result_data.correct_hotspot_index = correct_hotspot_index;
                     show_result_data.correct_order = correct_order.clone();
                     show_result_data.items = items.clone();
                     show_result_data.correct_token_pos = correct_token_pos.clone();
@@ -722,6 +759,59 @@ mod tests {
         q.r#type = Some(QuestionType::Poll);
         let result = format_correct_answer(&q);
         assert_eq!(result, None, "poll returns None");
+    }
+
+    #[test]
+    fn format_correct_options_returns_fill_blank_labels() {
+        let q: Question = serde_json::from_str(
+            r#"{"question":"Complete","type":"fill-blank","slots":[{"options":["is","are"],"correctIndex":0},{"options":["blue","green"],"correctIndex":1}],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+
+        assert_eq!(
+            format_correct_options(&q),
+            Some(vec!["is".to_string(), "green".to_string()])
+        );
+    }
+
+    #[test]
+    fn format_correct_matches_returns_matching_labels() {
+        let q: Question = serde_json::from_str(
+            r#"{"question":"Match","type":"matching","leftItems":[{"label":"France","options":["Paris","Lyon"],"correctIndex":0},{"label":"Italy","options":["Milan","Rome"],"correctIndex":1}],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+
+        assert_eq!(
+            format_correct_matches(&q),
+            Some(vec!["Paris".to_string(), "Rome".to_string()])
+        );
+    }
+
+    #[test]
+    fn format_correct_hotspot_index_tracks_hotspot_presence() {
+        let with_hotspot: Question = serde_json::from_str(
+            r#"{"question":"Pin","type":"drop-pin","hotspots":[{"x":0.1,"y":0.2,"w":0.3,"h":0.4}],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+        let without_hotspots: Question = serde_json::from_str(
+            r#"{"question":"Pin","type":"drop-pin","hotspots":[],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+
+        assert_eq!(format_correct_hotspot_index(&with_hotspot), Some(0));
+        assert_eq!(format_correct_hotspot_index(&without_hotspots), None);
+    }
+
+    #[test]
+    fn correctness_helpers_return_none_for_non_target_type() {
+        let q: Question = serde_json::from_str(
+            r#"{"question":"Pick","type":"choice","answers":["A","B"],"solutions":[0],"time":30,"cooldown":5}"#,
+        )
+        .expect("question json");
+
+        assert_eq!(format_correct_options(&q), None);
+        assert_eq!(format_correct_matches(&q), None);
+        assert_eq!(format_correct_hotspot_index(&q), None);
     }
 
     /// WP-4b: format_correct_token_pos test
