@@ -33,6 +33,8 @@ impl RoundResult {
             player_count: Some(total_players),
             correct_answer: None,
             correct_chunks: None,
+            correct_order: None,
+            items: None,
             correct_token_pos: None,
             auto_advance_ms: None,
             round_recap: None,
