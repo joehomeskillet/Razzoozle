@@ -21,4 +21,8 @@ slots?: Array<Slot>,
 /**
  * Matching: left labels with dropdown options.
  */
-leftItems?: Array<MatchingItem>, }, hotspots?: Array<Hotspot>, };
+leftItems?: Array<MatchingItem>, 
+/**
+ * Drop-pin: relative [0–1] hit zones on media.
+ */
+hotspots?: Array<Hotspot>, };
