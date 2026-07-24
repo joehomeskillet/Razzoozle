@@ -1049,6 +1049,39 @@
   },
   "templates": {
     "title": "模板",
-    "use": "使用"
+    "use": "使用",
+    "open": "从模板创建",
+    "dialogTitle": "选择模板",
+    "searchPlaceholder": "搜索模板",
+    "allCategories": "全部",
+    "questionCount_other": "{{count}} 个问题",
+    "empty": {
+      "title": "还没有模板",
+      "body": "创建一个模板以便更快地开始测验。"
+    },
+    "noMatches": "没有模板与您的搜索相匹配。",
+    "loading": "正在加载模板",
+    "loadError": "无法加载模板。",
+    "edit": "编辑",
+    "delete": "删除",
+    "create": "新模板",
+    "saveAsTemplate": "保存为模板",
+    "form": {
+      "name": "名称",
+      "category": "分类",
+      "description": "描述",
+      "tags": "标签",
+      "tagsHint": "用逗号分隔"
+    },
+    "deleteConfirm": {
+      "title": "删除模板？",
+      "body": "模板将被永久删除。此操作无法撤销。",
+      "confirm": "删除"
+    },
+    "saved": "模板已保存",
+    "deleted": "模板已删除",
+    "createError": "无法创建模板。",
+    "saveError": "无法保存模板。",
+    "deleteError": "无法删除模板。"
   }
 }

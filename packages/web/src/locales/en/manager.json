@@ -1049,6 +1049,40 @@
   },
   "templates": {
     "title": "Templates",
-    "use": "Use"
+    "use": "Use",
+    "open": "From Template",
+    "dialogTitle": "Choose Template",
+    "searchPlaceholder": "Search templates",
+    "allCategories": "All",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
+    "empty": {
+      "title": "No templates yet",
+      "body": "Create a template to start quizzes faster."
+    },
+    "noMatches": "No template matches your search.",
+    "loading": "Loading templates",
+    "loadError": "Could not load templates.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "New Template",
+    "saveAsTemplate": "Save as Template",
+    "form": {
+      "name": "Name",
+      "category": "Category",
+      "description": "Description",
+      "tags": "Tags",
+      "tagsHint": "Comma-separated"
+    },
+    "deleteConfirm": {
+      "title": "Delete template?",
+      "body": "Template will be permanently deleted. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "saved": "Template saved",
+    "deleted": "Template deleted",
+    "createError": "Could not create template.",
+    "saveError": "Could not save template.",
+    "deleteError": "Could not delete template."
   }
 }
