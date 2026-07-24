@@ -109,6 +109,10 @@ const Answers = ({
   const isFillBlank = type === "fill-blank" && !!slotOptions?.length
   const isMatching = type === "matching" && !!matchItems?.length
   const isDropPin = type === "drop-pin" && !!media?.url
+  // choice / boolean / poll share the same tile grid; poll intentionally has no
+  // correct-answer reveal (server never marks a right option).
+  const isChoiceLike =
+    type === "choice" || type === "boolean" || type === "poll"
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -856,7 +860,7 @@ const Answers = ({
           unit={unit}
           testIdPrefix=""
         />
-      ) : (
+      ) : isChoiceLike ? (
         <ChoiceGrid
           value={selectedKey}
           onChange={(key) => {
@@ -868,7 +872,7 @@ const Answers = ({
           answers={answers}
           displayOrder={displayOrder}
         />
-      )}
+      ) : null}
     </QuestionStage>
   )
 }
