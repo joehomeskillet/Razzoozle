@@ -25,8 +25,12 @@ const QuestionEditorSequencing = () => {
     if (items.length >= 16) {
       return
     }
+    const trimmedLabel = newItemLabel.trim()
+    if (!trimmedLabel) {
+      return
+    }
     const newId = crypto.randomUUID()
-    const newItems = [...items, { id: newId, label: "" }]
+    const newItems = [...items, { id: newId, label: trimmedLabel }]
     const newOrder = [...correctOrder, newId]
     updateQuestion(currentIndex, { items: newItems, correctOrder: newOrder })
     setNewItemLabel("")
@@ -68,16 +72,26 @@ const QuestionEditorSequencing = () => {
   return (
     <div className="z-10 flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-gray-700">
-            {t("quizz:sequencing.itemsLabel", {
-              defaultValue: "Items to order",
+        <label className="text-sm font-semibold text-gray-700">
+          {t("quizz:sequencing.itemsLabel", {
+            defaultValue: "Items to order",
+          })}
+        </label>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newItemLabel}
+            onChange={(e) => setNewItemLabel(e.target.value)}
+            className="focus-visible:border-primary focus-visible:ring-primary/30 flex-1 rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-2 text-gray-800 outline-none placeholder:text-gray-400 focus-visible:ring-2"
+            placeholder={t("quizz:sequencing.newItemPlaceholder", {
+              defaultValue: "Type new item...",
             })}
-          </label>
+          />
           <button
             type="button"
             onClick={addItem}
-            disabled={items.length >= 16}
+            disabled={items.length >= 16 || !newItemLabel.trim()}
             aria-label={t("quizz:sequencing.addItem", {
               defaultValue: "Add item",
             })}
