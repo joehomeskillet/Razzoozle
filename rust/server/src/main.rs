@@ -29,6 +29,7 @@ pub(crate) fn question_type_wire(question_type: &QuestionType) -> &'static str {
         QuestionType::SentenceBuilder => "sentence-builder",
         QuestionType::Mathematik => "mathematik",
         QuestionType::Wortarten => "wortarten",
+        QuestionType::Sequencing => "sequencing",
     }
 }
 
