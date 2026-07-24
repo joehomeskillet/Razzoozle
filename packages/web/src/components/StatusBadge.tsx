@@ -23,9 +23,9 @@ const baseClasses =
  * Tokens are defined in features/manager/components/console/tokens.css.
  */
 const statusClasses: Record<StatusType, string> = {
-  online: "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
-  offline: "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]",
-  pending: "bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]",
+  online: "bg-status-online-bg text-status-online-text",
+  offline: "bg-status-offline-bg text-status-offline-text",
+  pending: "bg-status-pending-bg text-status-pending-text",
 }
 
 export default function StatusBadge({

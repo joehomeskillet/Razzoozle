@@ -4,12 +4,12 @@ interface Props {
 
 const CricleXmark = ({ className }: Props) => (
   <svg
-    fill="#ef4444"
+    fill="var(--state-wrong)"
     width="800px"
     height="800px"
     viewBox="0 0 56.00 56.00"
     xmlns="http://www.w3.org/2000/svg"
-    stroke="#ef4444"
+    stroke="var(--state-wrong)"
     className={className}
   >
     <g strokeWidth="0" transform="translate(12.4,12.4), scale(0.6)">
