@@ -19,6 +19,7 @@
     "tokens:build": "node scripts/build-tokens.mjs",
     "tokens:doc": "node scripts/generate-tokens-doc.mjs",
     "tokens:validate": "node scripts/lint-design-tokens.mjs",
+    "tokens:ast": "node scripts/ast-grep-tokens.mjs",
     "tokens:fix": "node scripts/lint-design-tokens.mjs --fix",
     "g:component": "node scripts/generate-component.mjs",
     "g:console": "node scripts/generate-component.mjs --domain console",

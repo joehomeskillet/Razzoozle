@@ -1,0 +1,47 @@
+name: Design Tokens Automated Sync & Governance
+
+on:
+  push:
+    paths:
+      - 'design.tokens.json'
+      - 'packages/web/src/**'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'design.tokens.json'
+      - 'packages/web/src/**'
+
+jobs:
+  tokens-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Design Tokens & Living Spec
+        run: pnpm tokens:build
+
+      - name: Validate & Auto-Fix Design Tokens
+        run: |
+          pnpm tokens:fix
+          pnpm tokens:validate
+
+      - name: Run Workspace Verification Gate
+        run: pnpm verify
+
+      - name: Commit Auto-Fixed Tokens & Specs if Changed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "razzoozle-bot[bot]"
+          git config user.email "bot@razzoozle.local"
+          git add build/css/tokens.css packages/common/src/theme-tokens.generated.ts docs/design/LIVING_DESIGN_SYSTEM.md packages/web/src/
+          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, and Living Design System spec"
+          git push origin main
