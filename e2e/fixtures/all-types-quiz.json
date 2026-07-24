@@ -89,6 +89,31 @@
       "correctOrder": ["item-1", "item-3", "item-2", "item-4", "item-5"],
       "time": 15,
       "cooldown": 5
+    },
+    {
+      "type": "fill-blank",
+      "question": "The capital of Japan is _____.",
+      "answers": ["Tokyo"],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "matching",
+      "question": "Match the countries to their capitals.",
+      "left": ["France", "Germany", "Italy"],
+      "right": ["Paris", "Berlin", "Rome"],
+      "correct": [[0, 0], [1, 1], [2, 2]],
+      "time": 15,
+      "cooldown": 5
+    },
+    {
+      "type": "drop-pin",
+      "question": "Drop a pin on the capital of France.",
+      "image": "europe-map.png",
+      "target": { "x": 0.45, "y": 0.35 },
+      "radius": 0.05,
+      "time": 15,
+      "cooldown": 5
     }
   ]
 }
