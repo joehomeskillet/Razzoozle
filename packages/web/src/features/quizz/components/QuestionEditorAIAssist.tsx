@@ -1,4 +1,4 @@
-import { AI, EVENTS } from "@razzoozle/common/constants"
+import { AI, EVENTS, QUESTION_TYPES } from "@razzoozle/common/constants"
 import type { Question } from "@razzoozle/common/types/game"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
@@ -147,18 +147,12 @@ const QuestionEditorAIAssist = () => {
       return
     }
 
-    // The server validator only accepts these authoring kinds; clamp anything
-    // else (slider, poll, undefined) to "choice" so it never trips zod.
-    const supportedTypes = [
-      "choice",
-      "boolean",
-      "multiple-select",
-      "type-answer",
-    ] as const
-    const safeType = supportedTypes.includes(
-      currentQuestion.type as (typeof supportedTypes)[number],
+    // Pass the editor's current type through; Rust server accepts all
+    // QUESTION_TYPES (13). Fall back to "choice" only for missing/unknown.
+    const safeType = (QUESTION_TYPES as readonly string[]).includes(
+      currentQuestion.type ?? "",
     )
-      ? (currentQuestion.type as (typeof supportedTypes)[number])
+      ? (currentQuestion.type as (typeof QUESTION_TYPES)[number])
       : "choice"
 
     setPendingResult(null)
