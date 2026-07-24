@@ -70,13 +70,23 @@ const Result = ({
   },
 }: Props) => {
   const player = usePlayerStore()
-  const submittedChunks = useAnswerStore((s) => s.submittedChunks) ?? EMPTY_CHUNKS
+  const submittedText = useAnswerStore((s) => s.submittedText)
+  const submittedNumber = useAnswerStore((s) => s.submittedNumber)
+  const submittedSlotIndices = useAnswerStore((s) => s.submittedSlotIndices)
+  const submittedChunks =
+    useAnswerStore((s) => s.submittedChunks) ?? EMPTY_CHUNKS
   const muted = useSoundStore((s) => s.muted)
   const { t } = useTranslation()
   const rankKey = rankKeyFor(rank)
   const reveal = useReveal()
   const reduced = reveal.reduced
   const achievementsFired = useRef(false)
+  const slotCorrectAnswers =
+    correctOptions?.length === submittedChunks.length
+      ? correctOptions
+      : correctMatches?.length === submittedChunks.length
+        ? correctMatches
+        : undefined
 
   // Sequencing: SHOW_RESULT carries item IDs in correctOrder; submittedChunks
   // stores the player's submitted ID order (same store as sentence-builder).
@@ -185,7 +195,10 @@ const Result = ({
   const unlockedIds = achievements ?? []
 
   return (
-    <section data-testid="answer-result" className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)]">
+    <section
+      data-testid="answer-result"
+      className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)]"
+    >
       {!poll && (
         // Moment of truth: the verdict icon pops in (overshoot scale) so the
         // correct/wrong reveal lands as a beat. Opacity-only when reduced.
@@ -205,20 +218,25 @@ const Result = ({
           )}
         </motion.div>
       )}
-      <h2 className="mt-1 text-4xl md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)] font-bold text-[color:var(--game-fg)] text-center">
+      <h2 className="mt-1 text-center text-4xl font-bold text-[color:var(--game-fg)] md:text-5xl lg:text-[clamp(2.5rem,6vh,6rem)]">
         {t(message)}
       </h2>
 
-      {/* Reveal (§14.3, unified via AnswerRevealPanel): per-position submitted-vs-
-          correct feedback (sentence-builder / wortarten / sequencing) first, then
-          the canonical correct-answer panel — tokenPos for wortarten (richer,
-          preferred), chips for fill-blank / matching (W1a typed fields; they
-          also leak into correctChunks, so they must win BEFORE the legacy
-          sentence-builder branch to get their own titles) / sentence-builder /
-          sequencing, a text panel for drop-pin, and text as the generic
-          wrong-answer fallback (slider/mathematik/… and old servers without
-          correctTokenPos). Poll never carries reveal data (`!poll` gate). */}
-      {!poll && correctChunks && submittedChunks.length > 0 && (
+      {/* client reveal: type-answer slider mathematik fill-blank matching */}
+      <div className="mx-auto mb-4 flex max-w-3xl flex-col items-center justify-center gap-2 px-4 text-center">
+        {submittedNumber != null && (
+          <div className="text-[color:var(--game-fg)] tabular-nums">
+            {t("game:reveal.yourValue")} {submittedNumber}
+          </div>
+        )}
+        {submittedText && (
+          <div className="text-lg text-[color:var(--game-fg)]">
+            {t("game:reveal.yourAnswer")} {submittedText}
+          </div>
+        )}
+      </div>
+
+      {!poll && submittedChunks.length > 0 && slotCorrectAnswers && (
         <motion.div
           className="w-full"
           variants={reveal.pop()}
@@ -228,17 +246,14 @@ const Result = ({
         >
           <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
             {submittedChunks.map((chunk, idx) => {
-              const isDisabled = correctChunks[idx] === ""
-              const isCorrect = !isDisabled && chunk === correctChunks[idx]
+              const isCorrect = chunk === slotCorrectAnswers[idx]
 
               return (
                 <span
-                  key={`${chunk}-${idx}`}
+                  key={`${submittedSlotIndices?.[idx] ?? chunk}-${idx}`}
                   className={clsx(
-                    "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-answer-text",
-                    isDisabled
-                      ? "bg-[var(--tier-silver)]"
-                      : isCorrect
+                    "text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
+                    isCorrect
                       ? "bg-[var(--state-correct)]"
                       : "bg-[var(--state-wrong)]",
                   )}
@@ -250,6 +265,51 @@ const Result = ({
           </div>
         </motion.div>
       )}
+
+      {/* Reveal (§14.3, unified via AnswerRevealPanel): per-position submitted-vs-
+          correct feedback (sentence-builder / wortarten / sequencing) first, then
+          the canonical correct-answer panel — tokenPos for wortarten (richer,
+          preferred), chips for fill-blank / matching (W1a typed fields; they
+          also leak into correctChunks, so they must win BEFORE the legacy
+          sentence-builder branch to get their own titles) / sentence-builder /
+          sequencing, a text panel for drop-pin, and text as the generic
+          wrong-answer fallback (slider/mathematik/… and old servers without
+          correctTokenPos). Poll never carries reveal data (`!poll` gate). */}
+      {!poll &&
+        !slotCorrectAnswers &&
+        correctChunks &&
+        submittedChunks.length > 0 && (
+          <motion.div
+            className="w-full"
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            transition={reveal.snap}
+          >
+            <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
+              {submittedChunks.map((chunk, idx) => {
+                const isDisabled = correctChunks[idx] === ""
+                const isCorrect = !isDisabled && chunk === correctChunks[idx]
+
+                return (
+                  <span
+                    key={`${chunk}-${idx}`}
+                    className={clsx(
+                      "text-answer-text inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
+                      isDisabled
+                        ? "bg-[var(--tier-silver)]"
+                        : isCorrect
+                          ? "bg-[var(--state-correct)]"
+                          : "bg-[var(--state-wrong)]",
+                    )}
+                  >
+                    {chunk}
+                  </span>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
       {/* Sequencing: position-by-position ID compare; green/red via design tokens. */}
       {!poll &&
         correctOrder &&
@@ -271,7 +331,7 @@ const Result = ({
                   <span
                     key={`${id}-${idx}`}
                     className={clsx(
-                      "inline-flex items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-answer-text",
+                      "text-answer-text inline-flex items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium",
                       isCorrect
                         ? "bg-[var(--state-correct)]"
                         : "bg-[var(--state-wrong)]",
@@ -402,7 +462,7 @@ const Result = ({
         // Points payoff: emphasised pop, delayed a touch behind the verdict so
         // the score reads as the reward beat. Opacity-only when reduced.
         <motion.span
-          className="mt-2 rounded-[var(--radius-theme)] bg-white border border-[var(--border-hairline)] px-4 py-2 text-2xl md:text-4xl lg:text-[clamp(1.75rem,4vh,3.5rem)] font-bold text-answer-text tabular-nums"
+          className="text-answer-text mt-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-4 py-2 text-2xl font-bold tabular-nums md:text-4xl lg:text-[clamp(1.75rem,4vh,3.5rem)]"
           variants={reveal.pop(0.7)}
           initial="hidden"
           animate="visible"
