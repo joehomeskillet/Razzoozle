@@ -1,7 +1,7 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
-import { Pencil } from "lucide-react"
+import { Pencil, Upload } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -12,6 +12,8 @@ interface MediaEditPanelProps {
   editing: boolean
   handleEdit: () => void
   handleRemoveMedia: () => void
+  uploading: boolean
+  handleUploadClick: () => void
 }
 
 const MediaEditPanel = ({
@@ -21,6 +23,8 @@ const MediaEditPanel = ({
   editing,
   handleEdit,
   handleRemoveMedia,
+  uploading,
+  handleUploadClick,
 }: MediaEditPanelProps) => {
   const { t } = useTranslation()
 
@@ -68,6 +72,31 @@ const MediaEditPanel = ({
           </Button>
         </div>
       )}
+
+      <Button
+        variant="secondary"
+        size="sm"
+        className="min-h-11"
+        classNameContent="gap-1.5"
+        onClick={handleUploadClick}
+        disabled={uploading}
+        aria-busy={uploading}
+      >
+        {uploading ? (
+          <Loader className="size-5 text-gray-700" aria-hidden="true" />
+        ) : (
+          <Upload className="size-5" aria-hidden="true" />
+        )}
+        <p>
+          {uploading
+            ? t("quizz:question.media.uploading", {
+                defaultValue: "Wird hochgeladen",
+              })
+            : t("quizz:question.media.uploadButton", {
+                defaultValue: "Bild hochladen",
+              })}
+        </p>
+      </Button>
 
       <Button variant="secondary" onClick={handleRemoveMedia}>
         {t("common:delete")}
