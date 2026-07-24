@@ -296,7 +296,8 @@
     "correctSentence": "Richtiger Satz"
   },
   "sequencing": {
-    "correctOrder": "Richtige Reihenfolge"
+    "correctOrder": "Richtige Reihenfolge",
+    "yourOrder": "Deine Reihenfolge"
   },
   "badge": {
     "solo": "Solo",

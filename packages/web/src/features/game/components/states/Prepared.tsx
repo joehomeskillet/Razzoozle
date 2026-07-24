@@ -89,10 +89,30 @@ const Prepared = ({ data: { totalAnswers, questionNumber, type } }: Props) => {
     </motion.div>
   )
 
+  // Sequencing: numbered chip stack previews ordered items (1…n).
+  const sequencingMini = (
+    <motion.div
+      aria-hidden="true"
+      variants={reveal.pop(0.92)}
+      transition={reveal.spring}
+      className="flex aspect-[5/2] w-60 flex-wrap content-center items-center justify-center gap-2 rounded-2xl bg-[var(--surface-muted)] p-4"
+    >
+      {[1, 2, 3, 4].map((n) => (
+        <span
+          key={n}
+          className="inline-flex h-8 min-w-8 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-2 text-sm font-bold tabular-nums text-[var(--answer-text)] shadow-[var(--shadow-flat)]"
+        >
+          {n}
+        </span>
+      ))}
+    </motion.div>
+  )
+
   const preview = () => {
     if (type === "slider") return sliderMini
     if (type === "type-answer") return textMini
     if (type === "sentence-builder") return chipsMini
+    if (type === "sequencing") return sequencingMini
     if (type && TILE_TYPES.includes(type))
       return tileGrid(totalAnswers > 0 ? totalAnswers : 4)
     // Fallback when type is absent (older payloads): previous behaviour.
