@@ -18,6 +18,8 @@ import ChoiceGrid from "@razzoozle/web/features/game/components/answers/ChoiceGr
 import MathematikInput from "@razzoozle/web/features/game/components/answers/MathematikInput"
 import MultiSelectGrid from "@razzoozle/web/features/game/components/answers/MultiSelectGrid"
 import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answers/SentenceBuilderBoard"
+import { SequencingBoard } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
+import type { SequencingItem } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
@@ -98,7 +100,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isSlider = question.type === "slider" && question.min != null && question.max != null
   const isMultiSelect = question.type === "multiple-select"
   const isTypeAnswer = question.type === "type-answer"
-const isSentenceBuilder = question.type === "sentence-builder" && question.shuffledChunks?.length
+  const isSentenceBuilder = question.type === "sentence-builder" && question.shuffledChunks?.length
+  const isSequencing = question.type === "sequencing" && question.shuffledItems?.length
   const isMathematik = question.type === "mathematik"
   const isWortarten = question.type === "wortarten"
 
@@ -123,6 +126,15 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     return []
   })
   const [placedChips, setPlacedChips] = useState<Chip[]>([])
+
+  // Sequencing: bank and placed items (in tap order)
+  const [bankSequencingItems, setBankSequencingItems] = useState<SequencingItem[]>(() => {
+    if (isSequencing && question.shuffledItems) {
+      return [...question.shuffledItems]
+    }
+    return []
+  })
+  const [placedSequencingItems, setPlacedSequencingItems] = useState<SequencingItem[]>([])
 
   // Start countdown on mount
   useEffect(() => {
@@ -201,6 +213,8 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
       void submitAnswer(quizzId, { answerText: textAnswer.trim() || "" })
     } else if (isSentenceBuilder) {
       void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
+    } else if (isSequencing) {
+      void submitAnswer(quizzId, { answerText: JSON.stringify(placedSequencingItems.map(item => item.id)) })
     } else if (isMathematik) {
       void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
     } else if (isWortarten) {
@@ -233,6 +247,15 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
+  }
+
+  const submitSequencing = () => {
+    if (submitted || placedSequencingItems.length === 0) return
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, { answerText: JSON.stringify(placedSequencingItems.map(item => item.id)) })
   }
 
   const submitMultiSelect = () => {
@@ -377,6 +400,20 @@ const isSentenceBuilder = question.type === "sentence-builder" && question.shuff
               hapticTap()
             }}
             onSubmit={submitSentenceBuilder}
+            disabled={submitted}
+            feedback={resultReady ? { correct: lastResult.correct } : undefined}
+            testIdPrefix="solo-"
+          />
+        ) : isSequencing ? (
+          <SequencingBoard
+            value={{ bank: bankSequencingItems, placed: placedSequencingItems }}
+            onChange={(next) => {
+              setBankSequencingItems(next.bank)
+              setPlacedSequencingItems(next.placed)
+              sfxPop()
+              hapticTap()
+            }}
+            onSubmit={submitSequencing}
             disabled={submitted}
             feedback={resultReady ? { correct: lastResult.correct } : undefined}
             testIdPrefix="solo-"
