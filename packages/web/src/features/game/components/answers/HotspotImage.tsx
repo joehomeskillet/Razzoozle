@@ -56,7 +56,7 @@ export function HotspotImage({
         })}
         data-testid={isSolo ? "solo-hotspot-image" : "hotspot-image"}
         className={clsx(
-          "relative aspect-video w-full cursor-crosshair overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-black/5 shadow-[var(--shadow-flat)]",
+          "relative aspect-video w-full cursor-crosshair overflow-hidden rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] shadow-[var(--shadow-flat)]",
           disabled && "cursor-not-allowed opacity-90",
         )}
         onClick={(e) => {
@@ -98,7 +98,7 @@ export function HotspotImage({
         {value && (
           <div
             className={clsx(
-              "pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow",
+              "pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--answer-text)] shadow",
               feedback?.correct === true && "bg-[var(--state-correct)]",
               feedback?.correct === false && "bg-[var(--state-wrong)]",
               feedback == null && "bg-[var(--color-primary)]",
