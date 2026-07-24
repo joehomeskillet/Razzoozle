@@ -4,6 +4,7 @@ import type { z } from "zod"
 import type {
   questionValidator,
   quizzValidator,
+  sequencingItemValidator,
 } from "@razzoozle/common/validators/quizz"
 
 // Re-export the single-source question kinds so consumers can keep importing
@@ -11,6 +12,8 @@ import type {
 export { QUESTION_TYPES } from "@razzoozle/common/constants"
 
 export type { QuestionType } from "@razzoozle/common/constants"
+
+export type SequencingItem = z.infer<typeof sequencingItemValidator>
 
 export interface Player {
   id: string
@@ -124,7 +127,7 @@ export interface GameResult {
 export type SoloQuestion = Omit<
   Question,
   "solutions" | "correct" | "acceptedAnswers" | "chunks"
-> & { shuffledChunks?: string[] }
+> & { shuffledChunks?: string[]; shuffledItems?: SequencingItem[] }
 
 export interface SoloCheckAnswerRequest {
   questionIndex: number
