@@ -80,11 +80,11 @@
       "type": "sequencing",
       "question": "Order the steps of making a cup of tea",
       "items": [
-        { "id": "item-1", "label": "Boil water" },
-        { "id": "item-2", "label": "Add tea bag" },
-        { "id": "item-3", "label": "Pour hot water" },
-        { "id": "item-4", "label": "Steep 3-5 minutes" },
-        { "id": "item-5", "label": "Remove tea bag" }
+        {"id": "item-1", "label": "Boil water"},
+        {"id": "item-2", "label": "Add tea bag"},
+        {"id": "item-3", "label": "Pour hot water"},
+        {"id": "item-4", "label": "Steep 3-5 minutes"},
+        {"id": "item-5", "label": "Remove tea bag"}
       ],
       "correctOrder": ["item-1", "item-3", "item-2", "item-4", "item-5"],
       "time": 15,
@@ -92,26 +92,50 @@
     },
     {
       "type": "fill-blank",
-      "question": "The capital of Japan is _____.",
-      "answers": ["Tokyo"],
-      "time": 10,
+      "question": "The capital of _____ is Paris.",
+      "segments": ["The capital of ", " is Paris."],
+      "slots": [
+        {
+          "options": ["France", "Germany", "Spain"],
+          "correctIndex": 0
+        }
+      ],
+      "time": 15,
       "cooldown": 5
     },
     {
       "type": "matching",
       "question": "Match the countries to their capitals.",
-      "left": ["France", "Germany", "Italy"],
-      "right": ["Paris", "Berlin", "Rome"],
-      "correct": [[0, 0], [1, 1], [2, 2]],
+      "leftItems": [
+        {
+          "label": "France",
+          "options": ["Paris", "Berlin", "Rome"],
+          "correctIndex": 0
+        },
+        {
+          "label": "Germany",
+          "options": ["Paris", "Berlin", "Rome"],
+          "correctIndex": 1
+        }
+      ],
       "time": 15,
       "cooldown": 5
     },
     {
       "type": "drop-pin",
       "question": "Drop a pin on the capital of France.",
-      "image": "europe-map.png",
-      "target": { "x": 0.45, "y": 0.35 },
-      "radius": 0.05,
+      "media": {
+        "type": "image",
+        "url": "/media/placeholder-map.webp"
+      },
+      "hotspots": [
+        {
+          "x": 0.2,
+          "y": 0.2,
+          "w": 0.3,
+          "h": 0.3
+        }
+      ],
       "time": 15,
       "cooldown": 5
     }
