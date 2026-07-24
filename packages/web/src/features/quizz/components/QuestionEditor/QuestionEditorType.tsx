@@ -10,6 +10,7 @@ import {
   Keyboard,
   Languages,
   ListChecks,
+  ListOrdered,
   SlidersHorizontal,
   ToggleLeft,
   BookOpen,
@@ -68,6 +69,12 @@ const TYPES: Array<{
     icon: Blocks,
   },
   {
+    key: "sequencing",
+    labelKey: "quizz:type.sequencing",
+    descKey: "quizz:type.sequencingDesc",
+    icon: ListOrdered,
+  },
+  {
     key: "mathematik",
     labelKey: "quizz:type.mathematik",
     descKey: "quizz:type.mathematikDesc",
@@ -107,11 +114,9 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
   const type: QuestionTypeKey = (currentQuestion.type ??
     "choice") as QuestionTypeKey
 
-  // Gate Mathematik, Wortarten, and Vokabelliste visibility on klassenEnabled
   const config = useManagerStore((s) => s.config)
   const klassenEnabled = config?.klassenEnabled ?? false
 
-  // First apply klassenEnabled filter, then apply excludeTypes filter
   const availableTypes = klassenEnabled
     ? TYPES.filter((tp) => !excludeTypes.includes(tp.key))
     : TYPES.filter(
@@ -122,7 +127,6 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
           !excludeTypes.includes(tp.key),
       )
 
-  // Clear fields that don't belong to the target type (avoid stale data).
   const SLIDER_CLEAR = {
     min: undefined,
     max: undefined,
@@ -194,6 +198,18 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         matchMode: undefined,
         ...SLIDER_CLEAR,
       })
+    } else if (next === "sequencing") {
+      updateQuestion(currentIndex, {
+        type: "sequencing",
+        items: [],
+        correctOrder: [],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        ...SLIDER_CLEAR,
+      })
     } else if (next === "mathematik") {
       updateQuestion(currentIndex, {
         type: "mathematik",
@@ -237,9 +253,7 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         unit: undefined,
       })
     } else if (next === "vokabelliste") {
-      // Vokabelliste is a pseudo-type for bulk editing; set a marker type
       updateQuestion(currentIndex, {
-        // oxlint-disable-next-line typescript/no-explicit-any -- vokabelliste is a UI-only pseudo-type, not in the persisted Question union
         type: "vokabelliste" as any,
         question: "",
         answers: undefined,
@@ -267,7 +281,6 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
     }
   }
 
-  // Roving-tabindex arrow navigation across the radio cards (wraps).
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     let delta = 0
     if (e.key === "ArrowRight" || e.key === "ArrowDown") delta = 1
@@ -282,7 +295,6 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
     setType(availableTypes[nextIdx].key)
   }
 
-  // Bonus and practice are mutually exclusive (practice awards no points).
   const toggleBonus = () =>
     updateQuestion(currentIndex, {
       bonus: !currentQuestion.bonus,
@@ -297,125 +309,107 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
 
   const setNum =
     (field: "min" | "max" | "correct" | "step") =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
       updateQuestion(currentIndex, {
-        [field]: e.target.value === "" ? undefined : Number(e.target.value),
+        [field]: value === "" ? undefined : Number.parseFloat(value),
       })
+    }
+
+  const setUnit = (e: React.ChangeEvent<HTMLInputElement>) =>
+    updateQuestion(currentIndex, { unit: e.target.value })
 
   return (
-    <div className="z-10 flex flex-col gap-3">
-      <fieldset
-        role="radiogroup"
-        aria-label={t("quizz:type.choice")}
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3"
-      >
-        {availableTypes.map((tp) => {
-          const selected = type === tp.key
-          const Icon = tp.icon
-          return (
-            <button
-              key={tp.key}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setType(tp.key)}
-              onKeyDown={handleKeyDown}
-              className={clsx(
-                "flex min-h-11 flex-col gap-1 rounded-2xl bg-white p-3 text-left shadow-sm outline-2 -outline-offset-2 transition-colors focus-visible:outline-[var(--color-primary)]",
-                selected
-                  ? "bg-[color-mix(in_srgb,var(--color-primary),white_92%)] outline-[var(--color-primary)]"
-                  : "outline-transparent hover:bg-gray-50",
-              )}
-            >
-              <span
+    <div className="flex flex-col gap-6">
+      <div>
+        <h2 className="mb-4 text-sm font-semibold text-gray-800">
+          Fragentyp
+        </h2>
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+          {availableTypes.map((tp) => {
+            const Icon = tp.icon
+            return (
+              <button
+                key={tp.key}
+                role="radio"
+                aria-checked={type === tp.key}
+                tabIndex={type === tp.key ? 0 : -1}
+                onClick={() => setType(tp.key)}
+                onKeyDown={handleKeyDown}
                 className={clsx(
-                  "flex items-center gap-2 text-sm font-semibold",
-                  selected ? "text-[var(--accent-contrast)]" : "text-gray-700",
+                  "flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+                  type === tp.key
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300",
                 )}
               >
-                <Icon
-                  aria-hidden="true"
-                  className={clsx(
-                    "size-4 shrink-0",
-                    selected
-                      ? "text-[var(--accent-contrast)]"
-                      : "text-gray-400",
-                  )}
-                />
-                {t(tp.labelKey, {
-                  defaultValue:
-                    tp.key === "sentence-builder"
-                      ? "Sentence builder"
-                      : undefined,
-                })}
-              </span>
-              <span className="text-xs text-gray-500">
-                {t(tp.descKey, {
-                  defaultValue:
-                    tp.key === "sentence-builder"
-                      ? "Players rebuild a sentence from shuffled word chips"
-                      : undefined,
-                })}
-              </span>
-            </button>
-          )
-        })}
-      </fieldset>
-
-      {type !== "poll" && type !== "vokabelliste" && (
-        <div className="flex flex-wrap gap-4">
-          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
-            <input
-              type="checkbox"
-              checked={Boolean(currentQuestion.bonus)}
-              onChange={toggleBonus}
-              className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-            />
-            <span aria-hidden="true">⭐</span> {t("quizz:type.bonusQuestion")}
-          </label>
-          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm font-semibold text-gray-600">
-            <input
-              type="checkbox"
-              checked={Boolean(currentQuestion.practice)}
-              onChange={togglePractice}
-              className="accent-primary focus-visible:outline-primary size-5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
-            />
-            <span aria-hidden="true">🎯</span>{" "}
-            {t("quizz:type.practiceQuestion")}
-          </label>
+                <Icon className="size-5" />
+                <span className="text-xs font-semibold text-center text-gray-700">
+                  {t(tp.labelKey)}
+                </span>
+                <span className="text-xs text-gray-500 text-center line-clamp-2">
+                  {t(tp.descKey)}
+                </span>
+              </button>
+            )
+          })}
         </div>
-      )}
+      </div>
 
       {type === "slider" && (
-        <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2">
           {SLIDER_FIELDS.map(({ field, labelKey }) => (
-            <label
-              key={field}
-              className="flex flex-col gap-1 text-xs font-semibold text-gray-500"
-            >
-              {t(labelKey)}
+            <label key={field} className="flex flex-col gap-2">
+              <span className="text-xs font-semibold text-gray-700">
+                {t(labelKey)}
+              </span>
               <input
                 type="number"
                 value={currentQuestion[field] ?? ""}
                 onChange={setNum(field)}
-                className="focus-visible:border-primary rounded-lg border border-gray-200 px-2 py-1 text-gray-800 focus-visible:outline-none"
+                className="h-8 rounded-md border border-gray-300 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
               />
             </label>
           ))}
-          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-500">
-            {t("quizz:slider.unit")}
+          <label className="flex flex-col gap-2 col-span-2">
+            <span className="text-xs font-semibold text-gray-700">
+              {t("quizz:slider.unit")}
+            </span>
             <input
+              type="text"
               value={currentQuestion.unit ?? ""}
-              onChange={(e) =>
-                updateQuestion(currentIndex, { unit: e.target.value })
-              }
+              onChange={setUnit}
               placeholder={t("quizz:slider.unitPlaceholder")}
-              className="focus-visible:border-primary rounded-lg border border-gray-200 px-2 py-1 text-gray-800 focus-visible:outline-none"
+              className="h-8 rounded-md border border-gray-300 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
             />
           </label>
         </div>
       )}
+
+      <div className="flex flex-col gap-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentQuestion.bonus ?? false}
+            onChange={toggleBonus}
+            className="h-4 w-4 rounded border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          />
+          <span className="text-sm font-semibold text-gray-700">
+            {t("quizz:type.bonusQuestion")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentQuestion.practice ?? false}
+            onChange={togglePractice}
+            className="h-4 w-4 rounded border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          />
+          <span className="text-sm font-semibold text-gray-700">
+            {t("quizz:type.practiceQuestion")}
+          </span>
+        </label>
+      </div>
     </div>
   )
 }

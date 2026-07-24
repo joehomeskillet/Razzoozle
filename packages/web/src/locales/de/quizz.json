@@ -66,6 +66,8 @@
     "multipleSelectDesc": "Mehrere richtige Antworten",
     "typeAnswerDesc": "Frei getippte Antwort",
     "sentenceBuilderDesc": "Spieler bauen einen Satz aus gemischten Wort-Chips zusammen",
+    "sequencing": "Sortierung",
+    "sequencingDesc": "Spieler ordnen Elemente in die richtige Reihenfolge",
     "mathematik": "Mathematik",
     "mathematikDesc": "Numerische Antwort mit Toleranz",
     "wortarten": "Wortarten",
