@@ -101,7 +101,8 @@
     "anonymizedPlayer": "Player {{index}}",
     "stats": {
       "correctAnswers": "Correct answers",
-      "playersAnswered": "Players answered"
+      "playersAnswered": "Players answered",
+      "avgResponseTime": "Avg. response"
     },
     "table": {
       "answered": "Answered",

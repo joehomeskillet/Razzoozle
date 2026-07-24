@@ -111,7 +111,8 @@
     },
     "stats": {
       "correctAnswers": "Respuestas correctas",
-      "playersAnswered": "Jugadores que respondieron"
+      "playersAnswered": "Jugadores que respondieron",
+      "avgResponseTime": "Tiempo medio"
     },
     "table": {
       "answered": "Respondido",
