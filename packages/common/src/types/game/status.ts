@@ -5,6 +5,7 @@ import type {
   QuestionMedia,
   QuestionType,
   RoundRecapAward,
+  SequencingItem,
   TeamStanding,
 } from "@razzoozle/common/types/game"
 
@@ -62,6 +63,8 @@ export interface CommonStatusDataMap {
     unit?: string
     // Sentence-builder questions: shuffled word chips (no solution info).
     shuffledChunks?: string[]
+    // Sequencing questions: shuffled items (no solution info).
+    shuffledItems?: SequencingItem[]
     // Wortarten questions: sentence text and tokens with POS set for tagging
     sentence?: string
     tokens?: string[]
@@ -102,6 +105,9 @@ export interface CommonStatusDataMap {
     correctAnswer?: string
     // Sentence-builder: authored correct order, revealed after the round.
     correctChunks?: string[]
+    // Sequencing: correct order and items, revealed after the round.
+    correctOrder?: string[]
+    items?: SequencingItem[]
     // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
     // excluded. OPTIONAL + additive; old clients ignore it.
     correctTokenPos?: { token: string; pos: string }[]
@@ -164,6 +170,9 @@ interface ManagerExtraStatus {
     // Sentence-builder result reveal (manager-only; same authored order as
     // player SHOW_RESULT.correctChunks after answers are closed).
     correctChunks?: string[]
+    // Sequencing: correct order and items (manager-only).
+    correctOrder?: string[]
+    items?: SequencingItem[]
     // Wortarten: per-token reveal pairs (word + assigned POS), disabled tokens
     // excluded. OPTIONAL + additive; old clients ignore it.
     correctTokenPos?: { token: string; pos: string }[]
