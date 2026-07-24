@@ -68,10 +68,23 @@ const Room = () => {
   useEvent(EVENTS.GAME.SUCCESS_ROOM, (roomPayload) => {
     clearJoinTimeout()
     setIsJoining(false)
-    // Handle both legacy string payload and new object payload
-    const gameId = typeof roomPayload === "string" ? roomPayload : roomPayload?.gameId
+    // Handle both legacy string payload and new object payload.
+    // Stash klassen/roster on the store: Username mounts after this handler
+    // and would otherwise miss SUCCESS_ROOM (no event replay).
+    if (typeof roomPayload === "string") {
+      if (roomPayload) {
+        join(roomPayload)
+      }
+      return
+    }
+    const gameId = roomPayload?.gameId
     if (gameId) {
-      join(gameId)
+      join(gameId, {
+        gameId,
+        klassen: Boolean(roomPayload?.klassen),
+        roster: Array.isArray(roomPayload?.roster) ? roomPayload.roster : [],
+        requireIdentifier: Boolean(roomPayload?.requireIdentifier),
+      })
     }
   })
 

@@ -14,7 +14,7 @@ import EmojiPinInput from "./EmojiPinInput"
 import PlayerNameSelect from "./PlayerNameSelect"
 
 import { useNavigate } from "@tanstack/react-router"
-import { type KeyboardEvent, useRef, useState } from "react"
+import { type KeyboardEvent, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 const USERNAME_MIN_LENGTH = 4
@@ -22,7 +22,8 @@ const USERNAME_MAX_LENGTH = 20
 
 const Username = () => {
   const { socket } = useSocket()
-  const { gameId, login, setStatus, setAvatar } = usePlayerStore()
+  const { gameId, login, setStatus, setAvatar, pendingRoom, clearPendingRoom } =
+    usePlayerStore()
   const navigate = useNavigate()
 
   // Free-text flow state
@@ -40,6 +41,21 @@ const Username = () => {
   const [klassError, setKlassError] = useState("")
 
   const { t } = useTranslation()
+
+  // Apply SUCCESS_ROOM stash from Room → Username swap (event is not replayed).
+  useEffect(() => {
+    if (!pendingRoom) {
+      return
+    }
+    setKlassen(pendingRoom.klassen)
+    if (pendingRoom.klassen) {
+      setRoster(pendingRoom.roster)
+      setKlassError("")
+    } else {
+      setRequireIdentifier(pendingRoom.requireIdentifier)
+    }
+    clearPendingRoom()
+  }, [pendingRoom, clearPendingRoom])
 
   const handleLoginFreeText = () => {
     if (!gameId) {
