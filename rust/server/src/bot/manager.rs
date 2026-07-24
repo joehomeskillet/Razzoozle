@@ -383,3 +383,85 @@ impl std::fmt::Debug for BotManager {
         f.debug_struct("BotManager").finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use razzoozle_protocol::quizz::{Hotspot, Slot};
+
+    fn test_question(q_type: QuestionType) -> Question {
+        Question {
+            question: "Test?".to_string(),
+            r#type: Some(q_type),
+            media: None,
+            answers: None,
+            solutions: None,
+            min: None,
+            max: None,
+            correct: None,
+            step: None,
+            unit: None,
+            chunks: None,
+            cooldown: 1,
+            time: 10,
+            practice: None,
+            bonus: None,
+            submitted_by: None,
+            accepted_answers: None,
+            match_mode: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+            items: None,
+            correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
+            hotspots: None,
+        }
+    }
+
+    #[test]
+    fn pick_slots_serializes_one_selection_per_slot() {
+        let mut question = test_question(QuestionType::FillBlank);
+        question.slots = Some(vec![
+            Slot {
+                options: vec!["only".into()],
+                correct_index: 0,
+            },
+            Slot {
+                options: vec!["also-only".into()],
+                correct_index: 0,
+            },
+        ]);
+
+        let selected: Vec<i32> = serde_json::from_str(&pick_slots(&question)).unwrap();
+
+        assert_eq!(selected, vec![0, 0]);
+    }
+
+    #[test]
+    fn pick_answer_routes_drop_pin_to_json_coordinates() {
+        let mut question = test_question(QuestionType::DropPin);
+        question.hotspots = Some(vec![Hotspot {
+            x: 0.2,
+            y: 0.3,
+            w: 0.2,
+            h: 0.2,
+        }]);
+
+        let (answer_key, answer_keys, answer_text) = pick_answer(&question);
+        let answer: serde_json::Value =
+            serde_json::from_str(answer_text.as_deref().unwrap()).unwrap();
+        let x = answer["x"].as_f64().unwrap();
+        let y = answer["y"].as_f64().unwrap();
+
+        assert!(answer_key.is_none());
+        assert!(answer_keys.is_none());
+        assert!((0.0..=1.0).contains(&x));
+        assert!((0.0..=1.0).contains(&y));
+    }
+}
