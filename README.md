@@ -15,7 +15,7 @@
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Live demo](https://razzoozle.joelduss.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Live demo](https://rust.razzoozle.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
@@ -89,7 +89,7 @@ The server runs on port `3020` and requires a PostgreSQL database. Open the app,
 | 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
 | 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
 | 🏫 | **Class mode for schools** — an optional teacher mode: create classes, manage a student roster (add students, move them between classes, remove), give each student their own PIN, and assign a quiz to a whole class with a deadline, an attempt limit and privacy-first pseudonymous result tracking. |
-| ✍️ | **Nine question types** — single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input and word-types (Wortarten), on top of the classic colored-tile answers. |
+| ✍️ | **Ten question types** — single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input, word-types (Wortarten), and sequencing, on top of the classic colored-tile answers. |
 | 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
 | 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
 | 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
