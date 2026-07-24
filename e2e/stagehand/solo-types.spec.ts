@@ -1,6 +1,8 @@
 /**
  * e2e/stagehand/solo-types.spec.ts — Solo play, all 9 fixture question types,
  * across 3 mobile viewports.
+ * Fill-blank, matching, and drop-pin are covered by
+ * fill-blank-matching-droppin.spec.ts.
  *
  * Run directly: `npx tsx e2e/stagehand/solo-types.spec.ts` (per
  * stagehand/README.md — plain script, not a Playwright Test / Jest suite; the
