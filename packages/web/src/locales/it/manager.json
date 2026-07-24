@@ -1045,5 +1045,9 @@
     "allSelected": "Tutte le {{count}} voci selezionate",
     "allFilteredSelected": "Tutte le {{count}} voci filtrate selezionate",
     "selectedOfTotal": "{{selected}} di {{total}} selezionati"
+  },
+  "templates": {
+    "title": "Modelli",
+    "use": "Usa"
   }
 }
