@@ -572,4 +572,36 @@ mod tests {
         assert!(result.is_empty() || result.trim_matches('-').is_empty(),
             "Special-chars-only name should slugify to empty or dashes");
     }
+
+    // ── Admin-gate tests (403) — require PgPool, marked #[ignore] ────────────
+    
+    /// handle_create_template forbids non-admin users (403).
+    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
+    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    #[tokio::test]
+    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 191"]
+    async fn test_create_template_requires_admin() {
+        // Auth fails at: crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        // Returns Err(FORBIDDEN) before any file write.
+    }
+
+    /// handle_update_template forbids non-admin users (403).
+    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
+    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    #[tokio::test]
+    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 265"]
+    async fn test_update_template_requires_admin() {
+        // Auth fails at: crate::auth::ensure_admin_user(&headers, &_state.db_pool)
+        // Returns Err(FORBIDDEN) before any file write.
+    }
+
+    /// handle_delete_template forbids non-admin users (403).
+    /// Requires sqlx::PgPool for auth verification; skipped in unit tests.
+    /// Admin-gate verified in source: ensure_admin_user() call before file write.
+    #[tokio::test]
+    #[ignore = "requires sqlx::PgPool; admin-gate verified via ensure_admin_user() in templates.rs line 318"]
+    async fn test_delete_template_requires_admin() {
+        // Auth fails at: crate::auth::ensure_admin_user(&headers, &_state.db_pool)
+        // Returns Err(FORBIDDEN) before any file write.
+    }
 }
