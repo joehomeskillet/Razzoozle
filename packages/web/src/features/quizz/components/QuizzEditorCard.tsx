@@ -2,6 +2,7 @@ import { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { QuestionMedia } from "@razzoozle/common/types/game"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import { type QuestionWithId } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
+import QuestionPreview from "@razzoozle/web/features/quizz/components/QuestionPreview"
 import clsx from "clsx"
 import { Check, Music, Trash2, Video } from "lucide-react"
 import type { KeyboardEvent, MouseEvent } from "react"
@@ -141,65 +142,7 @@ const QuizzEditorCard = ({
         <SlideMedia media={question.media} />
       </div>
 
-      {question.type === "slider" ? (
-        <div className="relative z-10 flex h-4 items-center justify-center rounded-md border border-gray-300 text-xs font-semibold text-gray-500">
-          {question.min}–{question.max}
-          {question.unit ? ` ${question.unit}` : ""}
-        </div>
-      ) : question.type === "type-answer" ? (
-        <div className="relative z-10 flex h-4 items-center justify-center rounded-md border border-gray-300 text-xs font-semibold text-gray-500">
-          Aa
-        </div>
-      ) : question.type === "sentence-builder" ? (
-        <div className="relative z-10 flex gap-1">
-          {(question.chunks ?? []).slice(0, 3).map((_, i) => (
-            <div
-              key={i}
-              className="h-3 flex-1 rounded-full bg-gray-300"
-            />
-          ))}
-        </div>
-      ) : question.type === "sequencing" ? (
-        <div className="relative z-10 flex flex-col gap-1">
-          {(question.items ?? []).slice(0, 3).map((_, i) => (
-            <div
-              key={i}
-              className="flex h-3 items-center gap-1 rounded-md border border-gray-300 px-1.5"
-            >
-              <span className="text-[10px] font-semibold text-gray-500">{i + 1}.</span>
-              <div className="flex-1 bg-gray-300 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : question.type === "poll" ? (
-        <div className="relative z-10 flex flex-col gap-1">
-          {[0, 1].map((i) => (
-            <div key={i} className="h-3 w-full rounded-md border border-gray-300" />
-          ))}
-        </div>
-      ) : question.type === "boolean" ? (
-        <div className="relative z-10 grid grid-cols-2 gap-1">
-          {[0, 1].map((i) => (
-            <div
-              key={i}
-              className="h-4 rounded-md border border-gray-300"
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="relative z-10 grid grid-cols-2 gap-1">
-          {(question.answers ?? []).map((_, i) => (
-            <div
-              key={i}
-              className="flex h-4 flex-1 items-center rounded-md border border-gray-300 px-0.5"
-            >
-              {(question.solutions ?? []).includes(i) && (
-                <div className="ml-auto size-1.5 rounded-full bg-green-400" />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      <QuestionPreview question={question} />
 
       {canDelete && (
         <AlertDialog
