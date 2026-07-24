@@ -406,3 +406,256 @@ pub async fn handle_create_from_template(
         "archived": false,
     })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{slugify_id, load_template_file, templates_dir, TemplateMeta, TemplateFull, TemplateCreateBody, TemplateWriteBody, handle_create_template, handle_update_template, handle_delete_template};
+    use super::super::AppState;
+    use crate::state::{safe_asset_id, GameRegistry};
+    use axum::http::{HeaderMap, StatusCode};
+    use axum::extract::State;
+    use serde_json::json;
+    use std::fs;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+    use socketioxide::SocketIo;
+
+
+    // ── Helper: create a HeaderMap with no authorization ─────────────────────
+    fn empty_headers() -> HeaderMap {
+        HeaderMap::new()
+    }
+
+    // ── Helper: create a minimal SocketIo instance ──────────────────────────
+    fn make_socket_io() -> SocketIo {
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+        io
+    }
+
+    // ── Helper: create a minimal AppState with no DB pool ────────────────────
+    async fn make_test_app_state() -> AppState {
+        let empty_quiz = razzoozle_protocol::quizz::Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let registry = GameRegistry::new(&None, empty_quiz).await;
+
+        AppState {
+            registry: Arc::new(RwLock::new(registry)),
+            db_pool: None,  // No database = admin check will fail
+            io: make_socket_io(),
+        }
+    }
+
+    // ── Test: safe_asset_id rejects path-traversal ──────────────────────────
+    #[test]
+    fn test_path_traversal_dots_rejected() {
+        let result = safe_asset_id("../evil");
+        assert!(result.is_err(), "Path traversal '../evil' should be rejected");
+
+        let result = safe_asset_id("..%2Fevil");
+        assert!(result.is_err(), "Encoded path traversal '..%2Fevil' should be rejected");
+
+        let result = safe_asset_id("../../etc/passwd");
+        assert!(result.is_err(), "Deep path traversal should be rejected");
+    }
+
+    // ── Test: safe_asset_id rejects reserved keywords ────────────────────────
+    #[test]
+    fn test_reserved_keywords_rejected() {
+        let result = safe_asset_id("__proto__");
+        assert!(result.is_err(), "Reserved keyword '__proto__' should be rejected");
+
+        let result = safe_asset_id("constructor");
+        assert!(result.is_err(), "Reserved keyword 'constructor' should be rejected");
+
+        let result = safe_asset_id("prototype");
+        assert!(result.is_err(), "Reserved keyword 'prototype' should be rejected");
+    }
+
+    // ── Test: safe_asset_id accepts valid IDs ──────────────────────────────
+    #[test]
+    fn test_valid_asset_ids_accepted() {
+        let result = safe_asset_id("tpl-math-quad");
+        assert!(result.is_ok(), "Valid ID 'tpl-math-quad' should be accepted");
+
+        let result = safe_asset_id("my_template_42");
+        assert!(result.is_ok(), "Valid ID 'my_template_42' should be accepted");
+
+        let result = safe_asset_id("Quiz2024");
+        assert!(result.is_ok(), "Valid ID 'Quiz2024' should be accepted");
+    }
+
+    // ── Test: slugify_id converts name to lowercase slug ──────────────────────
+    #[test]
+    fn test_slugify_id_lowercase() {
+        let result = slugify_id("Math Quadratic");
+        assert_eq!(result, "math-quadratic", "Should convert to lowercase with hyphens");
+
+        let result = slugify_id("UPPER CASE NAME");
+        assert_eq!(result, "upper-case-name", "Should lowercase all caps");
+    }
+
+    // ── Test: slugify_id replaces non-alphanumeric with dash ─────────────────
+    #[test]
+    fn test_slugify_id_special_chars() {
+        let result = slugify_id("Quiz@2024#Edition!");
+        assert!(result.contains('-'), "Special chars should be replaced with dashes");
+        assert!(!result.contains('@'), "@ should be replaced");
+        assert!(!result.contains('#'), "# should be replaced");
+        assert!(!result.contains('!'), "! should be replaced");
+    }
+
+    // ── Test: slugify_id handles UTF-8 safely (no panics) ────────────────────
+    #[test]
+    fn test_slugify_id_utf8_safe() {
+        let result = slugify_id("Café ☕ Quiz");
+        assert!(!result.is_empty(), "Should handle UTF-8 without panicking");
+        assert!(result.contains('-'), "UTF-8 symbols should become dashes");
+    }
+
+    // ── Test: slugify_id handles emoji without panic ─────────────────────────
+    #[test]
+    fn test_slugify_id_emoji_safe() {
+        let result = slugify_id("Quiz 🎓 2024");
+        assert!(!result.is_empty(), "Emoji should not cause panic");
+    }
+
+    // ── Test: slugify_id trims excessive length ────────────────────────────
+    #[test]
+    fn test_slugify_id_max_length() {
+        let long_name = "a".repeat(100);
+        let result = slugify_id(&long_name);
+        assert!(result.len() <= 50, "Slugified ID should be trimmed to 50 chars max");
+    }
+
+    // ── Test: slugify_id trims trailing dashes ──────────────────────────────
+    #[test]
+    fn test_slugify_id_trim_dashes() {
+        let result = slugify_id("---test---");
+        assert!(!result.starts_with('-'), "Should trim leading dashes");
+        assert!(!result.ends_with('-'), "Should trim trailing dashes");
+    }
+
+    // ── Test: load and parse bundled templates (format validation) ──────────
+    #[test]
+    fn test_bundled_templates_parse() {
+        let expected = vec!["tpl-icebreaker", "tpl-math-quad", "tpl-sprachen-vocab"];
+
+        for template_id in expected {
+            let path = templates_dir().join(format!("{}.json", template_id));
+            if path.exists() {
+                let v = load_template_file(&path);
+                assert!(
+                    v.is_some(),
+                    "Bundled template {} should parse as valid JSON",
+                    template_id
+                );
+
+                if let Some(json) = v {
+                    assert!(
+                        json.get("id").is_some(),
+                        "Template {} should have 'id' field",
+                        template_id
+                    );
+                    assert!(
+                        json.get("category").is_some(),
+                        "Template {} should have 'category' field",
+                        template_id
+                    );
+                    assert!(
+                        json.get("name").is_some(),
+                        "Template {} should have 'name' field",
+                        template_id
+                    );
+                }
+            }
+        }
+    }
+
+    // ── Test: atomic write leaves no .tmp file ──────────────────────────────
+    #[test]
+    #[ignore = "requires tempfile crate"]
+    fn test_atomic_write_tmp_cleanup() {
+        // Test ignored due to tempfile dependency
+    }
+
+    // ── Test: empty name rejected ─────────────────────────────────────────────
+    #[test]
+    fn test_empty_template_name_rejected() {
+        let result = slugify_id("@#$%");
+        assert!(result.is_empty() || result.trim_matches('-').is_empty(),
+            "Special-chars-only name should slugify to empty or dashes");
+    }
+
+    // ── Test: handle_create_template forbids non-admin (403) ─────────────────
+    #[tokio::test]
+    async fn test_create_template_requires_admin() {
+        let body = TemplateCreateBody {
+            name: "Test Template".to_string(),
+            category: "test".to_string(),
+            description: String::new(),
+            tags: vec![],
+            questions: vec![],
+            from_quiz_id: None,
+        };
+
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let err = handle_create_template(headers, State(state), axum::Json(body))
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "CREATE template without admin should return 403");
+    }
+
+    // ── Test: handle_update_template forbids non-admin (403) ─────────────────
+    #[tokio::test]
+    async fn test_update_template_requires_admin() {
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let template_id = "tpl-test".to_string();
+        let body = TemplateWriteBody {
+            name: "Updated Template".to_string(),
+            category: "test".to_string(),
+            description: String::new(),
+            tags: vec![],
+            questions: vec![],
+        };
+
+        let err = handle_update_template(
+            headers,
+            axum::extract::Path(template_id),
+            State(state),
+            axum::Json(body),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "UPDATE template without admin should return 403");
+    }
+
+    // ── Test: handle_delete_template forbids non-admin (403) ─────────────────
+    #[tokio::test]
+    async fn test_delete_template_requires_admin() {
+        let headers = empty_headers();
+        let state = make_test_app_state().await;
+
+        let template_id = "tpl-test".to_string();
+
+        let err = handle_delete_template(
+            headers,
+            axum::extract::Path(template_id),
+            State(state),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(err.0, StatusCode::FORBIDDEN, "DELETE template without admin should return 403");
+    }
+}
