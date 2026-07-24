@@ -59,6 +59,9 @@ const Result = ({
     bonusPoints,
     correctAnswer,
     correctChunks,
+    correctOptions,
+    correctMatches,
+    correctHotspotIndex,
     correctOrder,
     items,
     correctTokenPos,
@@ -209,8 +212,11 @@ const Result = ({
       {/* Reveal (§14.3, unified via AnswerRevealPanel): per-position submitted-vs-
           correct feedback (sentence-builder / wortarten / sequencing) first, then
           the canonical correct-answer panel — tokenPos for wortarten (richer,
-          preferred), chips for sentence-builder / sequencing, text as the
-          generic fallback (slider/mathematik/… and old servers without
+          preferred), chips for fill-blank / matching (W1a typed fields; they
+          also leak into correctChunks, so they must win BEFORE the legacy
+          sentence-builder branch to get their own titles) / sentence-builder /
+          sequencing, a text panel for drop-pin, and text as the generic
+          wrong-answer fallback (slider/mathematik/… and old servers without
           correctTokenPos). Poll never carries reveal data (`!poll` gate). */}
       {!poll && correctChunks && submittedChunks.length > 0 && (
         <motion.div
@@ -289,6 +295,38 @@ const Result = ({
         >
           <AnswerRevealPanel variant="tokenPos" tokenPos={correctTokenPos} />
         </motion.div>
+      ) : !poll && correctOptions && correctOptions.length > 0 ? (
+        // W1a fill-blank: one chip per blank slot. Preferred over the legacy
+        // correctChunks leak (same labels, wrong sentence-builder title).
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel
+            variant="chips"
+            title={t("game:fillBlank.correctAnswers")}
+            chips={correctOptions}
+          />
+        </motion.div>
+      ) : !poll && correctMatches && correctMatches.length > 0 ? (
+        // W1a matching: one chip per left item's correct option (the payload
+        // carries option labels only — no left labels to pair for tokenPos).
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel
+            variant="chips"
+            title={t("game:matching.correctMatches")}
+            chips={correctMatches}
+          />
+        </motion.div>
       ) : !poll && correctChunks ? (
         <motion.div
           className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
@@ -315,6 +353,24 @@ const Result = ({
             variant="chips"
             title={t("game:sequencing.correctOrder")}
             chips={correctOrder.map(sequencingLabel)}
+          />
+        </motion.div>
+      ) : !poll && correctHotspotIndex != null ? (
+        // W1a drop-pin: text reveal of the correct zone whenever the index is
+        // present (even on a correct answer) so presenter + player both see the
+        // solution. correctAnswer carries the server's zone label; the index is
+        // only a fallback. No media/hotspot overlay here — separate WP.
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel
+            variant="text"
+            title={t("game:dropPin.correctLocation")}
+            text={correctAnswer ?? `#${correctHotspotIndex + 1}`}
           />
         </motion.div>
       ) : (
