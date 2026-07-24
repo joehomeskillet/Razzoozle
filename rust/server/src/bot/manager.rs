@@ -117,6 +117,7 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
         Some(QuestionType::MultipleSelect) => (None, Some(pick_multiple_select(question)), None),
         Some(QuestionType::TypeAnswer) => (None, None, Some(pick_type_answer(question))),
         Some(QuestionType::SentenceBuilder) => (None, None, Some(pick_sentence_builder(question))),
+        Some(QuestionType::Sequencing) => (None, None, Some(pick_sequencing(question))),
         _ => (Some(pick_choice(question)), None, None),
     }
 }
@@ -226,6 +227,31 @@ fn pick_sentence_builder(question: &Question) -> String {
         shuffled.swap(i, j);
     }
     shuffled.join(" ")
+}
+
+fn pick_sequencing(question: &Question) -> String {
+    let items = question.items.clone().unwrap_or_default();
+    if items.is_empty() {
+        return String::new();
+    }
+
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+
+    let order: Vec<String> = if want_correct {
+        question.correct_order.clone().unwrap_or_else(|| {
+            items.iter().map(|item| item.id.clone()).collect()
+        })
+    } else {
+        let mut shuffled: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
+        let mut rng = rand::thread_rng();
+        for i in (1..shuffled.len()).rev() {
+            let j = rng.gen_range(0..=i);
+            shuffled.swap(i, j);
+        }
+        shuffled
+    };
+
+    serde_json::to_string(&order).unwrap_or_default()
 }
 
 async fn submit_bot_answer(
