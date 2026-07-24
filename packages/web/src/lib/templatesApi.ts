@@ -1,4 +1,4 @@
-import { Question } from "@razzoozle/common"
+import type { Question } from "@razzoozle/common/types/game"
 import { fetchWithAuth } from "./api"
 
 /** Template metadata returned by GET /api/templates */
