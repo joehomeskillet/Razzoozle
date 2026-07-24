@@ -1,13 +1,14 @@
 //! Quiz template library — file-backed under config/templates/*.json
 
 use axum::{extract::State, http::StatusCode, Json};
+use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 
 use crate::state::safe_asset_id;
-use super::AppState;
+use super::{get_config_path, AppState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TemplateMeta {
@@ -91,7 +92,7 @@ pub struct CreateFromTemplateBody {
 }
 
 pub async fn handle_create_from_template(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Json(body): Json<CreateFromTemplateBody>,
 ) -> Result<Json<Value>, (StatusCode, String)> {
     safe_asset_id(&body.template_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
@@ -114,6 +115,45 @@ pub async fn handle_create_from_template(
         .map(|d| d.as_millis())
         .unwrap_or(0);
     let new_id = format!("tpl-{}-{:x}", body.template_id, millis);
+
+    let quiz = Quizz {
+        subject: subject.clone(),
+        questions: serde_json::from_value(questions.clone()).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to build quiz from template: {e}"),
+            )
+        })?,
+        archived: Some(false),
+        theme_id: None,
+    };
+    let serialized = serde_json::to_string_pretty(&quiz).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to serialize quiz: {e}"),
+        )
+    })?;
+    let quiz_dir = PathBuf::from(get_config_path()).join("quizz");
+    fs::create_dir_all(&quiz_dir).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to create quiz directory: {e}"),
+        )
+    })?;
+    fs::write(quiz_dir.join(format!("{new_id}.json")), serialized).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to write quiz: {e}"),
+        )
+    })?;
+
+    state
+        .registry
+        .write()
+        .await
+        .quizzes
+        .insert(new_id.clone(), quiz);
+
     Ok(Json(serde_json::json!({
         "id": new_id,
         "subject": subject,
