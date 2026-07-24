@@ -16,20 +16,23 @@ import { newStagehand } from './config';
 const BASE_URL = process.env.E2E_BASE_URL ?? 'https://rust.razzoozle.xyz';
 const testIdSel = (id: string) => `[data-testid="${id}"]`;
 
-// Resolve socket.io-client like e2e/scripts/upsert-quiz.mjs (pnpm strict layout)
-const require = createRequire(
+// Resolve socket.io-client like e2e/scripts/upsert-quiz.mjs (pnpm strict layout).
+const webPkgCandidates = [
   resolve(dirname(fileURLToPath(import.meta.url)), '../../../packages/web/package.json'),
-);
-// fallback paths for worktree layout
-let io: typeof import('socket.io-client').io;
-try {
-  ({ io } = require('socket.io-client'));
-} catch {
-  const require2 = createRequire(
-    resolve(process.cwd(), '../../packages/web/package.json'),
-  );
-  ({ io } = require2('socket.io-client'));
+  resolve(process.cwd(), '../packages/web/package.json'),
+  resolve(process.cwd(), '../../packages/web/package.json'),
+  resolve(process.cwd(), '../../../../../packages/web/package.json'),
+];
+let io: typeof import('socket.io-client').io | undefined;
+for (const pkg of webPkgCandidates) {
+  try {
+    ({ io } = createRequire(pkg)('socket.io-client') as { io: typeof import('socket.io-client').io });
+    break;
+  } catch {
+    /* try next */
+  }
 }
+if (!io) throw new Error('socket.io-client not resolvable from packages/web');
 
 function requirePassword(): string {
   const password = process.env.E2E_PW;
