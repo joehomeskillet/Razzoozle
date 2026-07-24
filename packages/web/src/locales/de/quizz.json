@@ -73,7 +73,11 @@
     "wortarten": "Wortarten",
     "wortartenDesc": "Wortarten-Bestimmung (Deutsch)",
     "vokabelliste": "Vokabelliste",
-    "vokabellisteDesc": "Bulk-Editor für Wort-Paare → emittiert mehrere Texteingabe-Fragen"
+    "vokabellisteDesc": "Bulk-Editor für Wort-Paare → emittiert mehrere Texteingabe-Fragen",
+    "fillBlank": "Lückenfüller",
+    "fillBlankDesc": "Satz mit Dropdown-Lücken füllen",
+    "matching": "Zuordnung",
+    "matchingDesc": "Begriffe per Dropdown zuordnen"
   },
   "slider": {
     "min": "Min",
@@ -170,5 +174,23 @@
     "removeItem": "Element entfernen",
     "preview": "Spieler ordnen diese Elemente",
     "minItemsRequired": "Mindestens 2 Elemente erforderlich"
+  },
+  "fillBlank": {
+    "addSlot": "Lücke hinzufügen",
+    "placeholder": "Text oder Lücke",
+    "optionPlaceholder": "Option",
+    "removeSlot": "Lücke entfernen",
+    "optionsLabel": "Optionen der Lücke",
+    "correctOption": "Richtige Option",
+    "minSlotsRequired": "Mindestens 1 Lücke erforderlich"
+  },
+  "matching": {
+    "addItem": "Paar hinzufügen",
+    "labelPlaceholder": "Linker Text",
+    "optionPlaceholder": "Rechte Option",
+    "removeItem": "Paar entfernen",
+    "optionsLabel": "Optionen",
+    "correctOption": "Richtige Option",
+    "minItemsRequired": "Mindestens 1 Paar erforderlich"
   }
 }

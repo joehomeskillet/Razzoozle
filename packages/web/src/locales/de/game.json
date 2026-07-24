@@ -346,5 +346,19 @@
   "join": {
     "identifier": "Kennung (optional)",
     "identifierHint": "Optional zur Verfolgung der Zuordnung"
+  },
+  "fillBlank": {
+    "slotCorrect": "Korrekt",
+    "slotWrong": "Falsch",
+    "correctAnswer": "Richtige Antwort: {{option}}",
+    "selectOption": "Option wählen",
+    "fillAllSlots": "Bitte alle Lücken ausfüllen"
+  },
+  "matching": {
+    "slotCorrect": "Korrekt",
+    "slotWrong": "Falsch",
+    "correctAnswer": "Richtige Antwort: {{option}}",
+    "selectOption": "Option wählen",
+    "fillAllSlots": "Bitte alle Lücken ausfüllen"
   }
 }

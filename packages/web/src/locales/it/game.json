@@ -346,5 +346,19 @@
   "sequencing": {
     "correctOrder": "Ordine corretto",
     "yourOrder": "Il tuo ordine"
+  },
+  "fillBlank": {
+    "slotCorrect": "Corretto",
+    "slotWrong": "Sbagliato",
+    "correctAnswer": "Risposta corretta: {{option}}",
+    "selectOption": "Scegli opzione",
+    "fillAllSlots": "Compila tutti gli spazi"
+  },
+  "matching": {
+    "slotCorrect": "Corretto",
+    "slotWrong": "Sbagliato",
+    "correctAnswer": "Risposta corretta: {{option}}",
+    "selectOption": "Scegli opzione",
+    "fillAllSlots": "Compila tutti gli spazi"
   }
 }

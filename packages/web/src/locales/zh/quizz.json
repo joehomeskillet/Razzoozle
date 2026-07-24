@@ -81,7 +81,11 @@
     "vokabelliste": "词汇表",
     "vokabellisteDesc": "单词对批量编辑器 → 生成多个文本输入问题",
     "sequencing": "排序",
-    "sequencingDesc": "玩家将项目按正确顺序排列"
+    "sequencingDesc": "玩家将项目按正确顺序排列",
+    "fillBlank": "填空",
+    "fillBlankDesc": "用下拉菜单完成句子",
+    "matching": "配对",
+    "matchingDesc": "用下拉菜单配对项目"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",
@@ -170,5 +174,23 @@
     "removeItem": "删除项目",
     "preview": "玩家将排序这些项目",
     "minItemsRequired": "需要至少 2 个项目"
+  },
+  "fillBlank": {
+    "addSlot": "添加空格",
+    "placeholder": "文本或空格",
+    "optionPlaceholder": "选项",
+    "removeSlot": "删除空格",
+    "optionsLabel": "空格选项",
+    "correctOption": "正确选项",
+    "minSlotsRequired": "至少需要 1 个空格"
+  },
+  "matching": {
+    "addItem": "添加配对",
+    "labelPlaceholder": "左侧标签",
+    "optionPlaceholder": "右侧选项",
+    "removeItem": "删除配对",
+    "optionsLabel": "选项",
+    "correctOption": "正确选项",
+    "minItemsRequired": "至少需要 1 组配对"
   }
 }
