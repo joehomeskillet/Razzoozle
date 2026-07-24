@@ -471,7 +471,7 @@ export default function WortartenPicker({
         onClick={onSubmit}
         disabled={submitDisabled}
         className={clsx(
-          "mx-auto rounded-xl bg-[var(--color-primary)] px-8 py-3 text-xl font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+          "mx-auto rounded-[var(--radius-theme)] bg-[var(--color-primary)] px-8 py-3 text-xl font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:opacity-50 lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
           !isSolo && PRESS_FEEDBACK,
         )}
       >
