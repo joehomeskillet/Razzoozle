@@ -71,7 +71,9 @@
     "wortarten": "Parti del Discorso",
     "wortartenDesc": "Etichettatura delle parti del discorso",
     "vokabelliste": "Elenco Vocabolario",
-    "vokabellisteDesc": "Editor in blocco per coppie di parole → emette più domande di input di testo"
+    "vokabellisteDesc": "Editor in blocco per coppie di parole → emette più domande di input di testo",
+    "sequencing": "Ordinamento",
+    "sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto"
   },
   "slider": {
     "min": "Min",

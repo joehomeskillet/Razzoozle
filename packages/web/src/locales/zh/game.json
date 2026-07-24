@@ -342,5 +342,9 @@
   "join": {
     "identifier": "标识符（可选）",
     "identifierHint": "可选用于追踪作业分配"
+  },
+  "sequencing": {
+    "correctOrder": "正确顺序",
+    "yourOrder": "你的顺序"
   }
 }

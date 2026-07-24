@@ -79,7 +79,9 @@
     "wortarten": "Parties du Discours",
     "wortartenDesc": "Étiquetage des parties du discours",
     "vokabelliste": "Liste de Vocabulaire",
-    "vokabellisteDesc": "Éditeur en masse pour les paires de mots → émet plusieurs questions de saisie de texte"
+    "vokabellisteDesc": "Éditeur en masse pour les paires de mots → émet plusieurs questions de saisie de texte",
+    "sequencing": "Classement",
+    "sequencingDesc": "Les joueurs classent les éléments dans le bon ordre"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",

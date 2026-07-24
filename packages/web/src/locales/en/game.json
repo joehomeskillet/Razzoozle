@@ -342,5 +342,9 @@
   "join": {
     "identifier": "Identifier (optional)",
     "identifierHint": "Optional for assignment tracking"
+  },
+  "sequencing": {
+    "correctOrder": "Correct order",
+    "yourOrder": "Your order"
   }
 }

@@ -342,5 +342,9 @@
   "join": {
     "identifier": "Identificatore (facoltativo)",
     "identifierHint": "Facoltativo per il tracciamento delle assegnazioni"
+  },
+  "sequencing": {
+    "correctOrder": "Ordine corretto",
+    "yourOrder": "Il tuo ordine"
   }
 }

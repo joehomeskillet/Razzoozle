@@ -79,7 +79,9 @@
     "wortarten": "Parts of Speech",
     "wortartenDesc": "Parts of speech tagging",
     "vokabelliste": "Vocabulary List",
-    "vokabellisteDesc": "Bulk editor for word pairs → emits multiple text-input questions"
+    "vokabellisteDesc": "Bulk editor for word pairs → emits multiple text-input questions",
+    "sequencing": "Sequencing",
+    "sequencingDesc": "Players arrange items in the correct order"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",
