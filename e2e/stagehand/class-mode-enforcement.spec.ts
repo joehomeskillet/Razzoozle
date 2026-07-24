@@ -101,36 +101,57 @@ async function run() {
     });
     await waitForTestId(manager, 'quizz-start-btn', 15_000);
 
-    // Enable klassenMode via ToggleField row (role=switch + nearby label text)
+    // Enable klassenMode: pick the *tightest* switch row (shortest matching label),
+    // not a parent that also contains "team mode" / "speed" options.
     const klassenToggle = await manager.evaluate(() => {
       const switches = Array.from(document.querySelectorAll('[role="switch"]'));
+      type Cand = { sw: Element; label: string; len: number };
+      const cands: Cand[] = [];
       for (const sw of switches) {
-        let row: HTMLElement | null = sw as HTMLElement;
-        for (let i = 0; i < 6 && row; i++) {
-          const t = (row.textContent ?? '').toLowerCase();
-          if (
-            t.includes('klassen') ||
-            t.includes('class mode') ||
-            t.includes('klassenmodus') ||
-            t.includes('class-mode')
-          ) {
-            const on =
-              sw.getAttribute('aria-checked') === 'true' ||
-              sw.getAttribute('data-state') === 'checked';
-            if (!on) (sw as HTMLElement).click();
-            return { found: true as const, wasOn: on, snippet: t.replace(/\s+/g, ' ').slice(0, 100) };
+        // Prefer aria-label / associated title on the switch itself first
+        const selfLabel = (
+          sw.getAttribute('aria-label') ||
+          sw.getAttribute('title') ||
+          ''
+        ).toLowerCase();
+        let bestLocal = selfLabel;
+        let row: HTMLElement | null = sw.parentElement;
+        for (let i = 0; i < 5 && row; i++) {
+          // Only consider relatively small rows (avoid options panel root)
+          const t = (row.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (t.length > 0 && t.length < 120) {
+            bestLocal = t;
           }
           row = row.parentElement;
         }
+        if (
+          bestLocal.includes('class mode') ||
+          bestLocal.includes('klassenmodus') ||
+          bestLocal.includes('klassen-modus') ||
+          (bestLocal.includes('klassen') && !bestLocal.includes('team')) ||
+          bestLocal.includes('class-mode')
+        ) {
+          // Reject if this label is clearly the whole options panel
+          if (bestLocal.includes('speed') && bestLocal.includes('team')) continue;
+          cands.push({ sw, label: bestLocal, len: bestLocal.length });
+        }
       }
-      return {
-        found: false as const,
-        dump: switches.map((sw) => {
-          let row: HTMLElement | null = sw as HTMLElement;
-          for (let i = 0; i < 4 && row; i++) row = row.parentElement;
-          return (row?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
-        }),
-      };
+      cands.sort((a, b) => a.len - b.len);
+      if (cands.length === 0) {
+        return {
+          found: false as const,
+          dump: switches.map((sw) => {
+            const p = sw.parentElement?.parentElement;
+            return (p?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+          }),
+        };
+      }
+      const pick = cands[0];
+      const on =
+        pick.sw.getAttribute('aria-checked') === 'true' ||
+        pick.sw.getAttribute('data-state') === 'checked';
+      if (!on) (pick.sw as HTMLElement).click();
+      return { found: true as const, wasOn: on, snippet: pick.label.slice(0, 100), n: cands.length };
     });
 
     if (!klassenToggle.found) {
@@ -140,9 +161,26 @@ async function run() {
       return;
     }
     console.log(`Klassen toggle: ${JSON.stringify(klassenToggle)}`);
-    await manager.waitForTimeout(600);
-
-    const hasClassSelect = await manager.locator(testIdSel('class-select')).isVisible().catch(() => false);
+    // Wait for class-select to appear (React re-render after toggle)
+    let hasClassSelect = false;
+    for (let i = 0; i < 20; i++) {
+      hasClassSelect = await manager.locator(testIdSel('class-select')).isVisible().catch(() => false);
+      if (hasClassSelect) break;
+      // If still off, re-click the tightest klassen switch once
+      if (i === 5 || i === 12) {
+        await manager.evaluate(() => {
+          const switches = Array.from(document.querySelectorAll('[role="switch"]'));
+          for (const sw of switches) {
+            const p = (sw.parentElement?.parentElement?.textContent ?? '').toLowerCase();
+            if ((p.includes('class mode') || p.includes('klassen')) && !p.includes('team mode') && p.length < 100) {
+              (sw as HTMLElement).click();
+              return;
+            }
+          }
+        });
+      }
+      await manager.waitForTimeout(300);
+    }
     if (!hasClassSelect) {
       throw new Error('class-select missing after enabling klassenMode');
     }
