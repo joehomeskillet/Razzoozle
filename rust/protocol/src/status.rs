@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 // Import Player from sibling module
 use crate::player::Player;
-use crate::quizz::QuestionMedia;
+use crate::quizz::{QuestionMedia, SequencingItem};
 
 // RoundRecapKey enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
@@ -169,6 +169,9 @@ pub struct SelectAnswerData {
     pub shuffled_chunks: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
+    pub shuffled_items: Option<Vec<SequencingItem>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub server_seq: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -236,6 +239,12 @@ pub struct ShowResultData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_order: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub items: Option<Vec<SequencingItem>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_token_pos: Option<Vec<TokenPos>>,
@@ -315,6 +324,12 @@ pub struct ShowResponsesData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_chunks: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub correct_order: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub items: Option<Vec<SequencingItem>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub correct_token_pos: Option<Vec<TokenPos>>,

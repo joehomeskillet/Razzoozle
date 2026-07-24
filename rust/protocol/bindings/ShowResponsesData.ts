@@ -2,6 +2,7 @@
 import type { MatchMode } from "./MatchMode";
 import type { QuestionMedia } from "./QuestionMedia";
 import type { RoundRecapAward } from "./RoundRecapAward";
+import type { SequencingItem } from "./SequencingItem";
 import type { TokenPos } from "./TokenPos";
 
-export type ShowResponsesData = { question: string, responses: { [key in string]?: number }, solutions: Array<number>, answers: Array<string>, media?: QuestionMedia, type?: string, correct?: number, correctAnswer?: string, unit?: string, cooldown: number, time: number, min?: number, max?: number, step?: number, averageGuess?: number, textResponses?: { [key in string]?: number }, acceptedAnswers?: Array<string>, matchMode?: MatchMode, chunks?: Array<string>, correctChunks?: Array<string>, correctTokenPos?: Array<TokenPos>, roundRecap?: Array<RoundRecapAward>, };
+export type ShowResponsesData = { question: string, responses: { [key in string]?: number }, solutions: Array<number>, answers: Array<string>, media?: QuestionMedia, type?: string, correct?: number, correctAnswer?: string, unit?: string, cooldown: number, time: number, min?: number, max?: number, step?: number, averageGuess?: number, textResponses?: { [key in string]?: number }, acceptedAnswers?: Array<string>, matchMode?: MatchMode, chunks?: Array<string>, correctChunks?: Array<string>, correctOrder?: Array<string>, items?: Array<SequencingItem>, correctTokenPos?: Array<TokenPos>, roundRecap?: Array<RoundRecapAward>, };
