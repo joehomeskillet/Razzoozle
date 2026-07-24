@@ -52,6 +52,7 @@ postgres-data/
 # build caches + agent scratch (untracked 2026-07-07)
 *.tsbuildinfo
 scratchpad/
+/build/
 
 # design-sync (staged scripts + build output + machine state)
 .ds-sync/

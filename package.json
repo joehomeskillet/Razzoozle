@@ -15,7 +15,8 @@
     "format:fix": "pnpm -r --parallel run format:fix",
     "e2e": "playwright test --config e2e/playwright.config.ts",
     "i18n:check": "i18n-check -l packages/web/src/locales -s de -f i18next",
-    "i18n:report": "i18n-check -l packages/web/src/locales -s de -f i18next -o unused,undefined -u packages/web/src"
+    "i18n:report": "i18n-check -l packages/web/src/locales -s de -f i18next -o unused,undefined -u packages/web/src",
+    "tokens:build": "npx style-dictionary build --config style-dictionary.config.mjs"
   },
   "devDependencies": {
     "@lingual/i18n-check": "0.9.5",
