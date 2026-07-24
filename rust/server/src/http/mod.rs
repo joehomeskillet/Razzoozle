@@ -11,6 +11,7 @@ mod client_events;
 mod result_og;
 pub mod solo;
 mod templates;
+#[cfg(test)] mod templates_tests;
 mod static_files;
 mod login;
 mod submit;
