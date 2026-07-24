@@ -59,7 +59,11 @@
     "unmute": "Activer le son",
     "hapticsOff": "Vibration désactivée",
     "hapticsOn": "Vibration activée",
-    "hapticsUnsupported": "Vibration non prise en charge sur cet appareil"
+    "hapticsUnsupported": "Vibration non prise en charge sur cet appareil",
+    "skipQuestion": "Passer la question",
+    "revealAnswer": "Révéler la réponse",
+    "addTime": "Ajouter 10 secondes",
+    "subtractTime": "Retirer 10 secondes"
   },
   "sending": "envoi…",
   "avatar": {

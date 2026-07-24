@@ -60,7 +60,11 @@
     "unmute": "取消静音",
     "hapticsOff": "关闭振动",
     "hapticsOn": "开启振动",
-    "hapticsUnsupported": "此设备不支持振动"
+    "hapticsUnsupported": "此设备不支持振动",
+    "skipQuestion": "跳过问题",
+    "revealAnswer": "揭晓答案",
+    "addTime": "增加10秒",
+    "subtractTime": "减少10秒"
   },
   "avatar": {
     "title": "你的头像",
