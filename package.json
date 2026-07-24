@@ -22,6 +22,8 @@
     "tokens:validate": "node scripts/lint-design-tokens.mjs",
     "tokens:ast": "node scripts/ast-grep-tokens.mjs",
     "tokens:wasm": "node scripts/wasm-token-codemod.mjs",
+    "tokens:morph": "node scripts/ast-morph-tailwind.mjs",
+    "tokens:neural": "node scripts/neural-design-core.mjs",
     "tokens:ai-audit": "node scripts/ai-governance-audit.mjs",
     "tokens:fix": "node scripts/lint-design-tokens.mjs --fix",
     "g:component": "node scripts/generate-component.mjs",

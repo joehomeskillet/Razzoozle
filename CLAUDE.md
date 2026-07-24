@@ -42,6 +42,8 @@ pnpm tokens:doc                              # Generate Living Design System spe
 pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
 pnpm tokens:ast                              # AST structural linter for hardcoded hex attributes & inline styles
 pnpm tokens:wasm                             # High-speed SWC/AST token codemod transformer (sub-20ms)
+pnpm tokens:morph                            # AST-Morph zero-runtime Tailwind v4 compiler
+pnpm tokens:neural                           # Neural-Design-Core viewport auditor (375px/390px/440px)
 pnpm tokens:ai-audit                         # Dual-Pass AI Design System Governance Audit
 pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```
