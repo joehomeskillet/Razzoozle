@@ -81,12 +81,15 @@ if [[ -x "$(dirname "$0")/../scripts/check-locales.sh" ]] || [[ -f "$(dirname "$
   else say "NO-GO: invalid locale JSON (see above)"; fail=1; fi
 fi
 
-# --- 6. Design Token & Agent Rule Governance (BLOCKING) ----------------------
-if [[ -f "$(dirname "$0")/../scripts/sync-agent-rules.mjs" ]]; then
-  if node "$(dirname "$0")/../scripts/sync-agent-rules.mjs" >/dev/null 2>&1 && node "$(dirname "$0")/../scripts/lint-design-tokens.mjs" >/dev/null 2>&1; then
-    say "ok: design tokens & agent governance rules verified"
+# --- 6. Unified Design System Gate (BLOCKING) --------------------------------
+# Runs the FULL token verification chain: lint, AST, WASM, morph, neural,
+# AI-audit, daemon, and agent rule sync — in one deterministic pipeline.
+GATE_SCRIPT="$(dirname "$0")/../scripts/design-gate.mjs"
+if [[ -f "$GATE_SCRIPT" ]]; then
+  if node "$GATE_SCRIPT" >/dev/null 2>&1; then
+    say "ok: unified design system gate passed"
   else
-    say "NO-GO: design tokens or agent governance rules invalid"; fail=1
+    say "NO-GO: unified design system gate failed (run 'pnpm tokens:gate' for details)"; fail=1
   fi
 fi
 

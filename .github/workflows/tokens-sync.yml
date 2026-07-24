@@ -6,6 +6,12 @@ on:
       - 'design.tokens.json'
       - 'packages/web/src/**'
       - 'scripts/**'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.cursorrules'
+      - '.clinerules'
+      - 'CODEX.md'
+      - '.windsurfrules'
   pull_request:
     paths:
       - 'design.tokens.json'
@@ -29,19 +35,17 @@ jobs:
       - name: Build Design Tokens & Living Spec
         run: pnpm tokens:build
 
-      - name: Validate & Auto-Fix Design Tokens
-        run: |
-          pnpm tokens:fix
-          pnpm tokens:validate
+      - name: Run Unified Design System Gate (Auto-Fix + Validate)
+        run: pnpm tokens:gate:fix
 
-      - name: Run Workspace Verification Gate
-        run: pnpm verify
+      - name: Run Workspace Verification (types + lint + tests)
+        run: pnpm -r run types && oxlint && pnpm -r --if-present run test
 
       - name: Commit Auto-Fixed Tokens & Specs if Changed
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "razzoozle-bot[bot]"
           git config user.email "bot@razzoozle.local"
-          git add build/css/tokens.css packages/common/src/theme-tokens.generated.ts docs/design/LIVING_DESIGN_SYSTEM.md packages/web/src/
-          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, and Living Design System spec"
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, agent rules, and Living Design System spec"
           git push origin main
