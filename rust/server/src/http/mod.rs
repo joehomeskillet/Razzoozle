@@ -206,6 +206,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/quizz/:id/solo", get(solo::handle_get_quiz_solo))
         .route("/api/quizz/:id/check-answer", post(solo::handle_check_answer))
         .route("/api/quizz/:id/solo-score", post(solo::handle_solo_score))
+        .route("/api/quizz/:id/study", get(solo::handle_get_quiz_study))
+        .route("/api/quizz/:id/practice-score", post(solo::handle_practice_score))
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))

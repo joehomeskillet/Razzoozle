@@ -378,6 +378,49 @@ fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -
     score
 }
 
+
+/// Study mode: return quiz questions WITH solutions for free-paced review.
+pub async fn handle_get_quiz_study(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Path(quiz_id): Path<String>,
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let client_ip = addr.ip().to_string();
+    if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+    let registry = state.registry.read().await;
+    let quiz = registry
+        .get_quiz_by_id(&quiz_id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, "Quiz not found".to_string()))?;
+    let questions = serde_json::to_value(&quiz.questions)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(serde_json::json!({
+        "subject": quiz.subject,
+        "questions": questions,
+        "mode": "study",
+    })))
+}
+
+/// Practice mode score sink: never writes leaderboard entries.
+pub async fn handle_practice_score(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Path(quiz_id): Path<String>,
+    Json(_payload): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let client_ip = addr.ip().to_string();
+    if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
+        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+    }
+    Ok(Json(serde_json::json!({
+        "leaderboard": [],
+        "message": "Practice score accepted (not ranked)",
+        "mode": "practice",
+    })))
+}
+
 pub async fn handle_solo_score(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,

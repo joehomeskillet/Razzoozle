@@ -367,5 +367,19 @@
     "reveal": "Zona corretta",
     "correct": "Colpito!",
     "incorrect": "Mancato"
+  },
+  "study": {
+    "badge": "Studio",
+    "progress": "Domanda {{n}} di {{total}}",
+    "correctAnswer": "Risposta corretta",
+    "noExplanation": "Nessuna spiegazione",
+    "prev": "Precedente",
+    "next": "Successiva",
+    "empty": "Nessuna domanda"
+  },
+  "practice": {
+    "banner": "Esercitazione — punteggio non classificato",
+    "finished": "Esercitazione completata",
+    "notRanked": "Non classificato — solo esercitazione"
   }
 }
