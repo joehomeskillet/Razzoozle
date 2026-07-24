@@ -326,7 +326,10 @@
     "empty": "No se ha encontrado ningún estudiante. Pregunta a tu profesor o profesora."
   },
   "reveal": {
-    "correctAnswer": "Respuesta correcta"
+    "correctAnswer": "Respuesta correcta",
+    "yourAnswer": "Tu respuesta",
+    "yourValue": "Tu valor",
+    "correctValue": "Valor correcto"
   },
   "podium": {
     "firstPlace": "1.er puesto",
@@ -352,21 +355,24 @@
     "slotWrong": "Incorrecto",
     "correctAnswer": "Respuesta correcta: {{option}}",
     "selectOption": "Elegir opción",
-    "fillAllSlots": "Rellena todos los huecos"
+    "fillAllSlots": "Rellena todos los huecos",
+    "correctAnswers": "Soluciones correctas"
   },
   "matching": {
     "slotCorrect": "Correcto",
     "slotWrong": "Incorrecto",
     "correctAnswer": "Respuesta correcta: {{option}}",
     "selectOption": "Elegir opción",
-    "fillAllSlots": "Rellena todos los huecos"
+    "fillAllSlots": "Rellena todos los huecos",
+    "correctMatches": "Coincidencias correctas"
   },
   "dropPin": {
     "prompt": "Haz clic en el punto correcto",
     "clickImage": "Coloca el pin",
     "reveal": "Zona correcta",
     "correct": "¡Acierto!",
-    "incorrect": "Fallo"
+    "incorrect": "Fallo",
+    "correctLocation": "Ubicación correcta"
   },
   "study": {
     "badge": "Estudiar",

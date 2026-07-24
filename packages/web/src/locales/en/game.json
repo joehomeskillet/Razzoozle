@@ -326,7 +326,10 @@
     "empty": "No students found. Ask your teacher."
   },
   "reveal": {
-    "correctAnswer": "Correct answer"
+    "correctAnswer": "Correct answer",
+    "yourAnswer": "Your answer",
+    "yourValue": "Your value",
+    "correctValue": "Correct value"
   },
   "podium": {
     "firstPlace": "1st place",
@@ -352,21 +355,24 @@
     "slotWrong": "Wrong",
     "correctAnswer": "Correct answer: {{option}}",
     "selectOption": "Select option",
-    "fillAllSlots": "Please fill all blanks"
+    "fillAllSlots": "Please fill all blanks",
+    "correctAnswers": "Correct solutions"
   },
   "matching": {
     "slotCorrect": "Correct",
     "slotWrong": "Wrong",
     "correctAnswer": "Correct answer: {{option}}",
     "selectOption": "Select option",
-    "fillAllSlots": "Please fill all blanks"
+    "fillAllSlots": "Please fill all blanks",
+    "correctMatches": "Correct matches"
   },
   "dropPin": {
     "prompt": "Click the correct spot on the image",
     "clickImage": "Place the pin",
     "reveal": "Correct zone",
     "correct": "Hit!",
-    "incorrect": "Miss"
+    "incorrect": "Miss",
+    "correctLocation": "Correct location"
   },
   "study": {
     "badge": "Study",
