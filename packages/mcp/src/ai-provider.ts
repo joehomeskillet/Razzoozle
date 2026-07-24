@@ -11,7 +11,9 @@
 // secret-scanned (same patterns as the image handler) before it leaves this
 // module. Key policy: anthropic ALWAYS needs a key; openai-compatible needs a
 // key UNLESS the baseUrl is a local host (localhost/127.0.0.1/host.docker.internal).
+import { QUESTION_TYPES } from "@razzoozle/common/constants"
 import { AI, AI_PROVIDER_OFF } from "@razzoozle/common/constants"
+// QUESTION_TYPES used by generateQuestion
 import type { AIProviderConfig, AISettings } from "@razzoozle/common/types/ai"
 import type { Question, Quizz } from "@razzoozle/common/types/game"
 import {
@@ -255,82 +257,202 @@ const parseJson = (raw: string): unknown => {
 
 export const generateQuestion = async (
   topic: string,
-  type: "choice" | "boolean" | "multiple-select" | "type-answer" = "choice",
+  type: (typeof QUESTION_TYPES)[number] = "choice",
   language = "de",
 ): Promise<Question> => {
   const system =
     "You are a quiz author. Produce a single high-quality quiz question. " +
     "Output strict JSON only, no prose."
 
+  const shapeByType: Record<string, string> = {
+    choice:
+      'JSON shape: {"question": string, "answers": [4 strings], "correctIndex": number 0-3}.',
+    boolean:
+      'JSON shape: {"question": string, "answer": boolean} where answer is true if the statement is correct.',
+    "multiple-select":
+      'JSON shape: {"question": string, "answers": [2-4 strings], "correctIndexes": [>=2 distinct indices]}.',
+    "type-answer":
+      'JSON shape: {"question": string, "acceptedAnswers": [1-5 short accepted strings]}.',
+    "sentence-builder":
+      'JSON shape: {"question": string, "chunks": [2-12 word strings in correct order]}.',
+    sequencing:
+      'JSON shape: {"question": string, "items": [{"id": string, "label": string}, ... at least 2]}. correct order = array order.',
+    mathematik:
+      'JSON shape: {"question": string, "correct": number, "tolerance": number, "decimals": number}.',
+    wortarten:
+      'JSON shape: {"question": string, "sentence": string, "tokens": string[], "posSet": string[], "solutions": number[] indices into posSet}.',
+    "fill-blank":
+      'JSON shape: {"question": string, "segments": string[] (len=slots+1), "slots": [{"options": string[], "correctIndex": number}]}.',
+    matching:
+      'JSON shape: {"question": string, "leftItems": [{"label": string, "options": string[], "correctIndex": number}]}.',
+    "drop-pin":
+      'JSON shape: {"question": string, "hotspots": [{"x":0-1,"y":0-1,"w":0-1,"h":0-1}]}. Image media is supplied separately.',
+    slider:
+      'JSON shape: {"question": string, "min": number, "max": number, "correct": number, "unit": string optional}.',
+    poll:
+      'JSON shape: {"question": string, "answers": [2-4 opinion strings]}.',
+  }
+
   const shapeHint =
-    type === "choice"
-      ? 'JSON shape: {"question": string, "answers": [4 strings], "correctIndex": number 0-3}.'
-      : type === "boolean"
-        ? 'JSON shape: {"question": string, "answer": boolean} where answer is true if the statement is correct.'
-        : type === "multiple-select"
-          ? 'JSON shape: {"question": string, "answers": [2-4 strings], "correctIndexes": [>=2 distinct indices]}.'
-          : 'JSON shape: {"question": string, "acceptedAnswers": [1-5 short accepted strings]}.'
+    shapeByType[type] ??
+    'JSON shape: {"question": string, "answers": [4 strings], "correctIndex": number 0-3}.'
 
   const prompt =
     `Write ONE quiz question of kind "${type}" about: "${topic}". ` +
     `Language: ${language}. ${shapeHint}`
 
-  const raw = await generateText({ system, prompt, json: true, maxTokens: 800 })
-  const parsed = parseJson(raw) as Record<string, unknown>
+  // Retry once on invalid JSON/schema (robustness).
+  let lastErr: unknown
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const raw = await generateText({
+        system,
+        prompt:
+          attempt === 0
+            ? prompt
+            : prompt + " Respond with valid JSON only matching the shape exactly.",
+        json: true,
+        maxTokens: 900,
+      })
+      const parsed = parseJson(raw) as Record<string, unknown>
+      const built = mapLlmToQuestion(type, parsed, language)
+      const result = questionValidator.safeParse(built)
+      if (!result.success) {
+        throw new Error("errors:ai.invalidOutput")
+      }
+      assertNoSecret(JSON.stringify(result.data))
+      return result.data as Question
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("errors:ai.invalidOutput")
+}
 
+function mapLlmToQuestion(
+  type: string,
+  parsed: Record<string, unknown>,
+  language: string,
+): Record<string, unknown> {
   const built: Record<string, unknown> = {
     question: parsed.question,
+    type,
     time: 20,
     cooldown: 5,
   }
-
-  if (type === "choice") {
-    const answers = Array.isArray(parsed.answers)
-      ? (parsed.answers as unknown[]).map((a) => String(a)).slice(0, 4)
-      : []
-    const idx =
-      typeof parsed.correctIndex === "number" ? parsed.correctIndex : 0
-
-    built.answers = answers
-    built.solutions = [idx]
-  } else if (type === "boolean") {
-    built.type = "boolean"
-    built.answers = language.startsWith("de")
-      ? ["Richtig", "Falsch"]
-      : ["True", "False"]
-    built.solutions = [parsed.answer === true ? 0 : 1]
-  } else if (type === "multiple-select") {
-    built.type = "multiple-select"
-    built.answers = Array.isArray(parsed.answers)
-      ? (parsed.answers as unknown[]).map((a) => String(a)).slice(0, 4)
-      : []
-    built.solutions = Array.isArray(parsed.correctIndexes)
-      ? (parsed.correctIndexes as unknown[])
-          .map((n) => Number(n))
-          .filter((n) => Number.isInteger(n) && n >= 0)
-      : []
-  } else {
-    built.type = "type-answer"
-    built.acceptedAnswers = Array.isArray(parsed.acceptedAnswers)
-      ? (parsed.acceptedAnswers as unknown[])
-          .map((a) => String(a))
-          .filter((a) => a.length > 0)
-          .slice(0, 20)
-      : []
-    built.matchMode = "normalized"
+  switch (type) {
+    case "choice": {
+      const answers = Array.isArray(parsed.answers)
+        ? (parsed.answers as unknown[]).map((a) => String(a)).slice(0, 4)
+        : []
+      const idx =
+        typeof parsed.correctIndex === "number" ? parsed.correctIndex : 0
+      built.answers = answers
+      built.solutions = [idx]
+      break
+    }
+    case "boolean":
+      built.answers = language.startsWith("de")
+        ? ["Richtig", "Falsch"]
+        : ["True", "False"]
+      built.solutions = [parsed.answer === true ? 0 : 1]
+      break
+    case "multiple-select":
+      built.answers = Array.isArray(parsed.answers)
+        ? (parsed.answers as unknown[]).map((a) => String(a)).slice(0, 4)
+        : []
+      built.solutions = Array.isArray(parsed.correctIndexes)
+        ? (parsed.correctIndexes as unknown[])
+            .map((n) => Number(n))
+            .filter((n) => Number.isInteger(n) && n >= 0)
+        : []
+      break
+    case "type-answer":
+      built.acceptedAnswers = Array.isArray(parsed.acceptedAnswers)
+        ? (parsed.acceptedAnswers as unknown[])
+            .map((a) => String(a))
+            .filter((a) => a.length > 0)
+            .slice(0, 20)
+        : []
+      built.matchMode = "normalized"
+      break
+    case "sentence-builder":
+      built.chunks = Array.isArray(parsed.chunks)
+        ? (parsed.chunks as unknown[]).map((c) => String(c)).slice(0, 16)
+        : ["A", "B"]
+      break
+    case "sequencing": {
+      const items = Array.isArray(parsed.items)
+        ? (parsed.items as Array<Record<string, unknown>>).map((it, i) => ({
+            id: String(it.id ?? `item-${i}`),
+            label: String(it.label ?? it.id ?? `Item ${i + 1}`),
+          }))
+        : [
+            { id: "a", label: "First" },
+            { id: "b", label: "Second" },
+          ]
+      built.items = items
+      built.correctOrder = items.map((i) => i.id)
+      break
+    }
+    case "mathematik":
+      built.correct = typeof parsed.correct === "number" ? parsed.correct : 0
+      built.tolerance =
+        typeof parsed.tolerance === "number" ? parsed.tolerance : 0.1
+      built.decimals =
+        typeof parsed.decimals === "number" ? parsed.decimals : 2
+      break
+    case "wortarten":
+      built.sentence = String(parsed.sentence ?? "")
+      built.tokens = Array.isArray(parsed.tokens)
+        ? (parsed.tokens as unknown[]).map(String)
+        : []
+      built.posSet = Array.isArray(parsed.posSet)
+        ? (parsed.posSet as unknown[]).map(String)
+        : ["Nomen", "Verb", "Adjektiv", "Artikel"]
+      built.solutions = Array.isArray(parsed.solutions)
+        ? (parsed.solutions as unknown[]).map(Number)
+        : []
+      break
+    case "fill-blank":
+      built.segments = Array.isArray(parsed.segments)
+        ? (parsed.segments as unknown[]).map(String)
+        : ["", ""]
+      built.slots = Array.isArray(parsed.slots)
+        ? parsed.slots
+        : [{ options: ["A", "B"], correctIndex: 0 }]
+      break
+    case "matching":
+      built.leftItems = Array.isArray(parsed.leftItems)
+        ? parsed.leftItems
+        : [{ label: "A", options: ["1", "2"], correctIndex: 0 }]
+      break
+    case "drop-pin":
+      built.media = {
+        type: "image",
+        url: "/media/placeholder-map.webp",
+      }
+      built.hotspots = Array.isArray(parsed.hotspots)
+        ? parsed.hotspots
+        : [{ x: 0.3, y: 0.3, w: 0.2, h: 0.2 }]
+      break
+    case "slider":
+      built.min = typeof parsed.min === "number" ? parsed.min : 0
+      built.max = typeof parsed.max === "number" ? parsed.max : 100
+      built.correct =
+        typeof parsed.correct === "number" ? parsed.correct : 50
+      if (typeof parsed.unit === "string") built.unit = parsed.unit
+      break
+    case "poll":
+      built.answers = Array.isArray(parsed.answers)
+        ? (parsed.answers as unknown[]).map(String).slice(0, 4)
+        : ["A", "B"]
+      break
+    default:
+      built.answers = ["A", "B", "C", "D"]
+      built.solutions = [0]
   }
-
-  const result = questionValidator.safeParse(built)
-
-  if (!result.success) {
-    throw new Error("errors:ai.invalidOutput")
-  }
-
-  // Secret-scan the assembled, serialized question (belt-and-braces: covers
-  // model output that landed in answers/acceptedAnswers, not just the raw text).
-  assertNoSecret(JSON.stringify(result.data))
-
-  return result.data as Question
+  return built
 }
 
 export const generateDistractors = async (

@@ -22,7 +22,11 @@ export function registerAiTools(server: McpServer): void {
       inputSchema: {
         topic: z.string().min(1).max(200).describe("What the question is about."),
         type: z
-          .enum(["choice", "boolean", "multiple-select", "type-answer"])
+          /* all QUESTION_TYPES */ .enum([
+            "choice","boolean","slider","poll","multiple-select","type-answer",
+            "sentence-builder","mathematik","wortarten","sequencing",
+            "fill-blank","matching","drop-pin",
+          ])
           .optional()
           .describe("Question kind to author (default choice)."),
         language: z
@@ -33,9 +37,9 @@ export function registerAiTools(server: McpServer): void {
           .describe("BCP-47-ish language code (default de)."),
       },
     },
-    async ({ topic, type, language }: { topic: string; type?: "choice" | "boolean" | "multiple-select" | "type-answer"; language?: string }) => {
+    async ({ topic, type, language }: { topic: string; type?: string; language?: string }) => {
       try {
-        return ok(await generateQuestion(topic, type, language))
+        return ok(await generateQuestion(topic, type as any, language))
       } catch (e) {
         return fail(e)
       }
