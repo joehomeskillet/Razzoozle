@@ -59,6 +59,8 @@ const Result = ({
     bonusPoints,
     correctAnswer,
     correctChunks,
+    correctOrder,
+    items,
     correctTokenPos,
     playerCount,
     roundRecap,
@@ -72,6 +74,12 @@ const Result = ({
   const reveal = useReveal()
   const reduced = reveal.reduced
   const achievementsFired = useRef(false)
+
+  // Sequencing: SHOW_RESULT carries item IDs in correctOrder; submittedChunks
+  // stores the player's submitted ID order (same store as sentence-builder).
+  // Map IDs → labels via items for display; fall back to the raw id.
+  const sequencingLabel = (id: string) =>
+    items?.find((it) => it.id === id)?.label ?? id
 
   // Hide points display for players only; managers/presenters always see them
   const showPoints = audience !== "player"
@@ -198,11 +206,11 @@ const Result = ({
         {t(message)}
       </h2>
 
-      {/* Reveal (§14.3, unified via AnswerRevealPanel): per-chunk submitted-vs-
-          correct feedback (sentence-builder / wortarten) first, then the
-          canonical correct-answer panel — tokenPos for wortarten (richer,
-          preferred), chips for sentence-builder, text as the generic
-          fallback (slider/mathematik/… and old servers without
+      {/* Reveal (§14.3, unified via AnswerRevealPanel): per-position submitted-vs-
+          correct feedback (sentence-builder / wortarten / sequencing) first, then
+          the canonical correct-answer panel — tokenPos for wortarten (richer,
+          preferred), chips for sentence-builder / sequencing, text as the
+          generic fallback (slider/mathematik/… and old servers without
           correctTokenPos). Poll never carries reveal data (`!poll` gate). */}
       {!poll && correctChunks && submittedChunks.length > 0 && (
         <motion.div
@@ -236,6 +244,41 @@ const Result = ({
           </div>
         </motion.div>
       )}
+      {/* Sequencing: position-by-position ID compare; green/red via design tokens. */}
+      {!poll &&
+        correctOrder &&
+        correctOrder.length > 0 &&
+        submittedChunks.length > 0 && (
+          <motion.div
+            className="w-full"
+            variants={reveal.pop()}
+            initial="hidden"
+            animate="visible"
+            transition={reveal.snap}
+            aria-label={t("game:sequencing.yourOrder")}
+          >
+            <div className="mx-auto mb-4 flex max-w-3xl flex-wrap justify-center gap-2 px-4">
+              {submittedChunks.map((id, idx) => {
+                const isCorrect = id === correctOrder[idx]
+
+                return (
+                  <span
+                    key={`${id}-${idx}`}
+                    className={clsx(
+                      "inline-flex items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
+                      isCorrect
+                        ? "bg-[var(--state-correct)]"
+                        : "bg-[var(--state-wrong)]",
+                    )}
+                  >
+                    <span className="tabular-nums opacity-70">{idx + 1}.</span>
+                    {sequencingLabel(id)}
+                  </span>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
       {!poll && correctTokenPos && correctTokenPos.length > 0 ? (
         <motion.div
           className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
@@ -258,6 +301,20 @@ const Result = ({
             variant="chips"
             title={t("game:sentenceBuilder.correctSentence")}
             chips={correctChunks.filter((c) => c !== "")}
+          />
+        </motion.div>
+      ) : !poll && correctOrder && correctOrder.length > 0 ? (
+        <motion.div
+          className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4"
+          variants={reveal.pop()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.snap}
+        >
+          <AnswerRevealPanel
+            variant="chips"
+            title={t("game:sequencing.correctOrder")}
+            chips={correctOrder.map(sequencingLabel)}
           />
         </motion.div>
       ) : (
