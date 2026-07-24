@@ -20,8 +20,8 @@ const LanguageSwitcher = () => {
       value={normalizedLanguage}
       onValueChange={(lang) => i18n.changeLanguage(lang)}
     >
-      <Select.Trigger className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] px-2 py-1.5 text-sm font-semibold text-[var(--answer-text)] hover:border-[var(--border-hairline)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]">
-        <Globe className="size-4 text-[var(--answer-text)]" />
+      <Select.Trigger className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] px-2 py-1.5 text-sm font-semibold text-answer-text hover:border-[var(--border-hairline)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]">
+        <Globe className="size-4 text-answer-text" />
         <Select.Value>{normalizedLanguage.toUpperCase()}</Select.Value>
       </Select.Trigger>
 
@@ -36,7 +36,7 @@ const LanguageSwitcher = () => {
               <Select.Item
                 key={l.code}
                 value={l.code}
-                className="flex min-h-11 cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-[var(--answer-text)] outline-none hover:bg-[color-mix(in_srgb,white_95%,black)] focus:bg-[color-mix(in_srgb,white_95%,black)] data-[state=checked]:font-semibold"
+                className="flex min-h-11 cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm text-answer-text outline-none hover:bg-[color-mix(in_srgb,white_95%,black)] focus:bg-[color-mix(in_srgb,white_95%,black)] data-[state=checked]:font-semibold"
               >
                 <Select.ItemText>{t(l.label)}</Select.ItemText>
               </Select.Item>

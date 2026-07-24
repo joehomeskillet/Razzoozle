@@ -170,9 +170,9 @@ const BANNER_GLOW: Record<AchievementTier, string> = {
 // Tier-conditional text color for banner - white only on bronze, ink on others
 const BANNER_TEXT_COLOR: Record<AchievementTier, string> = {
   bronze: "text-white",
-  silver: "text-[var(--answer-text)]",
-  gold: "text-[var(--answer-text)]",
-  diamant: "text-[var(--answer-text)]",
+  silver: "text-answer-text",
+  gold: "text-answer-text",
+  diamant: "text-answer-text",
 }
 
 const CelebratoryBanner = ({

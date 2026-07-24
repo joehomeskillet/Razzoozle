@@ -117,7 +117,7 @@ describe("ClassList — Checkbox-in-ListRow", () => {
     )
 
     // Extract rowSelectedState classes and check they appear in markup
-    // rowSelectedState = "bg-[var(--accent-tint)] outline-[var(--color-primary)]"
+    // rowSelectedState = "bg-accent-tint outline-[var(--color-primary)]"
     const classes1 = rowSelectedState.split(" ")
     for (const cls of classes1) {
       expect(markup).toContain(cls)

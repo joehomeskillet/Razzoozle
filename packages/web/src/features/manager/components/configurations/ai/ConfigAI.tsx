@@ -267,12 +267,12 @@ const ConfigAI = () => {
     },
     ready: {
       label: t("manager:ai.status.ready"),
-      pill: "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
+      pill: "bg-status-online-bg text-status-online-text",
       dot: "bg-[var(--state-correct)]",
     },
     error: {
       label: t("manager:ai.status.error"),
-      pill: "bg-[var(--status-offline-bg)] text-[var(--status-offline-text)]",
+      pill: "bg-status-offline-bg text-status-offline-text",
       dot: "bg-[var(--state-wrong)]",
     },
   }[textStatus]

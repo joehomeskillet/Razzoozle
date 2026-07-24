@@ -276,7 +276,7 @@ const SubmissionCard = ({
                   {quizz.subject}
                 </span>
                 <Check
-                  className="size-5 shrink-0 text-[var(--accent-contrast)]"
+                  className="size-5 shrink-0 text-accent-contrast"
                   aria-hidden
                 />
               </Button>

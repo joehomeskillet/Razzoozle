@@ -116,7 +116,7 @@ const MediaCard = ({
         {usageCount > 0 && (
           <div className="absolute top-2 right-2 z-20" title={quizTitles}>
             <Badge
-              className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+              className="bg-status-online-bg text-status-online-text"
               aria-label={t("manager:media.usage.count", { count: usageCount })}
             >
               {t("manager:media.usageBadge", { count: usageCount })}

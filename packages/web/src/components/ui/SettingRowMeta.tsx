@@ -34,7 +34,7 @@ export function SettingRowRestartBadge({
 }: SettingRowRestartBadgeProps): ReactNode {
   const badgeLabel = restartBadgeLabel ?? t("restartRequired")
   return (
-    <Badge className="shrink-0 whitespace-nowrap bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]">
+    <Badge className="shrink-0 whitespace-nowrap bg-status-pending-bg text-status-pending-text">
       {badgeLabel}
     </Badge>
   )

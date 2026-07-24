@@ -154,8 +154,8 @@ export const TIER_RING: Record<AchievementTier, string> = {
 export const TIER_TEXT: Record<AchievementTier, string> = {
   bronze: "text-white",
   silver: "text-slate-900",
-  gold: "text-[var(--answer-text)]",
-  diamant: "text-[var(--answer-text)]",
+  gold: "text-answer-text",
+  diamant: "text-answer-text",
 }
 
 /** Human-readable tier label (German fallback; UI uses i18n `game:tier.*`). */

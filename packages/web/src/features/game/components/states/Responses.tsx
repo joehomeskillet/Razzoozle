@@ -104,7 +104,7 @@ const Responses = ({
                 {(acceptedAnswers ?? []).map((a) => (
                   <span
                     key={a}
-                    className="rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)] font-semibold text-[var(--answer-text)]"
+                    className="rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)] font-semibold text-answer-text"
                   >
                     {a}
                   </span>
@@ -135,7 +135,7 @@ const Responses = ({
                       className={clsx(
                         "flex items-center justify-between rounded-xl px-5 py-3 text-lg md:px-6 md:py-4 md:text-2xl lg:text-[clamp(1.25rem,3vh,2.5rem)]",
                         isMatch
-                          ? "bg-[var(--state-correct-soft)] text-[var(--answer-text)]"
+                          ? "bg-[var(--state-correct-soft)] text-answer-text"
                           : "border border-[var(--border-hairline)] bg-white text-[color:var(--color-field-ink)]/70",
                       )}
                     >
@@ -161,7 +161,7 @@ const Responses = ({
                   {correctChunks.map((chunk, i) => (
                     <span
                       key={`${chunk}-${i}`}
-                      className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                      className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-answer-text md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
                     >
                       {chunk}
                     </span>
@@ -184,7 +184,7 @@ const Responses = ({
                     return (
                       <li
                         key={`${itemId}-${index}`}
-                        className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                        className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-answer-text md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
                       >
                         <span className="mr-2 font-bold">{index + 1}.</span>
                         <span>{item?.label}</span>
@@ -282,7 +282,7 @@ const Responses = ({
                       : "height 320ms cubic-bezier(0.16,1,0.3,1)",
                   }}
                 >
-                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-[var(--color-field-ink)] tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
+                  <span className="w-full bg-[color:var(--color-field-ink)]/20 text-center text-lg font-bold text-color-field-ink tabular-nums drop-shadow-md lg:text-[clamp(1.25rem,3vh,2.5rem)]">
                     {responses[key] || 0}
                   </span>
                 </div>

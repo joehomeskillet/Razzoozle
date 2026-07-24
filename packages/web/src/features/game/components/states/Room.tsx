@@ -311,7 +311,7 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
                   onClick={() => {
                     if (kickTarget) kickPlayer(kickTarget.id)
                   }}
-                  className="rounded-md bg-[var(--state-wrong)] px-4 py-2 font-bold text-[var(--answer-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                  className="rounded-md bg-[var(--state-wrong)] px-4 py-2 font-bold text-answer-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
                 >
                   {t("manager:kickPlayer.confirm")}
                 </button>

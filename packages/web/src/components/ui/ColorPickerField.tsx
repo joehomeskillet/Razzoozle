@@ -102,8 +102,8 @@ const ColorPickerField = ({
             className={clsx(
               "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tabular-nums",
               failed
-                ? "bg-[var(--status-pending-bg)] text-[var(--status-pending-text)]"
-                : "bg-[var(--status-online-bg)] text-[var(--status-online-text)]",
+                ? "bg-status-pending-bg text-status-pending-text"
+                : "bg-status-online-bg text-status-online-text",
             )}
           >
             <span className="sr-only">

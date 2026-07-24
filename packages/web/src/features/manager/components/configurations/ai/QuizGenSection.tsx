@@ -100,10 +100,10 @@ const QuizGenSection = ({
           </p>
         )}
         {!generating && generated && (
-          <Badge className="flex-wrap gap-1.5 py-1 bg-[var(--status-online-bg)] text-[var(--status-online-text)]">
+          <Badge className="flex-wrap gap-1.5 py-1 bg-status-online-bg text-status-online-text">
             <CheckCircle2 className="size-3.5" aria-hidden />
             {t("manager:ai.generate.generated")}
-            <span className="font-medium text-[var(--status-online-text)]">
+            <span className="font-medium text-status-online-text">
               {t("manager:ai.generate.openInEditor")}
             </span>
           </Badge>

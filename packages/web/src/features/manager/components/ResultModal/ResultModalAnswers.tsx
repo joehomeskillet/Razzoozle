@@ -157,7 +157,7 @@ const ResultModalAnswers = () => {
               {(questionResult.acceptedAnswers ?? []).map((a) => (
                 <Badge
                   key={a}
-                  className="bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+                  className="bg-status-online-bg text-status-online-text"
                 >
                   {a}
                 </Badge>

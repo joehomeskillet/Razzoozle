@@ -5,7 +5,7 @@ export const clampQuizCount = (value: number) =>
 
 export const providerStatusClass = (configured: boolean) =>
   configured
-    ? "bg-[var(--status-online-bg)] text-[var(--status-online-text)]"
+    ? "bg-status-online-bg text-status-online-text"
     : "bg-[var(--surface-3)] text-[var(--ink-medium)]"
 
 // Static privacy/help copy per provider. Local stays on-host; the cloud

@@ -38,6 +38,8 @@ pnpm g:question <Name>                       # Quiz Answer Tile component + test
 pnpm g:display <Name>                        # Display Stage component + test
 pnpm g:player <Name>                         # Mobile Phone Client component + test
 pnpm tokens:build                            # Build W3C tokens -> CSS & TS types
+pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
+pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```
 
 See `AGENTS.md` for package-scoped commands (`pnpm --filter @razzoozle/socket ...`),

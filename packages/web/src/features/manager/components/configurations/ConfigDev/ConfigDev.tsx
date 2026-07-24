@@ -67,7 +67,7 @@ const ConfigDev = () => {
           subtitle={t("dev.intro")}
           action={
             <span
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--status-pending-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--status-pending-text)]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-status-pending-bg px-2.5 py-1.5 text-xs font-semibold text-status-pending-text"
               role="status"
             >
               <Info className="size-3.5 shrink-0" aria-hidden />

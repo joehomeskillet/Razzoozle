@@ -229,7 +229,7 @@ const Result = ({
                 <span
                   key={`${chunk}-${idx}`}
                   className={clsx(
-                    "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
+                    "inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-answer-text",
                     isDisabled
                       ? "bg-[var(--tier-silver)]"
                       : isCorrect
@@ -265,7 +265,7 @@ const Result = ({
                   <span
                     key={`${id}-${idx}`}
                     className={clsx(
-                      "inline-flex items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-[var(--answer-text)]",
+                      "inline-flex items-center gap-2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-3 py-2 font-medium text-answer-text",
                       isCorrect
                         ? "bg-[var(--state-correct)]"
                         : "bg-[var(--state-wrong)]",
@@ -346,7 +346,7 @@ const Result = ({
         // Points payoff: emphasised pop, delayed a touch behind the verdict so
         // the score reads as the reward beat. Opacity-only when reduced.
         <motion.span
-          className="mt-2 rounded-[var(--radius-theme)] bg-white border border-[var(--border-hairline)] px-4 py-2 text-2xl md:text-4xl lg:text-[clamp(1.75rem,4vh,3.5rem)] font-bold text-[var(--answer-text)] tabular-nums"
+          className="mt-2 rounded-[var(--radius-theme)] bg-white border border-[var(--border-hairline)] px-4 py-2 text-2xl md:text-4xl lg:text-[clamp(1.75rem,4vh,3.5rem)] font-bold text-answer-text tabular-nums"
           variants={reveal.pop(0.7)}
           initial="hidden"
           animate="visible"

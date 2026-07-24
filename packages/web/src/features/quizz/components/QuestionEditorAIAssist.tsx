@@ -364,7 +364,7 @@ const QuestionEditorAIAssist = () => {
                       className={clsx(
                         "flex items-start gap-2 rounded-md px-2 py-1 text-sm break-words",
                         previewSolutions.includes(index)
-                          ? "bg-[var(--state-correct-soft)] font-medium text-[var(--answer-text)]"
+                          ? "bg-[var(--state-correct-soft)] font-medium text-answer-text"
                           : "text-[var(--ink-muted)]",
                       )}
                     >

@@ -92,8 +92,8 @@ const AnswerButton = ({
         correct === undefined
           ? colorIndex !== undefined && answerColor(colorIndex)
           : correct
-            ? "bg-[var(--state-correct)] text-[var(--answer-text)]"
-            : "bg-[var(--state-wrong)] text-[var(--answer-text)]",
+            ? "bg-[var(--state-correct)] text-answer-text"
+            : "bg-[var(--state-wrong)] text-answer-text",
         className,
       )}
       {...otherProps}

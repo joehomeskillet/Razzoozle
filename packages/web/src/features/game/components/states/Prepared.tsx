@@ -33,7 +33,7 @@ const Prepared = ({ data: { totalAnswers, questionNumber, type } }: Props) => {
             answerColor(key),
           )}
         >
-          <span className="text-2xl font-bold text-[var(--answer-text)] md:text-3xl">
+          <span className="text-2xl font-bold text-answer-text md:text-3xl">
             {answerLabel(key)}
           </span>
         </div>
@@ -100,7 +100,7 @@ const Prepared = ({ data: { totalAnswers, questionNumber, type } }: Props) => {
       {[1, 2, 3, 4].map((n) => (
         <span
           key={n}
-          className="inline-flex h-8 min-w-8 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-2 text-sm font-bold tabular-nums text-[var(--answer-text)] shadow-[var(--shadow-flat)]"
+          className="inline-flex h-8 min-w-8 items-center justify-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white px-2 text-sm font-bold tabular-nums text-answer-text shadow-[var(--shadow-flat)]"
         >
           {n}
         </span>

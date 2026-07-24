@@ -15,7 +15,7 @@ const filterPillBase =
 
 const FilterPill = ({ active, onClick, children, count, activeClassName }: FilterPillProps) => {
   const activeColors =
-    activeClassName ?? "bg-[var(--accent-tint)] text-[var(--accent-contrast)]"
+    activeClassName ?? "bg-accent-tint text-accent-contrast"
 
   const stateClasses = active
     ? clsx(activeColors, "outline-2 -outline-offset-2 outline-[var(--color-primary)]")
