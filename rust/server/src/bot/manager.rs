@@ -118,6 +118,9 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
         Some(QuestionType::TypeAnswer) => (None, None, Some(pick_type_answer(question))),
         Some(QuestionType::SentenceBuilder) => (None, None, Some(pick_sentence_builder(question))),
         Some(QuestionType::Sequencing) => (None, None, Some(pick_sequencing(question))),
+        Some(QuestionType::FillBlank) | Some(QuestionType::Matching) => {
+            (None, None, Some(pick_slots(question)))
+        }
         _ => (Some(pick_choice(question)), None, None),
     }
 }
@@ -252,6 +255,49 @@ fn pick_sequencing(question: &Question) -> String {
     };
 
     serde_json::to_string(&order).unwrap_or_default()
+}
+
+/// Shared slot picker for fill-blank + matching (JSON selectedIndices).
+fn pick_slots(question: &Question) -> String {
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+    let indices: Vec<i32> = if let Some(slots) = &question.slots {
+        slots
+            .iter()
+            .map(|s| {
+                if want_correct || s.options.is_empty() {
+                    s.correct_index
+                } else {
+                    let n = s.options.len() as i32;
+                    let wrong = (0..n).filter(|&i| i != s.correct_index).collect::<Vec<_>>();
+                    if wrong.is_empty() {
+                        s.correct_index
+                    } else {
+                        wrong[rand::thread_rng().gen_range(0..wrong.len())]
+                    }
+                }
+            })
+            .collect()
+    } else if let Some(items) = &question.left_items {
+        items
+            .iter()
+            .map(|s| {
+                if want_correct || s.options.is_empty() {
+                    s.correct_index
+                } else {
+                    let n = s.options.len() as i32;
+                    let wrong = (0..n).filter(|&i| i != s.correct_index).collect::<Vec<_>>();
+                    if wrong.is_empty() {
+                        s.correct_index
+                    } else {
+                        wrong[rand::thread_rng().gen_range(0..wrong.len())]
+                    }
+                }
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+    serde_json::to_string(&indices).unwrap_or_else(|_| "[]".into())
 }
 
 async fn submit_bot_answer(

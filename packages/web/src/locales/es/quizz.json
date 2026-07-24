@@ -81,7 +81,11 @@
     "vokabelliste": "Lista de Vocabulario",
     "vokabellisteDesc": "Editor en masa para pares de palabras → emite múltiples preguntas de entrada de texto",
     "sequencing": "Ordenar",
-    "sequencingDesc": "Los jugadores ordenan los elementos en el orden correcto"
+    "sequencingDesc": "Los jugadores ordenan los elementos en el orden correcto",
+    "fillBlank": "Completar huecos",
+    "fillBlankDesc": "Completa la frase con desplegables",
+    "matching": "Emparejar",
+    "matchingDesc": "Empareja elementos con desplegables"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -170,5 +174,23 @@
     "removeItem": "Eliminar elemento",
     "preview": "Los jugadores ordenarán estos elementos",
     "minItemsRequired": "Se requieren al menos 2 elementos"
+  },
+  "fillBlank": {
+    "addSlot": "Añadir hueco",
+    "placeholder": "Texto o hueco",
+    "optionPlaceholder": "Opción",
+    "removeSlot": "Quitar hueco",
+    "optionsLabel": "Opciones del hueco",
+    "correctOption": "Opción correcta",
+    "minSlotsRequired": "Se requiere al menos 1 hueco"
+  },
+  "matching": {
+    "addItem": "Añadir par",
+    "labelPlaceholder": "Etiqueta izquierda",
+    "optionPlaceholder": "Opción derecha",
+    "removeItem": "Quitar par",
+    "optionsLabel": "Opciones",
+    "correctOption": "Opción correcta",
+    "minItemsRequired": "Se requiere al menos 1 par"
   }
 }

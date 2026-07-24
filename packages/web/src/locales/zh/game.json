@@ -346,5 +346,19 @@
   "sequencing": {
     "correctOrder": "正确顺序",
     "yourOrder": "你的顺序"
+  },
+  "fillBlank": {
+    "slotCorrect": "正确",
+    "slotWrong": "错误",
+    "correctAnswer": "正确答案：{{option}}",
+    "selectOption": "选择选项",
+    "fillAllSlots": "请填写所有空格"
+  },
+  "matching": {
+    "slotCorrect": "正确",
+    "slotWrong": "错误",
+    "correctAnswer": "正确答案：{{option}}",
+    "selectOption": "选择选项",
+    "fillAllSlots": "请填写所有空格"
   }
 }

@@ -13,6 +13,7 @@ import SentenceBuilderBoard from "@razzoozle/web/features/game/components/answer
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
+import { SlotDropdownBoard, type SlotSelections } from "@razzoozle/web/features/game/components/answers/SlotDropdownBoard"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
@@ -64,6 +65,9 @@ const Answers = ({
     posSet,
     // Wortarten: indices of tokens that are disabled (not scored/clickable).
     disabledTokens,
+    segments,
+    slotOptions,
+    matchItems,
     // Low-latency server-timing anchors (all OPTIONAL — undefined in normal
     // mode). Used ONLY to render the countdown, never for scoring.
     serverNowMs,
@@ -95,6 +99,8 @@ const Answers = ({
   const isSequencing = type === "sequencing"
   const isMathematik = type === "mathematik"
   const isWortarten = type === "wortarten"
+  const isFillBlank = type === "fill-blank" && !!slotOptions?.length
+  const isMatching = type === "matching" && !!matchItems?.length
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -127,6 +133,7 @@ const Answers = ({
   >([])
   // Wortarten: which token's POS picker is currently open (one at a time).
   const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
+  const [slotSelections, setSlotSelections] = useState<SlotSelections>([])
   const [bankChips, setBankChips] = useState<
     Array<{ text: string; originalIndex: number; id: string }>
   >([])
@@ -223,6 +230,17 @@ const Answers = ({
     setOpenTokenIndex(null)
     setSubmittedChunks(undefined)
   }, [isWortarten, tokens, setSubmittedChunks])
+
+  useEffect(() => {
+    if (isFillBlank && slotOptions) {
+      setSlotSelections(new Array(slotOptions.length).fill(null))
+      return
+    }
+    if (isMatching && matchItems) {
+      setSlotSelections(new Array(matchItems.length).fill(null))
+    }
+  }, [isFillBlank, isMatching, slotOptions, matchItems])
+
 
   // Clear any pending ack timer on unmount so it can't fire after teardown.
   useEffect(
@@ -443,6 +461,37 @@ const Answers = ({
 
     setSubmittedChunks(answerText.split(" "))
 
+    armAckPending(clientMessageId)
+  }
+
+
+  const submitSlotAnswer = () => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+    if (slotSelections.some((v) => v === null || v === undefined)) {
+      return
+    }
+    const clientMessageId = lowLatency ? uuid() : undefined
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    const labels = slotSelections.map((sel, i) => {
+      const opts = isFillBlank
+        ? (slotOptions?.[i] ?? [])
+        : (matchItems?.[i]?.options ?? [])
+      return sel != null ? (opts[sel] ?? String(sel)) : ""
+    })
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: JSON.stringify(slotSelections),
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    setSubmittedChunks(labels)
     armAckPending(clientMessageId)
   }
 
@@ -687,6 +736,21 @@ const Answers = ({
           onSubmit={submitSentenceBuilder}
           disabled={submitted}
           testIdPrefix=""
+        />
+      ) : isFillBlank || isMatching ? (
+        <SlotDropdownBoard
+          value={slotSelections}
+          onChange={setSlotSelections}
+          onSubmit={submitSlotAnswer}
+          disabled={submitted}
+          slotOptions={
+            isFillBlank
+              ? (slotOptions ?? [])
+              : (matchItems ?? []).map((m) => m.options)
+          }
+          labels={isMatching ? (matchItems ?? []).map((m) => m.label) : undefined}
+          segments={isFillBlank ? segments : undefined}
+          i18nPrefix={isMatching ? "matching" : "fillBlank"}
         />
       ) : isSequencing ? (
         <SequencingBoard

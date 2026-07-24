@@ -68,6 +68,20 @@ pub(crate) fn build_select_answer_data(
         tokens: question.tokens.clone(),
         pos_set: question.pos_set.clone(),
         disabled_tokens: question.disabled_tokens.clone(),
+        // Fill-blank / matching: play-time options only (no correctIndex leak).
+        segments: question.segments.clone(),
+        slot_options: question.slots.as_ref().map(|slots| {
+            slots.iter().map(|s| s.options.clone()).collect()
+        }),
+        match_items: question.left_items.as_ref().map(|items| {
+            items
+                .iter()
+                .map(|i| razzoozle_protocol::status::MatchItemPlay {
+                    label: i.label.clone(),
+                    options: i.options.clone(),
+                })
+                .collect()
+        }),
     }
 }
 

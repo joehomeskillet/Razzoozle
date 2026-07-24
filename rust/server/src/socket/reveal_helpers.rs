@@ -67,6 +67,32 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
                 })
             })
         }
+        Some(QuestionType::FillBlank) => question.slots.as_ref().map(|slots| {
+            slots
+                .iter()
+                .map(|s| {
+                    s.options
+                        .get(s.correct_index as usize)
+                        .cloned()
+                        .unwrap_or_default()
+                })
+                .collect::<Vec<_>>()
+                .join(" · ")
+        }),
+        Some(QuestionType::Matching) => question.left_items.as_ref().map(|items| {
+            items
+                .iter()
+                .map(|i| {
+                    let opt = i
+                        .options
+                        .get(i.correct_index as usize)
+                        .cloned()
+                        .unwrap_or_default();
+                    format!("{} → {}", i.label, opt)
+                })
+                .collect::<Vec<_>>()
+                .join(" · ")
+        }),
         _ => {
             // choice / boolean / multiple-select: map solution indices to answer texts
             let texts: Vec<String> = question
@@ -380,6 +406,31 @@ pub async fn perform_reveal_and_broadcast(
                             })
                             .collect()
                     })
+                })
+            } else if matches!(question.r#type.as_ref(), Some(QuestionType::FillBlank)) {
+                // Per-slot correct option labels (reuse correctChunks chip UI).
+                question.slots.as_ref().map(|slots| {
+                    slots
+                        .iter()
+                        .map(|s| {
+                            s.options
+                                .get(s.correct_index as usize)
+                                .cloned()
+                                .unwrap_or_default()
+                        })
+                        .collect()
+                })
+            } else if matches!(question.r#type.as_ref(), Some(QuestionType::Matching)) {
+                question.left_items.as_ref().map(|items| {
+                    items
+                        .iter()
+                        .map(|i| {
+                            i.options
+                                .get(i.correct_index as usize)
+                                .cloned()
+                                .unwrap_or_default()
+                        })
+                        .collect()
                 })
             } else {
                 None

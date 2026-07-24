@@ -73,7 +73,11 @@
     "vokabelliste": "Elenco Vocabolario",
     "vokabellisteDesc": "Editor in blocco per coppie di parole → emette più domande di input di testo",
     "sequencing": "Ordinamento",
-    "sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto"
+    "sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto",
+    "fillBlank": "Completa gli spazi",
+    "fillBlankDesc": "Completa la frase con menu a tendina",
+    "matching": "Abbinamento",
+    "matchingDesc": "Abbina elementi con menu a tendina"
   },
   "slider": {
     "min": "Min",
@@ -170,5 +174,23 @@
     "removeItem": "Rimuovi elemento",
     "preview": "I giocatori ordineranno questi elementi",
     "minItemsRequired": "Sono richiesti almeno 2 elementi"
+  },
+  "fillBlank": {
+    "addSlot": "Aggiungi spazio",
+    "placeholder": "Testo o spazio",
+    "optionPlaceholder": "Opzione",
+    "removeSlot": "Rimuovi spazio",
+    "optionsLabel": "Opzioni dello spazio",
+    "correctOption": "Opzione corretta",
+    "minSlotsRequired": "Serve almeno 1 spazio"
+  },
+  "matching": {
+    "addItem": "Aggiungi coppia",
+    "labelPlaceholder": "Etichetta sinistra",
+    "optionPlaceholder": "Opzione destra",
+    "removeItem": "Rimuovi coppia",
+    "optionsLabel": "Opzioni",
+    "correctOption": "Opzione corretta",
+    "minItemsRequired": "Serve almeno 1 coppia"
   }
 }

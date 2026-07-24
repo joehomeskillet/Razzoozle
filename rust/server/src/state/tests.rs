@@ -475,6 +475,9 @@ fn test_manager_reconnect_records_status_roundtrip() {
         tokens: None,
         pos_set: None,
         disabled_tokens: None,
+        segments: None,
+        slot_options: None,
+        match_items: None,
     });
 
     game.record_last_manager_status(&select);

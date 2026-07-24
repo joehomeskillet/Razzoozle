@@ -2,9 +2,11 @@ import type { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { z } from "zod"
 
 import type {
+  matchingItemValidator,
   questionValidator,
   quizzValidator,
   sequencingItemValidator,
+  slotValidator,
 } from "@razzoozle/common/validators/quizz"
 
 // Re-export the single-source question kinds so consumers can keep importing
@@ -14,6 +16,12 @@ export { QUESTION_TYPES } from "@razzoozle/common/constants"
 export type { QuestionType } from "@razzoozle/common/constants"
 
 export type SequencingItem = z.infer<typeof sequencingItemValidator>
+
+/** Shared slot option list for fill-blank and matching. */
+export type Slot = z.infer<typeof slotValidator>
+
+/** Matching left-item row (label + dropdown options). */
+export type MatchingItem = z.infer<typeof matchingItemValidator>
 
 export interface Player {
   id: string
@@ -43,9 +51,10 @@ export interface Answer {
   answerId: number
   // Multiple-select: the set of selected option indices (answerId is a sentinel).
   answerIds?: number[]
-  // Type-answer: the raw submitted free-text (answerId is a sentinel).
+  // Type-answer: free-text. Sequencing: JSON item ids (legacy also answerOrder).
+  // Fill-blank + matching: JSON.stringify(selectedIndices: number[]) per slot.
   answerText?: string
-  // Sequencing: the ordered item ids (answerId is a sentinel).
+  // Sequencing: the ordered item ids (answerId is a sentinel). LEGACY kept for back-compat.
   answerOrder?: string[]
   points: number
 }

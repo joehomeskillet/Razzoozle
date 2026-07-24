@@ -100,7 +100,11 @@
     "questionEmpty": "La domanda non può essere vuota",
     "subjectEmpty": "Il soggetto non può essere vuoto",
     "tooFewAnswers": "Una domanda deve avere almeno 2 risposte",
-    "tooManyAnswers": "Una domanda non può avere più di 4 risposte"
+    "tooManyAnswers": "Una domanda non può avere più di 4 risposte",
+    "fillBlankMinSlots": "Serve almeno uno spazio",
+    "fillBlankSegmentCount": "I segmenti di testo devono essere spazi + 1",
+    "matchingMinItems": "Serve almeno una coppia",
+    "slotCorrectIndex": "Indice dell'opzione corretta non valido"
   },
   "route": {
     "back": "Torna alla home",

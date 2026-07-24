@@ -274,6 +274,9 @@ mod tests {
         disabled_tokens: None,
         items: None,
         correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
         };
 
         let row = AwardRow {
@@ -336,6 +339,9 @@ mod tests {
         disabled_tokens: None,
         items: None,
         correct_order: None,
+            segments: None,
+            slots: None,
+            left_items: None,
         };
 
         let row = AwardRow {
