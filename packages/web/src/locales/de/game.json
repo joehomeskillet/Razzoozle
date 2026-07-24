@@ -295,6 +295,9 @@
     "submit": "Absenden",
     "correctSentence": "Richtiger Satz"
   },
+  "sequencing": {
+    "correctOrder": "Richtige Reihenfolge"
+  },
   "badge": {
     "solo": "Solo",
     "assignment": "Aufgabe"
