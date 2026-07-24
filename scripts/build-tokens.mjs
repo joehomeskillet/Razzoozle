@@ -1,4 +1,5 @@
 import StyleDictionary from 'style-dictionary'
+import { execSync } from 'child_process'
 
 const toKebab = (str) =>
   str
@@ -63,3 +64,6 @@ export function getThemeTokenCssVar(token: CssTokenName): string {
 })
 
 await sd.buildAllPlatforms()
+
+// Auto-generate Living Design System documentation table
+execSync('node scripts/generate-tokens-doc.mjs', { stdio: 'inherit' })

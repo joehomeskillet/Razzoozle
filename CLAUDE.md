@@ -37,7 +37,8 @@ pnpm g:menu <Name>                           # Admin Menu/Nav component + test
 pnpm g:question <Name>                       # Quiz Answer Tile component + test
 pnpm g:display <Name>                        # Display Stage component + test
 pnpm g:player <Name>                         # Mobile Phone Client component + test
-pnpm tokens:build                            # Build W3C tokens -> CSS & TS types
+pnpm tokens:build                            # Build W3C tokens -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
+pnpm tokens:doc                              # Generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
 pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```

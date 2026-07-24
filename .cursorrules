@@ -10,7 +10,8 @@ Always read `AGENTS.md` for architecture details and gotchas.
 - `pnpm g:question <Name>` — scaffold 100% token-compliant Quiz/Answer Tile component + test
 - `pnpm g:display <Name>` — scaffold 100% token-compliant Kiosk Display stage component + test
 - `pnpm g:player <Name>` — scaffold 100% token-compliant Mobile Phone Client component + test
-- `pnpm tokens:build` — auto-build W3C design.tokens.json -> CSS & TS types
+- `pnpm tokens:build` — auto-build W3C design.tokens.json -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
+- `pnpm tokens:doc` — generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 - `pnpm tokens:validate` — lint codebase for unmapped arbitrary token usages
 - `pnpm tokens:fix` — auto-rewrite arbitrary var() syntax to mapped Tailwind v4 tokens
 
