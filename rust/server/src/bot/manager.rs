@@ -118,6 +118,7 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
         Some(QuestionType::TypeAnswer) => (None, None, Some(pick_type_answer(question))),
         Some(QuestionType::SentenceBuilder) => (None, None, Some(pick_sentence_builder(question))),
         Some(QuestionType::Sequencing) => (None, None, Some(pick_sequencing(question))),
+        Some(QuestionType::DropPin) => (None, None, Some(pick_drop_pin(question))),
         _ => (Some(pick_choice(question)), None, None),
     }
 }
@@ -252,6 +253,19 @@ fn pick_sequencing(question: &Question) -> String {
     };
 
     serde_json::to_string(&order).unwrap_or_default()
+}
+
+
+fn pick_drop_pin(question: &Question) -> String {
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+    if want_correct {
+        if let Some(hs) = question.hotspots.as_ref().and_then(|h| h.first()) {
+            let x = hs.x + hs.w * 0.5;
+            let y = hs.y + hs.h * 0.5;
+            return serde_json::json!({"x": x, "y": y}).to_string();
+        }
+    }
+    serde_json::json!({"x": rand::thread_rng().gen::<f64>(), "y": rand::thread_rng().gen::<f64>()}).to_string()
 }
 
 async fn submit_bot_answer(

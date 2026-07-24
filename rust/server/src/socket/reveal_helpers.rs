@@ -67,6 +67,10 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
                 })
             })
         }
+        Some(QuestionType::DropPin) => {
+            let n = question.hotspots.as_ref().map(|h| h.len()).unwrap_or(0);
+            if n == 0 { None } else { Some(format!("{n} zone(s)")) }
+        }
         _ => {
             // choice / boolean / multiple-select: map solution indices to answer texts
             let texts: Vec<String> = question

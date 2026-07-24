@@ -207,6 +207,20 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 }
             }
         }
+        Some(QuestionType::DropPin) => {
+            if question.media.as_ref().map(|m| m.url.is_empty()).unwrap_or(true) {
+                return Err("errors:quizz.invalidPayload");
+            }
+            let spots = match question.hotspots.as_ref() {
+                Some(h) if !h.is_empty() => h,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for h in spots {
+                if h.w <= 0.0 || h.h <= 0.0 || h.x < 0.0 || h.y < 0.0 || h.x + h.w > 1.0 + 1e-9 || h.y + h.h > 1.0 + 1e-9 {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+        }
         // choice / boolean / None → default
         _ => {
             if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {

@@ -22,6 +22,7 @@ import { SequencingBoard } from "@razzoozle/web/features/game/components/answers
 import type { SequencingItem } from "@razzoozle/web/features/game/components/answers/SequencingBoard"
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
+import { HotspotImage, type PinPoint } from "@razzoozle/web/features/game/components/answers/HotspotImage"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
@@ -58,6 +59,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const [selectedKey, setSelectedKey] = useState<number | null>(null)
   const [multiSelectedKeys, setMultiSelectedKeys] = useState<number[]>([])
   const [textAnswer, setTextAnswer] = useState("")
+  const [pinPoint, setPinPoint] = useState<PinPoint | null>(null)
   const [mathematikAnswer, setMathematikAnswer] = useState("")
   // Wortarten: the POS label string picked for each token (null = unset),
   // index-aligned with question.tokens. Which token's picker is open (one at
@@ -104,6 +106,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isSequencing = question.type === "sequencing" && question.shuffledItems?.length
   const isMathematik = question.type === "mathematik"
   const isWortarten = question.type === "wortarten"
+  const isDropPin = question.type === "drop-pin" && !!question.media?.url
 
   const isTokenDisabled = (i: number): boolean => {
     const disabledTokens = question.disabledTokens ?? []
@@ -215,6 +218,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
     } else if (isSequencing) {
       void submitAnswer(quizzId, { answerText: JSON.stringify(placedSequencingItems.map(item => item.id)) })
+    } else if (isDropPin) {
+      void submitAnswer(quizzId, { answerText: JSON.stringify(pinPoint) })
     } else if (isMathematik) {
       void submitAnswer(quizzId, { answerText: mathematikAnswer.trim() || "" })
     } else if (isWortarten) {
@@ -247,6 +252,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     hapticTap()
     if (timerRef.current) clearInterval(timerRef.current)
     void submitAnswer(quizzId, { answerText: placedChips.map(c => c.text).join(" ") })
+  }
+
+  const submitDropPin = () => {
+    if (!pinPoint) return
+    void submitAnswer(quizzId, { answerText: JSON.stringify(pinPoint) })
   }
 
   const submitSequencing = () => {
@@ -404,7 +414,17 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             feedback={resultReady ? { correct: lastResult.correct } : undefined}
             testIdPrefix="solo-"
           />
-        ) : isSequencing ? (
+        ) : isDropPin ? (
+        <HotspotImage
+          value={pinPoint}
+          onChange={setPinPoint}
+          onSubmit={submitDropPin}
+          disabled={submitted}
+          testIdPrefix="solo-"
+          imageUrl={question.media!.url}
+          feedback={resultReady ? { correct: lastResult.correct } : undefined}
+        />
+      ) : isSequencing ? (
           <SequencingBoard
             value={{ bank: bankSequencingItems, placed: placedSequencingItems }}
             onChange={(next) => {

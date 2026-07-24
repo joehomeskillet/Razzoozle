@@ -1,3 +1,4 @@
+import QuestionEditorDropPin from "./QuestionEditorDropPin"
 import type { QuestionType } from "@razzoozle/common/types/game"
 import { useQuizzEditor } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
 import QuestionEditorAcceptedAnswers from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorAcceptedAnswers"
@@ -65,6 +66,7 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isTypeAnswer = currentQuestion.type === "type-answer"
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
   const isSequencing = currentQuestion.type === "sequencing"
+  const isDropPin = currentQuestion.type === "drop-pin"
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
   const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
@@ -88,6 +90,7 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
           !isTypeAnswer &&
           !isSentenceBuilder &&
           !isSequencing &&
+          !isDropPin &&
           !isMathematik &&
           !isWortarten &&
           !isVokabelliste && (
@@ -103,6 +106,11 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
         {isSentenceBuilder && (
           <Reveal index={2}>
             <QuestionEditorSentence />
+          </Reveal>
+        )}
+        {isDropPin && (
+          <Reveal index={2}>
+            <QuestionEditorDropPin />
           </Reveal>
         )}
         {isSequencing && (
