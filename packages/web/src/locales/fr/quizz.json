@@ -85,7 +85,9 @@
     "fillBlank": "Texte à trous",
     "fillBlankDesc": "Compléter la phrase avec des listes",
     "matching": "Association",
-    "matchingDesc": "Associer des éléments via listes"
+    "matchingDesc": "Associer des éléments via listes",
+    "dropPin": "Drop-pin",
+    "dropPinDesc": "Placer une épingle sur la zone"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
@@ -192,5 +194,11 @@
     "optionsLabel": "Options",
     "correctOption": "Option correcte",
     "minItemsRequired": "Au moins 1 paire requise"
+  },
+  "dropPin": {
+    "prompt": "Clique sur le bon endroit",
+    "addZone": "Ajouter une zone",
+    "removeZone": "Supprimer la zone",
+    "minZonesRequired": "Au moins une zone requise"
   }
 }

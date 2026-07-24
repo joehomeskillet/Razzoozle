@@ -13,6 +13,7 @@ import {
   ListOrdered,
   TextCursorInput,
   Link2,
+  MapPin,
   SlidersHorizontal,
   ToggleLeft,
   BookOpen,
@@ -99,6 +100,12 @@ const TYPES: Array<{
     labelKey: "quizz:type.matching",
     descKey: "quizz:type.matchingDesc",
     icon: Link2,
+  },
+  {
+    key: "drop-pin",
+    labelKey: "quizz:type.dropPin",
+    descKey: "quizz:type.dropPinDesc",
+    icon: MapPin,
   },
   {
     key: "vokabelliste",
@@ -294,6 +301,22 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         correctOrder: undefined,
         segments: undefined,
         slots: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "drop-pin") {
+      updateQuestion(currentIndex, {
+        type: "drop-pin",
+        hotspots: [{ x: 0.25, y: 0.25, w: 0.25, h: 0.25 }],
+        answers: undefined,
+        solutions: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        leftItems: undefined,
         ...SLIDER_CLEAR,
       })
     } else if (next === "vokabelliste") {

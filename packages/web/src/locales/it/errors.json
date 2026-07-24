@@ -104,7 +104,10 @@
     "fillBlankMinSlots": "Serve almeno uno spazio",
     "fillBlankSegmentCount": "I segmenti di testo devono essere spazi + 1",
     "matchingMinItems": "Serve almeno una coppia",
-    "slotCorrectIndex": "Indice dell'opzione corretta non valido"
+    "slotCorrectIndex": "Indice dell'opzione corretta non valido",
+    "dropPinMediaRequired": "Immagine obbligatoria",
+    "dropPinMinHotspots": "Serve almeno una zona",
+    "dropPinHotspotBounds": "La zona esce dall'immagine"
   },
   "route": {
     "back": "Torna alla home",

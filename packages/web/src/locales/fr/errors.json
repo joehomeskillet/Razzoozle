@@ -104,7 +104,10 @@
     "fillBlankMinSlots": "Au moins un trou est requis",
     "fillBlankSegmentCount": "Les segments de texte doivent être trous + 1",
     "matchingMinItems": "Au moins une paire est requise",
-    "slotCorrectIndex": "L'index de l'option correcte est invalide"
+    "slotCorrectIndex": "L'index de l'option correcte est invalide",
+    "dropPinMediaRequired": "Image requise",
+    "dropPinMinHotspots": "Au moins une zone requise",
+    "dropPinHotspotBounds": "La zone dépasse l'image"
   },
   "route": {
     "back": "Retour à l'accueil",

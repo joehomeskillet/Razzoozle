@@ -14,6 +14,7 @@ import SliderInput from "@razzoozle/web/features/game/components/answers/SliderI
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
 import { SlotDropdownBoard, type SlotSelections } from "@razzoozle/web/features/game/components/answers/SlotDropdownBoard"
+import { HotspotImage, type PinPoint } from "@razzoozle/web/features/game/components/answers/HotspotImage"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
@@ -101,6 +102,7 @@ const Answers = ({
   const isWortarten = type === "wortarten"
   const isFillBlank = type === "fill-blank" && !!slotOptions?.length
   const isMatching = type === "matching" && !!matchItems?.length
+  const isDropPin = type === "drop-pin" && !!media?.url
   const [cooldown, setCooldown] = useState(() =>
     time > 100000
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
@@ -134,6 +136,7 @@ const Answers = ({
   // Wortarten: which token's POS picker is currently open (one at a time).
   const [openTokenIndex, setOpenTokenIndex] = useState<number | null>(null)
   const [slotSelections, setSlotSelections] = useState<SlotSelections>([])
+  const [pinPoint, setPinPoint] = useState<PinPoint | null>(null)
   const [bankChips, setBankChips] = useState<
     Array<{ text: string; originalIndex: number; id: string }>
   >([])
@@ -465,6 +468,24 @@ const Answers = ({
   }
 
 
+  const submitDropPin = () => {
+    if (!player || !gameId || submitted || !pinPoint) return
+    const clientMessageId = lowLatency ? uuid() : undefined
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: JSON.stringify(pinPoint),
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    armAckPending(clientMessageId)
+  }
+
   const submitSlotAnswer = () => {
     if (!player || !gameId || submitted) {
       return
@@ -736,6 +757,14 @@ const Answers = ({
           onSubmit={submitSentenceBuilder}
           disabled={submitted}
           testIdPrefix=""
+        />
+      ) : isDropPin ? (
+        <HotspotImage
+          value={pinPoint}
+          onChange={setPinPoint}
+          onSubmit={submitDropPin}
+          disabled={submitted}
+          imageUrl={media!.url}
         />
       ) : isFillBlank || isMatching ? (
         <SlotDropdownBoard

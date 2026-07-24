@@ -121,6 +121,7 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
         Some(QuestionType::FillBlank) | Some(QuestionType::Matching) => {
             (None, None, Some(pick_slots(question)))
         }
+        Some(QuestionType::DropPin) => (None, None, Some(pick_drop_pin(question))),
         _ => (Some(pick_choice(question)), None, None),
     }
 }
@@ -298,6 +299,18 @@ fn pick_slots(question: &Question) -> String {
         vec![]
     };
     serde_json::to_string(&indices).unwrap_or_else(|_| "[]".into())
+}
+
+fn pick_drop_pin(question: &Question) -> String {
+    let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
+    if want_correct {
+        if let Some(hs) = question.hotspots.as_ref().and_then(|h| h.first()) {
+            let x = hs.x + hs.w * 0.5;
+            let y = hs.y + hs.h * 0.5;
+            return serde_json::json!({"x": x, "y": y}).to_string();
+        }
+    }
+    serde_json::json!({"x": rand::thread_rng().gen::<f64>(), "y": rand::thread_rng().gen::<f64>()}).to_string()
 }
 
 async fn submit_bot_answer(

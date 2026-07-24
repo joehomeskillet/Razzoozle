@@ -755,6 +755,7 @@ mod tests {
             segments: None,
             slots: None,
             left_items: None,
+            hotspots: None,
         }
     }
 

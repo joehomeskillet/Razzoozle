@@ -43,6 +43,17 @@ pub struct MatchingItem {
     pub correct_index: i32,
 }
 
+/// Drop-pin hotspot rectangle in relative [0–1] image space.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct Hotspot {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
 /// Question type enum
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -71,6 +82,8 @@ pub enum QuestionType {
     FillBlank,
     #[serde(rename = "matching")]
     Matching,
+    #[serde(rename = "drop-pin")]
+    DropPin,
 }
 
 /// A single question in a quiz
@@ -162,6 +175,10 @@ pub struct Question {
     #[serde(skip_serializing_if = "Option::is_none", rename = "leftItems")]
     #[ts(optional)]
     pub left_items: Option<Vec<MatchingItem>>,
+    /// Drop-pin: relative [0–1] hit zones on media.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub hotspots: Option<Vec<Hotspot>>,
 }
 
 /// A complete quiz definition

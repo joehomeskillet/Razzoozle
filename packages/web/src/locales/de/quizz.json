@@ -77,7 +77,9 @@
     "fillBlank": "Lückenfüller",
     "fillBlankDesc": "Satz mit Dropdown-Lücken füllen",
     "matching": "Zuordnung",
-    "matchingDesc": "Begriffe per Dropdown zuordnen"
+    "matchingDesc": "Begriffe per Dropdown zuordnen",
+    "dropPin": "Drop-Pin",
+    "dropPinDesc": "Pin auf Bildzone setzen"
   },
   "slider": {
     "min": "Min",
@@ -192,5 +194,11 @@
     "optionsLabel": "Optionen",
     "correctOption": "Richtige Option",
     "minItemsRequired": "Mindestens 1 Paar erforderlich"
+  },
+  "dropPin": {
+    "prompt": "Klicke auf die richtige Stelle im Bild",
+    "addZone": "Zone hinzufügen",
+    "removeZone": "Zone entfernen",
+    "minZonesRequired": "Mindestens eine Zone erforderlich"
   }
 }

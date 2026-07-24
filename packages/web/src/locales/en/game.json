@@ -360,5 +360,12 @@
     "correctAnswer": "Correct answer: {{option}}",
     "selectOption": "Select option",
     "fillAllSlots": "Please fill all blanks"
+  },
+  "dropPin": {
+    "prompt": "Click the correct spot on the image",
+    "clickImage": "Place the pin",
+    "reveal": "Correct zone",
+    "correct": "Hit!",
+    "incorrect": "Miss"
   }
 }

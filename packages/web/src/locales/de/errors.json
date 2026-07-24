@@ -109,7 +109,10 @@
     "fillBlankMinSlots": "Mindestens eine Lücke erforderlich",
     "fillBlankSegmentCount": "Textsegmente müssen Lücken+1 entsprechen",
     "matchingMinItems": "Mindestens ein Paar erforderlich",
-    "slotCorrectIndex": "Richtige Option ist ungültig"
+    "slotCorrectIndex": "Richtige Option ist ungültig",
+    "dropPinMediaRequired": "Bild erforderlich",
+    "dropPinMinHotspots": "Mindestens eine Zone",
+    "dropPinHotspotBounds": "Zone liegt außerhalb des Bildes"
   },
   "route": {
     "back": "Zurück zur Startseite",

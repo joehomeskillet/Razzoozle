@@ -335,6 +335,11 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
         return eval_slot_answer(question, answer);
     }
 
+    // Drop-pin: JSON {x,y} relative 0–1; hit if point lies in ANY hotspot rect.
+    if q_type == &Some(QuestionType::DropPin) {
+        return eval_drop_pin(question, answer);
+    }
+
     // Choice / Boolean (default): index-based solutions lookup
     if let Some(answer_key) = answer.answer_key {
         if let Some(solutions) = &question.solutions {
@@ -416,10 +421,43 @@ fn eval_slot_answer(question: &Question, answer: &AnswerInput) -> EvalResult {
     }
 }
 
+
+/// Point-in-rectangle check for drop-pin. Rect is [x, y, x+w, y+h] in unit square.
+fn eval_drop_pin(question: &Question, answer: &AnswerInput) -> EvalResult {
+    let Some(hotspots) = question.hotspots.as_ref() else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    if hotspots.is_empty() {
+        return EvalResult { correct: false, base: 0.0 };
+    }
+    let Some(answer_text) = &answer.answer_text else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(answer_text) else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    let (Some(x), Some(y)) = (
+        v.get("x").and_then(|n| n.as_f64()),
+        v.get("y").and_then(|n| n.as_f64()),
+    ) else {
+        return EvalResult { correct: false, base: 0.0 };
+    };
+    if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
+        return EvalResult { correct: false, base: 0.0 };
+    }
+    let hit = hotspots.iter().any(|h| {
+        x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h
+    });
+    EvalResult {
+        correct: hit,
+        base: if hit { 1.0 } else { 0.0 },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use razzoozle_protocol::quizz::{MatchingItem, Slot};
+    use razzoozle_protocol::quizz::{Hotspot, MatchingItem, Slot};
 
     fn test_question(q_type: QuestionType) -> Question {
         Question {
@@ -452,6 +490,7 @@ mod tests {
             segments: None,
             slots: None,
             left_items: None,
+            hotspots: None,
         }
     }
 
@@ -961,4 +1000,59 @@ mod tests {
         assert!(r.correct);
         assert_eq!(r.base, 1.0);
     }
+    #[test]
+    fn drop_pin_hit_interior() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.35,"y":0.4}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(r.correct);
+        assert_eq!(r.base, 1.0);
+    }
+
+    #[test]
+    fn drop_pin_miss_outside() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.9,"y":0.9}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(!r.correct);
+        assert_eq!(r.base, 0.0);
+    }
+
+    #[test]
+    fn drop_pin_corner_inclusive() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.1, y: 0.1, w: 0.2, h: 0.2 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"{"x":0.1,"y":0.1}"#.into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(r.correct);
+    }
+
+    #[test]
+    fn drop_pin_invalid_json() {
+        let mut q = test_question(QuestionType::DropPin);
+        q.hotspots = Some(vec![Hotspot { x: 0.0, y: 0.0, w: 1.0, h: 1.0 }]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("nope".into()),
+        };
+        let r = evaluate_answer(&q, &ans);
+        assert!(!r.correct);
+        assert_eq!(r.base, 0.0);
+    }
+
 }

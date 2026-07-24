@@ -105,6 +105,7 @@ mod tests {
             segments: None,
             slots: None,
             left_items: None,
+            hotspots: None,
             cooldown: 1,
             time,
             practice: None,

@@ -277,6 +277,7 @@ mod tests {
             segments: None,
             slots: None,
             left_items: None,
+            hotspots: None,
         };
 
         let row = AwardRow {
@@ -342,6 +343,7 @@ mod tests {
             segments: None,
             slots: None,
             left_items: None,
+            hotspots: None,
         };
 
         let row = AwardRow {

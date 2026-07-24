@@ -85,7 +85,9 @@
     "fillBlank": "Fill in the blank",
     "fillBlankDesc": "Complete a sentence with dropdown blanks",
     "matching": "Matching",
-    "matchingDesc": "Match items with dropdowns"
+    "matchingDesc": "Match items with dropdowns",
+    "dropPin": "Drop pin",
+    "dropPinDesc": "Place a pin on the image zone"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",
@@ -192,5 +194,11 @@
     "optionsLabel": "Options",
     "correctOption": "Correct option",
     "minItemsRequired": "At least 1 pair required"
+  },
+  "dropPin": {
+    "prompt": "Click the correct spot on the image",
+    "addZone": "Add zone",
+    "removeZone": "Remove zone",
+    "minZonesRequired": "At least one zone required"
   }
 }

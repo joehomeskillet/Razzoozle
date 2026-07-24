@@ -2,6 +2,7 @@ import type { MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { z } from "zod"
 
 import type {
+  hotspotValidator,
   matchingItemValidator,
   questionValidator,
   quizzValidator,
@@ -22,6 +23,9 @@ export type Slot = z.infer<typeof slotValidator>
 
 /** Matching left-item row (label + dropdown options). */
 export type MatchingItem = z.infer<typeof matchingItemValidator>
+
+/** Drop-pin relative rectangle zone [0–1]. */
+export type Hotspot = z.infer<typeof hotspotValidator>
 
 export interface Player {
   id: string
@@ -52,7 +56,7 @@ export interface Answer {
   // Multiple-select: the set of selected option indices (answerId is a sentinel).
   answerIds?: number[]
   // Type-answer: free-text. Sequencing: JSON item ids (legacy also answerOrder).
-  // Fill-blank + matching: JSON.stringify(selectedIndices: number[]) per slot.
+  // Fill-blank + matching: JSON selectedIndices; drop-pin: JSON {x,y}.
   answerText?: string
   // Sequencing: the ordered item ids (answerId is a sentinel). LEGACY kept for back-compat.
   answerOrder?: string[]

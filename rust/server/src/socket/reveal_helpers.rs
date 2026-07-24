@@ -79,6 +79,10 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
                 .collect::<Vec<_>>()
                 .join(" · ")
         }),
+        Some(QuestionType::DropPin) => {
+            let n = question.hotspots.as_ref().map(|h| h.len()).unwrap_or(0);
+            if n == 0 { None } else { Some(format!("{n} zone(s)")) }
+        }
         Some(QuestionType::Matching) => question.left_items.as_ref().map(|items| {
             items
                 .iter()

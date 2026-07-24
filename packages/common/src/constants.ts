@@ -478,6 +478,7 @@ export const QUESTION_TYPES = [
   "sequencing",
   "fill-blank",
   "matching",
+  "drop-pin",
 ] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]

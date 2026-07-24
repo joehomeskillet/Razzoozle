@@ -360,5 +360,12 @@
     "correctAnswer": "Risposta corretta: {{option}}",
     "selectOption": "Scegli opzione",
     "fillAllSlots": "Compila tutti gli spazi"
+  },
+  "dropPin": {
+    "prompt": "Clicca sul punto giusto",
+    "clickImage": "Posiziona il pin",
+    "reveal": "Zona corretta",
+    "correct": "Colpito!",
+    "incorrect": "Mancato"
   }
 }

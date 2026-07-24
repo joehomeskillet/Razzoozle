@@ -77,7 +77,9 @@
     "fillBlank": "Completa gli spazi",
     "fillBlankDesc": "Completa la frase con menu a tendina",
     "matching": "Abbinamento",
-    "matchingDesc": "Abbina elementi con menu a tendina"
+    "matchingDesc": "Abbina elementi con menu a tendina",
+    "dropPin": "Drop-pin",
+    "dropPinDesc": "Metti un pin sulla zona immagine"
   },
   "slider": {
     "min": "Min",
@@ -192,5 +194,11 @@
     "optionsLabel": "Opzioni",
     "correctOption": "Opzione corretta",
     "minItemsRequired": "Serve almeno 1 coppia"
+  },
+  "dropPin": {
+    "prompt": "Clicca sul punto giusto",
+    "addZone": "Aggiungi zona",
+    "removeZone": "Rimuovi zona",
+    "minZonesRequired": "Serve almeno una zona"
   }
 }

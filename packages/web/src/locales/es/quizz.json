@@ -85,7 +85,9 @@
     "fillBlank": "Completar huecos",
     "fillBlankDesc": "Completa la frase con desplegables",
     "matching": "Emparejar",
-    "matchingDesc": "Empareja elementos con desplegables"
+    "matchingDesc": "Empareja elementos con desplegables",
+    "dropPin": "Drop-pin",
+    "dropPinDesc": "Coloca un pin en la zona de la imagen"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -192,5 +194,11 @@
     "optionsLabel": "Opciones",
     "correctOption": "Opción correcta",
     "minItemsRequired": "Se requiere al menos 1 par"
+  },
+  "dropPin": {
+    "prompt": "Haz clic en el punto correcto",
+    "addZone": "Añadir zona",
+    "removeZone": "Quitar zona",
+    "minZonesRequired": "Se requiere al menos una zona"
   }
 }

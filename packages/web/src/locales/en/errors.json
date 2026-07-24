@@ -109,7 +109,10 @@
     "fillBlankMinSlots": "At least one blank is required",
     "fillBlankSegmentCount": "Text segments must equal blanks + 1",
     "matchingMinItems": "At least one pair is required",
-    "slotCorrectIndex": "Correct option index is invalid"
+    "slotCorrectIndex": "Correct option index is invalid",
+    "dropPinMediaRequired": "Image required",
+    "dropPinMinHotspots": "At least one zone required",
+    "dropPinHotspotBounds": "Zone is outside the image"
   },
   "route": {
     "back": "Go back home",

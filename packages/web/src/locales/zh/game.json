@@ -360,5 +360,12 @@
     "correctAnswer": "正确答案：{{option}}",
     "selectOption": "选择选项",
     "fillAllSlots": "请填写所有空格"
+  },
+  "dropPin": {
+    "prompt": "点击图片上的正确位置",
+    "clickImage": "放置标记",
+    "reveal": "正确区域",
+    "correct": "命中！",
+    "incorrect": "未中"
   }
 }

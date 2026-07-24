@@ -85,7 +85,9 @@
     "fillBlank": "填空",
     "fillBlankDesc": "用下拉菜单完成句子",
     "matching": "配对",
-    "matchingDesc": "用下拉菜单配对项目"
+    "matchingDesc": "用下拉菜单配对项目",
+    "dropPin": "定点",
+    "dropPinDesc": "在图片区域放置标记"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",
@@ -192,5 +194,11 @@
     "optionsLabel": "选项",
     "correctOption": "正确选项",
     "minItemsRequired": "至少需要 1 组配对"
+  },
+  "dropPin": {
+    "prompt": "点击图片上的正确位置",
+    "addZone": "添加区域",
+    "removeZone": "删除区域",
+    "minZonesRequired": "至少需要一个区域"
   }
 }
