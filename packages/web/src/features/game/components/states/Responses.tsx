@@ -36,6 +36,8 @@ const Responses = ({
     acceptedAnswers,
     matchMode,
     correctChunks,
+    correctOrder,
+    items,
   },
 }: Props) => {
   const isSlider = type === "slider"
@@ -43,6 +45,7 @@ const Responses = ({
   const isSentenceBuilder = type === "sentence-builder"
   const isMathematik = type === "mathematik"
   const isWortarten = type === "wortarten"
+  const isSequencing = type === "sequencing"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -166,6 +169,31 @@ const Responses = ({
                 </div>
               </motion.div>
             )}
+            {isSequencing && correctOrder && items && (
+              <motion.div
+                className="mt-6 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-white p-4 text-center shadow-[var(--shadow-flat)]"
+                variants={reveal.item()}
+                transition={reveal.spring}
+              >
+                <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+                  {t("game:sequencing.correctOrder")}
+                </p>
+                <ol className="flex flex-col gap-2">
+                  {correctOrder.map((itemId, index) => {
+                    const item = items.find((i) => i.id === itemId)
+                    return (
+                      <li
+                        key={`${itemId}-${index}`}
+                        className="inline-flex items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--state-correct)] px-3 py-2 text-lg font-bold text-[var(--answer-text)] md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                      >
+                        <span className="mr-2 font-bold">{index + 1}.</span>
+                        <span>{item?.label}</span>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </motion.div>
+            )}
           </div>
         ) : isSlider ? (
           <motion.div
@@ -264,7 +292,7 @@ const Responses = ({
         )}
       </div>
 
-      {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isMathematik && !isWortarten && (
+      {!isSlider && !isTypeAnswer && !isSentenceBuilder && !isSequencing && !isMathematik && !isWortarten && (
         <div>
           <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
             {answerList.map((answer, key) => (
