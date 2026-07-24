@@ -15,6 +15,15 @@ pub struct QuestionMedia {
     pub url: String,
 }
 
+/// Sequencing question item with id and label
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct SequencingItem {
+    pub id: String,
+    pub label: String,
+}
+
 /// Question type enum
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -37,6 +46,8 @@ pub enum QuestionType {
     Mathematik,
     #[serde(rename = "wortarten")]
     Wortarten,
+    #[serde(rename = "sequencing")]
+    Sequencing,
 }
 
 /// A single question in a quiz
@@ -110,6 +121,12 @@ pub struct Question {
     #[serde(skip_serializing_if = "Option::is_none", rename = "disabledTokens")]
     #[ts(optional)]
     pub disabled_tokens: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub items: Option<Vec<SequencingItem>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "correctOrder")]
+    #[ts(optional)]
+    pub correct_order: Option<Vec<String>>,
 }
 
 /// A complete quiz definition
