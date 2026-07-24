@@ -28,6 +28,7 @@ const PracticePage = () => {
     startGame,
     nextQuestion,
     finishGame,
+    finishPractice,
     reset,
   } = useSoloStore()
   const finishedRef = useRef(false)
@@ -41,17 +42,9 @@ const PracticePage = () => {
   useEffect(() => {
     if (phase === "finished" && !finishedRef.current) {
       finishedRef.current = true
-      void fetch(`/api/quizz/${id}/practice-score`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerName,
-          score: totalPoints,
-          answers: [],
-        }),
-      }).catch(() => undefined)
+      void finishPractice(id)
     }
-  }, [phase, id, playerName, totalPoints])
+  }, [phase, id, finishPractice])
 
   if (phase === "loading" || phase === "idle") return <Loader />
   if (error) {
