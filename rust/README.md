@@ -5,10 +5,10 @@
 as the live Node.js server (`packages/socket`), so the React frontend and
 every connected phone work unchanged against either backend.
 
-**This is a preview, not a replacement.** Production traffic at
-[razzoozle.joelduss.xyz](https://razzoozle.joelduss.xyz) still runs on the
-Node server. The Rust server runs feature-complete alongside it in a parallel
-container, gated by a real-game CI suite, working toward cutover.
+**This is a preview, not a replacement.** Production traffic still runs on the
+Node server. The Rust server runs feature-complete alongside it as a public
+preview at [rust.razzoozle.xyz](https://rust.razzoozle.xyz), gated by a real-game
+CI suite, working toward cutover.
 
 **Why Rust:** the endgame is shipping the desktop host as a **~10 MB Tauri app**
 (Rust server as a sidecar) instead of a ~150 MB Electron bundle that ships a full
@@ -21,14 +21,14 @@ the hosted and desktop cases cheaper (RAM, cold start).
 
 ---
 
-## Status — 2026-07-05
+## Status — 2026-07-24
 
 | Phase | What | State |
 |---|---|---|
 | **0 — Spike & Gate** | socketioxide talks socket.io to the real client; golden-frame baseline recorded; plugin-runtime decision (Node-sidecar) | ✅ **PASS** — no protocol blockers |
 | **1 — Protocol & types** | Every socket event/payload as a Rust type, `ts-rs` generates the TS bindings (Rust leads, one source of truth) | ✅ **9 modules, ~200 types, 178 tests** |
 | **1b — Engine logic** | Sentence-builder chunk generation + shuffle guard, ported 1:1 from TS | ✅ **19 tests** |
-| **2 — Server MVP → feature-complete** | Full scored multi-question game, all 7 question types, player lifecycle + reconnect, manager auth, quiz-from-disk, HTTP + solo endpoints, game-control (kick/skip/abort/timer), bots, display/kiosk, AI/media | ✅ **deployed :3012, feature-complete** |
+| **2 — Server MVP → feature-complete** | Full scored multi-question game, all 10 question types, player lifecycle + reconnect, manager auth, quiz-from-disk, HTTP + solo endpoints, game-control (skip/reveal/adjust-timer), snapshot/restore persistence, bots, display/kiosk, satellite-auth (env SATELLITE_TOKEN), AI/media | ✅ **deployed :3012, feature-complete** |
 | **2.x — Real-game CI gate** | Every deploy plays a **100-player game to FINISHED + reconnect** against the running container before it's considered good | ✅ **CI gate live** |
 | **v2.0 — Hardening (in progress)** | Adversarial multi-model bughunt (19 confirmed findings) → resource caps + game eviction, per-IP rate-limits, path-traversal allowlist, Unicode-correct text matching, **server-minted host-token auth** closing a cross-game-control (IDOR) hole. Applied to both Node and Rust twins. `ts-rs` now also exports host-token/status types | 🚧 in progress |
 | **Next** | Modularization + actor-per-game refactor; shadow cutover planning | ⏳ later |
@@ -53,7 +53,7 @@ create → join → login → startGame
 |---|---|
 | [`protocol/`](protocol) | `razzoozle-protocol` — wire types for every socket event + payload, `serde` (camelCase) + `ts-rs`. **Rust is the source of truth**; `cargo test` regenerates the TS bindings. |
 | [`engine/`](engine) | `razzoozle-engine` — pure, IO-free game logic (sentence-builder chunking + Fisher-Yates shuffle with anti-identity guard). |
-| [`server/`](server) | `razzoozle-server` — `axum` HTTP + `socketioxide` namespace, in-memory game registry, the lobby → question → reveal → leaderboard loop, manager auth (host-token), rate-limits + resource caps. |
+| [`server/`](server) | `razzoozle-server` — `axum` HTTP + `socketioxide` namespace, in-memory game registry, the lobby → question → reveal → leaderboard loop, manager auth (host-token), rate-limits + resource caps, snapshot/restore persistence. |
 
 Spikes that proved the approach live under [`../spikes/`](../spikes):
 `socketioxide-lobby` (protocol compat), `ts-rs-events` (type-gen), `golden-frames`
@@ -99,5 +99,4 @@ PORT=3478 RUST_LOG=info ./target/debug/razzoozle-server
 ## Non-goals (kept deliberately)
 
 No frontend port (React ecosystem stays), no protocol changes during the port
-(wire-format freeze), no Redis/persistence rework (in-memory stays in-memory),
-`packages/mcp` stays Node for now.
+(wire-format freeze), no Redis/persistence rework (snapshot/restore extends in-memory persistence), `packages/mcp` stays Node for now.
