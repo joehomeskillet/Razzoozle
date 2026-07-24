@@ -148,39 +148,9 @@ async function run() {
     if (!t1.includes(q1.question)) {
       throw new Error(`Expected Q1 "${q1.question}", got "${t1}"`);
     }
-    console.log('Q1 visible — testing skip');
+    console.log('Q1 visible — testing live controls');
 
-    // R6: skip Q1 → Q2
-    await clickControlByAria(
-      manager,
-      'Skip question',
-      'Frage überspringen',
-      'Passer la question',
-      'Saltar pregunta',
-      'Salta domanda',
-    );
-
-    const skipDeadline = Date.now() + 20_000;
-    let onQ2 = false;
-    while (Date.now() < skipDeadline) {
-      const text = await player
-        .locator(testIdSel('question-text'))
-        .first()
-        .innerText()
-        .catch(() => '');
-      if (text.includes(q2.question)) {
-        onQ2 = true;
-        break;
-      }
-      await player.waitForTimeout(500);
-    }
-    if (!onQ2) {
-      throw new Error(`After skip, player never saw Q2 "${q2.question}"`);
-    }
-    console.log('R6 skip OK → Q2');
-
-    // R7: +10s while Q2 open
-    await player.waitForSelector(testIdSel('answer-btn-0'), { state: 'visible', timeout: 15_000 });
+    // R7 first: +10s while answer window is open (before skip/reveal closes it).
     await clickControlByAria(
       manager,
       'Add 10 seconds',
@@ -189,13 +159,13 @@ async function run() {
       'Añadir 10 segundos',
       'Aggiungi 10 secondi',
     );
-    // Best-effort: panel still mounted
     if (!(await isTestIdVisible(manager, 'game-control-panel'))) {
       throw new Error('game-control-panel disappeared after +10s');
     }
     console.log('R7 adjustTimer +10s OK (panel still present)');
 
-    // R8: reveal answer
+    // R8: revealAnswer ends answer window (same family as skip — request_abort path).
+    // Prefer reveal first so we can assert UI progress; skip is equivalent abort.
     await clickControlByAria(
       manager,
       'Reveal answer',
@@ -206,30 +176,83 @@ async function run() {
       '揭晓答案',
     );
 
-    const revealDeadline = Date.now() + 15_000;
+    const revealDeadline = Date.now() + 20_000;
     let revealed = false;
     while (Date.now() < revealDeadline) {
       const managerResponses = await isTestIdVisible(manager, 'responses-view');
-      const playerResult =
-        (await isTestIdVisible(player, 'result-view')) ||
-        (await player.locator(testIdPrefixSel('answer-btn-')).first().isVisible().catch(() => false));
-      // After reveal, answer buttons typically disabled or result UI shows
       const anyDisabled = await player.evaluate(() => {
-        const btns = Array.from(document.querySelectorAll('[data-testid^="answer-btn-"]')) as HTMLButtonElement[];
-        return btns.some((b) => b.disabled);
+        const btns = Array.from(
+          document.querySelectorAll('[data-testid^="answer-btn-"]'),
+        ) as HTMLButtonElement[];
+        return btns.length > 0 && btns.every((b) => b.disabled);
       });
-      if (managerResponses || anyDisabled || playerResult) {
+      const nextVisible = await isTestIdVisible(manager, 'next-btn');
+      if (managerResponses || anyDisabled || nextVisible) {
         revealed = true;
         break;
       }
       await player.waitForTimeout(400);
     }
     if (!revealed) {
-      // Soft-accept: no crash after reveal click is the minimum bar for this env
-      console.warn('WARNING: could not observe responses-view/disabled answers; reveal emitted without crash');
-    } else {
-      console.log('R8 revealAnswer OK (UI progressed)');
+      throw new Error('After reveal, neither responses-view nor disabled answers nor next-btn observed');
     }
+    console.log('R8 revealAnswer OK (answer window closed / results path)');
+
+    // R6: skipQuestion is implemented as abort of SelectAnswer (same as reveal for
+    // an open window). After reveal we are past SelectAnswer — exercise skip on
+    // the NEXT question's answer window instead.
+    // Advance manager through responses/recap/leaderboard to Q2.
+    for (let step = 0; step < 12; step++) {
+      const text = await player
+        .locator(testIdSel('question-text'))
+        .first()
+        .innerText()
+        .catch(() => '');
+      if (text.includes(q2.question)) break;
+      if (await isTestIdVisible(manager, 'next-btn')) {
+        await manager.locator(testIdSel('next-btn')).click().catch(() => {});
+      }
+      await manager.waitForTimeout(1_200);
+    }
+
+    await player.waitForSelector(testIdSel('answer-btn-0'), { state: 'visible', timeout: 45_000 });
+    const t2 = await player.locator(testIdSel('question-text')).first().innerText();
+    if (!t2.includes(q2.question)) {
+      throw new Error(`Expected Q2 "${q2.question}" before skip test, got "${t2}"`);
+    }
+
+    await clickControlByAria(
+      manager,
+      'Skip question',
+      'Frage überspringen',
+      'Passer la question',
+      'Saltar pregunta',
+      'Salta domanda',
+    );
+
+    const skipDeadline = Date.now() + 20_000;
+    let skipped = false;
+    while (Date.now() < skipDeadline) {
+      if (await isTestIdVisible(manager, 'responses-view')) {
+        skipped = true;
+        break;
+      }
+      const disabled = await player.evaluate(() => {
+        const btns = Array.from(
+          document.querySelectorAll('[data-testid^="answer-btn-"]'),
+        ) as HTMLButtonElement[];
+        return btns.length > 0 && btns.every((b) => b.disabled);
+      });
+      if (disabled) {
+        skipped = true;
+        break;
+      }
+      await player.waitForTimeout(400);
+    }
+    if (!skipped) {
+      throw new Error('After skip on Q2, answer window did not close');
+    }
+    console.log('R6 skipQuestion OK (aborted Q2 answer window → results path)');
 
     console.log('W6-3 manager-live-controls PASSED');
   } finally {
