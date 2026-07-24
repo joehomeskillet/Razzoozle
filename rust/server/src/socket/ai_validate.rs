@@ -242,8 +242,27 @@ pub fn validate_generate_question(payload: &Value) -> Result<(String, String, St
         .and_then(|v| v.as_str())
         .unwrap_or("choice");
 
-    if !["choice", "boolean", "multiple-select", "type-answer"].contains(&q_type) {
-        return Err("type must be one of: choice, boolean, multiple-select, type-answer".to_string());
+    // All platform question types (mirror packages/common QUESTION_TYPES).
+    const ALLOWED_TYPES: &[&str] = &[
+        "choice",
+        "boolean",
+        "slider",
+        "poll",
+        "multiple-select",
+        "type-answer",
+        "sentence-builder",
+        "mathematik",
+        "wortarten",
+        "sequencing",
+        "fill-blank",
+        "matching",
+        "drop-pin",
+    ];
+    if !ALLOWED_TYPES.contains(&q_type) {
+        return Err(format!(
+            "type must be one of: {}",
+            ALLOWED_TYPES.join(", ")
+        ));
     }
 
     let language = payload
@@ -343,4 +362,47 @@ pub fn validate_generate_quiz(payload: &Value) -> Result<(String, usize, String)
     }
 
     Ok((topic.to_string(), count as usize, language.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn generate_question_accepts_all_thirteen_types() {
+        for ty in [
+            "choice",
+            "boolean",
+            "slider",
+            "poll",
+            "multiple-select",
+            "type-answer",
+            "sentence-builder",
+            "mathematik",
+            "wortarten",
+            "sequencing",
+            "fill-blank",
+            "matching",
+            "drop-pin",
+        ] {
+            let r = validate_generate_question(&json!({
+                "topic": "Hauptstädte",
+                "type": ty,
+                "language": "de"
+            }));
+            assert!(r.is_ok(), "type {ty} should be accepted: {r:?}");
+            assert_eq!(r.unwrap().1, ty);
+        }
+    }
+
+    #[test]
+    fn generate_question_rejects_unknown_type() {
+        let r = validate_generate_question(&json!({
+            "topic": "x",
+            "type": "not-a-real-type",
+            "language": "de"
+        }));
+        assert!(r.is_err());
+    }
 }
