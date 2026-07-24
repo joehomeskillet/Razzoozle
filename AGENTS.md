@@ -20,6 +20,12 @@ pnpm --filter @razzoozle/socket run test    # vitest run — suite is FULLY GREE
                                              # before merging. Skipped tests are DB-guarded
                                              # (need DATABASE_URL).
 pnpm verify                                 # repo-wide: types + oxlint + tests (root package.json)
+pnpm g:console <Name>                       # Scaffold 100% token-compliant Admin Console component + test
+pnpm g:menu <Name>                          # Scaffold 100% token-compliant Admin Menu/Nav component + test
+pnpm g:question <Name>                      # Scaffold 100% token-compliant Quiz/Answer Tile component + test
+pnpm g:display <Name>                       # Scaffold 100% token-compliant Kiosk Display stage component + test
+pnpm g:player <Name>                        # Scaffold 100% token-compliant Mobile Phone Client component + test
+pnpm tokens:build                           # Auto-build W3C design.tokens.json -> CSS & TS types
 bash rust/gate.sh                           # deterministic Rust gate — run after EVERY Rust
                                              # worker return, before committing. Never trust a
                                              # worker's self-report.
@@ -109,10 +115,6 @@ Playwright: `browser_resize` auf jede Auflösung, dann Solo-Flow durchspielen
   hard-denies any brand-new single-`Write` code file above 600 lines — split
   into single-responsibility modules with a thin barrel instead (see
   Architecture Map above for the established pattern).
-- **Design Tokens & UI Styling**: NEVER hardcode arbitrary hex colors (`#7c3aed`,
-  `#22c55e`, etc.) or unmapped `[var(--...)]` arbitrary classes in UI components.
-  Always use mapped Tailwind v4 utility classes (`bg-answer-1`, `text-accent-contrast`,
-  `bg-status-online-bg`, `bg-surface-2`, `text-ink`, etc., defined in `index.css`).
-  For JS/Canvas/Confetti dynamic color references, use `getThemeTokenCssVar()` from
-  `@razzoozle/common/theme-tokens` for type-safe CSS token access (`CssTokenName`).
+- **Design Tokens & Component Generators**: NEVER hand-write brand new UI components from scratch. ALWAYS use the CLI domain generators (`pnpm g:console`, `pnpm g:menu`, `pnpm g:question`, `pnpm g:display`, `pnpm g:player`) to scaffold token-compliant components with auto-generated Vitest tests. NEVER hardcode arbitrary hex colors (`#7c3aed`, `#22c55e`, etc.) or unmapped `[var(--...)]` arbitrary classes in UI components. Always use mapped Tailwind v4 utility classes (`bg-answer-1`, `text-accent-contrast`, `bg-status-online-bg`, `bg-surface-2`, `text-ink`, etc., defined in `index.css`). For JS/Canvas/Confetti dynamic color references, use `getThemeTokenCssVar()` from `@razzoozle/common/theme-tokens` for type-safe CSS token access (`CssTokenName`).
+
 
