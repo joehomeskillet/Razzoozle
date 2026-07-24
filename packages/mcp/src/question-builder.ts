@@ -1,9 +1,5 @@
-// Build a valid `Question` for any of the 6 supported types with sensible
-// defaults, then validate it through @razzoozle/common's questionValidator so a
-// model can author quickly without knowing each type's per-field rules. The
-// type-specific superRefine rules (slider needs min/max/correct, multiple-select
-// needs >=2 solutions, type-answer needs acceptedAnswers, etc.) are the single
-// source of truth in the validator — we only supply ergonomic defaults here.
+// Build a valid `Question` for any supported type with sensible defaults,
+// then validate through @razzoozle/common's questionValidator.
 import { MEDIA_TYPES, QUESTION_TYPES } from "@razzoozle/common/constants"
 import type { QuestionType } from "@razzoozle/common/constants"
 import type { Question, QuestionMedia } from "@razzoozle/common/types/game"
@@ -12,22 +8,28 @@ import { questionValidator } from "@razzoozle/common/validators/quizz"
 export interface BuildQuestionInput {
   type: QuestionType
   question: string
-  // choice / boolean / multiple-select / poll
   answers?: string[]
-  // index(es) of correct answer(s). boolean defaults to [0] (= "True") if omitted.
   solutions?: number[]
-  // slider
   min?: number
   max?: number
   correct?: number
   step?: number
   unit?: string
-  // type-answer
   acceptedAnswers?: string[]
   matchMode?: "exact" | "normalized" | "fuzzy"
-  // shared
+  chunks?: string[]
+  items?: Array<{ id: string; label: string }>
+  correctOrder?: string[]
+  segments?: string[]
+  slots?: Array<{ options: string[]; correctIndex: number }>
+  leftItems?: Array<{ label: string; options: string[]; correctIndex: number }>
+  hotspots?: Array<{ x: number; y: number; w: number; h: number }>
+  sentence?: string
+  tokens?: string[]
+  posSet?: string[]
+  tolerance?: number
+  decimals?: number
   media?: QuestionMedia
-  // A /media/...webp or absolute URL — convenience alias for media.url (image).
   mediaUrl?: string
   cooldown?: number
   time?: number
@@ -36,15 +38,11 @@ export interface BuildQuestionInput {
   submittedBy?: string
 }
 
-const DEFAULT_COOLDOWN = 5 // validator range: 3..15
-const DEFAULT_TIME = 20 // validator range: 5..120
+const DEFAULT_COOLDOWN = 5
+const DEFAULT_TIME = 20
 
-// Assemble a draft question object for `type`, filling in only what that type
-// needs (so unrelated fields stay absent and don't confuse the validator's
-// superRefine). Everything is then handed to questionValidator.
 export const buildQuestion = (input: BuildQuestionInput): Question => {
   const type = input.type
-
   if (!QUESTION_TYPES.includes(type)) {
     throw new Error(
       `Unknown question type "${type}". One of: ${QUESTION_TYPES.join(", ")}`,
@@ -71,80 +69,132 @@ export const buildQuestion = (input: BuildQuestionInput): Question => {
   let draft: Record<string, unknown>
 
   switch (type) {
-    case "boolean": {
-      // Render as a 2-option true/false unless explicit answers are given.
-      const answers = input.answers ?? ["True", "False"]
-
+    case "boolean":
       draft = {
         ...base,
-        answers,
+        answers: input.answers ?? ["True", "False"],
         solutions: input.solutions ?? [0],
       }
-
       break
-    }
-
-    case "slider": {
+    case "slider":
       draft = {
         ...base,
-        min: input.min,
-        max: input.max,
-        correct: input.correct,
+        min: input.min ?? 0,
+        max: input.max ?? 100,
+        correct: input.correct ?? 50,
         ...(input.step !== undefined ? { step: input.step } : {}),
         ...(input.unit !== undefined ? { unit: input.unit } : {}),
       }
-
       break
-    }
-
-    case "poll": {
-      // Opinion vote: answers, no solutions.
+    case "poll":
+      draft = { ...base, answers: input.answers ?? ["A", "B"] }
+      break
+    case "multiple-select":
       draft = {
         ...base,
-        answers: input.answers,
+        answers: input.answers ?? ["A", "B", "C"],
+        solutions: input.solutions ?? [0, 1],
       }
-
       break
-    }
-
-    case "multiple-select": {
+    case "type-answer":
       draft = {
         ...base,
-        answers: input.answers,
-        solutions: input.solutions,
-      }
-
-      break
-    }
-
-    case "type-answer": {
-      draft = {
-        ...base,
-        acceptedAnswers: input.acceptedAnswers,
+        acceptedAnswers: input.acceptedAnswers ?? ["answer"],
         matchMode: input.matchMode ?? "normalized",
       }
-
       break
-    }
-
-    // "choice" and any future single-answer type
-    default: {
+    case "sentence-builder":
       draft = {
         ...base,
-        answers: input.answers,
-        solutions: input.solutions,
+        chunks: input.chunks ?? ["The", "quick", "fox"],
       }
+      break
+    case "sequencing": {
+      const items =
+        input.items ??
+        [
+          { id: "a", label: "First" },
+          { id: "b", label: "Second" },
+        ]
+      draft = {
+        ...base,
+        items,
+        correctOrder: input.correctOrder ?? items.map((i) => i.id),
+      }
+      break
     }
+    case "mathematik":
+      draft = {
+        ...base,
+        correct: input.correct ?? 42,
+        tolerance: input.tolerance ?? 0.1,
+        decimals: input.decimals ?? 2,
+      }
+      break
+    case "wortarten":
+      draft = {
+        ...base,
+        sentence: input.sentence ?? "Das ist ein Test",
+        tokens: input.tokens ?? ["Das", "ist", "ein", "Test"],
+        posSet: input.posSet ?? [
+          "Nomen",
+          "Verb",
+          "Adjektiv",
+          "Artikel",
+          "Pronomen",
+          "Adverb",
+          "Präposition",
+          "Konjunktion",
+        ],
+        solutions: input.solutions ?? [3, 1, 3, 0],
+      }
+      break
+    case "fill-blank":
+      draft = {
+        ...base,
+        segments: input.segments ?? ["The capital of ", " is Paris."],
+        slots: input.slots ?? [
+          { options: ["France", "Germany", "Spain"], correctIndex: 0 },
+        ],
+      }
+      break
+    case "matching":
+      draft = {
+        ...base,
+        leftItems: input.leftItems ?? [
+          {
+            label: "Capital of France",
+            options: ["Paris", "Lyon"],
+            correctIndex: 0,
+          },
+        ],
+      }
+      break
+    case "drop-pin":
+      draft = {
+        ...base,
+        media: media ?? {
+          type: MEDIA_TYPES.IMAGE,
+          url: "/media/placeholder-map.webp",
+        },
+        hotspots: input.hotspots ?? [{ x: 0.3, y: 0.3, w: 0.2, h: 0.2 }],
+      }
+      break
+    case "choice":
+    default:
+      draft = {
+        ...base,
+        answers: input.answers ?? ["A", "B", "C", "D"],
+        solutions: input.solutions ?? [0],
+      }
   }
 
   const parsed = questionValidator.safeParse(draft)
-
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
       .join("; ")
     throw new Error(`Invalid ${type} question: ${issues}`)
   }
-
   return parsed.data
 }

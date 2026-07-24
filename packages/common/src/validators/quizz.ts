@@ -164,7 +164,19 @@ export const questionValidator = z
     } else if (q.type === "wortarten") {
       // Wortarten: parts of speech tagging (permissive stub for now)
     } else if (q.type === "sequencing") {
-      // Sequencing: item reordering (permissive stub for now)
+      if (!q.items || q.items.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.invalidPayload",
+          path: ["items"],
+        })
+      } else if (!q.correctOrder || q.correctOrder.length !== q.items.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.invalidPayload",
+          path: ["correctOrder"],
+        })
+      }
     } else if (q.type === "fill-blank") {
       // Fill-blank: >=1 slot; segments length must be slots.length + 1 when both set.
       if (!q.slots || q.slots.length < 1) {
