@@ -367,5 +367,19 @@
     "reveal": "Zone correcte",
     "correct": "Touché !",
     "incorrect": "Raté"
+  },
+  "study": {
+    "badge": "Étude",
+    "progress": "Question {{n}} sur {{total}}",
+    "correctAnswer": "Bonne réponse",
+    "noExplanation": "Pas d'explication",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "empty": "Aucune question"
+  },
+  "practice": {
+    "banner": "Entraînement — score non classé",
+    "finished": "Entraînement terminé",
+    "notRanked": "Non classé — entraînement seul"
   }
 }

@@ -367,5 +367,19 @@
     "reveal": "Zona correcta",
     "correct": "¡Acierto!",
     "incorrect": "Fallo"
+  },
+  "study": {
+    "badge": "Estudiar",
+    "progress": "Pregunta {{n}} de {{total}}",
+    "correctAnswer": "Respuesta correcta",
+    "noExplanation": "Sin explicación",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "empty": "Sin preguntas"
+  },
+  "practice": {
+    "banner": "Práctica — la puntuación no cuenta",
+    "finished": "Práctica terminada",
+    "notRanked": "Sin ranking — solo práctica"
   }
 }

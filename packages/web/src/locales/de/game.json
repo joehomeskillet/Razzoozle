@@ -367,5 +367,19 @@
     "reveal": "Richtige Zone",
     "correct": "Treffer!",
     "incorrect": "Daneben"
+  },
+  "study": {
+    "badge": "Lernen",
+    "progress": "Frage {{n}} von {{total}}",
+    "correctAnswer": "Richtige Antwort",
+    "noExplanation": "Keine Erklärung",
+    "prev": "Zurück",
+    "next": "Weiter",
+    "empty": "Keine Fragen"
+  },
+  "practice": {
+    "banner": "Übungsrunde — Score zählt nicht",
+    "finished": "Übung beendet",
+    "notRanked": "Nicht gewertet — nur Übung"
   }
 }

@@ -367,5 +367,19 @@
     "reveal": "正确区域",
     "correct": "命中！",
     "incorrect": "未中"
+  },
+  "study": {
+    "badge": "学习",
+    "progress": "第 {{n}} / {{total}} 题",
+    "correctAnswer": "正确答案",
+    "noExplanation": "暂无解析",
+    "prev": "上一题",
+    "next": "下一题",
+    "empty": "没有题目"
+  },
+  "practice": {
+    "banner": "练习模式 — 成绩不计入排行",
+    "finished": "练习完成",
+    "notRanked": "不计排名 — 仅练习"
   }
 }

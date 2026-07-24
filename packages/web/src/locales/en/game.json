@@ -367,5 +367,19 @@
     "reveal": "Correct zone",
     "correct": "Hit!",
     "incorrect": "Miss"
+  },
+  "study": {
+    "badge": "Study",
+    "progress": "Question {{n}} of {{total}}",
+    "correctAnswer": "Correct answer",
+    "noExplanation": "No explanation available",
+    "prev": "Previous",
+    "next": "Next",
+    "empty": "No questions"
+  },
+  "practice": {
+    "banner": "Practice run — score will not be ranked",
+    "finished": "Practice complete",
+    "notRanked": "Not ranked — practice only"
   }
 }
