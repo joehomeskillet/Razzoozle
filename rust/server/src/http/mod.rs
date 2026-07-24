@@ -10,6 +10,7 @@ pub mod skeleton;
 mod client_events;
 mod result_og;
 pub mod solo;
+mod templates;
 mod static_files;
 mod login;
 mod submit;
@@ -208,6 +209,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/quizz/:id/solo-score", post(solo::handle_solo_score))
         .route("/api/quizz/:id/study", get(solo::handle_get_quiz_study))
         .route("/api/quizz/:id/practice-score", post(solo::handle_practice_score))
+        .route("/api/templates", get(templates::handle_list_templates))
+        .route("/api/templates/create-from", post(templates::handle_create_from_template))
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
         .route("/api/assignment/:id/results", get(assignments::handle_get_assignment_results))

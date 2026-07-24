@@ -1046,5 +1046,9 @@
     "allSelected": "Alle {{count}} Einträge ausgewählt",
     "allFilteredSelected": "Alle {{count}} gefilterten Einträge ausgewählt",
     "selectedOfTotal": "{{selected}} von {{total}} ausgewählt"
+  },
+  "templates": {
+    "title": "Vorlagen",
+    "use": "Verwenden"
   }
 }

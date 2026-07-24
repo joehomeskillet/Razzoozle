@@ -1046,5 +1046,9 @@
     "allSelected": "Todas las {{count}} entradas seleccionadas",
     "allFilteredSelected": "Todas las {{count}} entradas filtradas seleccionadas",
     "selectedOfTotal": "{{selected}} de {{total}} seleccionados"
+  },
+  "templates": {
+    "title": "Plantillas",
+    "use": "Usar"
   }
 }
