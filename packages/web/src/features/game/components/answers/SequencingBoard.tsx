@@ -22,6 +22,7 @@ export function SequencingBoard({
   onChange,
   onSubmit,
   disabled,
+  feedback,
   testIdPrefix = "",
 }: Props) {
   const { t } = useTranslation()
@@ -49,27 +50,40 @@ export function SequencingBoard({
   const isComplete = value.bank.length === 0
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      {/* 1. Answer-placement area */}
-      <div className="flex min-h-[64px] flex-wrap items-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]">
+    <div className="mx-auto mb-4 flex w-full max-w-4xl flex-col gap-[var(--game-space-3)] px-4">
+      {/* Placed/answer area */}
+      <div
+        className={clsx(
+          "flex min-h-[64px] flex-wrap content-start items-center gap-2 rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-white p-4 shadow-[var(--shadow-flat)]",
+          feedback?.correct && "bg-[var(--state-correct)]",
+          feedback && !feedback.correct && "bg-[var(--state-wrong)]",
+        )}
+        {...(isSolo && { "data-testid": "solo-sequencing-answer-bar" })}
+      >
         {value.placed.length === 0 ? (
-          <p className="w-full text-center italic text-[var(--answer-text)] opacity-60">
-            {t("game:sequencing.tapHint", "Tap items below to order them")}
+          <p className="text-sm text-[color:var(--game-fg)]/60">
+            {t("game:sequencing.tapHint", {
+              defaultValue: "Tap items below to order them",
+            })}
           </p>
         ) : (
           value.placed.map((chip, idx) => (
             <button
               key={chip.id}
               type="button"
-              disabled={disabled}
               onClick={() => handlePlacedChipClick(chip.id)}
+              disabled={disabled}
+              {...(isSolo && { "data-testid": `solo-sequencing-placed-${chip.id}` })}
               className={clsx(
-                "inline-flex min-h-11 items-center rounded-lg px-4 py-3 font-medium text-white shadow-sm",
+                "inline-flex min-h-11 items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-4 py-3 text-base font-medium md:text-lg",
                 ANSWERS_COLORS[idx % ANSWERS_COLORS.length],
-                !disabled && PRESS_FEEDBACK
+                !disabled && PRESS_FEEDBACK,
+                disabled && "cursor-not-allowed",
               )}
-              aria-label={t("game:sequencing.removeItem", "Remove {{label}}", { label: chip.label })}
-              data-testid={isSolo ? `solo-sequencing-placed-${chip.id}` : `sequencing-placed-${chip.id}`}
+              aria-label={t("game:sequencing.removeItem", {
+                defaultValue: "Remove {{label}}",
+                label: chip.label,
+              })}
             >
               {chip.label}
             </button>
@@ -77,26 +91,34 @@ export function SequencingBoard({
         )}
       </div>
 
-      {/* 2. Item bank */}
-      <div className={clsx("rounded-xl p-4", ANSWER_TILE_SURFACE)}>
-        <p className="mb-3 text-sm font-medium text-[color:var(--game-fg)] opacity-80">
-          {t("game:sequencing.itemBank", "Item bank")}
+      {/* Item bank */}
+      <div
+        className={clsx(ANSWER_TILE_SURFACE, "p-4")}
+        {...(isSolo && { "data-testid": "solo-sequencing-bank" })}
+      >
+        <p className="mb-2 text-sm font-semibold text-[color:var(--game-fg)]">
+          {t("game:sequencing.itemBank", {
+            defaultValue: "Item bank",
+          })}
         </p>
         <div className="flex flex-wrap gap-2">
           {value.bank.map((chip, idx) => (
             <button
               key={chip.id}
               type="button"
-              disabled={disabled}
               onClick={() => handleBankChipClick(chip)}
-              className={clsx(
-                "inline-flex min-h-11 items-center rounded-lg px-4 py-3 font-medium text-white shadow-sm border border-[var(--border-hairline)]",
-                ANSWERS_COLORS[idx % ANSWERS_COLORS.length],
-                PRESS_FEEDBACK,
-                disabled && "opacity-40 grayscale"
-              )}
-              aria-label={t("game:sequencing.addItem", "Add {{label}}", { label: chip.label })}
+              disabled={disabled}
               data-testid={isSolo ? `solo-sequencing-bank-${chip.id}` : `sequencing-item-${idx}`}
+              className={clsx(
+                "inline-flex min-h-11 items-center rounded-[var(--radius-theme)] border border-[var(--border-hairline)] px-4 py-3 text-base font-medium md:text-lg",
+                ANSWERS_COLORS[idx % ANSWERS_COLORS.length],
+                !disabled && PRESS_FEEDBACK,
+                disabled && "cursor-not-allowed opacity-40 grayscale",
+              )}
+              aria-label={t("game:sequencing.addItem", {
+                defaultValue: "Add {{label}}",
+                label: chip.label,
+              })}
             >
               {chip.label}
             </button>
@@ -104,20 +126,18 @@ export function SequencingBoard({
         </div>
       </div>
 
-      {/* 3. Submit button */}
+      {/* Submit button */}
       <button
         type="button"
-        disabled={disabled || !isComplete}
         onClick={onSubmit}
-        className={clsx(
-          "w-full min-h-11 rounded-xl py-3 font-bold text-white shadow-sm",
-          "bg-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
-          !disabled && isComplete && PRESS_FEEDBACK,
-          disabled || !isComplete ? "cursor-not-allowed opacity-50" : ""
-        )}
+        disabled={disabled || !isComplete}
         data-testid={isSolo ? "solo-sequencing-submit" : "sequencing-submit"}
+        className={clsx(
+          "bg-[var(--color-primary)] rounded-xl px-8 py-3 text-xl font-bold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] lg:px-12 lg:py-5 lg:text-[clamp(1.25rem,3vh,2.5rem)]",
+          !disabled && PRESS_FEEDBACK,
+        )}
       >
-        {t("game:sequencing.submit", "Submit")}
+        {t("game:sequencing.submit")}
       </button>
     </div>
   )
