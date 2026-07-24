@@ -106,7 +106,8 @@
     "anonymizedPlayer": "Joueur {{index}}",
     "stats": {
       "correctAnswers": "Bonnes réponses",
-      "playersAnswered": "Joueurs ayant répondu"
+      "playersAnswered": "Joueurs ayant répondu",
+      "avgResponseTime": "Temps moyen"
     },
     "table": {
       "answered": "A répondu",

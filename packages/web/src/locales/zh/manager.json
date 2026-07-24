@@ -101,7 +101,8 @@
     "anonymizedPlayer": "玩家 {{index}}",
     "stats": {
       "correctAnswers": "正确答案",
-      "playersAnswered": "已作答玩家"
+      "playersAnswered": "已作答玩家",
+      "avgResponseTime": "平均作答"
     },
     "table": {
       "answered": "已作答",

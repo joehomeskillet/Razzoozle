@@ -90,7 +90,8 @@
     "anonymizedPlayer": "Giocatore {{index}}",
     "stats": {
       "correctAnswers": "Risposte corrette",
-      "playersAnswered": "Giocatori che hanno risposto"
+      "playersAnswered": "Giocatori che hanno risposto",
+      "avgResponseTime": "Tempo medio"
     },
     "table": {
       "answered": "Risposto",
