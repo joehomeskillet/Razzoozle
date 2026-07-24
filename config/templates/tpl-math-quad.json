@@ -1,0 +1,39 @@
+{
+  "id": "tpl-math-quad",
+  "category": "math",
+  "name": "Quadratformel",
+  "description": "Grundlagen Quadratische Gleichungen",
+  "tags": [
+    "algebra",
+    "beginner"
+  ],
+  "questions": [
+    {
+      "question": "Was ist die Lösungsformel für ax²+bx+c=0?",
+      "type": "type-answer",
+      "acceptedAnswers": [
+        "Mitternachtsformel",
+        "pq-Formel",
+        "abc-Formel"
+      ],
+      "matchMode": "normalized",
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "Wie viele Lösungen kann eine quadratische Gleichung haben?",
+      "type": "choice",
+      "answers": [
+        "0, 1 oder 2",
+        "immer 2",
+        "immer 1",
+        "unendlich"
+      ],
+      "solutions": [
+        0
+      ],
+      "cooldown": 5,
+      "time": 20
+    }
+  ]
+}
