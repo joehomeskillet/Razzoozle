@@ -302,9 +302,11 @@ const TemplatePickerDialog = ({
                       template.tags.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {template.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} tone="neutral">
-                              {tag}
-                            </Badge>
+                            <Fragment key={tag}>
+                              <Badge tone="neutral">
+                                {tag}
+                              </Badge>
+                            </Fragment>
                           ))}
                           {template.tags.length > 3 && (
                             <Badge tone="neutral">+{template.tags.length - 3}</Badge>
