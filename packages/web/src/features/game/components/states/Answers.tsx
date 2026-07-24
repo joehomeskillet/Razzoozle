@@ -87,6 +87,12 @@ const Answers = ({
     (s) => s.alreadyAnswered && s.gameId === gameId,
   )
   const setSubmittedChunks = useAnswerStore((s) => s.setSubmittedChunks)
+  const setSubmittedText = useAnswerStore((s) => s.setSubmittedText)
+  const setSubmittedNumber = useAnswerStore((s) => s.setSubmittedNumber)
+  const setSubmittedPin = useAnswerStore((s) => s.setSubmittedPin)
+  const setSubmittedSlotIndices = useAnswerStore(
+    (s) => s.setSubmittedSlotIndices,
+  )
 
   // Low-latency mode is active for THIS question when the master flag is on and
   // the payload actually carried a server deadline to count down from.
@@ -244,6 +250,23 @@ const Answers = ({
     }
   }, [isFillBlank, isMatching, slotOptions, matchItems])
 
+  // Fresh question mount (Answers remounts per SELECT_ANSWER): clear every
+  // reveal field so a previous question's submission can't leak into this
+  // question's SHOW_RESULT. `alreadyAnswered`/`gameId` stay untouched — they
+  // carry the reconnect/resume signal, not a reveal value.
+  useEffect(() => {
+    setSubmittedChunks(undefined)
+    setSubmittedText(undefined)
+    setSubmittedNumber(undefined)
+    setSubmittedPin(undefined)
+    setSubmittedSlotIndices(undefined)
+  }, [
+    setSubmittedChunks,
+    setSubmittedText,
+    setSubmittedNumber,
+    setSubmittedPin,
+    setSubmittedSlotIndices,
+  ])
 
   // Clear any pending ack timer on unmount so it can't fire after teardown.
   useEffect(
@@ -312,6 +335,7 @@ const Answers = ({
     setSubmitted(true)
     sfxPop()
     hapticTap()
+    setSubmittedNumber(sliderValue)
 
     armAckPending(clientMessageId)
   }
@@ -364,6 +388,7 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+    setSubmittedText(trimmed)
 
     if (lowLatency) {
       armAckPending(clientMessageId)
@@ -390,6 +415,10 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+
+    // Persist for the client reveal; guard against non-numeric input (NaN).
+    const parsedAnswer = Number(mathematikAnswer.trim())
+    setSubmittedNumber(Number.isFinite(parsedAnswer) ? parsedAnswer : undefined)
 
     armAckPending(clientMessageId)
   }
@@ -483,6 +512,7 @@ const Answers = ({
         ...(playerToken ? { playerToken } : {}),
       },
     })
+    setSubmittedPin(pinPoint)
     armAckPending(clientMessageId)
   }
 
@@ -513,6 +543,11 @@ const Answers = ({
       },
     })
     setSubmittedChunks(labels)
+    // Guard above proves every slot is filled — persist the raw option indices
+    // for the fill-blank/matching client reveal.
+    setSubmittedSlotIndices(
+      slotSelections.filter((sel): sel is number => sel != null),
+    )
     armAckPending(clientMessageId)
   }
 
