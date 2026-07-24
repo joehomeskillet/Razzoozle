@@ -19,7 +19,7 @@ mod users;
 use axum::{
     extract::Path,
     http::{HeaderMap, StatusCode},
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 use lazy_static::lazy_static;
@@ -209,7 +209,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/quizz/:id/solo-score", post(solo::handle_solo_score))
         .route("/api/quizz/:id/study", get(solo::handle_get_quiz_study))
         .route("/api/quizz/:id/practice-score", post(solo::handle_practice_score))
-        .route("/api/templates", get(templates::handle_list_templates))
+        .route("/api/templates", get(templates::handle_list_templates).post(templates::handle_create_template))
+        .route("/api/templates/:id", get(templates::handle_get_template).put(templates::handle_update_template).delete(templates::handle_delete_template))
         .route("/api/templates/create-from", post(templates::handle_create_from_template))
         .route("/api/assignment", post(assignments::handle_create_assignment))
         .route("/api/assignment/:id", get(assignments::handle_get_assignment))
