@@ -152,6 +152,34 @@ async function answerWortarten(
   }
 }
 
+/** Sequencing: click bank items in correct order to place them, then submit. */
+async function answerSequencing(
+  page: Page,
+  correctOrder: string[],
+  items: Array<{ id: string; label: string }>,
+  opts?: { doubleSubmit?: boolean },
+) {
+  // correctOrder is an array of item IDs in the order they should be placed.
+  // We need to click on the bank items by finding them via the item index in the bank.
+  for (const itemId of correctOrder) {
+    const item = items.find((it) => it.id === itemId)
+    if (!item) {
+      throw new Error(`Item ${itemId} not found in items array`)
+    }
+    // Find the item in the bank by matching its label and clicking the first match.
+    const bankItem = page
+      .getByTestId(/^sequencing-item-/)
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegExp(item.label)}\\s*$`) })
+      .first()
+    await bankItem.click()
+  }
+  const submit = page.getByTestId("sequencing-submit")
+  await submit.click()
+  if (opts?.doubleSubmit) {
+    await submit.click({ force: true }).catch(() => {})
+  }
+}
+
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
@@ -199,6 +227,11 @@ function player1AnswerPlan(q: Question): {
       return {
         run: (page, opts) => answerWortarten(page, q.solutions!, q.posSet!, opts),
       }
+    case "sequencing":
+      return {
+        run: (page, opts) =>
+          answerSequencing(page, q.correctOrder!, q.items!, opts),
+      }
     default: {
       const _exhaustive: never = q as never
       throw new Error(`Unknown question type: ${JSON.stringify(_exhaustive)}`)
@@ -237,6 +270,12 @@ function player2AnswerPlan(q: Question): {
       // Wrong POS assignment: rotate solutions by 1.
       return {
         run: (page) => answerWortarten(page, q.solutions!.map((s) => (s + 1) % q.posSet!.length), q.posSet!),
+      }
+    case "sequencing":
+      // Wrong order: reverse the correct order for a different answer.
+      return {
+        run: (page) =>
+          answerSequencing(page, [...q.correctOrder!].reverse(), q.items!),
       }
     default: {
       const _exhaustive: never = q as never
@@ -335,6 +374,7 @@ async function advanceToNextQuestion(host: Page, player1: Page, nextQType: strin
     : nextQType === "sentence-builder" ? "sentence-chunk-0"
     : nextQType === "mathematik" ? "mathematik-input"
     : nextQType === "wortarten" ? "wortarten-token-0"
+    : nextQType === "sequencing" ? "sequencing-item-0"
     : "answer-btn-0"
 
   for (let s = 0; s < maxSteps; s++) {
@@ -399,6 +439,9 @@ async function waitForAnswerControl(page: Page, questionType: string) {
     case "wortarten":
       await expect(page.getByTestId("wortarten-token-0")).toBeVisible({ timeout: 45_000 })
       break
+    case "sequencing":
+      await expect(page.getByTestId("sequencing-item-0")).toBeVisible({ timeout: 45_000 })
+      break
     default:
       throw new Error(`Unknown question type: ${questionType}`)
   }
@@ -407,10 +450,10 @@ async function waitForAnswerControl(page: Page, questionType: string) {
 // ── Main suite ────────────────────────────────────────────────────────────────
 
 test.describe("Answer flow — E2E All Types", () => {
-  test("host + 2 players: all 9 types incl. wortarten, P1 correct > P2", async ({
+  test("host + 2 players: all 10 types incl. sequencing, P1 correct > P2", async ({
     browser,
   }) => {
-    test.setTimeout(420_000)
+    test.setTimeout(480_000)
 
     const hostCtx = await browser.newContext()
     const player1Ctx = await browser.newContext()
@@ -536,7 +579,7 @@ test.describe("Answer flow — E2E All Types", () => {
             // Last question: advance to podium (state-dispatch handles responses/recap/auto-jumps).
             await advanceToState(host, "podium", player1)
           } else {
-            // Questions 1-6: advance to leaderboard (state-dispatch handles responses/recap/auto-jumps).
+            // Questions 1-9: advance to leaderboard (state-dispatch handles responses/recap/auto-jumps).
             await advanceToState(host, "leaderboard", player1)
 
             // P1 should see correct-answer-highlight after reveal (scored types).
@@ -571,10 +614,10 @@ test.describe("Answer flow — E2E All Types", () => {
         })
       }
 
-      // Final podium assertions (Q7 already transitioned to podium in the loop).
+      // Final podium assertions (Q10 already transitioned to podium in the loop).
       await test.step("final podium check", async () => {
         // Podium is a HOST screen; players render PlayerFinished instead —
-        // player-side end state is covered by the per-question asserts (Q1-Q7).
+        // player-side end state is covered by the per-question asserts (Q1-Q10).
         await expect(host.getByTestId("podium")).toBeVisible({ timeout: 10_000 })
         // P1 is the winner: their name must appear on the host podium.
         await expect(host.getByTestId("podium")).toContainText(PLAYER1, {
