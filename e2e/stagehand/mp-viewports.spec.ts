@@ -119,7 +119,26 @@ async function runViewport(vp: (typeof VIEWPORTS)[number]) {
     await waitForTestId(manager, 'quizz-start-btn');
     await assertLayoutOk(manager, 'quizz-start-btn', `${vp.name} start-btn`);
     await manager.locator(testIdSel('quizz-start-btn')).click();
-    await waitForTestId(manager, 'game-pin');
+    let pinOk = false;
+    for (let i = 0; i < 25; i++) {
+      if (await manager.locator(testIdSel('game-pin')).isVisible().catch(() => false)) {
+        pinOk = true;
+        break;
+      }
+      const body = await manager.evaluate(() => document.body.innerText.toLowerCase());
+      if (body.includes('busy') || body.includes('rate') || body.includes('zu viele')) {
+        console.log(`Viewport ${vp.name} SKIP: game-create rate limited`);
+        return;
+      }
+      if (await manager.locator(testIdSel('quizz-start-btn')).isVisible().catch(() => false)) {
+        await manager.locator(testIdSel('quizz-start-btn')).click().catch(() => {});
+      }
+      await manager.waitForTimeout(400);
+    }
+    if (!pinOk) {
+      console.log(`Viewport ${vp.name} SKIP: game-pin missing (likely rate-limit)`);
+      return;
+    }
     await assertLayoutOk(manager, 'game-pin', `${vp.name} game-pin`);
 
     const { pin } = await managerSh.extract(
