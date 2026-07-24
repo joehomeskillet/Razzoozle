@@ -75,6 +75,20 @@
       "solutions": [3, 0, 1, 5],
       "time": 45,
       "cooldown": 5
+    },
+    {
+      "type": "sequencing",
+      "question": "Order the steps of making a cup of tea",
+      "items": [
+        { "id": "item-1", "label": "Boil water" },
+        { "id": "item-2", "label": "Add tea bag" },
+        { "id": "item-3", "label": "Pour hot water" },
+        { "id": "item-4", "label": "Steep 3-5 minutes" },
+        { "id": "item-5", "label": "Remove tea bag" }
+      ],
+      "correctOrder": ["item-1", "item-3", "item-2", "item-4", "item-5"],
+      "time": 15,
+      "cooldown": 5
     }
   ]
 }
