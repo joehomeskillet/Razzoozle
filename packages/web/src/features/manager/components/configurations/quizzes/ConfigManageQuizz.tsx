@@ -14,6 +14,7 @@ import { useMemo, useState } from "react"
 import { useLabelManager } from "../labels/useLabelManager"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
+import TemplateLibraryCard from "@razzoozle/web/features/manager/components/templates/TemplateLibraryCard"
 import QuizzDialogs from "./QuizzDialogs"
 import QuizzList from "./QuizzList"
 import type { SortKey } from "./types"
@@ -189,6 +190,8 @@ const ConfigManageQuizz = () => {
             onToggleAll={selection.toggleAll}
           />
         )}
+
+        <TemplateLibraryCard />
 
         <QuizzList
           quizz={quizz}
