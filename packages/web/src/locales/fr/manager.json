@@ -1049,6 +1049,40 @@
   },
   "templates": {
     "title": "Modèles",
-    "use": "Utiliser"
+    "use": "Utiliser",
+    "open": "A partir du Modele",
+    "dialogTitle": "Choisir un Modele",
+    "searchPlaceholder": "Rechercher des modeles",
+    "allCategories": "Tous",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
+    "empty": {
+      "title": "Pas encore de modeles",
+      "body": "Creez un modele pour demarrer des quiz plus rapidement."
+    },
+    "noMatches": "Aucun modele ne correspond a votre recherche.",
+    "loading": "Chargement des modeles",
+    "loadError": "Impossible de charger les modeles.",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "create": "Nouveau Modele",
+    "saveAsTemplate": "Enregistrer comme Modele",
+    "form": {
+      "name": "Nom",
+      "category": "Categorie",
+      "description": "Description",
+      "tags": "Tags",
+      "tagsHint": "Separes par des virgules"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer le modele?",
+      "body": "Le modele sera supprime de maniere permanente. Cette action ne peut pas etre annulee.",
+      "confirm": "Supprimer"
+    },
+    "saved": "Modele enregistre",
+    "deleted": "Modele supprime",
+    "createError": "Impossible de creer le modele.",
+    "saveError": "Impossible d'enregistrer le modele.",
+    "deleteError": "Impossible de supprimer le modele."
   }
 }
