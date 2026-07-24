@@ -109,6 +109,8 @@ const QuestionEditorMedia = () => {
           editing={editing}
           handleEdit={handleEdit}
           handleRemoveMedia={handleRemoveMedia}
+          uploading={uploading}
+          handleUploadClick={handleUploadClick}
         />
       )}
 
