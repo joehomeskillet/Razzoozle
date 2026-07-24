@@ -33,6 +33,7 @@ pnpm tokens:wasm                            # High-speed SWC/AST token codemod t
 pnpm tokens:morph                           # AST-Morph zero-runtime Tailwind v4 compiler
 pnpm tokens:neural                          # Neural-Design-Core viewport auditor (375px/390px/440px)
 pnpm tokens:ai-audit                        # Dual-Pass AI Design System Governance Audit
+pnpm tokens:daemon                          # Autonomous Monorepo Refactoring Daemon
 pnpm tokens:fix                             # Auto-rewrite arbitrary var() syntax to mapped Tailwind v4 tokens
 bash rust/gate.sh                           # deterministic Rust gate — run after EVERY Rust
                                              # worker return, before committing. Never trust a

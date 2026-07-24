@@ -25,6 +25,7 @@
     "tokens:morph": "node scripts/ast-morph-tailwind.mjs",
     "tokens:neural": "node scripts/neural-design-core.mjs",
     "tokens:ai-audit": "node scripts/ai-governance-audit.mjs",
+    "tokens:daemon": "node scripts/monorepo-refactor-daemon.mjs",
     "tokens:fix": "node scripts/lint-design-tokens.mjs --fix",
     "g:component": "node scripts/generate-component.mjs",
     "g:console": "node scripts/generate-component.mjs --domain console",
