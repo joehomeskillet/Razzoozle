@@ -29,6 +29,8 @@ pnpm tokens:build                           # Auto-build W3C design.tokens.json 
 pnpm tokens:doc                             # Auto-generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 pnpm tokens:validate                        # Check codebase for unmapped arbitrary token usages
 pnpm tokens:ast                             # AST structural linter for hardcoded hex attributes & inline styles
+pnpm tokens:wasm                            # High-speed SWC/AST token codemod transformer (sub-20ms)
+pnpm tokens:ai-audit                        # Dual-Pass AI Design System Governance Audit
 pnpm tokens:fix                             # Auto-rewrite arbitrary var() syntax to mapped Tailwind v4 tokens
 bash rust/gate.sh                           # deterministic Rust gate — run after EVERY Rust
                                              # worker return, before committing. Never trust a

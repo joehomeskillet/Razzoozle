@@ -41,6 +41,8 @@ pnpm tokens:build                            # Build W3C tokens -> CSS, TS types
 pnpm tokens:doc                              # Generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
 pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
 pnpm tokens:ast                              # AST structural linter for hardcoded hex attributes & inline styles
+pnpm tokens:wasm                             # High-speed SWC/AST token codemod transformer (sub-20ms)
+pnpm tokens:ai-audit                         # Dual-Pass AI Design System Governance Audit
 pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```
 
