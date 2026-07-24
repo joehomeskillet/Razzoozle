@@ -1,4 +1,5 @@
 import type { StatusDataMap } from "@razzoozle/common/types/game/status"
+import type { RosterEntry } from "@razzoozle/common/types/game/socket"
 import {
   createStatus,
   type Status,
@@ -11,16 +12,32 @@ interface PlayerState {
   avatar?: string
 }
 
+/** Snapshot of SUCCESS_ROOM so Username can apply klassen/roster after Room unmounts. */
+export interface PendingRoom {
+  gameId: string
+  klassen: boolean
+  roster: RosterEntry[]
+  requireIdentifier: boolean
+}
+
 interface PlayerStore<T> {
   gameId: string | null
   player: PlayerState | null
   status: Status<T> | null
+  /** Last SUCCESS_ROOM payload (consumed by Username on mount). */
+  pendingRoom: PendingRoom | null
 
   setGameId: (_gameId: string | null) => void
 
   setPlayer: (_state: PlayerState) => void
-  login: (_gameId: string) => void
-  join: (_username: string) => void
+  login: (_username: string) => void
+  /**
+   * Called when SUCCESS_ROOM arrives. Sets gameId + player shell so the auth
+   * page swaps Room → Username, and stashes room flags for Username to read
+   * (SUCCESS_ROOM is not re-emitted after the swap).
+   */
+  join: (_gameId: string, _room?: Partial<PendingRoom> | null) => void
+  clearPendingRoom: () => void
   updatePoints: (_points: number) => void
   setAvatar: (_avatar: string) => void
 
@@ -30,9 +47,10 @@ interface PlayerStore<T> {
 }
 
 const initialState = {
-  gameId: null,
-  player: null,
-  status: null,
+  gameId: null as string | null,
+  player: null as PlayerState | null,
+  status: null as Status<StatusDataMap> | null,
+  pendingRoom: null as PendingRoom | null,
 }
 
 export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
@@ -46,12 +64,23 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
       player: { ...state.player, username },
     })),
 
-  join: (gameId) => {
+  join: (gameId, room) => {
+    const pendingRoom: PendingRoom | null = room
+      ? {
+          gameId,
+          klassen: Boolean(room.klassen),
+          roster: Array.isArray(room.roster) ? room.roster : [],
+          requireIdentifier: Boolean(room.requireIdentifier),
+        }
+      : null
     set((state) => ({
       gameId,
       player: { ...state.player, points: 0 },
+      pendingRoom,
     }))
   },
+
+  clearPendingRoom: () => set({ pendingRoom: null }),
 
   updatePoints: (points) =>
     set((state) => ({

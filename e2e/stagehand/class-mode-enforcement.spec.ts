@@ -159,6 +159,14 @@ async function run() {
     console.log(`Join UI freeText=${freeText} studentSearch=${studentSearch} classJoin=${classJoin}`);
 
     if (!(studentSearch || classJoin)) {
+      const dump = await player.evaluate(() => ({
+        url: location.href,
+        testids: Array.from(document.querySelectorAll('[data-testid]'))
+          .map((e) => e.getAttribute('data-testid'))
+          .slice(0, 50),
+        body: document.body.innerText.slice(0, 600),
+      }));
+      console.log('JOIN DUMP', JSON.stringify(dump));
       throw new Error(
         'Expected class roster/PIN join UI for klassen game (got free-text or nothing)',
       );
