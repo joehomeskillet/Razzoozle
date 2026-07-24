@@ -183,6 +183,30 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 return Err("errors:quizz.invalidPayload");
             }
         }
+        Some(QuestionType::Sequencing) => {
+            // Sequencing: reorderable items + correctOrder of item ids.
+            // Without this arm, Sequencing fell through to the choice default
+            // and rejected every save with tooFewAnswers (blocks fixture upsert
+            // and Wave 6 sequencing-live e2e).
+            let items = match question.items.as_ref() {
+                Some(items) if items.len() >= 2 => items,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for item in items {
+                if item.id.is_empty() || item.label.is_empty() {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+            let order = match question.correct_order.as_ref() {
+                Some(order) if order.len() == items.len() => order,
+                _ => return Err("errors:quizz.invalidPayload"),
+            };
+            for id in order {
+                if !items.iter().any(|it| it.id == *id) {
+                    return Err("errors:quizz.invalidPayload");
+                }
+            }
+        }
         // choice / boolean / None → default
         _ => {
             if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {
@@ -397,6 +421,69 @@ mod tests {
             "decimals": 10,
             "cooldown": 5,
             "time": 20
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
+    }
+
+    #[test]
+    fn sequencing_valid() {
+        let q = json!({
+            "question": "Order the steps",
+            "type": "sequencing",
+            "items": [
+                { "id": "item-1", "label": "Boil water" },
+                { "id": "item-2", "label": "Add tea bag" },
+                { "id": "item-3", "label": "Pour" }
+            ],
+            "correctOrder": ["item-1", "item-3", "item-2"],
+            "cooldown": 5,
+            "time": 15
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn sequencing_without_answers_is_not_too_few_answers() {
+        // Regression: Sequencing used to fall through to choice default.
+        let q = json!({
+            "question": "Order the steps",
+            "type": "sequencing",
+            "items": [
+                { "id": "a", "label": "A" },
+                { "id": "b", "label": "B" }
+            ],
+            "correctOrder": ["a", "b"],
+            "cooldown": 5,
+            "time": 15
+        });
+        assert_ne!(validate_question(&q), Err("errors:quizz.tooFewAnswers"));
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn sequencing_missing_items() {
+        let q = json!({
+            "question": "Order the steps",
+            "type": "sequencing",
+            "correctOrder": ["a", "b"],
+            "cooldown": 5,
+            "time": 15
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
+    }
+
+    #[test]
+    fn sequencing_order_id_not_in_items() {
+        let q = json!({
+            "question": "Order the steps",
+            "type": "sequencing",
+            "items": [
+                { "id": "a", "label": "A" },
+                { "id": "b", "label": "B" }
+            ],
+            "correctOrder": ["a", "c"],
+            "cooldown": 5,
+            "time": 15
         });
         assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
     }
