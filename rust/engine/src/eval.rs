@@ -306,6 +306,26 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
             base: 0.0,
         };
     }
+    // Sequencing: ordered item ID matching (exact order, no sorting)
+    // Parse answerText as JSON array of item IDs, compare exactly to correct_order
+    if q_type == &Some(QuestionType::Sequencing) {
+        if let Some(answer_text) = &answer.answer_text {
+            if let Some(correct_order) = &question.correct_order {
+                if let Ok(submitted_order) = serde_json::from_str::<Vec<String>>(answer_text) {
+                    // Exact order match (no sorting, unlike multiple-select)
+                    let correct = submitted_order == *correct_order;
+                    return EvalResult {
+                        correct,
+                        base: if correct { 1.0 } else { 0.0 },
+                    };
+                }
+            }
+        }
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
     // Choice / Boolean (default): index-based solutions lookup
     if let Some(answer_key) = answer.answer_key {
         if let Some(solutions) = &question.solutions {
@@ -353,6 +373,8 @@ mod tests {
         tokens: None,
         pos_set: None,
         disabled_tokens: None,
+        items: None,
+        correct_order: None,
         }
     }
 
@@ -681,6 +703,48 @@ mod tests {
         };
         let result = evaluate_answer(&q, &ans);
         assert!(result.correct, "cafe should match Café in normalized mode");
+    }
+
+    #[test]
+    fn sequencing_correct() {
+        let mut q = test_question(QuestionType::Sequencing);
+        q.correct_order = Some(vec!["item-a".to_string(), "item-b".to_string(), "item-c".to_string()]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["item-a","item-b","item-c"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(result.correct);
+        assert_eq!(result.base, 1.0);
+    }
+
+    #[test]
+    fn sequencing_wrong_order() {
+        let mut q = test_question(QuestionType::Sequencing);
+        q.correct_order = Some(vec!["item-a".to_string(), "item-b".to_string(), "item-c".to_string()]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some(r#"["item-c","item-a","item-b"]"#.to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn sequencing_invalid_json() {
+        let mut q = test_question(QuestionType::Sequencing);
+        q.correct_order = Some(vec!["item-a".to_string(), "item-b".to_string()]);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("not-valid-json".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
     }
 
     #[test]

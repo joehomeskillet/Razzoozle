@@ -97,6 +97,8 @@ mod tests {
             unit: None,
             chunks: None,
             disabled_tokens: None,
+            items: None,
+            correct_order: None,
             cooldown: 1,
             time,
             practice: None,
