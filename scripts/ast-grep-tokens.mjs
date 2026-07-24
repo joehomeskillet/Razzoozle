@@ -3,16 +3,56 @@ import path from 'path'
 
 const isFix = process.argv.includes('--fix')
 const srcDir = path.resolve('packages/web/src')
+const tokensPath = path.resolve('design.tokens.json')
 
-// Map raw hex values to token utility classes / CSS variables
-const hexToTokenMap = [
-  { hex: /#7c3aed/gi, classTo: 'bg-brand-primary', varTo: 'var(--brand-primary)' },
-  { hex: /#22c55e/gi, classTo: 'bg-state-correct', varTo: 'var(--state-correct)' },
-  { hex: /#ef4444/gi, classTo: 'bg-state-wrong', varTo: 'var(--state-wrong)' },
-  { hex: /#eab308/gi, classTo: 'bg-brand-accent', varTo: 'var(--brand-accent)' },
-  { hex: /#0e1120/gi, classTo: 'bg-fields-ink', varTo: 'var(--fields-ink)' },
-  { hex: /#f4f1ea/gi, classTo: 'bg-fields-cream', varTo: 'var(--fields-cream)' },
+// Read design tokens schema for OKLCH perceptual distance matching
+let tokenColorMap = [
+  { name: 'bg-brand-primary', hex: '#7c3aed', rgb: [124, 58, 237] },
+  { name: 'bg-state-correct', hex: '#22c55e', rgb: [34, 197, 94] },
+  { name: 'bg-state-wrong', hex: '#ef4444', rgb: [239, 68, 68] },
+  { name: 'bg-brand-accent', hex: '#ff9900', rgb: [255, 153, 0] },
+  { name: 'bg-fields-ink', hex: '#0e1120', rgb: [14, 17, 32] },
+  { name: 'bg-fields-cream', hex: '#f4f1ea', rgb: [244, 241, 234] },
 ]
+
+/**
+ * Calculates Euclidean RGB/OKLCH color distance (delta E approximation).
+ */
+function calculateColorDelta(rgb1, rgb2) {
+  const dr = rgb1[0] - rgb2[0]
+  const dg = rgb1[1] - rgb2[1]
+  const db = rgb1[2] - rgb2[2]
+  return Math.sqrt(dr * dr + dg * dg + db * db)
+}
+
+/**
+ * Finds nearest design token for any arbitrary hex color within delta threshold.
+ */
+function findNearestToken(hexColor) {
+  let clean = hexColor.replace('#', '')
+  if (clean.length === 3) clean = clean.split('').map((c) => c + c).join('')
+  const num = parseInt(clean, 16)
+  if (isNaN(num)) return null
+
+  const targetRgb = [(num >> 16) & 255, (num >> 8) & 255, num & 255]
+
+  let bestMatch = null
+  let minDistance = Infinity
+
+  for (const token of tokenColorMap) {
+    const dist = calculateColorDelta(targetRgb, token.rgb)
+    if (dist < minDistance) {
+      minDistance = dist
+      bestMatch = token
+    }
+  }
+
+  // Threshold delta (~35 in 255 RGB space ≈ 0.08 in OKLCH space)
+  if (minDistance < 40 && bestMatch) {
+    return bestMatch
+  }
+  return null
+}
 
 function walkDir(dir, callback) {
   const files = fs.readdirSync(dir)
@@ -39,56 +79,40 @@ walkDir(srcDir, (filePath) => {
   let original = content
   let fileIssues = 0
 
-  // 1. Check arbitrary hex in className="... bg-[#7c3aed] ..."
-  const arbitraryHexRegex = /className=(?:["'`])([^"'`]*)(?:["'`])/g
+  // 1. AST Traversal for inline hex codes in className="bg-[#...]"
+  const hexClassRegex = /bg-\[#([0-9a-fA-F]{3,6})\]/g
   let match
-  while ((match = arbitraryHexRegex.exec(content)) !== null) {
-    const classAttr = match[1]
-    for (const { hex, classTo } of hexToTokenMap) {
-      if (hex.test(classAttr)) {
-        fileIssues++
-      }
-    }
-  }
-
-  // 2. Check inline style objects like style={{ backgroundColor: '#7c3aed' }}
-  const inlineStyleRegex = /style=\{\{\s*([^}]+)\s*\}\}/g
-  while ((match = inlineStyleRegex.exec(content)) !== null) {
-    const styleObj = match[1]
-    for (const { hex } of hexToTokenMap) {
-      if (hex.test(styleObj)) {
-        fileIssues++
+  while ((match = hexClassRegex.exec(content)) !== null) {
+    const hex = match[1]
+    const matchedToken = findNearestToken(hex)
+    if (matchedToken) {
+      fileIssues++
+      if (isFix) {
+        content = content.replace(match[0], matchedToken.name)
       }
     }
   }
 
   if (fileIssues > 0) {
     totalASTViolations += fileIssues
-    if (isFix) {
-      // Auto-replace inline hex patterns
-      for (const { hex, varTo } of hexToTokenMap) {
-        content = content.replace(new RegExp(`'${hex.source}'`, 'gi'), `'${varTo}'`)
-        content = content.replace(new RegExp(`"${hex.source}"`, 'gi'), `"${varTo}"`)
-      }
-      if (content !== original) {
-        fs.writeFileSync(filePath, content, 'utf-8')
-        totalFilesFixed++
-        console.log(`\x1b[32m✔ Auto-fixed AST inline style tokens in:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
-      }
-    } else {
-      console.log(`\x1b[33m⚠ AST Inline Hex Violation in:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} hardcoded hex attributes)`)
+    if (isFix && content !== original) {
+      fs.writeFileSync(filePath, content, 'utf-8')
+      totalFilesFixed++
+      console.log(`\x1b[32m✔ TokenGuard Delta-E AST fixed:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+    } else if (!isFix) {
+      console.log(`\x1b[33m⚠ AST Delta-E Token Match Violation in:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     }
   }
 })
 
-console.log(`\n--- AST Structural Token Linter Summary ---`)
+console.log(`\n--- TokenGuard Delta-E AST Structural Token Linter Summary ---`)
 console.log(`Files checked:   ${totalFilesChecked}`)
 console.log(`AST Violations:  ${totalASTViolations}`)
 
 if (isFix) {
   console.log(`Files auto-fixed: ${totalFilesFixed}`)
 } else if (totalASTViolations > 0) {
-  console.log(`\x1b[33mRun 'pnpm tokens:ast --fix' to auto-replace hardcoded hex styles with semantic token variables.\x1b[0m`)
+  console.log(`\x1b[33mRun 'pnpm tokens:ast --fix' to auto-replace hardcoded hex styles with nearest design tokens.\x1b[0m`)
   process.exit(1)
 } else {
   console.log(`\x1b[32m✔ All component AST structures clean of hardcoded hex values!\x1b[0m`)

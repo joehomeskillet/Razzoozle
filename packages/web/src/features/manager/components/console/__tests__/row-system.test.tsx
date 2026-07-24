@@ -70,12 +70,12 @@ describe("rowStyles Contract — 15 constants (SDD §3.1, R13)", () => {
   })
 
   it("rowHoverState contains accent-tint bg and primary outline", () => {
-    expect(rowHoverState).toContain("hover:bg-[var(--accent-tint)]")
+    expect(rowHoverState.includes("hover:bg-accent-tint") || rowHoverState.includes("hover:bg-[var(--accent-tint)]")).toBe(true)
     expect(rowHoverState).toContain("hover:outline-[var(--color-primary)]")
   })
 
   it("rowSelectedState contains accent-tint bg and primary outline (exclusive, not additive)", () => {
-    expect(rowSelectedState).toContain("bg-[var(--accent-tint)]")
+    expect(rowSelectedState.includes("bg-accent-tint") || rowSelectedState.includes("bg-[var(--accent-tint)]")).toBe(true)
     expect(rowSelectedState).toContain("outline-[var(--color-primary)]")
     // Selected state is EXCLUSIVE, not layered on rowRestState.
     expect(rowSelectedState).not.toContain("hover:")
@@ -127,8 +127,8 @@ describe("rowStyles Contract — 15 constants (SDD §3.1, R13)", () => {
   })
 
   it("rowActionHover contains hover:accent-tint and hover:accent-contrast", () => {
-    expect(rowActionHover).toContain("hover:bg-[var(--accent-tint)]")
-    expect(rowActionHover).toContain("hover:text-[var(--accent-contrast)]")
+    expect(rowActionHover.includes("hover:bg-accent-tint") || rowActionHover.includes("hover:bg-[var(--accent-tint)]")).toBe(true)
+    expect(rowActionHover.includes("hover:text-accent-contrast") || rowActionHover.includes("hover:text-[var(--accent-contrast)]")).toBe(true)
   })
 
   it("rowActionDestructiveHover contains hover:state-wrong colors", () => {
@@ -278,32 +278,32 @@ describe("Badge — Tone system & markup (SDD §7, R8)", () => {
     )
     expect(markup).toContain("inline-flex")
     expect(markup).toContain("rounded-full")
-    expect(markup).toContain("bg-[var(--accent-tint)]")
-    expect(markup).toContain("text-[var(--accent-contrast)]")
+    expect(markup.includes("bg-accent-tint") || markup.includes("bg-[var(--accent-tint)]")).toBe(true)
+    expect(markup.includes("text-accent-contrast") || markup.includes("text-[var(--accent-contrast)]")).toBe(true)
   })
 
   it("Badge renders with tone=neutral: surface-4 bg + ink-muted text", () => {
     const markup = renderToStaticMarkup(
       <Badge tone="neutral">Neutral</Badge>
     )
-    expect(markup).toContain("bg-[var(--surface-4)]")
-    expect(markup).toContain("text-[var(--ink-muted)]")
+    expect(markup.includes("bg-surface-4") || markup.includes("bg-[var(--surface-4)]")).toBe(true)
+    expect(markup.includes("text-ink-muted") || markup.includes("text-[var(--ink-muted)]")).toBe(true)
   })
 
   it("Badge renders with tone=success: status-online colors", () => {
     const markup = renderToStaticMarkup(
       <Badge tone="success">Online</Badge>
     )
-    expect(markup).toContain("bg-[var(--status-online-bg)]")
-    expect(markup).toContain("text-[var(--status-online-text)]")
+    expect(markup.includes("bg-status-online-bg") || markup.includes("bg-[var(--status-online-bg)]")).toBe(true)
+    expect(markup.includes("text-status-online-text") || markup.includes("text-[var(--status-online-text)]")).toBe(true)
   })
 
   it("Badge with tone=danger renders red state colors", () => {
     const markup = renderToStaticMarkup(
       <Badge tone="danger">Error</Badge>
     )
-    expect(markup).toContain("bg-[var(--status-offline-bg)]")
-    expect(markup).toContain("text-[var(--status-offline-text)]")
+    expect(markup.includes("bg-status-offline-bg") || markup.includes("bg-[var(--status-offline-bg)]")).toBe(true)
+    expect(markup.includes("text-status-offline-text") || markup.includes("text-[var(--status-offline-text)]")).toBe(true)
   })
 
   it("Badge without tone uses defaultTone (surface-4 bg)", () => {
@@ -329,8 +329,8 @@ describe("FilterPill — Active/inactive markup (SDD §7, R10)", () => {
       <FilterPill active onClick={() => {}} count={5}>Filter</FilterPill>
     )
     expect(markupActive).toContain('aria-pressed="true"')
-    expect(markupActive).toContain("bg-[var(--accent-tint)]")
-    expect(markupActive).toContain("text-[var(--accent-contrast)]")
+    expect(markupActive.includes("bg-accent-tint") || markupActive.includes("bg-[var(--accent-tint)]")).toBe(true)
+    expect(markupActive.includes("text-accent-contrast") || markupActive.includes("text-[var(--accent-contrast)]")).toBe(true)
     expect(markupActive).toContain("outline-2")
     expect(markupActive).toContain("-outline-offset-2")
     expect(markupActive).toContain("outline-[var(--color-primary)]")
@@ -406,8 +406,8 @@ describe("assignTriggerClass — Pseudo-element structure (SDD §7, R9)", () => 
     expect(assignTriggerClass).toContain("px-2")
     expect(assignTriggerClass).toContain("py-0.5")
     expect(assignTriggerClass).toContain("text-xs")
-    expect(assignTriggerClass).toContain("hover:bg-[var(--accent-tint)]")
-    expect(assignTriggerClass).toContain("hover:text-[var(--accent-contrast)]")
+    expect(assignTriggerClass.includes("hover:bg-accent-tint") || assignTriggerClass.includes("hover:bg-[var(--accent-tint)]")).toBe(true)
+    expect(assignTriggerClass.includes("hover:text-accent-contrast") || assignTriggerClass.includes("hover:text-[var(--accent-contrast)]")).toBe(true)
   })
 
   it("assignTriggerClass contains before pseudo-element with -inset-2.5", () => {
