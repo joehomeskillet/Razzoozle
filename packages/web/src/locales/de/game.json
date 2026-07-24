@@ -346,5 +346,12 @@
   "join": {
     "identifier": "Kennung (optional)",
     "identifierHint": "Optional zur Verfolgung der Zuordnung"
+  },
+  "dropPin": {
+    "prompt": "Klicke auf die richtige Stelle im Bild",
+    "clickImage": "Setze den Pin",
+    "reveal": "Richtige Zone",
+    "correct": "Treffer!",
+    "incorrect": "Daneben"
   }
 }

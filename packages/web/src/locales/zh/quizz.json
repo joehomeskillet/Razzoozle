@@ -81,7 +81,9 @@
     "vokabelliste": "词汇表",
     "vokabellisteDesc": "单词对批量编辑器 → 生成多个文本输入问题",
     "sequencing": "排序",
-    "sequencingDesc": "玩家将项目按正确顺序排列"
+    "sequencingDesc": "玩家将项目按正确顺序排列",
+    "dropPin": "定点",
+    "dropPinDesc": "在图片区域放置标记"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",
@@ -170,5 +172,11 @@
     "removeItem": "删除项目",
     "preview": "玩家将排序这些项目",
     "minItemsRequired": "需要至少 2 个项目"
+  },
+  "dropPin": {
+    "prompt": "点击图片上的正确位置",
+    "addZone": "添加区域",
+    "removeZone": "删除区域",
+    "minZonesRequired": "至少需要一个区域"
   }
 }

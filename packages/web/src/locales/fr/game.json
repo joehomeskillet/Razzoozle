@@ -346,5 +346,12 @@
   "sequencing": {
     "correctOrder": "Ordre correct",
     "yourOrder": "Ton ordre"
+  },
+  "dropPin": {
+    "prompt": "Clique sur le bon endroit",
+    "clickImage": "Place l'épingle",
+    "reveal": "Zone correcte",
+    "correct": "Touché !",
+    "incorrect": "Raté"
   }
 }

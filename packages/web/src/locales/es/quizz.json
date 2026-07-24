@@ -81,7 +81,9 @@
     "vokabelliste": "Lista de Vocabulario",
     "vokabellisteDesc": "Editor en masa para pares de palabras → emite múltiples preguntas de entrada de texto",
     "sequencing": "Ordenar",
-    "sequencingDesc": "Los jugadores ordenan los elementos en el orden correcto"
+    "sequencingDesc": "Los jugadores ordenan los elementos en el orden correcto",
+    "dropPin": "Drop-pin",
+    "dropPinDesc": "Coloca un pin en la zona de la imagen"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
@@ -170,5 +172,11 @@
     "removeItem": "Eliminar elemento",
     "preview": "Los jugadores ordenarán estos elementos",
     "minItemsRequired": "Se requieren al menos 2 elementos"
+  },
+  "dropPin": {
+    "prompt": "Haz clic en el punto correcto",
+    "addZone": "Añadir zona",
+    "removeZone": "Quitar zona",
+    "minZonesRequired": "Se requiere al menos una zona"
   }
 }

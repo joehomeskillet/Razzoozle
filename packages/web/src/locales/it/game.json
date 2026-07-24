@@ -346,5 +346,12 @@
   "sequencing": {
     "correctOrder": "Ordine corretto",
     "yourOrder": "Il tuo ordine"
+  },
+  "dropPin": {
+    "prompt": "Clicca sul punto giusto",
+    "clickImage": "Posiziona il pin",
+    "reveal": "Zona corretta",
+    "correct": "Colpito!",
+    "incorrect": "Mancato"
   }
 }

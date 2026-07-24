@@ -24,6 +24,14 @@ export const sequencingItemValidator = z.object({
   label: z.string().min(1),
 })
 
+// Drop-pin: relative [0–1] rectangle zones on QuestionMedia.
+export const hotspotValidator = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  w: z.number().min(0.01).max(1),
+  h: z.number().min(0.01).max(1),
+})
+
 export const questionValidator = z
   .object({
     question: z.string().min(1, "errors:quizz.questionEmpty"),
@@ -78,6 +86,8 @@ export const questionValidator = z
     // Sequencing: items to reorder + correct order
     items: z.array(sequencingItemValidator).optional(),
     correctOrder: z.array(z.string()).optional(),
+    // Drop-pin: click zones on media (relative 0–1 rects)
+    hotspots: z.array(hotspotValidator).optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type === "slider") {
@@ -136,6 +146,31 @@ export const questionValidator = z
       // Wortarten: parts of speech tagging (permissive stub for now)
     } else if (q.type === "sequencing") {
       // Sequencing: item reordering (permissive stub for now)
+    } else if (q.type === "drop-pin") {
+      if (!q.media?.url) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.dropPinMediaRequired",
+          path: ["media"],
+        })
+      }
+      if (!q.hotspots || q.hotspots.length < 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "errors:quizz.dropPinMinHotspots",
+          path: ["hotspots"],
+        })
+      } else {
+        q.hotspots.forEach((hs, i) => {
+          if (hs.x + hs.w > 1 + 1e-9 || hs.y + hs.h > 1 + 1e-9) {
+            ctx.addIssue({
+              code: "custom",
+              message: "errors:quizz.dropPinHotspotBounds",
+              path: ["hotspots", i],
+            })
+          }
+        })
+      }
     } else {
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })

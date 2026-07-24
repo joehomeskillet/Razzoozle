@@ -476,6 +476,7 @@ export const QUESTION_TYPES = [
   "mathematik",
   "wortarten",
   "sequencing",
+  "drop-pin",
 ] as const
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]

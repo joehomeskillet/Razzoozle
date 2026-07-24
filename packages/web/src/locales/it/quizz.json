@@ -73,7 +73,9 @@
     "vokabelliste": "Elenco Vocabolario",
     "vokabellisteDesc": "Editor in blocco per coppie di parole → emette più domande di input di testo",
     "sequencing": "Ordinamento",
-    "sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto"
+    "sequencingDesc": "I giocatori ordinano gli elementi nell'ordine corretto",
+    "dropPin": "Drop-pin",
+    "dropPinDesc": "Metti un pin sulla zona immagine"
   },
   "slider": {
     "min": "Min",
@@ -170,5 +172,11 @@
     "removeItem": "Rimuovi elemento",
     "preview": "I giocatori ordineranno questi elementi",
     "minItemsRequired": "Sono richiesti almeno 2 elementi"
+  },
+  "dropPin": {
+    "prompt": "Clicca sul punto giusto",
+    "addZone": "Aggiungi zona",
+    "removeZone": "Rimuovi zona",
+    "minZonesRequired": "Serve almeno una zona"
   }
 }

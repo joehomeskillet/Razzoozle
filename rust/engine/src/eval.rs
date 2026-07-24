@@ -375,6 +375,7 @@ mod tests {
         disabled_tokens: None,
         items: None,
         correct_order: None,
+            hotspots: None,
         }
     }
 

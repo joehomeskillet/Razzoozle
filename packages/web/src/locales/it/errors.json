@@ -100,7 +100,10 @@
     "questionEmpty": "La domanda non può essere vuota",
     "subjectEmpty": "Il soggetto non può essere vuoto",
     "tooFewAnswers": "Una domanda deve avere almeno 2 risposte",
-    "tooManyAnswers": "Una domanda non può avere più di 4 risposte"
+    "tooManyAnswers": "Una domanda non può avere più di 4 risposte",
+    "dropPinMediaRequired": "Immagine obbligatoria",
+    "dropPinMinHotspots": "Serve almeno una zona",
+    "dropPinHotspotBounds": "La zona esce dall'immagine"
   },
   "route": {
     "back": "Torna alla home",

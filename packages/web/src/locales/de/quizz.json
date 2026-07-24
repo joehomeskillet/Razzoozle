@@ -73,7 +73,9 @@
     "wortarten": "Wortarten",
     "wortartenDesc": "Wortarten-Bestimmung (Deutsch)",
     "vokabelliste": "Vokabelliste",
-    "vokabellisteDesc": "Bulk-Editor für Wort-Paare → emittiert mehrere Texteingabe-Fragen"
+    "vokabellisteDesc": "Bulk-Editor für Wort-Paare → emittiert mehrere Texteingabe-Fragen",
+    "dropPin": "Drop-Pin",
+    "dropPinDesc": "Pin auf Bildzone setzen"
   },
   "slider": {
     "min": "Min",
@@ -170,5 +172,11 @@
     "removeItem": "Element entfernen",
     "preview": "Spieler ordnen diese Elemente",
     "minItemsRequired": "Mindestens 2 Elemente erforderlich"
+  },
+  "dropPin": {
+    "prompt": "Klicke auf die richtige Stelle im Bild",
+    "addZone": "Zone hinzufügen",
+    "removeZone": "Zone entfernen",
+    "minZonesRequired": "Mindestens eine Zone erforderlich"
   }
 }

@@ -4,6 +4,7 @@ import type { z } from "zod"
 import type {
   questionValidator,
   quizzValidator,
+  hotspotValidator,
   sequencingItemValidator,
 } from "@razzoozle/common/validators/quizz"
 
@@ -14,6 +15,9 @@ export { QUESTION_TYPES } from "@razzoozle/common/constants"
 export type { QuestionType } from "@razzoozle/common/constants"
 
 export type SequencingItem = z.infer<typeof sequencingItemValidator>
+
+/** Drop-pin relative rectangle zone [0–1]. */
+export type Hotspot = z.infer<typeof hotspotValidator>
 
 export interface Player {
   id: string
@@ -43,7 +47,7 @@ export interface Answer {
   answerId: number
   // Multiple-select: the set of selected option indices (answerId is a sentinel).
   answerIds?: number[]
-  // Type-answer: the raw submitted free-text (answerId is a sentinel).
+  // Type-answer free-text; drop-pin: JSON.stringify({x,y}) relative 0–1.
   answerText?: string
   // Sequencing: the ordered item ids (answerId is a sentinel).
   answerOrder?: string[]
