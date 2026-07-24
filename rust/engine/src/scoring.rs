@@ -54,7 +54,9 @@ pub fn calculate_points(
         return 0;
     }
 
-    let base_points = if correct {
+    // Partial credit (fill-blank/matching/wortarten): award time-decayed base when
+    // base_factor > 0 even if not fully correct. Fully wrong (base_factor == 0) → 0.
+    let base_points = if base_factor > 0.0 {
         time_to_point(response_time_ms, question_time_s, mode)
     } else {
         0
@@ -62,6 +64,7 @@ pub fn calculate_points(
 
     let raw_points = base_factor * base_points as f64;
 
+    // Streak multiplier only on fully correct answers.
     let streak_mult = if correct {
         1.0 + STREAK_STEP * streak_before.min(STREAK_CAP) as f64
     } else {
@@ -147,6 +150,17 @@ mod tests {
         let q = choice_question(10);
         let points = calculate_points(false, 0.0, 100, 10, 3, &q, ScoringMode::Speed);
         assert_eq!(points, 0);
+    }
+
+    #[test]
+    fn partial_credit_gets_fraction_of_speed_points() {
+        // 2/3 slots correct @ t=0 speed → 667 (no streak on partial)
+        let q = choice_question(10);
+        let points = calculate_points(false, 2.0 / 3.0, 0, 10, 3, &q, ScoringMode::Speed);
+        assert_eq!(points, 667);
+        // Fully correct with same time + streak would be higher
+        let full = calculate_points(true, 1.0, 0, 10, 3, &q, ScoringMode::Speed);
+        assert!(full > points);
     }
 
     #[test]
