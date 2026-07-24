@@ -465,6 +465,7 @@ fn test_manager_reconnect_records_status_roundtrip() {
         step: None,
         unit: None,
         shuffled_chunks: None,
+        shuffled_items: None,
         server_seq: None,
         server_now_ms: Some(1_000),
         question_start_at_server_ms: Some(1_000),
