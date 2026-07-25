@@ -132,10 +132,10 @@ audit. They have no delivery owner:
 | 18 | Multi-organization Admin | SKIP — multi-tenant enterprise surface |
 | 19 | Enterprise SSO (SAML/OIDC) | SKIP — enterprise identity integration |
 
-### 2.4 B0 truth and closure WPs
+### 2.4 B0 truth WPs
 
-B0 is truth/closure only. These exact WPs remain file-bounded and must not be
-combined:
+B0 is truth-only. Already-closed issues remain evidence rows, not scheduled
+closure nodes. These exact WPs remain file-bounded and must not be combined:
 
 | WP | Exact scope |
 | --- | --- |
@@ -145,8 +145,6 @@ combined:
 | `B0-STUDY-TRUTH` | Correct only `docs/design/study-practice-modes-sdd.md` to shipped truth |
 | `B0-REVIEW` | Independent read-only cross-check of all four docs and every matrix row against main |
 | `B0-REINDEX` | GitNexus reindex plus exact `origin/main` SHA verification |
-| `B0-CLOSE-392` | Close #392 with merge and focused-test receipts; no branch |
-| `B0-CLOSE-393` | Close #393 with merge and focused-test receipts; no branch |
 | `B0-391-COMMENT` | Post merged truth and receipts to #391; keep it open while residual work exists |
 
 ### 2.5 Reclassification rule
@@ -189,6 +187,7 @@ B0 tracker truth + canonical SDD
  ├─ B2 bounded configuration and recovery features
  ├─ B3 independent live-mode vertical slices
  ├─ UI hygiene: #191, #302, #319, #320
+ ├─ bounded content Version History and Rollback train
  ├─ B4 learner identity and longitudinal data mission
  ├─ B5 deterministic replay and offline mission
  └─ B6 sandboxed document ingestion and AI extraction mission
@@ -204,7 +203,7 @@ B0 tracker truth + canonical SDD
 | 3 | #281 Rust/web handlers, security review, same-tab Stagehand, merge and deploy; B1 production acceptance is a hard predecessor for recovery and any B2 registry/login/snapshot slice |
 | 4 | B2 config trains strictly `participant cap -> idle timeout -> question shuffle`; recovery only after B1; music/export code may use disjoint lanes but browser/token gates serialize |
 | 5 | B3 modes one complete end-to-end train at a time |
-| 6 | Launch B4 mission; launch B5 only after B4 identity/storage contracts; B6 is separately budgeted and may discover earlier but its production migration cannot overlap B4/B5 |
+| 6 | Accept the bounded Version History SDD; launch B4 mission; launch B5 only after B4 identity/storage contracts; B6 is separately budgeted and may discover earlier, but Version History/B4/B5/B6 production migrations cannot overlap |
 
 Every merged train then runs independent review, project gates, PR merge,
 deploy, production health/deployed-SHA/browser verification, GitNexus reindex,
@@ -225,8 +224,8 @@ and issue closure as separate operational stages.
   snapshot and six locale files; they run end-to-end one at a time.
 - Finish #191 Users before B4, or approve a file-specific rebase plan for
   `ConfigUsers.tsx`.
-- B5 depends on B4 identity/storage. B4, B5, and B6 production migrations never
-  overlap.
+- B5 depends on B4 identity/storage. Version History, B4, B5, and B6 production
+  migrations never overlap.
 
 ## 5. B1 — socket role exclusivity (#281)
 
@@ -246,11 +245,28 @@ indexes and deliver conflicting personalized status payloads.
   never sufficient for authorization or registry ownership.
 - A manager claim becomes verified only after manager/session-token
   authentication. A player claim becomes verified only after an authorized
-  game join/rejoin. A display claim becomes verified only after an authorized
-  display/satellite join.
+  game join/rejoin. A display claim becomes verified only through
+  `DISPLAY.REGISTER` followed by authorized `DISPLAY.PAIR`; pairing ownership
+  remains in `PAIRING_REGISTRY`.
+- Model `satellite_manager_control` as a verified capability, not a
+  `SocketRole`. A valid `satelliteToken` grants only the existing allowlisted
+  manager-display controls (`skipQuestion`, `adjustTimer`, and `revealAnswer`);
+  it does not create manager ownership, display ownership, or a
+  `PAIRING_REGISTRY` record.
+- A satellite kiosk may render manager presentation chrome while holding no
+  role ownership. If the same socket also needs display pairing, it must
+  complete the display register/pair flow independently; the capability and
+  display role are then authorized and revoked independently.
+- Validate every presented role credential and `satelliteToken` independently
+  before mutating role ownership. Failed satellite authentication grants no
+  capability and changes no registry; a failed role transition removes its
+  tentative state and restores the still-valid prior role without revoking an
+  independently verified capability.
 - Carry the verified role and verified registry ownership in Rust handler
-  context. Reject all role-specific events before verification and whenever
-  verified role or ownership mismatches the handler.
+  context, and carry verified capabilities separately. Reject all role-specific
+  events before verification and whenever verified role or ownership mismatches
+  the handler. Capability-gated events require the named verified capability
+  even when the socket also owns a role.
 - Add an atomic registry transition/exclusivity API. It authorizes first, then
   releases the prior claim and commits the new claim as one transition; an
   unverified claim never mutates role indexes.
@@ -268,9 +284,19 @@ Required transition matrix:
 | --- | --- | --- | --- |
 | unverified | manager | Valid manager/session token | Verified manager ownership |
 | unverified | player | Valid game plus join/rejoin credential | Verified player ownership |
-| unverified | display | Valid display/satellite join credential | Verified display ownership |
+| unverified | display | `DISPLAY.REGISTER` plus authorized `DISPLAY.PAIR` | Verified display ownership in `PAIRING_REGISTRY` |
 | any verified role | another role | Fresh destination authorization | Old claim removed and new claim committed atomically |
 | any | any | Missing/invalid credential or failed commit | No new ownership; rollback/cleanup is complete |
+
+Compatibility for raw Socket.IO clients is frozen:
+
+| Raw-client handshake/event path | Compatibility behavior |
+| --- | --- |
+| No `role` field, then existing authenticated manager login/reconnect/create | Infer an untrusted manager claim from that event; authenticate before atomic manager ownership |
+| No `role` field, then existing player join/rejoin | Infer an untrusted player claim from that event; authorize before atomic player ownership |
+| No `role` field, then existing `DISPLAY.REGISTER`/`DISPLAY.PAIR` | Infer an untrusted display claim from that flow; pair before display ownership |
+| `satelliteToken`, with or without `role` | Validate token before granting only `satellite_manager_control`; never infer manager or display ownership from token |
+| Explicit `role` from web, MCP, Stagehand, golden-frame, or other raw client | Treat as an untrusted claim and apply the same event-specific authorization and rollback rules |
 
 ### 5.3 Required tests
 
@@ -281,6 +307,11 @@ Required transition matrix:
 - Role-mismatched events are rejected.
 - A self-asserted manager/display role without its required token/join
   authorization is rejected before registry mutation.
+- A valid satellite token grants only allowlisted manager-display controls and
+  never inserts manager/display ownership; revoking or rejecting that token
+  leaves any separately paired display role unchanged.
+- Legacy raw clients without a role field retain event-driven manager, player,
+  and display compatibility while still authenticating before registry claim.
 - Failed authorization and forced registry failure leave no dual, orphan, or
   leaked listener state and preserve an independently valid prior session.
 - Web role switch creates fresh handshake and no listener leak.
@@ -291,8 +322,8 @@ Required transition matrix:
 
 ```text
 socket-role-exclusivity-sdd.md
-  -> independent security/architecture review
   -> socket-role-transition-states.md
+  -> joint independent security/architecture review of both artifacts
   -> shared role contract
   -> registry and handler RED tests
   -> Rust implementation
@@ -307,8 +338,10 @@ socket-role-exclusivity-sdd.md
 The earlier proposed alias `same-tab-role-switch-states.md` is superseded and
 must not be created. The distinct backend/security predecessor is
 `docs/design/socket-role-exclusivity-sdd.md`; implementation WPs are generated
-only after its independent security and architecture review accepts the
-handshake, transition, rollback, listener-ownership, and abuse contracts.
+only after AGY finishes the transition-state artifact and an independent joint
+security and architecture review accepts both documents, including handshake,
+capability, transition, rollback, listener-ownership, raw-client compatibility,
+and abuse contracts.
 
 ## 6. B2 — bounded configuration and recovery
 
@@ -568,7 +601,7 @@ loss, or incompatible snapshot migration.
 
 B5 cannot begin implementation before B4 has accepted and merged learner
 identity, ownership, storage, retention, and deletion contracts. B5 may not
-deploy a schema/storage migration concurrently with B4 or B6.
+deploy a schema/storage migration concurrently with Version History, B4, or B6.
 
 Required testable controls:
 
@@ -622,9 +655,9 @@ resource caps. A separate production rollback-drill WP must prove that disabling
 ingestion stops new parse/extract jobs, cleans or safely preserves in-flight
 temporary data per contract, leaves existing quiz editing healthy, and supports
 re-enable without duplicate publication. Its migration/deployment window may
-not overlap B4/B5.
+not overlap Version History, B4, or B5.
 
-### 11.1 Version History and Rollback train
+## 12. Version History and Rollback train
 
 Version History is pending, not silently dropped and not part of B5 replay. It
 gets a dedicated bounded content-versioning SDD and independent review after B3
@@ -634,7 +667,7 @@ concurrency, restore-as-a-new-version, migration compatibility, audit receipts,
 and rollback tests. No direct implementation WP may be derived from this
 umbrella before that SDD is accepted.
 
-## 12. AGY design-spec contract
+## 13. AGY design-spec contract
 
 AGY Gemini 3.6 Flash is design-spec author, not production implementer.
 
@@ -660,7 +693,7 @@ Every non-exempt UI slice gets `docs/design/<slug>.md` containing:
 
 Production coding begins only after AGY artifact passes design review.
 
-### 12.1 Design artifact queue
+### 13.1 Design artifact queue
 
 Worker second-opinion report `recon-agy-design-briefs` validated these 22
 mandatory artifacts:
@@ -692,7 +725,7 @@ mandatory artifacts:
 copies an existing canonical component pattern and is a tiny-fix exception.
 Any new visual decision in those slices cancels the exception.
 
-## 13. Worker-derived micro-WP contract
+## 14. Worker-derived micro-WP contract
 
 Workers derive WPs from this SDD. Orchestrator reviews split quality before
 dispatch.
@@ -726,14 +759,17 @@ Only two exceptions exist:
 2. A project-generator scaffold WP may own only the generated component and its
    generated test scaffold. Test hardening and implementation remain later WPs.
 
-Any two WPs that share a `contract_file` or `wiring_file` are serialized even
-when their `primary_file` values differ. Tests, locales, docs, review,
-integration, deployment, and production validation remain separate WPs.
+Any two WPs whose `contract_files` arrays intersect or whose `wiring_files`
+arrays intersect are serialized even when their `primary_file` values differ.
+In serialized WP JSON/YAML, the keys are exactly `contract_files` and
+`wiring_files`, and both values are arrays; singular aliases are invalid.
+Tests, locales, docs, review, integration, deployment, and production
+validation remain separate WPs.
 
 B4–B6 must first yield mission SDDs. Workers must not flatten them into giant
 implementation WPs.
 
-## 14. Dispatch and fallback policy
+## 15. Dispatch and fallback policy
 
 1. Poll `claude-quota-healthmap` before each wave.
 2. Skip providers marked down.
@@ -746,16 +782,16 @@ implementation WPs.
    practical.
 8. A worker “done” report with empty diff is false success.
 
-## 15. Mandatory engineering gates
+## 16. Mandatory engineering gates
 
-### 15.1 Before editing
+### 16.1 Before editing
 
 - Read project `AGENTS.md`.
 - Run GitNexus impact analysis for touched symbols.
 - Warn before HIGH/CRITICAL blast radius.
 - Confirm isolated worktree and clean owned scope.
 
-### 15.2 Focused gates
+### 16.2 Focused gates
 
 - RED test captured before implementation.
 - Targeted TypeScript/Vitest or Rust tests.
@@ -763,7 +799,7 @@ implementation WPs.
 - YAML/shell/JSON validation for tooling WPs.
 - Security cases for auth, parser, free text, export, and identity changes.
 
-### 15.3 Project gates
+### 16.3 Project gates
 
 ```bash
 pnpm verify
@@ -780,7 +816,7 @@ bash rust/gate.sh
 Run relevant locale checks and full workspace tests. UI work reports verbatim
 token-gate output.
 
-### 15.4 Browser gates
+### 16.4 Browser gates
 
 - Stagehand Solo and multiplayer suites.
 - New feature-specific Stagehand spec.
@@ -789,7 +825,7 @@ token-gate output.
   layout shift, reconnect, and reload.
 - `E2E_PW` must come from environment. Missing value means blocked, never pass.
 
-### 15.5 Before commit and merge
+### 16.5 Before commit and merge
 
 - GitNexus `detect_changes`.
 - Diff and owned-file inspection by orchestrator.
@@ -797,7 +833,7 @@ token-gate output.
 - Independent code, test, product/design, and security review as applicable.
 - `claude-wp-verify --branch <branch> --base main`.
 
-## 16. Integration, mirror, deploy, and production
+## 17. Integration, mirror, deploy, and production
 
 For each green slice:
 
@@ -820,7 +856,7 @@ gitnexus-reindex /nvmetank1/projects/Razzoozle/source
 
 Registry `lastCommit` must equal final `origin/main`.
 
-## 17. Rollback
+## 18. Rollback
 
 - Prefer reverting one merged slice over cross-feature rollback.
 - Keep migrations backward-compatible until production validation completes.
@@ -837,7 +873,7 @@ Registry `lastCommit` must equal final `origin/main`.
 - Never delete worktrees/branches until PR, deployment, and evidence are
   complete.
 
-## 18. Definition of done
+## 19. Definition of done
 
 Program is complete when:
 
