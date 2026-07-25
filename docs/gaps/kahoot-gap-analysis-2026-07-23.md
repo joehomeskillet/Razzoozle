@@ -21,10 +21,10 @@
 | | ✅ Poll (unkorriert) | ✅ poll | — | — |
 | | ✅ Word Cloud | ❌ | _Wort-Häufigkeits-Visualisierung fehlend_ | NICE |
 | | ✅ Brainstorm | ❌ | _Kollaborative Ideensammlung fehlend_ | NICE |
-| | ✅ Drop Pin / Hotspot | ❌ | _Klick-auf-Bild-Modus fehlend_ | SHOULD |
-| | ✅ Matching (Paarung) | ❌ | _Zuordnungs-Aufgaben fehlend_ | SHOULD |
-| | ✅ Fill in the Blank (Lückentext) | ❌ | _Strukturierte Lückenfüllung fehlend_ | SHOULD |
-| | ✅ Diagram Labeling | ❌ | _Anatomie/Diagramm-Beschriftung fehlend_ | NICE |
+| | ✅ Drop Pin / Hotspot | ✅ drop-pin | _SHIPPED (Drop Pin Mode)_ | SHIPPED |
+| | ✅ Matching (Paarung) | ✅ matching | _SHIPPED (Matching Mode)_ | SHIPPED |
+| | ✅ Fill in the Blank (Lückentext) | ✅ fill-in-blank | _SHIPPED (Fill-in-Blank Mode)_ | SHIPPED |
+| | ✅ Diagram Labeling | ❌ | _Anatomie/Diagramm-Beschriftung fehlend_ | SUPERSEDED |
 | | ✅ Confidence Rating | ❌ | _Antwort + Selbsteinschätzung fehlend_ | NICE |
 | | ✅ Vocabulary Review | ❌ | _Vokabel-Modus mit Aussprache fehlend_ | SKIP (zu spezialisiert) |
 | | ✅ Micro-Lessons (Video+Quiz) | ❌ | _Kurzvideo-Integration fehlend_ | NICE |
@@ -33,26 +33,26 @@
 | | — | ✅ mathematik | N/A | — |
 | | — | ✅ wortarten | N/A | — |
 
-**Gap-Zusammenfassung:** Razzoozle hat 9/16 Kahoot-Fragetypen. Fehlend: Sequencing, Drop Pin, Matching, Fill-in-Blank (4× SHOULD), Word Cloud, Brainstorm, Diagram, Confidence, Vocabulary, Micro-Lessons (6× NICE). 3× Razzoozle-Spezialtypen (DE-Fokus).
+**Gap-Zusammenfassung:** Razzoozle hat 12/16 Kahoot-Fragetypen. Fehlend: Sequencing (1× SHOULD), Word Cloud, Brainstorm, Confidence, Micro-Lessons (4× NICE). Diagram Labeling ist durch Drop Pin supersedet. 3× Razzoozle-Spezialtypen (DE-Fokus).
 
 ---
 
 ### Game-Modi (Play Modes)
 
-| Feature | Kahoot (8) | Razzoozle (4) | Gap | Priorität |
+| Feature | Kahoot (8) | Razzoozle (6) | Gap | Priorität |
 |---------|-----------|---------------|-----|-----------|
 | **Core** | ✅ Classic Live | ✅ Classic Live | — | — |
 | | ✅ Team Mode | ✅ Team Mode | — | — |
 | | ✅ Self-Paced / Assignments | ❌ | _Async Homework-Modus fehlend_ | SHOULD |
-| | ✅ Study Mode / Flashcards | ❌ | _Wiederholungs-Modus fehlend_ | SHOULD |
-| | ✅ Practice Mode | ❌ | _Unbewertete Trainings-Sessions fehlend_ | SHOULD |
+| | ✅ Study Mode / Flashcards | ✅ study | _SHIPPED (Flashcards/Study)_ | SHIPPED |
+| | ✅ Practice Mode | ✅ practice | _SHIPPED (Unbewertetes Training)_ | SHIPPED |
 | | ✅ Ghost/Replay (KI-Gegner) | ❌ | _Offline-/Replay-Modus fehlend_ | NICE |
 | | ✅ Challenge Mode (Asynchron) | ❌ | _Freund-Herausforderungen fehlend_ | NICE |
 | | ✅ Kahoot! Jumble (Wort-Spiel) | ❌ | _Wort-Rätsel-Modus fehlend_ | SKIP (zu speziell) |
 | **Razzoozle-Modi** | — | ✅ Solo | N/A | — |
 | | — | ✅ Klassen (Class) | N/A | — |
 
-**Gap-Zusammenfassung:** Razzoozle hat 2/8 Kahoot-Modi. Fehlend: Self-Paced, Study, Practice, Ghost/Replay (4× SHOULD), Challenge (1× NICE). Razzoozle bietet Solo + Klassen (keine Kahoot-Äquivalente, aber MUST für self-hosted Klassenzimmer-Quiz).
+**Gap-Zusammenfassung:** Razzoozle hat 4/8 Kahoot-Modi. Fehlend: Self-Paced (1× SHOULD), Ghost/Replay, Challenge (2× NICE). Razzoozle bietet Solo + Klassen (keine Kahoot-Äquivalente, aber MUST für self-hosted Klassenzimmer-Quiz).
 
 ---
 
@@ -72,13 +72,14 @@
 | **Live Control** | ✅ Timer Control | ✅ (ADJUST_TIMER) | — | — |
 | | ✅ Skip Question | ✅ (SKIP_QUESTION) | — | — |
 | | ✅ Reveal Answer | ✅ (REVEAL_ANSWER) | — | — |
-| | ✅ Randomize Questions | ❌ | _Frage/Antwort-Randomisierung_ | NICE |
-| | ✅ Participant Cap | ❌ | _Max-Spieler-Limit fehlend_ | SHOULD |
+| | ✅ Randomize Questions | ⚠️ Partial (Answer order shipped) | Seeded question order pending | NICE |
+| | ✅ Participant Cap | ⚠️ Partial (Hard 200 cap shipped) | Configurable manager cap pending | SHOULD |
 | **Podium & Analytics** | ✅ Podium / Leaderboard | ✅ (dynamic ranking) | — | — |
-| | ✅ Streaks & Bonus Points | ❌ | _Bonuspunkte für Serien fehlend_ | NICE |
-| | ✅ Live Stats Dashboard | ⚠️ Partial (low-latency metrics für host) | Fehlend: grafische Antwortverteilung pro Frage | SHOULD |
+| | ✅ Streaks & Bonus Points | ✅ (STREAK_STEP, max 200) | _SHIPPED (Streak-Bonus)_ | SHIPPED |
+| | ✅ Live Stats Dashboard | ⚠️ Partial (responseMs & aggregate/CSV shipped) | Graphical distribution pending | SHOULD |
 | | ✅ Export/Screenshot Results | ❌ | _Results-Export (PNG/PDF) fehlend_ | NICE |
 | | ✅ Bulk Question Import | ❌ | _CSV/Excel-Import für Massenerstellung_ | SHOULD |
+| | ✅ Template Library | ✅ (File-backed CRUD & picker) | _SHIPPED MVP (Template Manager)_ | SHIPPED |
 
 > **⚠️ Korrektur (deterministischer Grep, 2026-07-23):** `manager:skipQuestion`, `manager:adjustTimer`, `manager:revealAnswer` sind in `rust/protocol/src/constants.rs:97–99` definiert und serverseitig gehandhabt (`socket/manager/game_flow/`), aber **kein Client-Code emittet sie** — im Manager-UI fehlen die Buttons (nur pauseGame/resumeGame sind verdrahtet, `RejoinQrDialog.tsx:33`). Die drei ✓-Zeilen oben sind daher „Backend ready, UI unwired" = Quick-Win-Gap.
 
