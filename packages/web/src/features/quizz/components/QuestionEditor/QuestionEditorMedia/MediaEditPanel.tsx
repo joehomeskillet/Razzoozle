@@ -52,7 +52,7 @@ const MediaEditPanel = ({
             size="sm"
             className="min-h-11"
             onClick={handleEdit}
-            disabled={editing || !editPrompt.trim()}
+            disabled={editing || uploading || !editPrompt.trim()}
             classNameContent="gap-1.5"
           >
             {editing ? (
@@ -79,11 +79,13 @@ const MediaEditPanel = ({
         className="min-h-11"
         classNameContent="gap-1.5"
         onClick={handleUploadClick}
-        disabled={uploading}
+        disabled={uploading || editing}
         aria-busy={uploading}
       >
         {uploading ? (
-          <Loader className="size-5 text-gray-700" aria-hidden="true" />
+          <span aria-hidden="true">
+            <Loader className="size-5" />
+          </span>
         ) : (
           <Upload className="size-5" aria-hidden="true" />
         )}
@@ -98,7 +100,11 @@ const MediaEditPanel = ({
         </p>
       </Button>
 
-      <Button variant="secondary" onClick={handleRemoveMedia}>
+      <Button
+        variant="secondary"
+        onClick={handleRemoveMedia}
+        disabled={uploading || editing}
+      >
         {t("common:delete")}
       </Button>
     </div>
