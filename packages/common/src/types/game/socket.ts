@@ -58,6 +58,17 @@ export interface SocketAuthPayload {
   sessionToken?: string
 }
 
+/** Socket Security-Train #281 Verified Role */
+export type VerifiedRole = 'Unauthenticated' | 'Manager' | 'Player' | 'Display'
+
+export interface HandlerCtx {
+  socketId: string
+  verifiedRole: VerifiedRole
+  currentPin?: string
+  userId?: string
+  capabilities: Set<string>
+}
+
 // ---- Mode selection types (W1-M2) ----
 
 export type EndScreen = 'full' | 'top3' | 'private'
