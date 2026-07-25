@@ -1,7 +1,7 @@
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import Loader from "@razzoozle/web/components/Loader"
-import { Pencil } from "lucide-react"
+import { Pencil, Upload } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -12,6 +12,8 @@ interface MediaEditPanelProps {
   editing: boolean
   handleEdit: () => void
   handleRemoveMedia: () => void
+  uploading: boolean
+  handleUploadClick: () => void
 }
 
 const MediaEditPanel = ({
@@ -21,6 +23,8 @@ const MediaEditPanel = ({
   editing,
   handleEdit,
   handleRemoveMedia,
+  uploading,
+  handleUploadClick,
 }: MediaEditPanelProps) => {
   const { t } = useTranslation()
 
@@ -48,7 +52,7 @@ const MediaEditPanel = ({
             size="sm"
             className="min-h-11"
             onClick={handleEdit}
-            disabled={editing || !editPrompt.trim()}
+            disabled={editing || uploading || !editPrompt.trim()}
             classNameContent="gap-1.5"
           >
             {editing ? (
@@ -69,7 +73,38 @@ const MediaEditPanel = ({
         </div>
       )}
 
-      <Button variant="secondary" onClick={handleRemoveMedia}>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="min-h-11"
+        classNameContent="gap-1.5"
+        onClick={handleUploadClick}
+        disabled={uploading || editing}
+        aria-busy={uploading}
+      >
+        {uploading ? (
+          <span aria-hidden="true">
+            <Loader className="size-5" />
+          </span>
+        ) : (
+          <Upload className="size-5" aria-hidden="true" />
+        )}
+        <p>
+          {uploading
+            ? t("quizz:question.media.uploading", {
+                defaultValue: "Wird hochgeladen",
+              })
+            : t("quizz:question.media.uploadButton", {
+                defaultValue: "Bild hochladen",
+              })}
+        </p>
+      </Button>
+
+      <Button
+        variant="secondary"
+        onClick={handleRemoveMedia}
+        disabled={uploading || editing}
+      >
         {t("common:delete")}
       </Button>
     </div>
