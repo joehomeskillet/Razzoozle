@@ -18,7 +18,7 @@ export interface LiveGhostState {
 
 export class GhostPlaybackEngine {
   private ghosts: GhostPlayerRecord[]
-  private currentQuestionIndex: number = 0
+  private currentQuestionIndex = 0
 
   constructor(ghosts: GhostPlayerRecord[]) {
     this.ghosts = ghosts
