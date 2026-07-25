@@ -57,15 +57,21 @@ export default function MultiSelectGrid({
     isSolo ? `solo-multiple-select-tile-${key}` : `answer-btn-${key}`
   const submitTestId = isSolo ? "solo-multiple-select-submit" : "multi-select-submit"
 
+  const isBoolean = renderOrder.length === 2
+
   return (
     <div className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-4 px-2 lg:max-w-[85vw]">
       <p className="text-center text-sm font-medium text-[color:var(--game-fg)]/80">
         {t("quizz:multipleSelect.selectHint")}
       </p>
       <div className="grid w-full grid-cols-2 gap-1 text-lg font-bold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]">
-        {renderOrder.map((key: number) => {
+        {renderOrder.map((key: number, index: number) => {
           const answer = answers[key]
           const isPicked = value.includes(key)
+          const tileLayout = clsx(
+            isBoolean ? "min-h-20" : "min-h-14 md:min-h-16",
+            renderOrder.length === 3 && index === 2 && "col-span-2",
+          )
 
           if (isSolo) {
             return (
@@ -81,17 +87,19 @@ export default function MultiSelectGrid({
                 initial="hidden"
                 animate={feedback && isPicked ? "popped" : "visible"}
                 transition={feedback && isPicked ? reveal.snap : reveal.spring}
-                className="flex"
+                className={clsx("relative flex", tileLayout)}
               >
                 <AnswerButton
                   colorIndex={key}
                   correct={feedback && isPicked ? feedback.correct : undefined}
+                  aria-pressed={isPicked}
+                  aria-selected={isPicked}
                   className={clsx(
-                    "w-full",
+                    "w-full break-words hyphens-auto",
                     !reveal.reduced &&
                       !disabled &&
                       "transition-transform hover:scale-[1.02] hover:ring-4 hover:ring-white/40",
-                    disabled && "opacity-50",
+                    disabled && !isPicked && "opacity-40",
                     isPicked && "ring-4 ring-[var(--ring-selected)]",
                   )}
                   label={ANSWERS_LABELS[key]}
@@ -108,11 +116,15 @@ export default function MultiSelectGrid({
             <AnswerButton
               data-testid={getTileTestId(key)}
               key={key}
+              aria-pressed={isPicked}
+              aria-selected={isPicked}
               className={clsx(
+                tileLayout,
+                "break-words hyphens-auto",
                 ANSWERS_COLORS[key],
                 !disabled && PRESS_FEEDBACK,
-                disabled && "opacity-50",
-                value.includes(key) && "ring-4 ring-[var(--ring-selected)]",
+                disabled && !isPicked && "opacity-40",
+                isPicked && "ring-4 ring-[var(--ring-selected)]",
               )}
               label={ANSWERS_LABELS[key]}
               disabled={disabled}
