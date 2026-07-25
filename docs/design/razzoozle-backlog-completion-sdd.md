@@ -49,12 +49,28 @@ These issues must not produce new implementation WPs.
 
 | Issue | Remaining scope |
 | --- | --- |
-| #191 | structural extraction only: `ConfigUsers` and `ConfigSkeleton`; no visual change |
-| #281 | socket identity/role exclusivity across manager, player, and display |
-| #302 | make design CI gate truly blocking; add guarded post-merge learning script |
-| #319 | MultiSelect spacing, disabled hierarchy, ARIA state, focused tests |
-| #320 | slider interaction redesign, focused tests, CSS and component alignment |
-| #391 | umbrella for residual SHOULD/NICE program B0–B6 |
+| #191 | structural extraction only: `ConfigUsers` and `ConfigSkeleton`; SHIPPED & CLOSED |
+| #281 | socket identity/role exclusivity across manager, player, and display; SHIPPED & CLOSED |
+| #302 | make design CI gate truly blocking; add guarded post-merge learning script; SHIPPED & CLOSED |
+| #319 | MultiSelect spacing, disabled hierarchy, ARIA state, focused tests; SHIPPED & CLOSED |
+| #320 | slider interaction redesign, focused tests, CSS and component alignment; SHIPPED & CLOSED |
+| #391 | umbrella for residual SHOULD/NICE program B0–B6; CLOSED |
+| #466 | Puzzle / Sequencing Fragetyp (Kahoot Gap #1) |
+| #467 | Word Cloud Fragetyp (Kahoot Gap #2) |
+| #468 | Brainstorming Fragetyp (Kahoot Gap #3) |
+| #469 | Confidence Rating Fragetyp (Kahoot Gap #4) |
+| #470 | Micro-Lessons Fragetyp (Kahoot Gap #5) |
+| #471 | Self-Paced / Assignments Play Mode (Kahoot Gap #6) |
+| #472 | Ghost / Replay Mode (Kahoot Gap #7) |
+| #473 | Challenge Mode (Kahoot Gap #8) |
+| #474 | Q&A Live Moderation Panel (Kahoot Gap #9) |
+| #475 | Lobby Music Presets (Kahoot Gap #10) |
+| #476 | Seeded Question Order Randomization (Kahoot Gap #11) |
+| #477 | Manager Configurable Participant Cap (Kahoot Gap #12) |
+| #478 | Results Export PNG/PDF (Kahoot Gap #13) |
+| #479 | Bulk Question Import CSV/Excel (Kahoot Gap #14) |
+| #480 | Quiz Version History & Rollback (Kahoot Gap #15) |
+| #481 | Document Content Extractor PDF/PowerPoint (Kahoot Gap #16) |
 
 ### 2.3 Complete #391 truth matrix
 
@@ -73,30 +89,33 @@ or an explicit reclassification receipt.
 | Study / Flashcards | SHIPPED | `B0-STUDY-TRUTH`; no reimplementation |
 | Practice Mode | SHIPPED | `B0-STUDY-TRUTH`; no reimplementation |
 | Session Management | PARTIAL | B2 connected-idle warning/finalization |
-| Music Presets | PENDING | B2 music-preset train |
-| Participant Cap | PARTIAL | B2 persisted manager-configurable cap; hard 200 cap already shipped |
+| Music Presets | PENDING | Issue #475 (B2 music-preset train) |
+| Participant Cap | PARTIAL | Issue #477 (B2 persisted manager-configurable cap; hard 200 cap already shipped) |
 | Time-to-Answer Metrics | SHIPPED MVP | Existing `responseMs` and aggregate/CSV receipts; B4 may consume longitudinally |
-| PowerPoint/PDF Import | PENDING | B6 bounded sandboxed-ingestion mission |
+| PowerPoint/PDF Import | PENDING | Issue #481 (B6 bounded sandboxed-ingestion mission) |
 | User-visible Replay/Recovery UI | PARTIAL | B2 recovery UX, then B5 deterministic replay viewer |
 | Teacher/Student/Admin | PARTIAL | B4 authenticated learner identity/capability mission |
+| Puzzle / Sequencing | PENDING | Issue #466 (Puzzle/Sequencing question type) |
+| Self-Paced / Assignments | PENDING | Issue #471 (Async homework assignment play mode) |
+| Bulk Question Import | PENDING | Issue #479 (CSV/Excel batch question parser) |
 
 #### NICE
 
 | Item | Audited disposition | Owner/evidence requirement |
 | --- | --- | --- |
-| Word Cloud | PENDING | B3 mode train |
-| Brainstorm | PENDING | B3 bounded mission unless reviewed SDD proves a small MVP |
+| Word Cloud | PENDING | Issue #467 (B3 mode train) |
+| Brainstorm | PENDING | Issue #468 (B3 bounded mission unless reviewed SDD proves a small MVP) |
 | Diagram Labeling | SUPERSEDED by Drop Pin | No second hotspot engine; only a separately approved multi-label preset SDD may reopen scope |
-| Confidence Rating | PENDING | B3 mode train; may depend on #320 |
-| Micro-Lessons | PENDING | B3 bounded mission unless reviewed SDD proves a small MVP |
-| Ghost/Replay | PENDING | B5 after deterministic replay |
-| Async Challenge | PENDING | B4 identity/storage, then B5 sync/replay integration |
-| Q&A Live Moderation | PENDING | B3 bounded mission unless reviewed SDD proves bounded moderation/retention |
+| Confidence Rating | PENDING | Issue #469 (B3 mode train; may depend on #320) |
+| Micro-Lessons | PENDING | Issue #470 (B3 bounded mission unless reviewed SDD proves a small MVP) |
+| Ghost/Replay | PENDING | Issue #472 (B5 after deterministic replay) |
+| Async Challenge | PENDING | Issue #473 (B4 identity/storage, then B5 sync/replay integration) |
+| Q&A Live Moderation | PENDING | Issue #474 (B3 bounded mission unless reviewed SDD proves bounded moderation/retention) |
 | Streaks & Bonus | SHIPPED | `STREAK_STEP`, hard cap 200; `B0-ANALYTICS-TRUTH` corrects stale docs |
-| Randomize Questions/Answers | PARTIAL | Answer order shipped and reconnect-stable; B2 seeded question order |
-| PNG/PDF Result Export | PENDING | B2 sanitized deterministic export train |
+| Randomize Questions/Answers | PARTIAL | Issue #476 (Answer order shipped and reconnect-stable; B2 seeded question order) |
+| PNG/PDF Result Export | PENDING | Issue #478 (B2 sanitized deterministic export train) |
 | Template Library | SHIPPED MVP | File-backed CRUD/picker/editor; never merge stale `wp/tpl1-crud` |
-| Version History & Rollback | PENDING | Dedicated versioned-content SDD/mission after B3 and before migration-heavy B4/B5 deploys |
+| Version History & Rollback | PENDING | Issue #480 (Dedicated versioned-content SDD/mission after B3) |
 | Cross-Session Progress | PENDING | B4 after identity and history |
 | Offline Partial | PENDING | B5 after event-log and conflict policy |
 | Persistent Answer History | PARTIAL backend | B4 after identity/ownership |
