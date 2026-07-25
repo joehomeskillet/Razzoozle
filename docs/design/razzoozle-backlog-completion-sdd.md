@@ -56,11 +56,103 @@ These issues must not produce new implementation WPs.
 | #320 | slider interaction redesign, focused tests, CSS and component alignment |
 | #391 | umbrella for residual SHOULD/NICE program B0–B6 |
 
-### 2.3 Explicit exclusions
+### 2.3 Complete #391 truth matrix
 
-All 19 entries classified `SKIP` in #391 remain excluded. “Implement
-everything” activates genuine SHOULD/NICE residue; it does not silently reverse
-deliberate exclusions covering enterprise SSO/LMS/integration/platform scope.
+The following matrix is the audited line-item truth from
+`audit-reliability-391-393`. `B0-REVIEW` must cross-check every row against the
+then-current `origin/main`; a later status change requires a production receipt
+or an explicit reclassification receipt.
+
+#### SHOULD
+
+| Item | Audited disposition | Owner/evidence requirement |
+| --- | --- | --- |
+| Drop Pin / Hotspot | SHIPPED | No WP; retain merge and production receipt |
+| Matching | SHIPPED | No WP; retain merge and production receipt |
+| Fill in the Blank | SHIPPED | No WP; retain merge and production receipt |
+| Study / Flashcards | SHIPPED | `B0-STUDY-TRUTH`; no reimplementation |
+| Practice Mode | SHIPPED | `B0-STUDY-TRUTH`; no reimplementation |
+| Session Management | PARTIAL | B2 connected-idle warning/finalization |
+| Music Presets | PENDING | B2 music-preset train |
+| Participant Cap | PARTIAL | B2 persisted manager-configurable cap; hard 200 cap already shipped |
+| Time-to-Answer Metrics | SHIPPED MVP | Existing `responseMs` and aggregate/CSV receipts; B4 may consume longitudinally |
+| PowerPoint/PDF Import | PENDING | B6 bounded sandboxed-ingestion mission |
+| User-visible Replay/Recovery UI | PARTIAL | B2 recovery UX, then B5 deterministic replay viewer |
+| Teacher/Student/Admin | PARTIAL | B4 authenticated learner identity/capability mission |
+
+#### NICE
+
+| Item | Audited disposition | Owner/evidence requirement |
+| --- | --- | --- |
+| Word Cloud | PENDING | B3 mode train |
+| Brainstorm | PENDING | B3 bounded mission unless reviewed SDD proves a small MVP |
+| Diagram Labeling | SUPERSEDED by Drop Pin | No second hotspot engine; only a separately approved multi-label preset SDD may reopen scope |
+| Confidence Rating | PENDING | B3 mode train; may depend on #320 |
+| Micro-Lessons | PENDING | B3 bounded mission unless reviewed SDD proves a small MVP |
+| Ghost/Replay | PENDING | B5 after deterministic replay |
+| Async Challenge | PENDING | B4 identity/storage, then B5 sync/replay integration |
+| Q&A Live Moderation | PENDING | B3 bounded mission unless reviewed SDD proves bounded moderation/retention |
+| Streaks & Bonus | SHIPPED | `STREAK_STEP`, hard cap 200; `B0-ANALYTICS-TRUTH` corrects stale docs |
+| Randomize Questions/Answers | PARTIAL | Answer order shipped and reconnect-stable; B2 seeded question order |
+| PNG/PDF Result Export | PENDING | B2 sanitized deterministic export train |
+| Template Library | SHIPPED MVP | File-backed CRUD/picker/editor; never merge stale `wp/tpl1-crud` |
+| Version History & Rollback | PENDING | Dedicated versioned-content SDD/mission after B3 and before migration-heavy B4/B5 deploys |
+| Cross-Session Progress | PENDING | B4 after identity and history |
+| Offline Partial | PENDING | B5 after event-log and conflict policy |
+| Persistent Answer History | PARTIAL backend | B4 after identity/ownership |
+| CSV/Excel Export | CSV SHIPPED; native XLSX ACCEPTED | Preserve CSV; separate bounded sanitized native-XLSX B2 slice |
+| AI Question Extractor | PENDING | B6 after parser and review UI; never auto-publish |
+| Question Effectiveness | PARTIAL raw stats | B4 longitudinal aggregation/UI |
+| Performance Analytics/Trends | PARTIAL raw stats | B4 longitudinal aggregation/UI |
+
+#### SKIP
+
+These 19 consolidated rows name every deliberately excluded item from the gap
+audit. They have no delivery owner:
+
+| # | Excluded item(s) | Disposition |
+| ---: | --- | --- |
+| 1 | Vocabulary Review | SKIP — specialized product |
+| 2 | Practice Tests | SKIP — enterprise scenario |
+| 3 | Kahoot Jumble | SKIP — specialized game |
+| 4 | Personalized Learning Path | SKIP — ML-heavy |
+| 5 | Study Reminders | SKIP — notification/account expansion |
+| 6 | Custom Report Generation | SKIP — open-ended report platform |
+| 7 | Google Classroom and grade passback | SKIP — external classroom integration |
+| 8 | Canvas, Blackboard, and Moodle LMS sync | SKIP — external LMS integration |
+| 9 | API Reports Access and public REST/SDK access | SKIP — public platform surface |
+| 10 | AI-Powered Recommendations | SKIP — speculative recommender |
+| 11 | Content Sharing / Marketplace | SKIP — public marketplace |
+| 12 | Collaborative Editing | SKIP — multi-author realtime platform |
+| 13 | Microsoft Teams | SKIP — external collaboration integration |
+| 14 | Clever, ClassCode, OneRoster, and Seesaw | SKIP — external roster/portfolio integrations |
+| 15 | Zoom, Google Meet, Webex, and Slack | SKIP — external meeting/messaging integrations |
+| 16 | SCORM Packaging and LMS Deep Linking | SKIP — enterprise packaging/integration |
+| 17 | Zapier / Make | SKIP — external automation platform |
+| 18 | Multi-organization Admin | SKIP — multi-tenant enterprise surface |
+| 19 | Enterprise SSO (SAML/OIDC) | SKIP — enterprise identity integration |
+
+### 2.4 B0 truth and closure WPs
+
+B0 is truth/closure only. These exact WPs remain file-bounded and must not be
+combined:
+
+| WP | Exact scope |
+| --- | --- |
+| `B0-GAP-TRUTH` | Update only `docs/gaps/kahoot-gap-analysis-2026-07-23.md` |
+| `B0-MATRIX-TRUTH` | Update only `docs/gaps/kahoot-feature-matrix-2026.md` |
+| `B0-ANALYTICS-TRUTH` | Correct only `docs/design/host-analytics-sdd.md`; `<150` changed LOC |
+| `B0-STUDY-TRUTH` | Correct only `docs/design/study-practice-modes-sdd.md` to shipped truth |
+| `B0-REVIEW` | Independent read-only cross-check of all four docs and every matrix row against main |
+| `B0-REINDEX` | GitNexus reindex plus exact `origin/main` SHA verification |
+| `B0-CLOSE-392` | Close #392 with merge and focused-test receipts; no branch |
+| `B0-CLOSE-393` | Close #393 with merge and focused-test receipts; no branch |
+| `B0-391-COMMENT` | Post merged truth and receipts to #391; keep it open while residual work exists |
+
+### 2.5 Reclassification rule
+
+“Implement everything” activates genuine SHOULD/NICE residue; it does not
+silently reverse the exclusions above.
 
 Any reclassification needs:
 
@@ -102,9 +194,39 @@ B0 tracker truth + canonical SDD
  └─ B6 sandboxed document ingestion and AI extraction mission
 ```
 
-B1 and UI hygiene may run in parallel after this SDD. B2 begins after shared
-configuration contracts are frozen. B3 modes are independent after mode
-contract conventions are frozen. B4, B5, and B6 are missions, not single WPs.
+### 4.1 Audited Wave 0–6 order
+
+| Wave | Allowed work and hard ordering |
+| --- | --- |
+| 0 | Parallel docs/tests only: four B0 truth docs; #191 Users/Skeleton SDDs; #281 SDD plus AGY states; #320 AGY spec; #319 RED test; #302 CI/hook; at most one B2/B3 discovery SDD |
+| 1 | Gate/merge #302; implement file-disjoint #319/#320 slices; accept #191/#281 reviews; browser profiles/ports remain serialized |
+| 2 | #281 common contract, registry, and role RED tests; #191 Users and Skeleton may run in parallel with their own internal wiring serialization |
+| 3 | #281 Rust/web handlers, security review, same-tab Stagehand, merge and deploy; B1 production acceptance is a hard predecessor for recovery and any B2 registry/login/snapshot slice |
+| 4 | B2 config trains strictly `participant cap -> idle timeout -> question shuffle`; recovery only after B1; music/export code may use disjoint lanes but browser/token gates serialize |
+| 5 | B3 modes one complete end-to-end train at a time |
+| 6 | Launch B4 mission; launch B5 only after B4 identity/storage contracts; B6 is separately budgeted and may discover earlier but its production migration cannot overlap B4/B5 |
+
+Every merged train then runs independent review, project gates, PR merge,
+deploy, production health/deployed-SHA/browser verification, GitNexus reindex,
+and issue closure as separate operational stages.
+
+### 4.2 Collision and mission rules
+
+- All #191 Users WPs that wire `ConfigUsers.tsx` are sequential; both Skeleton
+  hooks that wire `ConfigSkeleton.tsx` are sequential.
+- #281 contract/registry precede auth/login/disconnect handlers. Web factory and
+  provider precede its serialized routes/hook.
+- B1 must merge and deploy before recovery UX and before affected B2
+  registry/login/snapshot work.
+- B2 cap, idle, and shuffle are serialized because they share validators, DB
+  config, game/snapshot, and `ConfigGameMode.tsx`.
+- #320 global CSS lands before broad B3 styling.
+- B3 trains share unions, validators, protocol/reveal, editor, answer rendering,
+  snapshot and six locale files; they run end-to-end one at a time.
+- Finish #191 Users before B4, or approve a file-specific rebase plan for
+  `ConfigUsers.tsx`.
+- B5 depends on B4 identity/storage. B4, B5, and B6 production migrations never
+  overlap.
 
 ## 5. B1 — socket role exclusivity (#281)
 
@@ -120,12 +242,35 @@ indexes and deliver conflicting personalized status payloads.
 - Add shared `SocketRole = "manager" | "player" | "display"`.
 - Build role-scoped web socket instances; role changes disconnect the old
   connection and create a fresh handshake.
-- Carry verified role in Rust handler context.
-- Reject handler events when verified connection role mismatches handler role.
-- Add atomic registry transition/exclusivity API.
+- Treat the handshake `SocketRole` only as an untrusted **claimed role**. It is
+  never sufficient for authorization or registry ownership.
+- A manager claim becomes verified only after manager/session-token
+  authentication. A player claim becomes verified only after an authorized
+  game join/rejoin. A display claim becomes verified only after an authorized
+  display/satellite join.
+- Carry the verified role and verified registry ownership in Rust handler
+  context. Reject all role-specific events before verification and whenever
+  verified role or ownership mismatches the handler.
+- Add an atomic registry transition/exclusivity API. It authorizes first, then
+  releases the prior claim and commits the new claim as one transition; an
+  unverified claim never mutates role indexes.
 - Update manager auth, player login, display join, eviction, and cleanup paths.
+- On failed authentication, denied join, disconnect during transition, or
+  registry-commit failure, roll back the tentative claim, restore the still
+  valid prior claim where safe, remove listeners/index entries created by the
+  failed attempt, and return one explicit denial/error state.
 - Remove listeners explicitly on route/provider teardown.
 - Never fix conflict by deleting an unrelated player slot.
+
+Required transition matrix:
+
+| From | Claimed destination | Authorization | Atomic result |
+| --- | --- | --- | --- |
+| unverified | manager | Valid manager/session token | Verified manager ownership |
+| unverified | player | Valid game plus join/rejoin credential | Verified player ownership |
+| unverified | display | Valid display/satellite join credential | Verified display ownership |
+| any verified role | another role | Fresh destination authorization | Old claim removed and new claim committed atomically |
+| any | any | Missing/invalid credential or failed commit | No new ownership; rollback/cleanup is complete |
 
 ### 5.3 Required tests
 
@@ -134,6 +279,10 @@ indexes and deliver conflicting personalized status payloads.
 - Manager reconnect after same-tab player use succeeds.
 - Unrelated player remains connected.
 - Role-mismatched events are rejected.
+- A self-asserted manager/display role without its required token/join
+  authorization is rejected before registry mutation.
+- Failed authorization and forced registry failure leave no dual, orphan, or
+  leaked listener state and preserve an independently valid prior session.
 - Web role switch creates fresh handshake and no listener leak.
 - Stagehand: create game → same-tab player join → leave → manager takeover;
   manager controls visible and stale player avatar absent.
@@ -141,7 +290,9 @@ indexes and deliver conflicting personalized status payloads.
 ### 5.4 Ordering
 
 ```text
-281-SDD/AGY states
+socket-role-exclusivity-sdd.md
+  -> independent security/architecture review
+  -> socket-role-transition-states.md
   -> shared role contract
   -> registry and handler RED tests
   -> Rust implementation
@@ -151,6 +302,13 @@ indexes and deliver conflicting personalized status payloads.
   -> security review
   -> Stagehand and full gates
 ```
+
+`docs/design/socket-role-transition-states.md` is the canonical UI artifact.
+The earlier proposed alias `same-tab-role-switch-states.md` is superseded and
+must not be created. The distinct backend/security predecessor is
+`docs/design/socket-role-exclusivity-sdd.md`; implementation WPs are generated
+only after its independent security and architecture review accepts the
+handshake, transition, rollback, listener-ownership, and abuse contracts.
 
 ## 6. B2 — bounded configuration and recovery
 
@@ -190,11 +348,13 @@ Each feature receives its own focused SDD and WP graph.
 - Persist preset identifier, never arbitrary remote media URL.
 - Respect reduced-motion/audio preferences and explicit user playback action.
 
-### 6.6 PNG/PDF result export
+### 6.6 PNG/PDF and native XLSX result export
 
 - Build deterministic sanitized export document from existing result model.
 - Prevent formula/markup injection and external-resource loading.
-- Keep CSV export unchanged.
+- Keep CSV export unchanged. Native XLSX is accepted as a separate bounded
+  implementation slice with cell-type/formula-injection, sheet-name, size, and
+  deterministic serialization tests.
 - PNG/PDF generation must be reproducible in browser and production runtime.
 
 ### 6.7 Shared configuration contract
@@ -208,6 +368,11 @@ Configuration additions must align:
 - manager UI and six locales.
 
 One writer per shared contract file per wave.
+
+The participant-cap, idle-timeout, and question-shuffle trains run strictly in
+that order. Each gets its own architecture SDD, AGY UI-state spec, independent
+review, and file-declared implementation graph; freezing a shared convention
+does not authorize their parallel implementation.
 
 ## 7. B3 — live-mode vertical slices
 
@@ -234,6 +399,19 @@ mode SDD + AGY design
  -> moderation/privacy review
  -> browser/E2E/full gates
 ```
+
+Before any implementation graph is derived, each mode gets its own
+contract-first SDD, AGY artifact, and independent architecture/security/design
+review. Word Cloud and Confidence Rating may continue as bounded feature trains
+only after acceptance. Brainstorm, Q&A, and Micro-Lessons **must stop and
+escalate to separately budgeted missions** unless their reviewed SDD proves a
+small MVP below the applicable moderation, abuse, retention, storage, media
+hosting, and media-lifecycle thresholds and explicitly lists every deferred
+behavior. Accepted conventions do not waive this stop.
+
+Because all five modes share question unions/validators, protocol/reveal,
+editor switches, player/manager answer rendering, snapshots, and six locales,
+only one mode runs from contract through production at a time.
 
 ### 7.1 Free-text requirements
 
@@ -346,8 +524,19 @@ Required controls:
 - endpoint authorization tests;
 - security audit before merge.
 
+B4 must provide a mission disable/read-only switch for new longitudinal writes
+and challenge creation while retaining authorized export/delete and existing
+gameplay. Before enablement, a separate rollback-drill WP exercises the switch,
+migration down/forward or documented forward-fix path, authorization after
+rollback, and row-count/ownership/deletion integrity checks.
+
 Stop mission if identity, ownership, deletion, or retention semantics remain
 ambiguous.
+
+#191 Users must finish before B4 changes `ConfigUsers.tsx`. If that cannot
+happen, B4's charter must name an explicit base SHA, rebase owner, conflict
+files, characterization gates, and merge order before any overlapping WP is
+issued.
 
 ## 10. B5 — deterministic replay and offline mission
 
@@ -377,9 +566,30 @@ event-log SDD
 Stop mission on nondeterministic replay, unbounded storage, silent conflict
 loss, or incompatible snapshot migration.
 
+B5 cannot begin implementation before B4 has accepted and merged learner
+identity, ownership, storage, retention, and deletion contracts. B5 may not
+deploy a schema/storage migration concurrently with B4 or B6.
+
+Required testable controls:
+
+- a persisted event/replay storage cap that rejects or evicts only according to
+  the accepted retention contract;
+- fail-closed replay-version rejection for unsupported schema versions;
+- an operational offline-sync disable switch that leaves online play intact;
+- server-enforced rate limits for replay, challenge, and sync endpoints.
+
+Before enabling each B5 slice in production, a separate rollback-drill WP must
+exercise its switch, verify no new incompatible writes occur while disabled,
+verify the prior online/read path remains healthy, and record restore commands,
+deployed SHA, health evidence, and data-integrity checks.
+
 ## 11. B6 — document ingestion and AI extraction mission
 
-Refresh `content-import-sdd.md` before implementation.
+Only PPTX and PDF are in the parser mission scope. Refresh
+`docs/design/content-import-sdd.md` before parser design or implementation in a
+dedicated docs WP. The existing file is about 285 LOC; the refresh must remain
+`<150` changed LOC or be replaced by a new versioned SDD, followed by an
+independent security/architecture review.
 
 Required pipeline:
 
@@ -407,6 +617,23 @@ Controls:
 Stop mission on parser escape, unbounded resource use, missing review boundary,
 or undefined provider/data-retention policy.
 
+B6 receives its own parser/AI disable switch, upload and job rate limits, and
+resource caps. A separate production rollback-drill WP must prove that disabling
+ingestion stops new parse/extract jobs, cleans or safely preserves in-flight
+temporary data per contract, leaves existing quiz editing healthy, and supports
+re-enable without duplicate publication. Its migration/deployment window may
+not overlap B4/B5.
+
+### 11.1 Version History and Rollback train
+
+Version History is pending, not silently dropped and not part of B5 replay. It
+gets a dedicated bounded content-versioning SDD and independent review after B3
+and before migration-heavy B4/B5 deployment. The SDD must define immutable quiz
+revisions, ownership/authorization, retention and storage caps, optimistic
+concurrency, restore-as-a-new-version, migration compatibility, audit receipts,
+and rollback tests. No direct implementation WP may be derived from this
+umbrella before that SDD is accepted.
+
 ## 12. AGY design-spec contract
 
 AGY Gemini 3.6 Flash is design-spec author, not production implementer.
@@ -414,13 +641,20 @@ AGY Gemini 3.6 Flash is design-spec author, not production implementer.
 Every non-exempt UI slice gets `docs/design/<slug>.md` containing:
 
 - purpose and user flow;
-- semantic markup outline;
+- annotated semantic markup and wireframes;
 - mapped token inventory;
-- existing component inventory and generator command;
+- exact production consumers and preserved integration points;
+- exact dependencies, production predecessor, and production successor;
+- existing component inventory and exact generator command
+  (`pnpm g:console|menu|question|display|player`);
 - default, loading, empty, error, success, disabled, and submitted states;
 - responsive wireframes for 375×667, 390×844, and 440×956 where player-facing;
+- desktop behavior for manager/editor/results surfaces and display behavior for
+  every kiosk consumer, including acceptance at 1920×1080 and 3840×2160;
 - keyboard, focus, screen-reader, reduced-motion, and contrast behavior;
-- stable test IDs;
+- minimum 44px primary interaction targets and no state conveyed by color alone;
+- locale/copy inventory for `de`, `en`, `es`, `fr`, `it`, and `zh`;
+- proposed and preserved stable test IDs;
 - explicit forbidden patterns;
 - browser acceptance checklist.
 
@@ -466,8 +700,11 @@ dispatch.
 Each WP must include:
 
 - stable `wp_id`, task class, assigned lane, model, and fallback chain;
-- one owned file where practical and under 150 changed LOC;
-- explicit contract and wiring carve-outs when shape changes require them;
+- exactly one declared `primary_file` for a normal implementation WP;
+- explicit predeclared `contract_files` and `wiring_files` arrays, including
+  empty arrays when none apply;
+- `<150` changed LOC for new files and focused behavioral diffs to existing
+  large files;
 - dependencies and parallel group;
 - RED test or verification predecessor;
 - exact acceptance commands;
@@ -480,12 +717,18 @@ Split tests, implementation, locales, docs, review, integration, deployment,
 and production validation into separate WPs. New UI components are scaffolded
 in their own generator WP before test/implementation WPs.
 
-Contract/wiring carve-out is bounded to at most two wiring files and roughly 30
-changed wiring LOC. Wiring may register/import/connect the primary change but
-may not contain independent behavior, UI, tests, locale copy, or refactoring.
-Exceeding either bound creates another WP. Generator WPs may own only generated
-component plus generated test scaffold; hardening and implementation remain
-later WPs.
+Only two exceptions exist:
+
+1. A predeclared contract/wiring carve-out may add at most two `wiring_files`
+   and `<30` changed wiring LOC. Wiring may register/import/connect the primary
+   change but may not contain independent behavior, UI, tests, locale copy, or
+   refactoring. Exceeding either bound creates another WP.
+2. A project-generator scaffold WP may own only the generated component and its
+   generated test scaffold. Test hardening and implementation remain later WPs.
+
+Any two WPs that share a `contract_file` or `wiring_file` are serialized even
+when their `primary_file` values differ. Tests, locales, docs, review,
+integration, deployment, and production validation remain separate WPs.
 
 B4–B6 must first yield mission SDDs. Workers must not flatten them into giant
 implementation WPs.
@@ -583,7 +826,14 @@ Registry `lastCommit` must equal final `origin/main`.
 - Keep migrations backward-compatible until production validation completes.
 - Feature/config additions need safe defaults preserving current behavior.
 - Disable new UI entry points before destructive data rollback.
-- Parser/AI and offline/replay missions require kill switches.
+- B4 requires a longitudinal-write/challenge-create disable or read-only switch.
+- B5 requires event-storage caps, replay-version rejection, offline-sync
+  disable, and replay/challenge/sync rate limits.
+- B6 requires parser and AI-extractor disable switches plus upload/job rate and
+  resource limits.
+- Each mission needs a pre-enable production rollback-drill WP with recorded
+  commands, deployed SHA, health checks, integrity assertions, switch-off
+  behavior, and successful safe re-enable or forward-fix evidence.
 - Never delete worktrees/branches until PR, deployment, and evidence are
   complete.
 
@@ -593,7 +843,9 @@ Program is complete when:
 
 - stale work is closed with receipts and never rebuilt;
 - #191, #281, #302, #319, and #320 are merged, deployed, verified, and closed;
-- #391 accurately marks shipped, partial, completed, and excluded items;
+- every row of the #391 SHOULD/NICE/SKIP matrix carries either production
+  evidence or an explicit accepted reclassification/supersession receipt, and
+  B0's four truth docs plus #391 comment match those receipts;
 - every residual SHOULD/NICE item is either delivered or has a completed,
   accepted mission result with no remaining implementation node;
 - every UI slice has an accepted AGY design artifact or documented tiny/no-
