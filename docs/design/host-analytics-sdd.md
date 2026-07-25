@@ -18,15 +18,14 @@ This SDD consolidates six backlog features spanning game configuration (Streaks/
 
 Award bonus points for consecutive correct answers within a single game session.
 
-### Current State
+### Current State & Shipped Truth
 
-- **Partial:** Streak tracking infrastructure exists:
+- **SHIPPED:** Streak tracking and bonus-point scoring are fully integrated:
   - `ShowResultData.streak?: number` (type definition in `common/src/types/game/status.ts`)
   - `ShowResultData.streakBonus?: boolean` (visual flag)
-  - Achievement thresholds exist: `streak_3`, `streak_5`, `streak_10` in `common/src/achievements.ts`
-  - Client displays streak badges on leaderboard (flame emoji `&#128293;` with count)
-
-- **Gap:** Bonus-point scoring is **not** computed. Server populates `streak` count but never applies a multiplier or bonus to base points.
+  - `STREAK_STEP` multiplier and hard cap of 200 points applied in scoring engine.
+  - Achievements: `streak_3`, `streak_5`, `streak_10` in `common/src/achievements.ts`.
+  - Client displays flame badge and streak bonus breakdown on leaderboard & results CSV.
 
 ### Design
 
