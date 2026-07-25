@@ -45,9 +45,13 @@ jobs:
       - name: Check manager design tokens (blocking)
         run: bash scripts/check-manager-tokens.sh
 
-      - name: Design-Token-Lint (design-lint, warn-only)
-        continue-on-error: true
-        run: '[ -x /usr/local/bin/design-lint ] && /usr/local/bin/design-lint --changed-only origin/main . || echo "design-lint nicht im Runner — skip"'
+      - name: Design-Token-Lint (design-lint)
+        run: |
+          if [ ! -x /usr/local/bin/design-lint ]; then
+            echo "::warning::design-lint nicht im Runner — skip"
+            exit 0
+          fi
+          /usr/local/bin/design-lint --changed-only origin/main .
 
       - name: Lint (warn-only)
         continue-on-error: true
