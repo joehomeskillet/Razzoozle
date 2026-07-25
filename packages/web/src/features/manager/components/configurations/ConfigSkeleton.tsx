@@ -1,16 +1,9 @@
-import { EVENTS } from "@razzoozle/common/constants"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
-import {
-  getClientId,
-  useEvent,
-  useSocket,
-} from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   SectionCard,
   SubGroup,
 } from "@razzoozle/web/features/manager/components/console"
-import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import {
   AlertTriangle,
   Code2,
@@ -21,433 +14,228 @@ import {
   Upload,
 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { type ChangeEvent, useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-// The HTTP header the manager-gated skeleton endpoints expect (frozen name in
-// docs/design/skeleton-system.md §8). The value is the durable clientId the
-// manager's socket session authenticated with — the server checks it against
-// the logged-manager set (manager.isLoggedClientId), so this is reload-safe and
-// the password never leaves the login form.
-const MANAGER_TOKEN_HEADER = "X-Manager-Token"
-
-// Client-side guard mirroring the server's per-asset 512 KB cap (§8.2) so we
-// reject oversized text before it rides the socket. Second line of defence —
-// the server validates authoritatively.
-const MAX_ASSET_BYTES = 512 * 1024
+import { useSkeletonDrafts } from "./skeleton/useSkeletonDrafts"
+import { useSkeletonTransfer } from "./skeleton/useSkeletonTransfer"
 
 const ConfigSkeleton = () => {
-  const { socket } = useSocket()
-  const managerToken = getClientId()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
-  // The server writes skeleton.<kind> and flips custom<Kind>Enabled together, and
-  // reset removes both files — so an asset file exists on disk iff its enable flag
-  // is set. We gate the prefill fetch on the flag (below) to avoid requesting a
-  // disabled/absent asset, which would 404 and log a console error.
-  const { theme } = useThemeStore()
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const {
+    cssDraft,
+    setCssDraft,
+    jsDraft,
+    setJsDraft,
+    savingKind,
+    resetting,
+    save,
+    reset,
+  } = useSkeletonDrafts()
 
-  const [cssDraft, setCssDraft] = useState("")
-  const [jsDraft, setJsDraft] = useState("")
-  // Which save is awaiting a SET_SKELETON_ASSET_SUCCESS / THEME_ERROR, so the
-  // shared success/error listeners can clear the right pending state.
-  const [savingKind, setSavingKind] = useState<"css" | "js" | null>(null)
-  // Mirror of savingKind for the shared THEME_ERROR / SUCCESS listeners, which
-  // capture state at registration time and would otherwise read a stale value
-  // (leaving the Save button stuck disabled). Mirrors ConfigTheme's pendingActionRef.
-  const savingKindRef = useRef<"css" | "js" | null>(null)
-  const [downloading, setDownloading] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [resetting, setResetting] = useState(false)
-
-  // Prefill each editor from the live, served file — but only when its enable
-  // flag is set, since a disabled asset has no file on disk and fetching it would
-  // 404 (harmless to the logic, but it logs a console error). Depending on the
-  // flags re-runs the prefill if the theme loads or an asset is first enabled
-  // after mount.
-  useEffect(() => {
-    let cancelled = false
-
-    const load = async (path: string, set: (value: string) => void) => {
-      try {
-        const res = await fetch(path, { cache: "no-store" })
-        if (!res.ok) {
-          return
-        }
-        const text = await res.text()
-        if (!cancelled) {
-          set(text)
-        }
-      } catch {
-        // Network/parse failure — keep the empty editor; the manager can still
-        // author from scratch.
-      }
-    }
-
-    if (theme.customCssEnabled) void load("/theme/skeleton.css", setCssDraft)
-    if (theme.customJsEnabled) void load("/theme/skeleton.js", setJsDraft)
-
-    return () => {
-      cancelled = true
-    }
-  }, [theme.customCssEnabled, theme.customJsEnabled])
-
-  useEvent(EVENTS.MANAGER.SET_SKELETON_ASSET_SUCCESS, ({ kind }) => {
-    savingKindRef.current = null
-    setSavingKind(null)
-    toast.success(
-      kind === "css"
-        ? t("manager:skeleton.toast.cssSaved")
-        : t("manager:skeleton.toast.jsSaved"),
-    )
+  const {
+    fileInputRef,
+    downloading,
+    importing,
+    downloadPackage,
+    handleFileChange,
+    triggerFileInput,
+  } = useSkeletonTransfer(() => {
+    // Reload drafts on import
+    window.location.reload()
   })
 
-  useEvent(EVENTS.MANAGER.RESET_SKELETON_SUCCESS, () => {
-    setResetting(false)
-    setCssDraft("")
-    setJsDraft("")
-    toast.success(
-      t("manager:skeleton.toast.reset"),
-    )
-  })
-
-  useEvent(EVENTS.MANAGER.THEME_ERROR, (message) => {
-    setResetting(false)
-    if (savingKindRef.current) {
-      savingKindRef.current = null
-      setSavingKind(null)
-    }
-    toast.error(message)
-  })
-
-  // Download the skeleton ZIP. A plain <a download> can't set headers, so we
-  // fetch with the manager token, then trigger a download from an object URL.
-  const handleDownload = async () => {
-    setDownloading(true)
-
-    try {
-      const res = await fetch("/api/skeleton/export", {
-        headers: { [MANAGER_TOKEN_HEADER]: managerToken },
-      })
-
-      if (!res.ok) {
-        let message = `${res.status}`
-        try {
-          const body = await res.json()
-          if (body && typeof body.error === "string") {
-            message = body.error
-          }
-        } catch {
-          // Non-JSON error body — fall back to the status code.
-        }
-        toast.error(
-          t("manager:skeleton.toast.exportFailed", { message }),
-        )
-
-        return
-      }
-
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = "razzoozle-skeleton.zip"
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch {
-      toast.error(
-        t("manager:skeleton.toast.exportFailed", {
-          message: t("common:networkError"),
-        }),
-      )
-    } finally {
-      setDownloading(false)
-    }
-  }
-
-  // Upload a skeleton ZIP. Posts the raw file bytes with the manager token.
-  // Clients live-update via the MANAGER.THEME broadcast the server emits.
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    // Reset the input so re-selecting the same file fires onChange again.
-    e.target.value = ""
-
-    if (!file) {
-      return
-    }
-
-    setImporting(true)
-
-    try {
-      const res = await fetch("/api/skeleton/import", {
-        method: "POST",
-        headers: {
-          [MANAGER_TOKEN_HEADER]: managerToken,
-          "Content-Type": "application/zip",
-        },
-        body: file,
-      })
-
-      let body: { ok?: boolean; error?: unknown } | null = null
-      try {
-        body = await res.json()
-      } catch {
-        body = null
-      }
-
-      if (!res.ok || !body?.ok) {
-        const message =
-          body && typeof body.error === "string" ? body.error : `${res.status}`
-        toast.error(
-          t("manager:skeleton.toast.importFailed", { message }),
-        )
-
-        return
-      }
-
-      toast.success(
-        t("manager:skeleton.toast.imported"),
-      )
-    } catch {
-      toast.error(
-        t("manager:skeleton.toast.importFailed", {
-          message: t("common:networkError"),
-        }),
-      )
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  const handleSaveAsset = (kind: "css" | "js") => () => {
-    const content = kind === "css" ? cssDraft : jsDraft
-
-    if (new Blob([content]).size > MAX_ASSET_BYTES) {
-      toast.error(
-        t("manager:skeleton.toast.tooLarge"),
-      )
-
-      return
-    }
-
-    savingKindRef.current = kind
-    setSavingKind(kind)
-    socket.emit(EVENTS.MANAGER.SET_SKELETON_ASSET, { kind, content })
-  }
-
-  const handleReset = () => {
-    setResetting(true)
-    socket.emit(EVENTS.MANAGER.RESET_SKELETON)
-  }
-
-  const copyToClipboard = async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value)
-      toast.success(t("common:copied"))
-    } catch {
-      toast.error(t("common:networkError"))
-    }
-  }
+  // Stored-XSS confirmation dialog for JS saving
+  const [confirmingJsSave, setConfirmingJsSave] = useState(false)
 
   return (
-    <motion.div
-      className="flex flex-1 flex-col"
-      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={
-        reducedMotion ? undefined : { duration: 0.3, ease: "easeOut" }
-      }
-    >
-      <div className="flex flex-col gap-6 pb-6">
-        {/* ── Import / Export / Reset (danger-zone) ────────────────── */}
-        <SectionCard
-          icon={<Download className="size-5" />}
-          title={t("manager:skeleton.transfer.title")}
-          description={t("manager:skeleton.transfer.description")}
-        >
-          <div className="border-l-4 border-[var(--state-wrong-soft)] pl-4">
-            <p className="mb-1 text-sm font-semibold text-[var(--state-wrong)]">
-              {t("manager:dev.danger.title")}
-            </p>
-            <p className="mb-3 text-sm text-[var(--ink-subtle)]">
-              {t("manager:dev.danger.description")}
-            </p>
-            <SubGroup>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={downloading}
-                >
-                  <Download className="size-4" aria-hidden />
-                  {t("manager:skeleton.transfer.download")}
-                </Button>
+    <div className="flex flex-col gap-6">
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".zip"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
-                {/* Import overwrites live theme assets — confirm first. */}
-                <AlertDialog
-                  trigger={
-                    <Button
-                      variant="secondary"
-                      type="button"
-                      disabled={importing}
-                    >
-                      <Upload className="size-4" aria-hidden />
-                      {t("manager:skeleton.transfer.upload")}
-                    </Button>
-                  }
-                  title={t("manager:skeleton.import.title")}
-                  description={t("manager:skeleton.import.confirm")}
-                  confirmLabel={t("manager:skeleton.import.confirmLabel")}
-                  onConfirm={() => fileInputRef.current?.click()}
-                />
+      {/* CSS Editor Section */}
+      <SectionCard
+        icon={Code2}
+        title={t("manager:skeleton.cssTitle", { defaultValue: "Custom CSS Skeleton" })}
+        description={t("manager:skeleton.cssDescription", {
+          defaultValue: "Passe das globale Stylesheet an. CSS wird auf allen Client-Seiten injiziert.",
+        })}
+      >
+        <div className="flex flex-col gap-4">
+          <SubGroup label={t("manager:skeleton.cssLabel", { defaultValue: "CSS Code" })}>
+            <textarea
+              value={cssDraft}
+              onChange={(e) => setCssDraft(e.target.value)}
+              placeholder="/* Custom CSS */\nbody {\n  --color-primary: #7c3aed;\n}"
+              rows={10}
+              className="w-full rounded-lg border border-hairline bg-surface-2 p-3 font-mono text-sm text-ink focus:border-brand-primary focus:outline-none"
+            />
+          </SubGroup>
 
-                <AlertDialog
-                  trigger={
-                    <Button
-                      variant="secondary"
-                      type="button"
-                      disabled={resetting}
-                    >
-                      <RotateCcw className="size-4" aria-hidden />
-                      {t("manager:skeleton.transfer.reset")}
-                    </Button>
-                  }
-                  title={t("manager:skeleton.reset.title")}
-                  description={t("manager:skeleton.reset.confirm")}
-                  confirmLabel={t("manager:skeleton.reset.confirmLabel")}
-                  onConfirm={handleReset}
-                />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".zip,application/zip"
-                  className="hidden"
-                  onChange={handleUpload}
-                />
-              </div>
-            </SubGroup>
-          </div>
-        </SectionCard>
-
-        {/* ── CSS editor ───────────────────────────────────────────── */}
-        <SectionCard
-          icon={<FileCode className="size-5" />}
-          title={t("manager:skeleton.css.title")}
-          description={t("manager:skeleton.css.description")}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <label htmlFor="skeleton-css" className="sr-only">
-              {t("manager:skeleton.css.title")}
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                void copyToClipboard(cssDraft)
-              }}
-              aria-label={t("common:copy")}
-              title={t("common:copy")}
-              className="ml-auto inline-flex size-9 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-            >
-              <Copy className="size-4" aria-hidden />
-            </button>
-          </div>
-          <textarea
-            id="skeleton-css"
-            value={cssDraft}
-            onChange={(e) => setCssDraft(e.target.value)}
-            spellCheck={false}
-            rows={12}
-            placeholder={t("manager:skeleton.css.placeholder")}
-            className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-          />
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
             <Button
-              variant="primary"
               type="button"
-              onClick={handleSaveAsset("css")}
-              disabled={savingKind === "css"}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(cssDraft)
+                toast.success(t("manager:skeleton.toast.copied"))
+              }}
             >
-              {t("manager:skeleton.css.save")}
+              <Copy className="mr-2 h-4 w-4" />
+              {t("manager:common.copy", { defaultValue: "Kopieren" })}
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={savingKind === "css"}
+              onClick={() => save("css")}
+            >
+              {savingKind === "css"
+                ? t("manager:common.saving", { defaultValue: "Speichern..." })
+                : t("manager:common.save", { defaultValue: "Speichern" })}
             </Button>
           </div>
-        </SectionCard>
+        </div>
+      </SectionCard>
 
-        {/* ── JS editor (DANGER) ───────────────────────────────────── */}
-        <SectionCard
-          icon={<Code2 className="size-5" />}
-          title={t("manager:skeleton.js.title")}
-          description={t("manager:skeleton.js.description")}
-        >
-          <div className="border-l-4 border-[var(--state-wrong-soft)] space-y-3 pl-4">
-            <p className="text-sm font-semibold text-[var(--state-wrong)]">
-              {t("manager:dev.danger.title")}
-            </p>
-            {/* Prominent red warning — stored XSS by design (contract §1). */}
-            <div
-              role="alert"
-              className="flex items-start gap-2.5 rounded-lg border border-[var(--status-offline-text)]/30 bg-status-offline-bg p-3 text-sm font-medium text-status-offline-text"
-            >
-              <AlertTriangle
-                className="mt-0.5 size-5 shrink-0 text-[var(--state-wrong)]"
-                aria-hidden
-              />
-              <span>
-                {t("manager:skeleton.js.warning")}
-              </span>
-            </div>
+      {/* JS Editor Section */}
+      <SectionCard
+        icon={FileCode}
+        title={t("manager:skeleton.jsTitle", { defaultValue: "Custom JS Skeleton" })}
+        description={t("manager:skeleton.jsDescription", {
+          defaultValue: "Füge benutzerdefiniertes JavaScript hinzu. ACHTUNG: JS wird direkt ausgeführt.",
+        })}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 rounded-lg bg-status-pending-bg p-3 text-sm text-status-pending-text">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <span>
+              {t("manager:skeleton.jsWarning", {
+                defaultValue: "Sicherheitshinweis: Führe nur vertrauenswürdigen Code aus. Bösartiges Skript kann Sitzungen kompromittieren.",
+              })}
+            </span>
+          </div>
 
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  void copyToClipboard(jsDraft)
-                }}
-                aria-label={t("common:copy")}
-                title={t("common:copy")}
-                className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--ink-subtle)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              >
-                <Copy className="size-4" aria-hidden />
-              </button>
-            </div>
-            <label htmlFor="skeleton-js" className="sr-only">
-              {t("manager:skeleton.js.title")}
-            </label>
+          <SubGroup label={t("manager:skeleton.jsLabel", { defaultValue: "JavaScript Code" })}>
             <textarea
-              id="skeleton-js"
               value={jsDraft}
               onChange={(e) => setJsDraft(e.target.value)}
-              spellCheck={false}
-              rows={12}
-              placeholder={t("manager:skeleton.js.placeholder")}
-              className="min-h-48 w-full resize-y rounded-lg bg-[var(--ink)] p-3 font-mono text-sm text-[var(--surface-3)] outline-1 -outline-offset-1 outline-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+              placeholder="// Custom JS\nconsole.log('Skeleton loaded');"
+              rows={10}
+              className="w-full rounded-lg border border-hairline bg-surface-2 p-3 font-mono text-sm text-ink focus:border-brand-primary focus:outline-none"
             />
-            <div className="flex justify-end">
-              <AlertDialog
-                trigger={
-                  <Button
-                    variant="danger"
-                    type="button"
-                    disabled={savingKind === "js"}
-                  >
-                    {t("manager:skeleton.js.save")}
-                  </Button>
-                }
-                title={t("manager:skeleton.js.confirmTitle")}
-                description={t("manager:skeleton.js.confirm")}
-                confirmLabel={t("manager:skeleton.js.save")}
-                onConfirm={handleSaveAsset("js")}
-              />
-            </div>
+          </SubGroup>
+
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(jsDraft)
+                toast.success(t("manager:skeleton.toast.copied"))
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              {t("manager:common.copy", { defaultValue: "Kopieren" })}
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={savingKind === "js"}
+              onClick={() => setConfirmingJsSave(true)}
+            >
+              {savingKind === "js"
+                ? t("manager:common.saving", { defaultValue: "Speichern..." })
+                : t("manager:common.save", { defaultValue: "Speichern" })}
+            </Button>
           </div>
-        </SectionCard>
-      </div>
-    </motion.div>
+        </div>
+      </SectionCard>
+
+      {/* Transfer & Reset Section */}
+      <SectionCard
+        icon={Download}
+        title={t("manager:skeleton.transferTitle", { defaultValue: "Import & Export" })}
+        description={t("manager:skeleton.transferDescription", {
+          defaultValue: "Sichere dein Theme-Paket als ZIP oder importiere ein bestehendes Skeleton-Paket.",
+        })}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={downloading}
+              onClick={downloadPackage}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {downloading
+                ? t("manager:skeleton.exporting", { defaultValue: "Exportiere..." })
+                : t("manager:skeleton.exportButton", { defaultValue: "Export (ZIP)" })}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={importing}
+              onClick={triggerFileInput}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {importing
+                ? t("manager:skeleton.importing", { defaultValue: "Importiere..." })
+                : t("manager:skeleton.importButton", { defaultValue: "Import (ZIP)" })}
+            </Button>
+          </div>
+
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={resetting}
+            onClick={reset}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {resetting
+              ? t("manager:skeleton.resetting", { defaultValue: "Zurücksetzen..." })
+              : t("manager:skeleton.resetButton", { defaultValue: "Alle Skripte zurücksetzen" })}
+          </Button>
+        </div>
+      </SectionCard>
+
+      {/* Stored-XSS Warning Confirmation Dialog */}
+      <AlertDialog
+        open={confirmingJsSave}
+        onOpenChange={(open) => !open && setConfirmingJsSave(false)}
+        title={t("manager:skeleton.jsConfirmTitle", { defaultValue: "JavaScript-Code speichern" })}
+        description={t("manager:skeleton.jsConfirmDescription", {
+          defaultValue: "Der eingegebene JavaScript-Code wird im Browser aller Spieler ausgeführt. Möchtest du fortfahren?",
+        })}
+        confirmText={t("manager:common.confirm", { defaultValue: "Bestätigen & Speichern" })}
+        cancelText={t("manager:common.cancel", { defaultValue: "Abbrechen" })}
+        variant="destructive"
+        onConfirm={() => {
+          setConfirmingJsSave(false)
+          save("js")
+        }}
+      />
+    </div>
   )
 }
 
