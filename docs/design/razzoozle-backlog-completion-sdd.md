@@ -197,10 +197,10 @@ B0 tracker truth + canonical SDD
 
 | Wave | Allowed work and hard ordering |
 | --- | --- |
-| 0 | Parallel docs/tests only: four B0 truth docs; #191 Users/Skeleton SDDs; #281 SDD plus AGY states; #320 AGY spec; #319 RED test; #302 CI/hook; at most one B2/B3 discovery SDD |
-| 1 | Gate/merge #302; implement file-disjoint #319/#320 slices; accept #191/#281 reviews; browser profiles/ports remain serialized |
+| 0 | Parallel docs/tests only: four B0 truth docs; #191 Users/Skeleton SDDs; #281 exclusivity SDD, then AGY transition-state spec, then one joint artifact security/architecture review per §5.4; #320 AGY spec; #319 RED test; #302 CI/hook; at most one B2/B3 discovery SDD |
+| 1 | Gate/merge #302; implement file-disjoint #319/#320 slices; accept #191 artifact reviews; browser profiles/ports remain serialized |
 | 2 | #281 common contract, registry, and role RED tests; #191 Users and Skeleton may run in parallel with their own internal wiring serialization |
-| 3 | #281 Rust/web handlers, security review, same-tab Stagehand, merge and deploy; B1 production acceptance is a hard predecessor for recovery and any B2 registry/login/snapshot slice |
+| 3 | #281 Rust/web handlers, implementation security review, same-tab Stagehand, merge and deploy; B1 production acceptance is a hard predecessor for recovery and any B2 registry/login/snapshot slice |
 | 4 | B2 config trains strictly `participant cap -> idle timeout -> question shuffle`; recovery only after B1; music/export code may use disjoint lanes but browser/token gates serialize |
 | 5 | B3 modes one complete end-to-end train at a time |
 | 6 | Accept the bounded Version History SDD; launch B4 mission; launch B5 only after B4 identity/storage contracts; B6 is separately budgeted and may discover earlier, but Version History/B4/B5/B6 production migrations cannot overlap |
@@ -323,14 +323,14 @@ Compatibility for raw Socket.IO clients is frozen:
 ```text
 socket-role-exclusivity-sdd.md
   -> socket-role-transition-states.md
-  -> joint independent security/architecture review of both artifacts
+  -> joint independent artifact security/architecture review of both documents
   -> shared role contract
   -> registry and handler RED tests
   -> Rust implementation
   -> web provider RED tests
   -> web provider implementation
   -> route/session wiring
-  -> security review
+  -> implementation security review
   -> Stagehand and full gates
 ```
 
@@ -339,7 +339,7 @@ The earlier proposed alias `same-tab-role-switch-states.md` is superseded and
 must not be created. The distinct backend/security predecessor is
 `docs/design/socket-role-exclusivity-sdd.md`; implementation WPs are generated
 only after AGY finishes the transition-state artifact and an independent joint
-security and architecture review accepts both documents, including handshake,
+artifact security/architecture review accepts both documents, including handshake,
 capability, transition, rollback, listener-ownership, raw-client compatibility,
 and abuse contracts.
 
@@ -434,8 +434,8 @@ mode SDD + AGY design
 ```
 
 Before any implementation graph is derived, each mode gets its own
-contract-first SDD, AGY artifact, and independent architecture/security/design
-review. Word Cloud and Confidence Rating may continue as bounded feature trains
+contract-first SDD, AGY artifact, an independent artifact security/architecture
+review, and a design review. Word Cloud and Confidence Rating may continue as bounded feature trains
 only after acceptance. Brainstorm, Q&A, and Micro-Lessons **must stop and
 escalate to separately budgeted missions** unless their reviewed SDD proves a
 small MVP below the applicable moderation, abuse, retention, storage, media
@@ -622,7 +622,7 @@ Only PPTX and PDF are in the parser mission scope. Refresh
 `docs/design/content-import-sdd.md` before parser design or implementation in a
 dedicated docs WP. The existing file is about 285 LOC; the refresh must remain
 `<150` changed LOC or be replaced by a new versioned SDD, followed by an
-independent security/architecture review.
+independent artifact security/architecture review.
 
 Required pipeline:
 
@@ -830,7 +830,8 @@ token-gate output.
 - GitNexus `detect_changes`.
 - Diff and owned-file inspection by orchestrator.
 - `gitleaks`/secret scan.
-- Independent code, test, product/design, and security review as applicable.
+- Independent code, test, product/design, and implementation security review as
+  applicable.
 - `claude-wp-verify --branch <branch> --base main`.
 
 ## 17. Integration, mirror, deploy, and production
