@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -23,7 +22,6 @@ import { useSkeletonTransfer } from "./skeleton/useSkeletonTransfer"
 
 const ConfigSkeleton = () => {
   const { t } = useTranslation()
-  const reducedMotion = useReducedMotion()
 
   const {
     cssDraft,
@@ -44,16 +42,13 @@ const ConfigSkeleton = () => {
     handleFileChange,
     triggerFileInput,
   } = useSkeletonTransfer(() => {
-    // Reload drafts on import
     window.location.reload()
   })
 
-  // Stored-XSS confirmation dialog for JS saving
   const [confirmingJsSave, setConfirmingJsSave] = useState(false)
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Hidden file input for import */}
       <input
         ref={fileInputRef}
         type="file"
@@ -64,14 +59,17 @@ const ConfigSkeleton = () => {
 
       {/* CSS Editor Section */}
       <SectionCard
-        icon={Code2}
+        icon={<Code2 className="h-5 w-5" />}
         title={t("manager:skeleton.cssTitle", { defaultValue: "Custom CSS Skeleton" })}
         description={t("manager:skeleton.cssDescription", {
           defaultValue: "Passe das globale Stylesheet an. CSS wird auf allen Client-Seiten injiziert.",
         })}
       >
         <div className="flex flex-col gap-4">
-          <SubGroup label={t("manager:skeleton.cssLabel", { defaultValue: "CSS Code" })}>
+          <SubGroup>
+            <label className="mb-2 block text-sm font-semibold text-ink">
+              {t("manager:skeleton.cssLabel", { defaultValue: "CSS Code" })}
+            </label>
             <textarea
               value={cssDraft}
               onChange={(e) => setCssDraft(e.target.value)}
@@ -84,7 +82,7 @@ const ConfigSkeleton = () => {
           <div className="flex items-center justify-between">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(cssDraft)
@@ -112,7 +110,7 @@ const ConfigSkeleton = () => {
 
       {/* JS Editor Section */}
       <SectionCard
-        icon={FileCode}
+        icon={<FileCode className="h-5 w-5" />}
         title={t("manager:skeleton.jsTitle", { defaultValue: "Custom JS Skeleton" })}
         description={t("manager:skeleton.jsDescription", {
           defaultValue: "Füge benutzerdefiniertes JavaScript hinzu. ACHTUNG: JS wird direkt ausgeführt.",
@@ -123,12 +121,15 @@ const ConfigSkeleton = () => {
             <AlertTriangle className="h-5 w-5 shrink-0" />
             <span>
               {t("manager:skeleton.jsWarning", {
-                defaultValue: "Sicherheitshinweis: Führe nur vertrauenswürdigen Code aus. Bösartiges Skript kann Sitzungen kompromittieren.",
+                defaultValue: "Sicherheitshinweis: Führe nur vertrauenswürdigen Code aus.",
               })}
             </span>
           </div>
 
-          <SubGroup label={t("manager:skeleton.jsLabel", { defaultValue: "JavaScript Code" })}>
+          <SubGroup>
+            <label className="mb-2 block text-sm font-semibold text-ink">
+              {t("manager:skeleton.jsLabel", { defaultValue: "JavaScript Code" })}
+            </label>
             <textarea
               value={jsDraft}
               onChange={(e) => setJsDraft(e.target.value)}
@@ -141,7 +142,7 @@ const ConfigSkeleton = () => {
           <div className="flex items-center justify-between">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(jsDraft)
@@ -169,7 +170,7 @@ const ConfigSkeleton = () => {
 
       {/* Transfer & Reset Section */}
       <SectionCard
-        icon={Download}
+        icon={<Download className="h-5 w-5" />}
         title={t("manager:skeleton.transferTitle", { defaultValue: "Import & Export" })}
         description={t("manager:skeleton.transferDescription", {
           defaultValue: "Sichere dein Theme-Paket als ZIP oder importiere ein bestehendes Skeleton-Paket.",
@@ -179,7 +180,7 @@ const ConfigSkeleton = () => {
           <div className="flex items-center gap-3">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={downloading}
               onClick={downloadPackage}
@@ -192,7 +193,7 @@ const ConfigSkeleton = () => {
 
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={importing}
               onClick={triggerFileInput}
@@ -206,7 +207,7 @@ const ConfigSkeleton = () => {
 
           <Button
             type="button"
-            variant="destructive"
+            variant="danger"
             size="sm"
             disabled={resetting}
             onClick={reset}
@@ -219,7 +220,6 @@ const ConfigSkeleton = () => {
         </div>
       </SectionCard>
 
-      {/* Stored-XSS Warning Confirmation Dialog */}
       <AlertDialog
         open={confirmingJsSave}
         onOpenChange={(open) => !open && setConfirmingJsSave(false)}
@@ -227,9 +227,7 @@ const ConfigSkeleton = () => {
         description={t("manager:skeleton.jsConfirmDescription", {
           defaultValue: "Der eingegebene JavaScript-Code wird im Browser aller Spieler ausgeführt. Möchtest du fortfahren?",
         })}
-        confirmText={t("manager:common.confirm", { defaultValue: "Bestätigen & Speichern" })}
-        cancelText={t("manager:common.cancel", { defaultValue: "Abbrechen" })}
-        variant="destructive"
+        confirmLabel={t("manager:common.confirm", { defaultValue: "Bestätigen & Speichern" })}
         onConfirm={() => {
           setConfirmingJsSave(false)
           save("js")

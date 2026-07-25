@@ -93,7 +93,7 @@ export function useSkeletonDrafts() {
 
     socket?.emit(EVENTS.MANAGER.SET_SKELETON_ASSET, {
       kind,
-      code: text,
+      content: text,
     })
   }
 

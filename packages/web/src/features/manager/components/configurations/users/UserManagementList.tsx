@@ -1,10 +1,11 @@
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
+import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
 import { EmptyState } from "@razzoozle/web/features/manager/components/console"
 import type { ManagedUser } from "./userManagementApi"
 import UserManagementRow from "./UserManagementRow"
-import { Users as UsersIcon } from "lucide-react"
+import { Ban, CheckCircle2, Trash2, Users as UsersIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 interface UserManagementListProps {
@@ -14,10 +15,10 @@ interface UserManagementListProps {
     selected: Set<number>
     isSelected: (id: number) => boolean
     toggle: (id: number) => void
-    selectAll: () => void
+    toggleAll: () => void
     clear: () => void
-    isAllSelected: boolean
-    isSomeSelected: boolean
+    allSelected: boolean
+    someSelected: boolean
   }
   pendingId: number | null
   currentUsername: string | null
@@ -54,8 +55,8 @@ export default function UserManagementList({
     return (
       <EmptyState
         icon={UsersIcon}
-        title={t("manager:users.noUsersTitle", { defaultValue: "Keine Benutzer gefunden" })}
-        description={t("manager:users.noUsersDescription", {
+        headline={t("manager:users.noUsersTitle", { defaultValue: "Keine Benutzer gefunden" })}
+        hint={t("manager:users.noUsersDescription", {
           defaultValue: "Es wurden keine Benutzer gefunden, die den Filtern entsprechen.",
         })}
       />
@@ -67,27 +68,52 @@ export default function UserManagementList({
       {/* Selection controls & bulk bar */}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-4 py-2">
         <SelectAllControl
-          allSelected={selection.isAllSelected}
-          someSelected={selection.isSomeSelected}
-          onToggleAll={() => {
-            if (selection.isAllSelected) {
-              selection.clear()
-            } else {
-              selection.selectAll()
-            }
-          }}
-          label={t("manager:users.selectAll", { defaultValue: "Alle auswählen" })}
+          id="select-all-users"
+          allSelected={selection.allSelected}
+          someSelected={selection.someSelected}
+          selectedCount={selection.selected.size}
+          totalCount={filteredUsers.length}
+          onToggleAll={selection.toggleAll}
         />
-
-        {selection.selected.size > 0 && (
-          <BulkActionToolbar
-            selectedCount={selection.selected.size}
-            onActivate={() => onTriggerBulkAction("activate")}
-            onDeactivate={() => onTriggerBulkAction("deactivate")}
-            onDelete={() => onTriggerBulkAction("delete")}
-          />
-        )}
       </div>
+
+      {selection.selected.size > 0 && (
+        <BulkActionToolbar
+          count={selection.selected.size}
+          label={t("manager:bulk.toolbarLabel", { defaultValue: "Benutzer Massenaktionen" })}
+          onClear={selection.clear}
+        >
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => onTriggerBulkAction("activate")}
+            >
+              <CheckCircle2 className="mr-1 h-4 w-4" />
+              {t("manager:users.enable", { defaultValue: "Aktivieren" })}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => onTriggerBulkAction("deactivate")}
+            >
+              <Ban className="mr-1 h-4 w-4" />
+              {t("manager:users.disable", { defaultValue: "Deaktivieren" })}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => onTriggerBulkAction("delete")}
+            >
+              <Trash2 className="mr-1 h-4 w-4" />
+              {t("manager:users.delete", { defaultValue: "Löschen" })}
+            </Button>
+          </div>
+        </BulkActionToolbar>
+      )}
 
       {/* Rows */}
       <div className="divide-y divide-hairline rounded-lg border border-hairline bg-surface-1">

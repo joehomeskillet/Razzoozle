@@ -2,7 +2,6 @@ import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { ActionFooter } from "@razzoozle/web/components/ui"
-import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
 import { UserPlus } from "lucide-react"
@@ -11,7 +10,6 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 import {
-  type BulkResponse,
   type ManagedUser,
   bulkUserActionApi,
   createUserApi,
@@ -28,7 +26,6 @@ import ResetPasswordDialog from "./users/ResetPasswordDialog"
 
 const ConfigUsers = () => {
   const { t } = useTranslation()
-  const config = useConfig()
   const currentUsername = useManagerStore((s) => s.username)
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -323,10 +320,8 @@ const ConfigUsers = () => {
             ? t("manager:users.deleteConfirmDescription", { defaultValue: "Möchtest du {{name}} wirklich löschen?", name: pendingDelete.username })
             : ""
         }
-        confirmText={t("manager:common.delete", { defaultValue: "Löschen" })}
-        cancelText={t("manager:common.cancel", { defaultValue: "Abbrechen" })}
-        variant="destructive"
-        loading={deleting}
+        confirmLabel={t("manager:common.delete", { defaultValue: "Löschen" })}
+        confirmDisabled={deleting}
         onConfirm={handleDelete}
       />
 
@@ -340,14 +335,14 @@ const ConfigUsers = () => {
             ? `${selection.selected.size} Benutzer ${bulkAction}`
             : ""
         }
-        confirmText={t("manager:common.confirm", { defaultValue: "Bestätigen" })}
-        cancelText={t("manager:common.cancel", { defaultValue: "Abbrechen" })}
-        variant={bulkAction === "delete" ? "destructive" : "primary"}
-        loading={bulkProcessing}
+        confirmLabel={t("manager:common.confirm", { defaultValue: "Bestätigen" })}
+        confirmDisabled={bulkProcessing}
         onConfirm={handleBulkAction}
       />
 
-      <ActionFooter />
+      <ActionFooter>
+        <span />
+      </ActionFooter>
     </div>
   )
 }

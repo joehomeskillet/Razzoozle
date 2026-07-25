@@ -74,7 +74,7 @@ export default function ResetPasswordDialog({
             </div>
 
             <div className="mt-2 flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="secondary" onClick={onClose}>
                 {t("manager:common.cancel", { defaultValue: "Abbrechen" })}
               </Button>
               <Button type="submit" variant="primary" disabled={resetting || !newPassword}>

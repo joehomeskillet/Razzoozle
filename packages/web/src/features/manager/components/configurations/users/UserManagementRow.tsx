@@ -1,4 +1,4 @@
-import Badge from "@razzoozle/web/components/manager/Badge"
+import Badge, { type BadgeTone } from "@razzoozle/web/components/manager/Badge"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import RowSelectionControl from "@razzoozle/web/components/manager/RowSelectionControl"
 import { ListRow } from "@razzoozle/web/features/manager/components/console"
@@ -45,21 +45,21 @@ export default function UserManagementRow({
     }
   }
 
-  const getRoleBadgeVariant = (roleValue: string) => {
+  const getRoleBadgeTone = (roleValue: string): BadgeTone => {
     switch (roleValue) {
       case "admin":
-        return "accent" as const
+        return "primary"
       case "lehrkraft":
-        return "primary" as const
+        return "primary"
       case "user":
       default:
-        return "neutral" as const
+        return "neutral"
     }
   }
 
   const actions: ListRowAction[] = [
     {
-      id: "toggle-active",
+      key: "toggle-active",
       label: user.active
         ? t("manager:users.disable", { defaultValue: "Deaktivieren" })
         : t("manager:users.enable", { defaultValue: "Aktivieren" }),
@@ -68,19 +68,19 @@ export default function UserManagementRow({
       disabled: isPending || isSelf,
     },
     {
-      id: "copy",
+      key: "copy",
       label: t("manager:users.copy", { defaultValue: "Kopieren" }),
       icon: Copy,
       onClick: () => onCopyUser(user),
     },
     {
-      id: "reset-password",
+      key: "reset-password",
       label: t("manager:users.resetPassword", { defaultValue: "Passwort zurücksetzen" }),
       icon: Key,
       onClick: () => onOpenResetPassword(user),
     },
     {
-      id: "delete",
+      key: "delete",
       label: t("manager:users.delete", { defaultValue: "Löschen" }),
       icon: Trash2,
       destructive: true,
@@ -91,27 +91,27 @@ export default function UserManagementRow({
 
   return (
     <ListRow
-      leadingControl={
+      selection={
         <RowSelectionControl
-          selected={isSelected}
-          onToggle={onToggleSelect}
+          checked={isSelected}
+          onChange={onToggleSelect}
           ariaLabel={t("manager:users.selectUser", { defaultValue: "Benutzer {{name}} auswählen", name: user.username })}
         />
       }
       title={user.username}
       meta={
         <div className="flex items-center gap-2">
-          <Badge variant={getRoleBadgeVariant(user.role)}>
+          <Badge tone={getRoleBadgeTone(user.role)}>
             {getRoleLabel(user.role)}
           </Badge>
-          <Badge variant={user.active ? "success" : "danger"}>
+          <Badge tone={user.active ? "success" : "danger"}>
             {user.active
               ? t("manager:users.active", { defaultValue: "Aktiv" })
               : t("manager:users.inactive", { defaultValue: "Inaktiv" })}
           </Badge>
         </div>
       }
-      actions={<OverflowMenu actions={actions} />}
+      overflow={<OverflowMenu actions={actions} />}
     />
   )
 }
