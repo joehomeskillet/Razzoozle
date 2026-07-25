@@ -1,6 +1,6 @@
 # Study & Practice Modes — System Design Document
 
-**Status:** Spec (awaiting implementation WPs)  
+**Status:** Approved Specification / SHIPPED  
 **Date:** 2026-07-24  
 **Authors:** Razzoozle Design  
 
