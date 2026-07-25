@@ -15,6 +15,10 @@ import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/Typ
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
 import { SlotDropdownBoard, type SlotSelections } from "@razzoozle/web/features/game/components/answers/SlotDropdownBoard"
 import { HotspotImage, type PinPoint } from "@razzoozle/web/features/game/components/answers/HotspotImage"
+import { WordCloudDisplay } from "@razzoozle/web/features/game/components/answers/WordCloudDisplay"
+import { BrainstormBoard } from "@razzoozle/web/features/game/components/answers/BrainstormBoard"
+import { ConfidenceSelector, type ConfidenceLevel } from "@razzoozle/web/features/game/components/answers/ConfidenceSelector"
+import { MicroLessonViewer } from "@razzoozle/web/features/game/components/answers/MicroLessonViewer"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
   useEvent,
@@ -109,6 +113,10 @@ const Answers = ({
   const isFillBlank = type === "fill-blank" && !!slotOptions?.length
   const isMatching = type === "matching" && !!matchItems?.length
   const isDropPin = type === "drop-pin" && !!media?.url
+  const isWordCloud = type === "word-cloud"
+  const isBrainstorm = type === "brainstorm"
+  const isConfidence = type === "confidence"
+  const isMicroLesson = type === "micro-lesson"
   // choice / boolean / poll share the same tile grid; poll intentionally has no
   // correct-answer reveal (server never marks a right option).
   const isChoiceLike =
@@ -118,6 +126,7 @@ const Answers = ({
       ? Math.max(0, Math.ceil(((time * 1000) - Date.now()) / 1000))
       : time,
   )
+  const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | undefined>()
   const [totalAnswer, setTotalAnswer] = useState(0)
   const [sliderValue, setSliderValue] = useState(
     type === "slider" && min != null && max != null
@@ -859,6 +868,37 @@ const Answers = ({
           step={step ?? 1}
           unit={unit}
           testIdPrefix=""
+        />
+      ) : isWordCloud ? (
+        <WordCloudDisplay
+          words={answers?.map((text) => ({ text, count: 1 })) ?? []}
+        />
+      ) : isBrainstorm ? (
+        <BrainstormBoard
+          ideas={answers?.map((text, i) => ({ id: String(i), text, upvotes: 1 })) ?? []}
+          onAddIdea={() => {
+            handleAnswer(0)()
+          }}
+          disabled={submitted}
+        />
+      ) : isConfidence ? (
+        <ConfidenceSelector
+          value={confidenceLevel}
+          onChange={(level) => {
+            setConfidenceLevel(level)
+            handleAnswer(level === "high" ? 0 : level === "medium" ? 1 : 2)()
+          }}
+          disabled={submitted}
+        />
+      ) : isMicroLesson ? (
+        <MicroLessonViewer
+          slides={[
+            { id: "s1", title: question, content: answers?.join("\n") ?? "", type: "text" },
+          ]}
+          onComplete={() => {
+            handleAnswer(0)()
+          }}
+          disabled={submitted}
         />
       ) : isChoiceLike ? (
         <ChoiceGrid

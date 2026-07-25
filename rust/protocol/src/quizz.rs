@@ -84,6 +84,14 @@ pub enum QuestionType {
     Matching,
     #[serde(rename = "drop-pin")]
     DropPin,
+    #[serde(rename = "word-cloud")]
+    WordCloud,
+    #[serde(rename = "brainstorm")]
+    Brainstorm,
+    #[serde(rename = "confidence")]
+    Confidence,
+    #[serde(rename = "micro-lesson")]
+    MicroLesson,
 }
 
 /// A single question in a quiz

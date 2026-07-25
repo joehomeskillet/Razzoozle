@@ -25,6 +25,10 @@ import type { SequencingItem } from "@razzoozle/web/features/game/components/ans
 import SliderInput from "@razzoozle/web/features/game/components/answers/SliderInput"
 import TypeAnswerInput from "@razzoozle/web/features/game/components/answers/TypeAnswerInput"
 import WortartenPicker from "@razzoozle/web/features/game/components/answers/WortartenPicker"
+import { WordCloudDisplay } from "@razzoozle/web/features/game/components/answers/WordCloudDisplay"
+import { BrainstormBoard } from "@razzoozle/web/features/game/components/answers/BrainstormBoard"
+import { ConfidenceSelector, type ConfidenceLevel } from "@razzoozle/web/features/game/components/answers/ConfidenceSelector"
+import { MicroLessonViewer } from "@razzoozle/web/features/game/components/answers/MicroLessonViewer"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import { useSoloStore } from "@razzoozle/web/features/game/stores/solo"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
@@ -111,6 +115,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isFillBlank = question.type === "fill-blank" && !!question.slots?.length
   const isMatching = question.type === "matching" && !!question.leftItems?.length
   const isDropPin = question.type === "drop-pin" && !!question.media?.url
+  const isWordCloud = question.type === "word-cloud"
+  const isBrainstorm = question.type === "brainstorm"
+  const isConfidence = question.type === "confidence"
+  const isMicroLesson = question.type === "micro-lesson"
+  const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | undefined>()
 
   useEffect(() => {
     if (isFillBlank && question.slots) {
@@ -500,6 +509,37 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             unit={question.unit}
             feedback={resultReady ? { correct: lastResult.correct } : undefined}
             testIdPrefix="solo-"
+          />
+        ) : isWordCloud ? (
+          <WordCloudDisplay
+            words={question.answers?.map((text) => ({ text, count: 1 })) ?? []}
+          />
+        ) : isBrainstorm ? (
+          <BrainstormBoard
+            ideas={question.answers?.map((text, i) => ({ id: String(i), text, upvotes: 1 })) ?? []}
+            onAddIdea={() => {
+              handleAnswer(0)()
+            }}
+            disabled={submitted}
+          />
+        ) : isConfidence ? (
+          <ConfidenceSelector
+            value={confidenceLevel}
+            onChange={(level) => {
+              setConfidenceLevel(level)
+              handleAnswer(level === "high" ? 0 : level === "medium" ? 1 : 2)()
+            }}
+            disabled={submitted}
+          />
+        ) : isMicroLesson ? (
+          <MicroLessonViewer
+            slides={[
+              { id: "s1", title: question.question, content: question.answers?.join("\n") ?? "", type: "text" },
+            ]}
+            onComplete={() => {
+              handleAnswer(0)()
+            }}
+            disabled={submitted}
           />
         ) : (
           <ChoiceGrid
