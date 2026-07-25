@@ -23,20 +23,25 @@ export default function SliderInput({
   testIdPrefix = "",
 }: SliderInputProps) {
   const { t } = useTranslation()
+  const midpoint = min + Math.round((max - min) / 2)
 
   return (
     <div className="mx-auto mb-4 flex w-full max-w-2xl flex-col items-center gap-4 px-4">
       {/* Slider value display */}
-      <div className={clsx(
-        "text-5xl font-bold text-[color:var(--game-fg)] [font-variant-numeric:tabular-nums_slashed-zero]",
-        testIdPrefix === "solo-" && "drop-shadow-lg",
-        feedback && (
-          feedback.correct
-            ? "ring-2 ring-[var(--state-correct)]"
-            : "ring-2 ring-[var(--state-wrong)]"
-        ),
-        "lg:text-[clamp(3rem,8vh,8rem)]"
-      )}>
+      <div
+        data-testid="slider-value-display"
+        aria-live="polite"
+        className={clsx(
+          "text-5xl font-bold text-[color:var(--game-fg)] [font-variant-numeric:tabular-nums_slashed-zero]",
+          testIdPrefix === "solo-" && "drop-shadow-lg",
+          feedback && (
+            feedback.correct
+              ? "ring-2 ring-[var(--state-correct)]"
+              : "ring-2 ring-[var(--state-wrong)]"
+          ),
+          "lg:text-[clamp(3rem,8vh,8rem)]"
+        )}
+      >
         {value}
         {unit ? ` ${unit}` : ""}
       </div>
@@ -50,6 +55,9 @@ export default function SliderInput({
         step={step}
         value={value}
         disabled={disabled}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={t("game:sliderAnswerLabel", {
           defaultValue: "Answer value",
@@ -58,12 +66,13 @@ export default function SliderInput({
         className="quiz-range accent-primary h-3 w-full cursor-pointer appearance-none rounded-full bg-[color:var(--color-field-ink)]/5 disabled:cursor-not-allowed lg:h-[clamp(0.75rem,1.5vh,1.5rem)]"
       />
 
-      {/* Min/Max labels */}
+      {/* Min/Mid/Max labels */}
       <div className="flex w-full justify-between text-sm font-semibold text-[color:var(--game-fg)]/70 lg:text-[clamp(1rem,2.5vh,2rem)]">
         <span>
           {min}
           {unit ? ` ${unit}` : ""}
         </span>
+        <span>{midpoint}</span>
         <span>
           {max}
           {unit ? ` ${unit}` : ""}
