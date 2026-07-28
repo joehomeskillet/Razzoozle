@@ -1235,3 +1235,84 @@ fn test_player_cap_unconfigured_falls_back_to_previous_hard_ceiling_behavior() {
     // player_cap stays None from Game::new — prior hard-ceiling behaviour unchanged.
     assert_eq!(game.effective_player_cap(), MAX_PLAYERS_PER_GAME);
 }
+
+#[test]
+fn test_participant_cap_from_selected_modes_wiring() {
+    use razzoozle_protocol::game::SelectedModes;
+
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+
+    // Test case 1: Valid cap value (50) passes through
+    let mut game1 = Game::new(
+        "game-cap-valid".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz.clone(),
+    );
+    let modes1 = SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+        participant_cap: Some(50),
+    };
+    // Simulate socket handler wiring: extract and validate
+    let requested_cap1 = modes1.participant_cap;
+    game1.player_cap = crate::state::resolve_player_cap(requested_cap1);
+    assert_eq!(
+        game1.player_cap,
+        Some(50),
+        "Valid cap value 50 must pass through unchanged"
+    );
+
+    // Test case 2: Over-ceiling cap (250) gets clamped to MAX_PLAYERS_PER_GAME (200)
+    let mut game2 = Game::new(
+        "game-cap-clamped".to_string(),
+        "INV2".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz.clone(),
+    );
+    let modes2 = SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+        participant_cap: Some(250),
+    };
+    let requested_cap2 = modes2.participant_cap;
+    game2.player_cap = crate::state::resolve_player_cap(requested_cap2);
+    assert_eq!(
+        game2.player_cap,
+        Some(MAX_PLAYERS_PER_GAME),
+        "Cap value 250 must be clamped down to server ceiling 200"
+    );
+
+    // Test case 3: None cap (client omits it) falls back to hard ceiling behaviour
+    let mut game3 = Game::new(
+        "game-cap-none".to_string(),
+        "INV3".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+    let modes3 = SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+        participant_cap: None,
+    };
+    let requested_cap3 = modes3.participant_cap;
+    game3.player_cap = crate::state::resolve_player_cap(requested_cap3);
+    assert_eq!(
+        game3.player_cap, None,
+        "None cap must remain None (hardcoded ceiling applies)"
+    );
+}
