@@ -408,6 +408,44 @@ const Answers = ({
     }
   }
 
+  // Brainstorm: submit one free-text idea. Same wire shape as type-answer
+  // (answerKey: -1 + answerText) — record_answer has no per-type text
+  // requirement for "brainstorm", so this is accepted like any other
+  // free-text answer. The engine only records one answer per player per
+  // question, so — same as type-answer — this locks the board after the
+  // first idea.
+  const submitBrainstormIdea = (text: string) => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+
+    const trimmed = text.trim()
+
+    if (!trimmed) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: trimmed,
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    setSubmittedText(trimmed)
+
+    if (lowLatency) {
+      armAckPending(clientMessageId)
+    }
+  }
+
 
   const submitMathematikAnswer = () => {
     if (!player || !gameId || submitted || !mathematikAnswer.trim()) {
@@ -876,9 +914,7 @@ const Answers = ({
       ) : isBrainstorm ? (
         <BrainstormBoard
           ideas={answers?.map((text, i) => ({ id: String(i), text, upvotes: 1 })) ?? []}
-          onAddIdea={() => {
-            handleAnswer(0)()
-          }}
+          onAddIdea={submitBrainstormIdea}
           disabled={submitted}
         />
       ) : isConfidence ? (
