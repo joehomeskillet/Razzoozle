@@ -36,7 +36,7 @@ describe("ParticipantCapSetting Component (Issue #477 / SDD #477)", () => {
       <ParticipantCapSetting value={50} onChange={vi.fn()} />
     )
 
-    expect(html).toContain("bg-[var(--color-primary)] text-white")
+    expect(html).toContain("bg-[var(--color-primary)] text-white") // token-ok: white-on-primary, AA per design.md §8·B D6
   })
 
   it("supports testIdPrefix prop for custom isolation", () => {

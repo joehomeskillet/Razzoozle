@@ -65,7 +65,7 @@ export function QaModerationPanel({
               className={clsx(
                 "rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                 filter === tab
-                  ? "bg-[var(--color-primary)] text-white"
+                  ? "bg-[var(--color-primary)] text-white" // token-ok: white-on-primary, AA per design.md §8·B D6
                   : "bg-[var(--surface-2)] text-[var(--ink-medium)] hover:bg-[var(--surface-3)]",
               )}
               data-testid={`${testIdPrefix}qa-tab-${tab}`}
