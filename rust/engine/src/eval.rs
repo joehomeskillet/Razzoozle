@@ -118,6 +118,41 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
         };
     }
 
+    // Word-cloud: wertungsfreies Sammelformat. Beitrag wird registriert,
+    // nie als richtig/falsch gewertet, keine Punkte. Own branch (not merged
+    // with Brainstorm/Confidence/MicroLesson) so a future new type without
+    // an explicit decision does not silently inherit this default.
+    if q_type == &Some(QuestionType::WordCloud) {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
+
+    // Brainstorm: wertungsfreies Sammelformat, wie Word-Cloud.
+    if q_type == &Some(QuestionType::Brainstorm) {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
+
+    // Confidence: Selbsteinschätzung — kann nicht falsch sein, keine Punkte.
+    if q_type == &Some(QuestionType::Confidence) {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
+
+    // Micro-lesson: Lehrinhalt, keine Frage — wertungsfrei.
+    if q_type == &Some(QuestionType::MicroLesson) {
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
+    }
+
     // Type-answer: fuzzy text match
     if q_type == &Some(QuestionType::TypeAnswer) {
         if let Some(text) = &answer.answer_text {
@@ -625,6 +660,58 @@ mod tests {
     }
 
     #[test]
+    fn word_cloud_always_neutral() {
+        let q = test_question(QuestionType::WordCloud);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("blau".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn brainstorm_always_neutral() {
+        let q = test_question(QuestionType::Brainstorm);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: Some("Idee 1".to_string()),
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn confidence_always_neutral() {
+        let q = test_question(QuestionType::Confidence);
+        let ans = AnswerInput {
+            answer_key: Some(2),
+            answer_keys: None,
+            answer_text: None,
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
+    fn micro_lesson_always_neutral() {
+        let q = test_question(QuestionType::MicroLesson);
+        let ans = AnswerInput {
+            answer_key: None,
+            answer_keys: None,
+            answer_text: None,
+        };
+        let result = evaluate_answer(&q, &ans);
+        assert!(!result.correct);
+        assert_eq!(result.base, 0.0);
+    }
+
+    #[test]
     fn type_answer_normalized() {
         let mut q = test_question(QuestionType::TypeAnswer);
         q.accepted_answers = Some(vec!["Paris".to_string()]);
@@ -1055,4 +1142,67 @@ mod tests {
         assert_eq!(r.base, 0.0);
     }
 
+    /// Exhaustiveness guard (#504): forces a COMPILE ERROR whenever
+    /// `QuestionType` gains a new variant that isn't added to the `match`
+    /// below. The match deliberately has no `_` catch-all arm, so rustc
+    /// rejects the build the moment a variant is missing here — this is how
+    /// WordCloud/Brainstorm/Confidence/MicroLesson silently fell through to
+    /// the Choice/Boolean default in the first place, and it must not
+    /// happen again for the next new type.
+    #[test]
+    fn all_question_types_have_an_explicit_eval_branch() {
+        let all_types = [
+            QuestionType::Choice,
+            QuestionType::Boolean,
+            QuestionType::Slider,
+            QuestionType::Poll,
+            QuestionType::MultipleSelect,
+            QuestionType::TypeAnswer,
+            QuestionType::SentenceBuilder,
+            QuestionType::Mathematik,
+            QuestionType::Wortarten,
+            QuestionType::Sequencing,
+            QuestionType::FillBlank,
+            QuestionType::Matching,
+            QuestionType::DropPin,
+            QuestionType::WordCloud,
+            QuestionType::Brainstorm,
+            QuestionType::Confidence,
+            QuestionType::MicroLesson,
+        ];
+
+        for q_type in all_types {
+            // Exhaustive match, WITHOUT a `_` arm: a QuestionType variant
+            // missing from this list fails to compile.
+            match &q_type {
+                QuestionType::Choice
+                | QuestionType::Boolean
+                | QuestionType::Slider
+                | QuestionType::Poll
+                | QuestionType::MultipleSelect
+                | QuestionType::TypeAnswer
+                | QuestionType::SentenceBuilder
+                | QuestionType::Mathematik
+                | QuestionType::Wortarten
+                | QuestionType::Sequencing
+                | QuestionType::FillBlank
+                | QuestionType::Matching
+                | QuestionType::DropPin
+                | QuestionType::WordCloud
+                | QuestionType::Brainstorm
+                | QuestionType::Confidence
+                | QuestionType::MicroLesson => {}
+            }
+
+            // Every declared type must reach a return path without
+            // panicking, even with generic/incomplete answer+question data.
+            let q = test_question(q_type);
+            let ans = AnswerInput {
+                answer_key: Some(0),
+                answer_keys: Some(vec![0]),
+                answer_text: Some("x".to_string()),
+            };
+            let _ = evaluate_answer(&q, &ans);
+        }
+    }
 }
