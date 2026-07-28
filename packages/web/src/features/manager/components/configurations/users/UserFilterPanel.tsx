@@ -28,7 +28,7 @@ export default function UserFilterPanel({
         data-testid="users-search"
         type="text"
         className="w-full"
-        placeholder={t("manager:users.searchPlaceholder", { defaultValue: "Nach Benutzername suchen..." })}
+        placeholder={t("manager:users.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
       />

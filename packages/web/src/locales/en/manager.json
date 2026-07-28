@@ -887,7 +887,10 @@
     "roleFilter": "Role filter",
     "statusFilter": "Status filter",
     "roleAll": "All roles",
-    "statusAll": "All statuses"
+    "statusAll": "All statuses",
+    "cannot_copy_self": "You cannot copy your own account",
+    "bulkFailed": "Bulk action failed",
+    "searchPlaceholder": "Search by username..."
   },
   "schueler": {
     "title": "Student Management",

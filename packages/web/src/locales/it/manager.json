@@ -857,7 +857,10 @@
     "roleFilter": "Filtro ruolo",
     "statusFilter": "Filtro stato",
     "roleAll": "Tutti i ruoli",
-    "statusAll": "Tutti gli stati"
+    "statusAll": "Tutti gli stati",
+    "cannot_copy_self": "Non puoi copiare il tuo account",
+    "bulkFailed": "Azione collettiva non riuscita",
+    "searchPlaceholder": "Cerca per nome utente..."
   },
   "profile": {
     "intro": "Il tuo profilo e le tue impostazioni personali.",

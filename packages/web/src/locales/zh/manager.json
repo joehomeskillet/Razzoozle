@@ -857,7 +857,10 @@
     "roleFilter": "角色筛选",
     "statusFilter": "状态筛选",
     "roleAll": "所有角色",
-    "statusAll": "所有状态"
+    "statusAll": "所有状态",
+    "cannot_copy_self": "你不能复制自己的账户",
+    "bulkFailed": "批量操作失败",
+    "searchPlaceholder": "按用户名搜索..."
   },
   "profile": {
     "intro": "您的个人资料和设置",

@@ -55,7 +55,7 @@ export default function UserManagementRow({
       label: t("manager:users.copyUser"),
       disabled: isBusy || isSelf,
       title: isSelf
-        ? t("manager:users.cannot_copy_self", { defaultValue: "Du kannst dein eigenes Konto nicht kopieren" })
+        ? t("manager:users.cannot_copy_self")
         : t("manager:users.copyUser"),
       onClick: () => onCopyUser(user),
       className: "max-sm:hidden",
