@@ -94,6 +94,22 @@ pub enum QuestionType {
     MicroLesson,
 }
 
+impl QuestionType {
+    /// Returns true if this question type does not award points or affect scores.
+    /// Unscored types: Poll, WordCloud, Brainstorm, Confidence, MicroLesson.
+    /// All other types are scored and contribute to player rankings.
+    pub fn is_unscored(&self) -> bool {
+        matches!(
+            self,
+            QuestionType::Poll
+                | QuestionType::WordCloud
+                | QuestionType::Brainstorm
+                | QuestionType::Confidence
+                | QuestionType::MicroLesson
+        )
+    }
+}
+
 /// A single question in a quiz
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -380,5 +396,29 @@ mod tests {
         let serialized = serde_json::to_string(&payload).unwrap();
         let deserialized: QuizzSetArchivedPayload = serde_json::from_str(&serialized).unwrap();
         assert_eq!(payload, deserialized);
+    }
+
+    #[test]
+    fn test_question_type_is_unscored() {
+        // Unscored types
+        assert!(QuestionType::Poll.is_unscored());
+        assert!(QuestionType::WordCloud.is_unscored());
+        assert!(QuestionType::Brainstorm.is_unscored());
+        assert!(QuestionType::Confidence.is_unscored());
+        assert!(QuestionType::MicroLesson.is_unscored());
+
+        // Scored types
+        assert!(!QuestionType::Choice.is_unscored());
+        assert!(!QuestionType::Boolean.is_unscored());
+        assert!(!QuestionType::Slider.is_unscored());
+        assert!(!QuestionType::MultipleSelect.is_unscored());
+        assert!(!QuestionType::TypeAnswer.is_unscored());
+        assert!(!QuestionType::SentenceBuilder.is_unscored());
+        assert!(!QuestionType::Mathematik.is_unscored());
+        assert!(!QuestionType::Wortarten.is_unscored());
+        assert!(!QuestionType::Sequencing.is_unscored());
+        assert!(!QuestionType::FillBlank.is_unscored());
+        assert!(!QuestionType::Matching.is_unscored());
+        assert!(!QuestionType::DropPin.is_unscored());
     }
 }

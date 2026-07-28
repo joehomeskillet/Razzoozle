@@ -21,11 +21,11 @@ const AUTO_RESULT_MS: i32 = 6000;
 
 /// Format the correct answer for a question, handling type-specific formatting
 /// (decimals for mathematik, unit concatenation for slider/mathematik, etc.).
-/// Returns None for poll questions; used by both player SHOW_RESULT and manager SHOW_RESPONSES.
+/// Returns None for unscored questions; used by both player SHOW_RESULT and manager SHOW_RESPONSES.
 pub fn format_correct_answer(question: &Question) -> Option<String> {
-    let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
 
-    if is_poll {
+    if is_unscored {
         return None;
     }
 
@@ -212,7 +212,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let question = game.engine.current_question();
     let is_slider = matches!(question.r#type.as_ref(), Some(QuestionType::Slider));
     let is_type_answer = matches!(question.r#type.as_ref(), Some(QuestionType::TypeAnswer));
-    let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
     let is_practice = question.practice == Some(true);
     let is_sentence_builder = matches!(
         question.r#type.as_ref(),
@@ -434,7 +434,7 @@ pub async fn perform_reveal_and_broadcast(
             let correct_options = format_correct_options(&question);
             let correct_matches = format_correct_matches(&question);
             let correct_hotspot_index = format_correct_hotspot_index(&question);
-            let is_poll = matches!(question.r#type.as_ref(), Some(QuestionType::Poll));
+            let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
             let bonus_flag = question.bonus.unwrap_or(false);
             let is_practice = question.practice == Some(true);
             // WP-H gap 2: Node parity (results-broadcast.ts:172-174) — reveal the
@@ -588,10 +588,10 @@ pub async fn perform_reveal_and_broadcast(
                     show_result_data.correct_order = correct_order.clone();
                     show_result_data.items = items.clone();
                     show_result_data.correct_token_pos = correct_token_pos.clone();
-                    show_result_data.poll = Some(is_poll);
+                    show_result_data.poll = Some(is_unscored);
                     show_result_data.bonus = Some(bonus_flag && result.correct && !is_practice);
                     show_result_data.scoring_mode = None; // parity: Node omits it
-                    show_result_data.message = (if is_poll {
+                    show_result_data.message = (if is_unscored {
                         "game:pollThanks"
                     } else if result.correct {
                         "game:correct"
@@ -839,5 +839,50 @@ mod tests {
         .expect("question json");
         let result = format_correct_token_pos(&q);
         assert_eq!(result, None, "non-wortarten must return None");
+    }
+
+    /// WP-540-1: word-cloud reveal must set poll flag and use pollThanks message
+    /// (unscored types should show no-judgment message like poll, not correct/wrong)
+    #[tokio::test]
+    async fn word_cloud_reveal_sets_poll_flag_and_thanks_message() {
+        let mut game = game_with_quiz(
+            r#"{"subject":"S","questions":[{"question":"What words come to mind?","type":"word-cloud","cooldown":5,"time":20}]}"#,
+        );
+        game.engine.start().unwrap();
+        game.engine.show_question(0).unwrap();
+        game.engine.open_answers().unwrap();
+        let game_ref = std::sync::Arc::new(std::sync::Mutex::new(game));
+
+        let (_layer, io) = socketioxide::SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+        perform_reveal_and_broadcast(game_ref.clone(), "game-rh".to_string(), io, false).await;
+
+        let game = game_ref.lock().unwrap();
+        let show_result = game
+            .last_show_result_data
+            .get("player-socket")
+            .expect("SHOW_RESULT cached for player");
+        
+        // word-cloud is unscored, so poll flag must be true (historically named flag)
+        assert_eq!(
+            show_result.poll,
+            Some(true),
+            "word-cloud is unscored and must set poll flag"
+        );
+        
+        // word-cloud reveal should show pollThanks (neutral feedback), not correct/wrong
+        assert_eq!(
+            show_result.message,
+            "game:pollThanks",
+            "word-cloud reveal must show neutral pollThanks message (no judgment)"
+        );
+        
+        // word-cloud should have no correct_answer (unscored types don't display answers)
+        assert_eq!(
+            show_result.correct_answer,
+            None,
+            "word-cloud is unscored and must not display correct_answer"
+        );
     }
 }
