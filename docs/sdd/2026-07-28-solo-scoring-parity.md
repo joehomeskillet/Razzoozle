@@ -1,6 +1,7 @@
 # SDD: Solo-Scoring-Parität mit dem Multiplayer-Kern
 
-Datum: 2026-07-28 · Branch: docs/scoring-parity · Status: Entwurf zur Freigabe
+Datum: 2026-07-28 · Branch: docs/scoring-parity · Status: Review eingearbeitet
+(2 unabhängige Gutachten, siehe "Was die Prüfung geändert hat"), zur Freigabe
 
 Auftrag: Die Solo-Punkteberechnung soll denselben Kern nutzen wie Multiplayer —
 Punkte, Streak-Multiplikator, Zeitbonus, Badges/Achievements. Keine zweite, nur
@@ -126,9 +127,17 @@ Bereits heute geteilt oder ohne Änderung teilbar:
 - Achievement-Registry + Helfer (achievements.rs) und
   `compute_achievement_awards` + `AwardRow` + `GameCounter`
   (achievement_awards.rs, accum.rs) — bei Einzelspieler-Input schließen sich
-  climber und underdog strukturell selbst aus (rank_before=1 bzw.
-  `max_before_strictly_below` bleibt `i32::MIN`, achievement_awards.rs:40-65);
-  `first_responder` NICHT — muss per Config deaktiviert werden.
+  climber und underdog NICHT nur über Zahlengrenzen, sondern über EXPLIZITE
+  Guards aus (Review-verifiziert): climber setzt `has_prior` voraus
+  (`climbed_from = if has_prior ...` + `climbed_from.is_some()`,
+  achievement_awards.rs:151-158); underdog hat den harten Guard
+  `max_before_strictly_below[index] > i32::MIN` (achievement_awards.rs:184),
+  der bei Länge-1-Input nie erfüllt ist (Precompute achievement_awards.rs:40-65).
+  Die drei Zeit-Trigger tragen alle `rt.is_some()`-Guards
+  (lucky_guess achievement_awards.rs:114-116, speed_demon :131,
+  speedy_gonzales :198) über `AwardRow.response_time_ms: Option<i64>`
+  (achievement_awards.rs:18). Nur `first_responder` hat KEINEN strukturellen
+  Selbstausschluss — muss per Config deaktiviert werden.
 
 ## 5. Identifizierte Duplikationen
 
@@ -182,21 +191,36 @@ Array-Reihenfolge des Payloads:
    question.time, streak_before, question, mode)` — keine eigene Formel.
    Ohne Zeitdaten (Phase 1): `mode = Accuracy`, `response_time_ms = 0` — in
    diesem Fall ist `time_to_point` konstant 1000 (scoring.rs:24-25), das
-   Ergebnis für den heutigen Degenerationsfall (kein Streak/Bonus) bleibt
-   byte-identisch zu `base*1000` (Belege: Test solo.rs:926-938 = 667 vs.
-   scoring.rs:157-165 = 667).
+   Ergebnis für den Degenerationsfall (streak_before=0, kein Bonus, kein
+   practice) bleibt byte-identisch zu `base*1000` (Belege: Test
+   solo.rs:926-938 = 667 vs. scoring.rs:157-165 = 667).
+   KLARSTELLUNG (Review-Befund): byte-identisch gilt NUR für diesen
+   Degenerationsfall. Sobald Streak (>0) oder `question.bonus` greifen,
+   scoren neue Läufe GEWOLLT höher als `base*1000`; sobald
+   `question.practice` greift, scoren sie 0 statt `base*1000` — heute kennt
+   `compute_solo_score` KEIN practice-Gate (solo.rs:347-379 wertet jede
+   Antwort). Beides ist der Kern der Parität, keine Regression — und beides
+   ist die Ursache der Leaderboard-Mischung alt/neu (§9).
 5. Streak-Fortschreibung nach Multiplayer-Regel: bei scored-Frage
    `streak = if correct { streak_before + 1 } else { 0 }` — auch eine
    fehlende Antwort auf eine scored-Frage bricht den Streak (Parität zu
    mod.rs:353 + 382-389). Der Streak ist damit VOLLSTÄNDIG serverseitig aus
    den Roh-Antworten ableitbar — er braucht keinen Session-State und keinen
-   Client-Wert.
+   Client-Wert. Scope-Klarstellung (Review-Befund): das gilt LAUF-lokal —
+   jeder `score_solo_run`-Aufruf rekonstruiert den Streak ab 0; Solo-Läufe
+   sind lauf-atomar, ein Streak transferiert nie zwischen Läufen, Sessions
+   oder Tagen. Das ist gewollt (Solo ist ephemer, es gibt keinen
+   Spieler-Persistenz-Anker) und spiegelt Multiplayer, wo der Streak
+   ebenfalls pro Spiel bei 0 beginnt.
 6. Achievements: pro Frage eine `AwardRow` der Länge 1 bauen und
    `compute_achievement_awards` mit einem Solo-Config-Preset aufrufen
-   (first_responder `enabled=false`; Zeit-Trigger speed_demon/speedy_gonzales/
-   lucky_guess bleiben mangels `response_time_ms=None` automatisch aus —
-   nicht geprüft, ob die drei Trigger bei `None` sauber aussteigen; das ist
-   Akzeptanzkriterium von WP07). `GameCounter` wird im Fold lokal geführt
+   (first_responder `enabled=false`). Zeit-Trigger: im Review GEGEN DEN CODE
+   VERIFIZIERT — alle drei steigen bei `response_time_ms=None` sauber aus,
+   weil lucky_guess/speed_demon/speedy_gonzales explizite `rt.is_some()`-
+   Guards tragen (achievement_awards.rs:114-116, :131, :198;
+   `AwardRow.response_time_ms: Option<i64>` achievement_awards.rs:18).
+   Das frühere "nicht geprüft" ist damit aufgelöst; WP07 behält nur noch
+   einen Regressionstest darauf. `GameCounter` wird im Fold lokal geführt
    (accum.rs-Struct wiederverwendet) — first_correct/participation/
    perfect_game werden damit auswertbar, ebenfalls ohne Session-State.
 7. First-Correct-Bonus: entfällt in Solo NICHT über eine Sonderregel, sondern
@@ -211,17 +235,33 @@ Array-Reihenfolge des Payloads:
 verschwinden; check-answer ruft für das Live-Feedback dieselbe
 `calculate_points` (mit untrusted streak-Hint, §8) auf.
 
-### 6.2 Die entscheidende Frage: Zeitbonus in Solo
+### 6.2 Entscheidungsvorlage: Zeitbonus in Solo (Variante A oder B)
 
-Serverautoritative Antwortzeit verlangt, dass mindestens ein Server-Zeitstempel
-pro Frage zwischen zwei HTTP-Requests überlebt. Heute existiert dafür nichts:
+Der Projektinhaber hat den Zeitbonus verlangt. Beide Gutachter bestätigen:
+der hier entworfene serverautoritative Weg ist sauber und nicht per Dev-Tools
+manipulierbar — aber er ist der teuerste Teil des Vorhabens und trägt einen
+Fairness-Zielkonflikt, den Code nicht auflösen kann. Deshalb hier als
+explizite Vorlage: Variante A (mit Zeitbonus) und Variante B (ohne), je mit
+Kosten und Empfehlung. Der Entscheid soll bewusst fallen, nicht überraschen.
+
+**Annahmen-Check (Review-Befund):** Die Empfehlung unten (B zuerst) ruht auf
+der Annahme, dass Solo als asynchrone Einzelarbeit genutzt wird (Hausaufgabe,
+eigenes Tempo, Reload-tolerant — der heutige Resume-Pfad solo.ts:157-244 ist
+genau dafür gebaut). Diese Annahme ist NICHT aus dem Produkt verifiziert.
+Wenn Solo auch kompetitives Echtzeit-Ranking im Klassenzimmer ist oder der
+Zeitbonus harte Produktanforderung bleibt, ist Variante A die richtige Wahl —
+sie ist vollständig spezifiziert und nachschaltbar.
+
+Gemeinsame Ausgangslage beider Varianten: Serverautoritative Antwortzeit
+verlangt, dass mindestens ein Server-Zeitstempel pro Frage zwischen zwei
+HTTP-Requests überlebt. Heute existiert dafür nichts:
 `handle_get_quiz_solo` liefert alle Fragen auf einmal (solo.rs:173-274), der
 Server beobachtet das Pacing nicht, `AppState`/`GameRegistry` halten keine
 Solo-Session (rust/server/src/http/mod.rs:42-46, rust/server/src/state/registry.rs:20-34
 laut Ist-Analyse), und die `solo_sessions`-Tabelle ist nur ein
 Einmal-PIN-Auth-Token (rust/server/src/db/pins.rs:44).
 
-Konkreter Entwurf (falls gebaut, = WP04):
+#### Variante A — Zeitbonus bauen (= WP04)
 
 - In-Memory `SoloRunSession` nach dem Vorbild des Game-Containers
   (rust/server/src/state/game.rs:19 laut Ist-Analyse), gehalten in einer
@@ -240,7 +280,7 @@ Konkreter Entwurf (falls gebaut, = WP04):
   (Server-Neustart, TTL abgelaufen), wird OHNE Zeitbonus gewertet
   (Accuracy-Fallback) statt den Lauf zu verwerfen.
 
-Ehrliche Kostenrechnung:
+Ehrliche Kostenrechnung Variante A:
 
 1. Neuer Server-Zustand inkl. TTL/Cleanup (neues Modul, Locking, Tests).
 2. Protokolländerung: neuer Endpoint + runToken in drei bestehenden
@@ -260,24 +300,51 @@ Ehrliche Kostenrechnung:
    Server nicht unterscheidbar; Multiplayer hat das Problem nicht, weil
    deadline_ms ein geteilter Raum-Anker ist (lifecycle/mod.rs:139).
 
-Alternative: Zeitbonus in Solo bewusst auslassen. Solo läuft fest auf
-`ScoringMode::Accuracy` mit `response_time_ms = 0` — das ist KEINE Sonderlogik,
-sondern ein regulärer, existierender Modus des gemeinsamen Kerns
-(scoring.rs:24-25). Basispunkte, Streak-Multiplikator, Bonusfrage ×2,
-practice-Gate und Achievements (ohne die drei Zeit-Trigger) werden trotzdem
-vollständig angeglichen.
+**UX-Warnung zu Variante A (Review-Befund, prominenter als zuvor):** Mit
+"first timestamp wins" verliert ein EHRLICHER Spieler bei jedem legitimen
+Reload (Seite aktualisieren, Netzwerk-Reconnect, Tab-Wechsel mit Neustart)
+die verstrichene Zeit unwiderruflich — Beispiel: Frage geöffnet, 5 Minuten
+Pause, Reload, sofort richtig geantwortet → gewertet werden 5 Minuten, im
+Speed-Modus also 0 Zeitanteil (scoring.rs:20-22). Das ist kein Bug, sondern
+die einzige exploitfreie Semantik. Wer Variante A wählt, akzeptiert diese
+Härte für ehrliche Reloads ausdrücklich.
 
-**Empfehlung:** Phase 1 ohne Zeitbonus bauen (WP03/05/06/07), WP04 als
-getrennten, nachschaltbaren Entscheid des Projektinhabers führen. Begründung:
+Aufwandsklasse A: 3-4 zusätzliche WPs (Session-Modul, Endpoint+Client-Wiring,
+Uhr-/Reload-Tests, Timer-UI), inkl. neuem dauerhaften Betriebsrisiko R5.
+
+**Empfehlung zu A:** nur nach explizitem Owner-Go, als Phase 2 NACH der
+Paritäts-Phase — nie im selben Wurf.
+
+#### Variante B — Zeitbonus bewusst auslassen
+
+Solo läuft fest auf `ScoringMode::Accuracy` mit `response_time_ms = 0` — das
+ist KEINE Sonderlogik, sondern ein regulärer, existierender Modus des
+gemeinsamen Kerns (scoring.rs:24-25); auch Multiplayer-Räume können heute
+Accuracy fahren. Basispunkte, Streak-Multiplikator, Bonusfrage ×2,
+practice-Gate und Achievements (ohne die drei Zeit-Trigger, die sich per
+`rt.is_some()`-Guard selbst deaktivieren, §6.1.6) werden trotzdem
+vollständig angeglichen — der gesamte Paritäts-Gewinn außer dem Zeit-Decay.
+
+Kosten Variante B: null zusätzlicher Server-Zustand, null neue Endpoints,
+kein Resume-Konflikt. Preis: das Wort "Zeitbonus" aus dem Auftrag ist in
+Solo nicht erfüllt, sondern per ADR als bewusster Verzicht dokumentiert
+(DoD Punkt 6).
+
+#### Empfehlung
+
+Phase 1 = Variante B bauen (WP03/05/06/07), WP04 als getrennten,
+nachschaltbaren Entscheid des Projektinhabers führen. Begründung:
 (a) der gesamte Paritäts-Gewinn außer dem Zeit-Decay ist ohne jeden
 Session-State erreichbar, weil Streak und Counter deterministisch aus den
 Roh-Antworten rekonstruierbar sind; (b) der Resume-Zielkonflikt ist ein
-UX-/Fairness-Entscheid, den Code nicht auflösen kann; (c) die Architektur
-lässt den Zeitbonus später zuschalten, ohne Phase-1-Code anzufassen —
-`score_solo_run` nimmt `Option<response_time_ms>` und `mode` von Anfang an als
-Parameter. Wenn der Projektinhaber den Zeitbonus trotz Kosten will: Variante
-In-Memory + "first timestamp wins" + Accuracy-Fallback bei Session-Verlust,
-wie oben spezifiziert.
+UX-/Fairness-Entscheid, den Code nicht auflösen kann (beide Gutachter
+bestätigen das unabhängig); (c) die Architektur lässt den Zeitbonus später
+zuschalten, ohne Phase-1-Code anzufassen — `score_solo_run` nimmt
+`Option<response_time_ms>` und `mode` von Anfang an als Parameter. Wenn der
+Projektinhaber den Zeitbonus trotz Kosten und UX-Warnung will: Variante A
+wie oben spezifiziert (In-Memory + "first timestamp wins" +
+Accuracy-Fallback bei Session-Verlust), als eigene Phase mit eigener
+Fairness-Abnahme.
 
 ## 7. Datenfluss Solo und Multiplayer (Ziel)
 
@@ -334,6 +401,14 @@ eigene Live-Anzeige, nie Leaderboard/Persistenz. Serverseitig wird er auf
 `0..=question_index` geklemmt. Das ist dieselbe Vertrauensklasse wie das
 bereits ignorierte `payload.score`.
 
+**Implementier-Invariante (Review-Befund, im Code-Review von WP05 hart zu
+prüfen):** Der `streakBefore`-Hint darf AUSSCHLIESSLICH im
+check-answer-Handler gelesen werden — im gesamten `/solo-score`-Pfad
+(Adapter + `score_solo_run`) existiert keine Lesestelle. Grep-beweisbar
+(`streakBefore`/`streak_before`-Hint-Feld hat genau eine Read-Site in
+solo.rs), zusätzlich erzwungen durch den WP10-Test "manipulierter Hint
+ändert den persistierten Score nicht" (§11.3).
+
 Zusätzlich unverändert: Rate-Limiting pro IP (solo.rs:288, 456-460),
 Payload-Größen-Guards (solo.rs:466-543), Deadline-/Attempt-Enforcement
 (solo.rs:577-612), Anti-Cheat im Wire-Format (correctIndex forced 0,
@@ -344,13 +419,54 @@ solo.rs:80-85).
 - DB: Phase 1 braucht KEINE Migration. `solo_results` (Schema laut INSERT
   solo.rs:619-631: id, quiz_id, player_name, score, answered_at, assignment_id)
   bleibt unverändert; Achievements werden in der Response geliefert, nicht
-  persistiert (Persistierung wäre eine eigene Entscheidung — nicht geprüft, ob
-  Multiplayer Awards persistiert).
-- `theoretical_max`: heute `non_poll_count * 1000` (solo.rs:546-549). Mit
-  Streak-Multiplikator (bis ×1.5, scoring.rs:68-72) und Bonusfragen (×2,
-  scoring.rs:74) muss das Max exakt nachgezogen werden: Summe über scored
-  Fragen von `1000 * 1.5 * (bonus ? 2 : 1)`, practice-Fragen zählen 0.
-  Ein zu kleines Max würde legitime Scores kappen.
+  persistiert. Das frühere "nicht geprüft, ob Multiplayer persistiert" ist im
+  Review aufgelöst: Multiplayer PERSISTIERT Awards — als Teil des
+  players-JSON-Blobs in `game_results` (`Player.achievements: Option<Vec<String>>`,
+  rust/protocol/src/player.rs:37; INSERT rust/server/src/db/results.rs:104-105)
+  und indirekt im recap-Blob (`most_achievements`-Superlativ,
+  rust/engine/src/state/recap.rs:163). Solo-Nicht-Persistierung ist damit eine
+  BEWUSSTE Divergenz: `solo_results` hat keinen JSON-Blob, Persistierung wäre
+  eine Schema-Erweiterung (Migration) für ein Feature ohne heutigen Konsumenten
+  — YAGNI. Sie wird in WP07 als ADR festgehalten; falls der Projektinhaber
+  Persistierung will, ist das ein eigenes Folge-WP (additive Spalte), kein
+  Blocker dieses Vorhabens.
+- `theoretical_max` — PRÄZISE DEFINITION (Review-Befund, beide Gutachter;
+  Widerspruch zwischen den Gutachten hier entschieden, siehe unten):
+  heute `non_poll_count * 1000` (solo.rs:545-548, filtert NUR Polls;
+  practice-Fragen zählen heute ins Max UND scoren heute, da
+  `compute_solo_score` kein practice-Gate kennt). Neu, statisch über ALLE
+  `quiz.questions` — unabhängig davon, ob und wie viele Antworten eingereicht
+  wurden (das Cap ist eine Eigenschaft des Quiz, nicht des Payloads):
+
+  ```
+  Sei S = Folge der scored Fragen (weder Poll noch practice=Some(true);
+          Polls: 0, practice: 0 via Gate scoring.rs:53-55) in Quiz-Reihenfolge.
+  theoretical_max = Σ über S, k = 0-basierter Index innerhalb S:
+      round(1000 × (1.0 + 0.1 × min(k, 5)) × (q.bonus == Some(true) ? 2 : 1))
+      (Rundung zuletzt, wie im Kern: Bonus scoring.rs:74 VOR Endrundung :76)
+  ```
+
+  Das ist der Score eines fehlerfreien Laufs: die k-te scored Frage wird mit
+  `streak_before = k` gewertet (Streak-Fold §6.1.5; Polls/practice lassen den
+  Streak unangetastet, mod.rs:315-316 + 382-389), Multiplikator-Cap bei 5
+  (scoring.rs:8-9, 68-72), Bonus ×2 nach dem Streak-Faktor (scoring.rs:74).
+  Feldquellen `practice`/`bonus`: rust/protocol/src/quizz.rs:137, 140.
+  Summierung saturierend wie heute (solo.rs:548, #49-Guard 3).
+
+  Entscheid zum Gutachter-Widerspruch: Gutachten 2 schlug eine flache
+  Obergrenze `1000 × 1.5 × (bonus?2:1)` pro scored Frage vor; Gutachten 1
+  verlangt den Testvektor "Maximal-Lauf erreicht EXAKT das Max". Beides
+  zusammen geht nicht — der Multiplikator erreicht 1.5 erst ab der sechsten
+  scored Frage, ein perfekter Lauf bleibt also immer unter der flachen
+  Summe. Gewählt: die EXAKTE Formel oben, denn (a) sie macht den
+  Exakt-Testvektor möglich (R2-Gate), (b) sie ist das engere Cap
+  (Defense-in-depth), (c) sie dupliziert keine Fachlogik, wenn sie als
+  `pub fn solo_theoretical_max(quiz) -> i32` NEBEN dem Fold in
+  `rust/engine/src/solo_run.rs` liegt und die Konstanten aus scoring.rs:8-9
+  nutzt (WP03 liefert sie, WP05 ruft sie statt der Inline-Rechnung
+  solo.rs:545-548 auf). Ein zu kleines Max würde legitime Scores kappen
+  (R2); WP09-Pflichtvektor: "fehlerfreier Lauf (alle korrekt, Bonusfragen
+  enthalten) erreicht EXAKT das Max, wird nicht gekappt."
 - API additiv, abwärtskompatibel: `CheckAnswerRequest` + optionales
   `streakBefore` (solo.rs:96-106); `CheckAnswerResponse` nutzt das bestehende
   `achievements`-Feld (solo.rs:116) weiter; `SoloScoreResponse` + optionales
@@ -424,12 +540,19 @@ WP-Größenregel gilt (1 WP ≈ 1 Datei ≈ <150 LOC Diff; Tests eigene WPs).
   `rust/engine/src/solo_run.rs` + additive optionale Felder in
   packages/common/src/types/game/index.ts (streakBefore, achievements in
   SoloScoreResponse). Kein Verhalten. Akzeptanz: cargo check + tsc grün,
-  null Laufzeitänderung.
+  keine VERHALTENSÄNDERUNG (Review-Präzisierung: neue Typen/Stubs im Binary
+  sind zulässig und unvermeidlich; das Kriterium ist "alle bestehenden
+  Tests byte-identisch grün", nicht "identisches Binary").
 - **WP03 MP-Kern nutzbar machen** — für `calculate_points` selbst
   GEGENSTANDSLOS (bereits transport-/session-frei aufrufbar, §4); Restinhalt:
   `solo_run.rs`-Fold implementieren (Guards, Poll-Gate, calculate_points-Aufruf,
-  Streak-Fold, GameCounter). Datei: rust/engine/src/solo_run.rs. Akzeptanz:
-  Unit-Tests aus §11.1 grün, keine Änderung an scoring.rs/mod.rs.
+  Streak-Fold, GameCounter) + `solo_theoretical_max` (§9). Datei:
+  rust/engine/src/solo_run.rs. Akzeptanz: Unit-Tests aus §11.1 grün, keine
+  Änderung an scoring.rs/mod.rs. Zum Review-Hinweis "WP03 sei ohne WP05
+  nicht testbar": teilweise zurückgewiesen — `score_solo_run` ist eine reine
+  Funktion und mit konstruierten Quizz-Fixtures VOLL unit-testbar (genau
+  §11.1); was ohne WP05 offen bleibt, ist nur die HTTP-Verdrahtung, und die
+  gehört zu WP05/WP09/WP11.
 - **WP04 Solo-Zeitdaten serverautoritativ** — ENTSCHEIDUNGS-GATE (§6.2):
   nur nach explizitem Owner-Go. Inhalt: SoloRunSession-Modul
   (rust/server/src/state/solo_run_session.rs), open-Endpoint, runToken in
@@ -439,9 +562,17 @@ WP-Größenregel gilt (1 WP ≈ 1 Datei ≈ <150 LOC Diff; Tests eigene WPs).
   Verzicht, Solo fest Accuracy/rt=0.
 - **WP05 Solo umstellen** — `compute_solo_score` → dünner Adapter auf
   `score_solo_run`; check-answer:318 auf calculate_points (untrusted Hint);
-  theoretical_max-Formel nachziehen (§9). Datei: rust/server/src/http/solo.rs.
-  Akzeptanz: kein `* 1000.0` mehr im Scoring-Pfad von solo.rs, SEC-05-Suite
-  grün, Poll-/Cap-Tests grün.
+  theoretical_max auf `solo_theoretical_max` umstellen (§9). Datei:
+  rust/server/src/http/solo.rs. Akzeptanz: kein `* 1000.0` mehr im
+  Scoring-Pfad von solo.rs, SEC-05-Suite grün, Poll-/Cap-Tests grün.
+  **MERGE-BLOCKER für WP05 (Review-Konsens beider Gutachter, vor dem Merge
+  verbatim nachzuweisen):**
+  1. WP09-Paritätsvektoren grün (MP-Anker byte-identisch, §11.2);
+  2. Exakt-Max-Vektor grün ("fehlerfreier Lauf erreicht exakt das Max", §9);
+  3. Streak-Lücken-Vektor grün ("unbeantwortete scored-Frage bricht Streak",
+     Parität zu mod.rs:353+382-389) + Zeit-Trigger-None-Regressionstest;
+  4. Owner-Entscheide dokumentiert: Leaderboard-Mischung (§9) UND
+     Zeitbonus-Variante (§6.2).
 - **WP06 Streak anbinden** — Client: streakBefore-Hint senden, Anzeige auf
   Server-Antwort umstellen, `streak`-Feld nur noch UI-State. Datei:
   packages/web/src/features/game/stores/solo.ts. Akzeptanz: Live-Summe ==
@@ -450,9 +581,12 @@ WP-Größenregel gilt (1 WP ≈ 1 Datei ≈ <150 LOC Diff; Tests eigene WPs).
   sharpshooter aus Registry statt 95.0-Literal (solo.rs:333), finale Awards
   aus dem Fold in die solo-score-Response; Client-`streakBadges` (solo.ts:37-44)
   löschen, Anzeige speist sich aus Server-Feldern (SoloRewardToast bleibt
-  unverändert, ist props-getrieben). Dateien: solo.rs + solo.ts (zwei WP-Hälften,
-  getrennt dispatchbar). Akzeptanz: grep findet weder `95.0` im Handler noch
-  `streakBadges` im Store; Badge-e2e grün.
+  unverändert, ist props-getrieben). Dateien: solo.rs + solo.ts — zwei
+  WP-Hälften, ABER (Review-Befund) NICHT parallel an verschiedene Worker:
+  die ts-Hälfte konsumiert die Server-Felder der rs-Hälfte; ohne sie zeigt
+  der Client nichts an. Dispatch-Regel: rs-Hälfte zuerst mergen (oder beide
+  beim selben Worker), ts-Hälfte dagegen bauen. Akzeptanz: grep findet weder
+  `95.0` im Handler noch `streakBadges` im Store; Badge-e2e grün.
 - **WP08 API/Persistenz/UI** — Response-Erweiterungen verdrahten (achievements
   im Finish-Screen, Leaderboard unverändert), Doku der additiven Felder;
   Entscheid Leaderboard-Mischung (§9) einholen und umsetzen (Empfehlung: keine
@@ -485,9 +619,11 @@ WP-Größenregel gilt (1 WP ≈ 1 Datei ≈ <150 LOC Diff; Tests eigene WPs).
   (WP09). Rollback: Cap-Formel isoliert revertierbar.
 - R3 Streak-Fold-Semantik weicht von reveal() ab (Lücken/Polls/practice):
   Paritätsvektoren (§11.2) sind das Gate; bei Befund blockt WP11.
-- R4 Achievement-Zeit-Trigger verhalten sich bei `response_time_ms=None`
-  unerwartet (nicht geprüft, §6.1 Punkt 6): Akzeptanztest in WP07; notfalls
-  Preset-disable der drei Trigger.
+- R4 (HERABGESTUFT nach Review): Achievement-Zeit-Trigger bei
+  `response_time_ms=None` — im Review gegen den Code verifiziert, alle drei
+  tragen `rt.is_some()`-Guards (achievement_awards.rs:114-116, :131, :198,
+  §6.1 Punkt 6). Restrisiko nur noch künftige Regression; abgedeckt durch
+  den WP07-Regressionstest "Zeit-Trigger feuern ohne response_time_ms nie".
 - R5 WP04-Session (falls gebaut) leakt Speicher ohne TTL oder verliert Läufe
   beim Deploy: TTL-Test + Accuracy-Fallback sind Pflichtakzeptanz; Rollback:
   Feature ist endpoint-additiv, Abschalten = Client ruft open nicht mehr.
@@ -520,17 +656,95 @@ WP-Größenregel gilt (1 WP ≈ 1 Datei ≈ <150 LOC Diff; Tests eigene WPs).
    e2e-Solo-Suite pro Fragetyp auf 3 Viewports, Deploy + Browser-Smoke des
    vollen Game-Loops.
 
-## Offene Fragen (gesammelt)
+## Offene Fragen (gesammelt, Stand nach Review)
 
-1. Zeitbonus: WP04 bauen oder Verzicht per ADR? (Empfehlung §6.2: Phase 1
-   ohne, WP04 als nachgelagerter Entscheid.)
+Nur noch ZWEI Fragen brauchen einen Owner-Entscheid VOR dem WP05-Merge
+(= Merge-Blocker 4 in WP05):
+
+1. Zeitbonus: Variante A (WP04 bauen) oder Variante B (Verzicht per ADR)?
+   Entscheidungsvorlage mit Kosten, UX-Warnung und Annahmen-Check: §6.2.
+   Empfehlung: Phase 1 = B, A als nachgelagerte eigene Phase.
 2. Leaderboard-Mischung alt/neu in `solo_results` hinnehmen oder
-   Versions-Spalte? (§9, Empfehlung: hinnehmen.)
-3. Sollen Achievements aus Solo-Läufen persistiert werden? (Heute nirgends;
-   nicht geprüft, ob Multiplayer Awards persistiert.)
-4. Verhalten der drei Zeit-Trigger bei `response_time_ms=None` — nicht
-   geprüft; Akzeptanzkriterium WP07.
+   Versions-Spalte? (§9, Empfehlung: hinnehmen, keine Migration.)
+
+Im Review GESCHLOSSEN:
+
+3. Achievements aus Solo-Läufen persistieren? — Geklärt: Multiplayer
+   persistiert Awards im players-Blob von `game_results` (player.rs:37,
+   db/results.rs:104-105); Solo-Nicht-Persistierung ist dokumentierte,
+   bewusste Divergenz (YAGNI, kein Konsument), ADR in WP07, optionales
+   Folge-WP falls gewünscht (§9).
+4. Zeit-Trigger bei `response_time_ms=None` — Geklärt: explizite
+   `rt.is_some()`-Guards verifiziert (achievement_awards.rs:114-116, :131,
+   :198); nur noch Regressionstest in WP07 (§6.1 Punkt 6, R4).
+
+Unverändert außerhalb des Scopes:
+
 5. UI-Kennzeichnung von Bonusfragen im Solo-Wire-Format — Produktfrage,
    außerhalb dieses Scopes.
 6. Dreifache Registry-Duplikation (common/engine/http) — Folge-Issue,
    nicht dieser Scope.
+
+## Was die Prüfung geändert hat
+
+Zwei unabhängige Gutachten (Gutachten 1: CLEAN mit Merge-Gates; Gutachten 2:
+FINDINGS(8)) wurden eingearbeitet. Jeder Befund wurde gegen den Code
+nachgeprüft, bevor er übernommen wurde.
+
+Übernommen (mit eigener Code-Verifikation):
+
+1. `theoretical_max` präzise definiert (beide Gutachter) — §9: exakte
+   Formel über die scored-Folge statt Prosa; zusätzlich eigener Befund
+   dokumentiert, dass heute practice-Fragen sowohl ins Max zählen als auch
+   scoren (solo.rs:545-548 filtert nur Polls; compute_solo_score hat kein
+   practice-Gate) — das neue practice-Gate ist damit eine ausgewiesene,
+   gewollte Score-Änderung.
+2. Streak-Scope klargestellt (Gutachten 2) — §6.1 Punkt 5: lauf-atomar,
+   kein Streak-Transfer zwischen Läufen/Sessions.
+3. Zeit-Trigger-Frage geschlossen (beide) — §6.1 Punkt 6, R4 herabgestuft:
+   `rt.is_some()`-Guards selbst verifiziert (achievement_awards.rs:114-116,
+   :131, :198); "nicht geprüft" entfernt, Regressionstest bleibt.
+4. climber/underdog-Ausschluss auf die EXPLIZITEN Guards umgeschrieben
+   (Gutachten 2) — §4: has_prior-Gate (:151-158) und `> i32::MIN`-Guard
+   (:184) statt bloßer Zahlengrenzen-Argumentation.
+5. WP02-Akzeptanz präzisiert (Gutachten 2) — "null Laufzeitänderung" →
+   "keine Verhaltensänderung, bestehende Tests byte-identisch grün".
+6. Zeitbonus als Entscheidungsvorlage umgebaut (Auftrag + beide Gutachter) —
+   §6.2: Variante A (mit Zeitbonus, WP04, Kostenrechnung, prominente
+   UX-Warnung zu "first timestamp wins" bei ehrlichen Reloads) vs.
+   Variante B (Verzicht, Accuracy/rt=0), plus Annahmen-Check, dass die
+   B-Empfehlung auf der unverifizierten Annahme "Solo = asynchron" ruht.
+7. Award-Persistierung entschieden statt offen gelassen (Gutachten 2,
+   Befund 7) — §9: selbst nachgeprüft, Multiplayer persistiert (players-Blob
+   game_results); Solo-Divergenz als bewusst dokumentiert, ADR in WP07.
+8. "byte-identisch"-Formulierung geschärft (Gutachten 1) — §6.1 Punkt 4:
+   gilt nur für den Degenerationsfall; Streak/Bonus scoren gewollt höher,
+   practice neu 0 — Ursache der Leaderboard-Mischung.
+9. WP05-Merge-Blocker explizit (Gutachten 1: "3 Paritäts-Gates +
+   Leaderboard-Entscheid kritisch") — §12 WP05: vier verbatim
+   nachzuweisende Blocker.
+10. WP07-Kopplung als Dispatch-Regel (Gutachten 1) — §12 WP07: rs-Hälfte
+    vor ts-Hälfte, nie parallel an verschiedene Worker.
+11. streakBefore-Implementier-Invariante (Gutachten 1) — §8: genau eine
+    Read-Site, grep-beweisbar, WP10-Test.
+
+Entschieden bei Widerspruch:
+
+- Flache `×1.5`-Max-Formel (Gutachten 2) vs. Testvektor "Maximal-Lauf
+  erreicht exakt das Max" (Gutachten 1): beides zusammen ist unerfüllbar
+  (Multiplikator erreicht 1.5 erst ab der 6. scored Frage). Entschieden für
+  die exakte Formel + Exakt-Vektor; Begründung in §9.
+
+Zurückgewiesen (mit Begründung):
+
+- "WP03 ist ohne WP05 nicht testbar" (Gutachten 1, Hinweis 1) — teilweise
+  zurückgewiesen: `score_solo_run` ist eine reine Engine-Funktion und mit
+  Quizz-Fixtures vollständig unit-testbar (§11.1); offen bleibt nur die
+  HTTP-Verdrahtung, die per Design zu WP05/WP09/WP11 gehört (§12 WP03).
+- "Award-Persistierung braucht einen ADR VOR WP07 als offener
+  Owner-Entscheid" (Gutachten 2) — in der scharfen Form zurückgewiesen:
+  die Faktenlage wurde stattdessen jetzt geklärt (Multiplayer persistiert,
+  Solo-Schema kann nicht ohne Migration) und die Nicht-Persistierung als
+  YAGNI-Default festgelegt; der ADR in WP07 dokumentiert das nur noch,
+  blockiert aber keinen Dispatch mehr. Ein Owner-Veto bleibt jederzeit als
+  additives Folge-WP möglich (§9).
