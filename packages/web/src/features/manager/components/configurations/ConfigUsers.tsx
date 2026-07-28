@@ -256,21 +256,6 @@ const ConfigUsers = () => {
       <PageHeader
         title={t("manager:users.title")}
         subtitle={t("manager:users.intro")}
-        action={
-          <Button
-            variant="primary"
-            onClick={() => {
-              setCopySourceId(null)
-              setUsername("")
-              setPassword("")
-              setRole("user")
-              setIsCreateDialogOpen(true)
-            }}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            {t("manager:users.create")}
-          </Button>
-        }
       />
 
       <UserFilterPanel
@@ -416,7 +401,22 @@ const ConfigUsers = () => {
     </div>
 
     <ActionFooter>
-      <span />
+      <Button
+        data-testid="users-create-btn"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+        onClick={() => {
+          setCopySourceId(null)
+          setUsername("")
+          setPassword("")
+          setRole("user")
+          setIsCreateDialogOpen(true)
+        }}
+      >
+        <UserPlus className="mr-2 h-4 w-4" />
+        {t("manager:users.create")}
+      </Button>
     </ActionFooter>
     </>
   )
