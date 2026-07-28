@@ -96,7 +96,7 @@ export function LobbyMusicSelector({
                 className={clsx(
                   "flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95",
                   isPlaying
-                    ? "bg-[var(--color-primary)] text-white"
+                    ? "bg-[var(--color-primary)] text-white" // token-ok: white-on-primary, AA per design.md §8·B D6
                     : "bg-[var(--surface-3)] text-[var(--ink)] hover:bg-[var(--surface-4)]",
                 )}
                 data-testid={`${testIdPrefix}music-preview-${preset.id}`}
