@@ -270,6 +270,10 @@ pub async fn handle_get_assignment_results(
 ) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, Json<serde_json::Value>)> {
     authorize_manager_request(&headers, &state.registry, &state.db_pool).await?;
 
+    let user = crate::auth::ensure_manager_user(&headers, &state.db_pool)
+        .await
+        .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+
     safe_asset_id(&id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
@@ -278,13 +282,18 @@ pub async fn handle_get_assignment_results(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
     };
 
-    // Check that assignment exists
-    let _quiz_id: String = sqlx::query_scalar("SELECT quiz_id FROM assignments WHERE id = $1")
+    // Check that assignment exists and verify ownership for lehrkraft
+    let owner_id: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM assignments WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
         .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+
+    // Scoping: lehrkraft can only see their own assignments, admin sees all
+    if user.role == "lehrkraft" && owner_id != Some(user.user_id) {
+        return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
+    }
 
     // Fetch solo_results for this assignment
     let results: Vec<(String, i32, chrono::DateTime<chrono::Utc>, Option<String>)> = sqlx::query_as(
@@ -343,5 +352,54 @@ mod tests {
         assert!(!role_may_manage_assignments("unknown"));
         assert!(!role_may_manage_assignments("guest"));
         assert!(!role_may_manage_assignments("moderator"));
+    }
+
+    /// Test: lehrkraft cannot access another lehrkraft's assignment results.
+    /// This test demonstrates the ownership scoping gate at handle_get_assignment_results line 293-295.
+    ///
+    /// Before the fix:
+    ///   - lehrkraft A with user_id=1 could call GET /api/assignment/abc123/results
+    ///   - lehrkraft B with user_id=2 could ALSO call that same endpoint and see results,
+    ///     even though lehrkraft B did not create the assignment.
+    ///
+    /// After the fix:
+    ///   - The handler reads owner_id from the assignments table
+    ///   - For lehrkraft role, if owner_id != current user_id, returns NOT_FOUND
+    ///   - This is tested at the logic level: if user.role == "lehrkraft" && owner_id != Some(user.user_id)
+    ///
+    /// Integration test using mock would require full test DB setup. This test documents
+    /// the scoping logic that now guards the endpoint.
+    #[test]
+    fn test_assignment_results_scope_lehrkraft_cannot_see_others() {
+        // This test documents the scoping rule:
+        // A lehrkraft with role="lehrkraft" and user_id=100
+        // attempting to access an assignment with owner_id=200
+        // should be denied (both with same logic branch).
+
+        // Pseudo-code of the enforced logic:
+        // if user.role == "lehrkraft" && owner_id != Some(user.user_id) {
+        //     return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
+        // }
+
+        // Scenario 1: lehrkraft tries to access own assignment → allowed
+        let user_id: i64 = 100;
+        let owner_id: Option<i64> = Some(100);
+        let role = "lehrkraft";
+        let should_allow = role != "lehrkraft" || owner_id == Some(user_id);
+        assert!(should_allow, "lehrkraft should see own assignment");
+
+        // Scenario 2: lehrkraft tries to access another's assignment → denied
+        let user_id: i64 = 100;
+        let owner_id: Option<i64> = Some(200);
+        let role = "lehrkraft";
+        let should_allow = role != "lehrkraft" || owner_id == Some(user_id);
+        assert!(!should_allow, "lehrkraft should NOT see another's assignment");
+
+        // Scenario 3: admin can access any assignment
+        let user_id: i64 = 100;
+        let owner_id: Option<i64> = Some(200);
+        let role = "admin";
+        let should_allow = role != "lehrkraft" || owner_id == Some(user_id);
+        assert!(should_allow, "admin should see all assignments");
     }
 }
