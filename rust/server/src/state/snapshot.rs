@@ -126,6 +126,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
             "teamMode": game.selected_modes.team_mode,
             "klassen": game.selected_modes.klassen,
             "endScreen": game.selected_modes.end_screen,
+            participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
         },
         // W1-1: Persist in-flight answer data and per-question stats
         "currentAnswers": current_answers,
@@ -229,12 +230,14 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
             team_mode,
             klassen,
             end_screen,
+            participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
         })
     }).unwrap_or(razzoozle_protocol::game::SelectedModes {
         scoring_mode: None,
         team_mode: None,
         klassen: None,
         end_screen: None,
+        participant_cap: None,
     });
 
     // W1-1 Fix: Restore in-flight answers with backward compatibility
