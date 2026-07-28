@@ -11,7 +11,10 @@ mod eviction;
 mod game;
 mod rate_limit;
 mod registry;
+#[cfg(test)]
+mod role_tests;
 pub mod snapshot;
+pub mod socket_role;
 #[cfg(test)]
 mod tests;
 
