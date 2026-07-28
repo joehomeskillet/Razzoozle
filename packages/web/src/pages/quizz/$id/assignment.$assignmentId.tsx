@@ -90,6 +90,7 @@ const AssignmentPlayPage = () => {
     leaderboard,
     lastResult,
     lastAchievements,
+    answers,
     error,
     loadQuiz,
     setPlayerName,
@@ -263,6 +264,7 @@ const AssignmentPlayPage = () => {
         totalPoints={totalPoints}
         leaderboard={leaderboard}
         playerName={playerName}
+        answers={answers}
         onReplay={() => {
           finishedRef.current = false
           void loadQuiz(id)

@@ -51,6 +51,7 @@ const SoloPlayPage = () => {
     leaderboard,
     lastResult,
     lastAchievements,
+    answers,
     error,
     loadQuiz,
     setPlayerName,
@@ -135,6 +136,7 @@ const SoloPlayPage = () => {
         totalPoints={totalPoints}
         leaderboard={leaderboard}
         playerName={playerName}
+        answers={answers}
         onReplay={() => {
           finishedRef.current = false
           void loadQuiz(id)
