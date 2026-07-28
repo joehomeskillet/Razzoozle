@@ -860,7 +860,9 @@
     "statusAll": "Tous les statuts",
     "cannot_copy_self": "Tu ne peux pas copier ton propre compte",
     "bulkFailed": "Action groupée échouée",
-    "searchPlaceholder": "Rechercher par nom d'utilisateur..."
+    "searchPlaceholder": "Rechercher par nom d'utilisateur...",
+    "usernamePlaceholder": "p. ex. max.mustermann",
+    "passwordPlaceholder": "Au moins 6 caractères"
   },
   "profile": {
     "intro": "Votre profil et vos paramètres personnels.",

@@ -890,7 +890,9 @@
     "statusAll": "All statuses",
     "cannot_copy_self": "You cannot copy your own account",
     "bulkFailed": "Bulk action failed",
-    "searchPlaceholder": "Search by username..."
+    "searchPlaceholder": "Search by username...",
+    "usernamePlaceholder": "e.g. max.mustermann",
+    "passwordPlaceholder": "At least 6 characters"
   },
   "schueler": {
     "title": "Student Management",
