@@ -45,13 +45,10 @@ jobs:
       - name: Check manager design tokens (blocking)
         run: bash scripts/check-manager-tokens.sh
 
-      - name: Design-Token-Lint (design-lint)
+      - name: Design token gates (tokens:validate + tokens:ast)
         run: |
-          if [ ! -x /usr/local/bin/design-lint ]; then
-            echo "::warning::design-lint nicht im Runner — skip"
-            exit 0
-          fi
-          /usr/local/bin/design-lint --changed-only origin/main .
+          corepack pnpm tokens:validate
+          corepack pnpm tokens:ast
 
       - name: Lint (warn-only)
         continue-on-error: true
