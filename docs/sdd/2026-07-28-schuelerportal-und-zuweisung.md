@@ -253,6 +253,13 @@ Verhalten:
   `assignments.rs:135`, gemeinsame frische `assignment_group_id` = UUIDv4,
   `assigned_student_id`, `owner_id`, identisches `metadata`). Antwort
   `201 { "groupId": "<uuid>", "assignmentIds": ["a1…","a2…"] }`.
+- **Herkunfts-Snapshot (Review-Auflage):** im `classId`-Modus schreibt der Server zusätzlich
+  `metadata.targetLabel` = Klassenname zum Zuweisungszeitpunkt (`classes.name`); im
+  `studentIds`-Modus bleibt das Feld ungesetzt. Kein Schemazusatz — `metadata` ist bestehendes
+  JSONB (`assignments.rs:140-154`); der Wert ist ein bewusster Snapshot (Umbenennen/Löschen
+  der Klasse ändert ihn nicht). Er löst zwei Review-Befunde zugleich: Kinder können zwei
+  gleichnamige Aufträge unterscheiden (8.5), und die Auswertung bleibt nach Klassenlöschung
+  lesbar (8.4).
 - Quiz unbekannt → `404` (wie heute, `assignments.rs:110-116`); Rolle `user` → `401`
   (SEC-X2a, unverändert).
 
@@ -278,7 +285,7 @@ Brute-Force-Zählung unverändert (`assignments.rs:178-181`).
 Zod-Spiegel in `packages/common` bekommen `studentToken?: string` (das Payload-WP besitzt
 das common-Type-File mit). Ablauf-Erweiterung im bestehenden Assignment-Block
 (`solo.rs:577-612`), die Metadata-Query lädt zusätzlich `assigned_student_id, revoked_at`:
-1. `revoked_at IS NOT NULL` → `403 "Assignment revoked"` (vor Frist-/Versuchsprüfung).
+1. `revoked_at IS NOT NULL` → `403 {"error":"revoked"}` (vor Frist-/Versuchsprüfung).
 2. `assigned_student_id IS NULL` → Verhalten exakt wie heute (Freitext-`player_name`).
 3. `assigned_student_id` gesetzt → `studentToken` Pflicht, atomarer Konsum ohne TOCTOU:
    ```sql
@@ -286,15 +293,26 @@ das common-Type-File mit). Ablauf-Erweiterung im bestehenden Assignment-Block
    WHERE token = $1 AND assignment_id = $2 AND used = false AND expires_at > now()
    RETURNING student_id
    ```
-   Kein Treffer (fehlend/fremd/verbraucht/abgelaufen) → `403 "invalid session"`. Das
-   zurückgegebene `student_id` muss `assigned_student_id` gleichen (Defense-in-depth; per
-   Konstruktion in `create_solo_session` schon gegeben) → sonst `403`.
+   Kein Treffer (fehlend/fremd/verbraucht/abgelaufen) → `403 {"error":"invalid-session"}`
+   (EINE Form für alle vier Ursachen — kein Oracle). Das zurückgegebene `student_id` muss
+   `assigned_student_id` gleichen (Defense-in-depth; per Konstruktion in
+   `create_solo_session` schon gegeben) → sonst dieselbe Form.
    `player_name` wird für gezielte Aufträge **serverseitig** aus `students.display_name`
    gesetzt — der Client-Freitext (`solo.rs:625`) wird ignoriert; damit ist die Auswertung
    beweisbar, nicht behauptet. Jeder weitere Versuch braucht ein frisches Token (Portal-
    Session-Mint prüft dabei erneut Frist/Versuche, 4.3).
-4. Frist-/Versuchsgates unverändert danach (`deadline_passed`, `attempt_limit_reached`).
-   Fail-open für unbekannte `assignmentId` bleibt NUR für den tokenlosen Altpfad bestehen.
+4. Frist-/Versuchsgates unverändert danach, aber mit typisierten Bodies:
+   `deadline_passed` → `403 {"error":"deadline"}`, `attempt_limit_reached` →
+   `403 {"error":"attempts"}`. Fail-open für unbekannte `assignmentId` bleibt NUR für den
+   tokenlosen Altpfad bestehen.
+
+**Fehler-Contract des Assignment-Blocks (Review-Auflage, Teil von WP-0b):** die vier Codes
+`revoked` / `invalid-session` / `deadline` / `attempts` sind maschinenlesbare Wire-Konstanten
+(`{"error":"<code>"}`), KEINE Anzeigetexte — die Lokalisierung passiert client-seitig (5.6,
+WP-C5). Die Umstellung von heutigen Freitext-Bodies ist bruchfrei: der einzige Client-Callsite
+(`finishGame`, `stores/solo.ts`) verschluckt Fehler bislang vollständig (2.1), es existiert
+also kein Konsument der alten Texte. Dieselben Codes verwendet der Portal-Session-Mint (4.3) —
+ein Vokabular für beide Endpunkte, damit WP-S2, WP-S4 und WP-C4 nicht drei Dialekte bauen.
 
 **`GET /api/assignment/:id`** — bleibt öffentlich (Spieler-Seite lädt sie,
 `assignment.$assignmentId.tsx:113-115`). Neu: `revoked_at` gesetzt → `410 Gone`
@@ -314,6 +332,7 @@ Ergebnis- oder Schülerdaten hängen an dieser Route.
 ```jsonc
 { "groups": [ {
     "groupId": "uuid", "quizzId": "…", "subject": "…", "createdAt": 1735…,
+    "targetLabel": "Klasse 4b" | null,
     "deadline": 1735… | null, "maxAttempts": 3 | null, "revokedAt": null | 1735…,
     "targetCount": 24, "submittedCount": 17
 } ] }
@@ -368,8 +387,14 @@ Auflösung: `classes WHERE join_code=$1 AND active`; nur aktive Klassenmitgliede
 (Join wie `students_with_pins`, `pins.rs:141-145`, aber ohne PINs im Response!), sortiert nach
 `display_name`. Unbekannter/inaktiver Code → `404 {"error":"invalid"}`; Rate-Limit über den
 bestehenden `check_pin_rate`-Mechanismus, Schlüssel `portal-roster:<ip>`, Fehlversuch zählt.
-Exponiert werden nur Anzeigenamen — dieselbe Exposition, die der Live-Klassen-Join heute
-bereits über den Raum-Roster hat (`login.rs:394-398` → `SUCCESS_ROOM`).
+**Exponiert werden je Kind `studentId` UND `displayName`** (Review-Blocker: eine frühere
+Formulierung "nur Anzeigenamen" widersprach dem eigenen Response-Beispiel und dem Login) —
+die IDs sind für die Schritte 2→3 des Logins zwingend (`PlayerNameSelect` liefert die Auswahl
+als `studentId`, `POST /api/portal/login` verlangt sie) und sind kein Schutzgut:
+BIGSERIAL-IDs sind ohnehin sequenziell erratbar (`011:18`); die eigentliche Zugangshürde ist
+PIN + Klassenmitgliedschaft (Login-Schritte 3/4). Die Namens-Exposition hinter dem Code
+entspricht dem bestehenden Live-Join-Roster (`login.rs:394-398` → `SUCCESS_ROOM`); PINs oder
+weitere personenbezogene Daten enthält die Antwort nicht.
 
 **`POST /api/portal/login`** — Body `{ "joinCode": "…", "studentId": 7, "pin": "🐟🌲🚀🎈" }` →
 ```jsonc
@@ -392,6 +417,7 @@ Token: 128-bit-Hex (Muster `assignments.rs:210`), Ablage NUR als SHA-256-Hash in
   "open":    [ <entry> ], "done": [ <entry> ], "expired": [ <entry> ] }
 // entry:
 { "assignmentId": "ab12…", "quizzId": "…", "subject": "Brüche",
+  "targetLabel": "Klasse 4b" | null,
   "assignedAt": 1735…, "deadline": 1735… | null, "maxAttempts": 3 | null,
   "attemptsUsed": 1, "bestScore": 4200 | null, "lastSubmittedAt": 1735… | null }
 ```
@@ -404,13 +430,20 @@ Anmeldung zurück). Klassifikation serverseitig, eine Query über
 
 **`POST /api/portal/assignment/:id/session`** — Bearer Portal-Token →
 `{ "studentToken": "<hex>", "expiresAt": "…" }` (frische `solo_sessions`-Zeile via
-`create_solo_session`, `pins.rs:44-64`, TTL 120 min). Prüfungen in Reihenfolge, Fehler je
-eigene Form: Assignment unbekannt → `404`; `revoked_at` → `410`;
-`assigned_student_id ≠ <token-student>` (auch NULL) → `403 {"error":"invalid"}`;
-Frist abgelaufen → `403 {"error":"deadline"}`; Versuche erschöpft
-(`COUNT(solo_results) >= maxAttempts`) → `403 {"error":"attempts"}`. Damit entfällt für
-Portal-Nutzer die erneute PIN-Eingabe je Aufgabe; `validate-pin` (4.1) bleibt als
-Direktlink-Pfad ohne Portal bestehen.
+`create_solo_session`, `pins.rs:44-64`, TTL 120 min). Prüfungen in Reihenfolge, jeder Fehler
+mit typisiertem Body (Review-Auflage — der Client MUSS die Fälle unterscheiden können, die
+Codes sind Teil des Contract-Freeze WP-0b und identisch mit denen des solo-score-Blocks 4.1):
+- Assignment unbekannt → `404 {"error":"not-found"}` ("Diese Aufgabe gibt es nicht mehr").
+- `revoked_at` gesetzt → `410 {"error":"revoked"}` ("Diese Aufgabe wurde zurückgezogen").
+- `assigned_student_id ≠ <token-student>` (auch NULL) → `403 {"error":"invalid"}` — bewusst
+  unspezifisch, kein Oracle über fremde Aufträge.
+- Frist abgelaufen → `403 {"error":"deadline"}` ("Die Frist ist leider abgelaufen").
+- Versuche erschöpft (`COUNT(solo_results) >= maxAttempts`) → `403 {"error":"attempts"}`
+  ("Du hast alle Versuche aufgebraucht").
+Die Klammertexte sind die deutschen Leitmeldungen; die verbindlichen Strings leben als
+i18n-Keys im `portal`-Namespace (WP-C5), das Toast-Verhalten samt Auto-Refresh steht in 5.5.
+Damit entfällt für Portal-Nutzer die erneute PIN-Eingabe je Aufgabe; `validate-pin` (4.1)
+bleibt als Direktlink-Pfad ohne Portal bestehen.
 
 ## 5. Schülerportal
 
@@ -424,9 +457,27 @@ Direktlink-Pfad ohne Portal bestehen.
 - Die Player-Startseite (`packages/web/src/pages/(auth)/index.tsx:32-47`) bekommt unter dem
   Trophäen-Link einen zweiten Link "📚 Meine Aufgaben" → `/portal` (gleiches Link-Muster
   Zeilen 40-45).
-- Sitzung: `portalToken` + `student` in `sessionStorage` (Schlüssel `portal_session`) —
-  bewusst NICHT `localStorage`: Klassenzimmer-Geräte werden geteilt, Tab zu = abgemeldet.
-  Vorhandenes gültiges Token beim Mount → direkt Liste; `401` → Login, Storage geleert.
+- Sitzung: `portalToken` + `student` + `expiresAt` + `lastActivity` in `sessionStorage`
+  (Schlüssel `portal_session`) — bewusst NICHT `localStorage`: Klassenzimmer-Geräte werden
+  geteilt. Vorhandenes gültiges Token beim Mount → direkt Liste; `401` → Login, Storage geleert.
+- **Geteilte Tablets, Tab bleibt offen (Review-Blocker):** "Tab zu = abgemeldet" trägt im
+  Klassenzimmer nicht — Kind A navigiert zur Startseite, ohne den Tab zu schliessen, Kind B
+  übernimmt denselben Tab und fände A's Sitzung samt Auftragsliste vor. Deshalb dreifach
+  abgesichert (alles WP-C3, `PortalShell`):
+  1. **Inaktivitäts-Abmeldung nach 15 min:** `PortalShell` aktualisiert bei
+     `pointerdown`/`keydown` (throttled, max. 1×/30 s) `lastActivity` im
+     `portal_session`-Eintrag; beim Mount UND in einem 60-s-Intervall wird geprüft:
+     `now − lastActivity > PORTAL_IDLE_MS` (Konstante, 15 min) ⇒ Storage leeren,
+     Login-Screen rendern.
+  2. **TTL-Prüfung beim Mount:** ist `expiresAt` (aus der Login-Antwort, Server-TTL 8 h)
+     abgelaufen ⇒ Storage leeren und DIREKT den Login zeigen — nie erst die alte Liste
+     rendern und sie dann per `401` wegkorrigieren.
+  3. **Abmelden-Button** im `PortalShell`-Header (5.3) leert den Storage sofort (kein
+     Server-Call nötig; serverseitiges Session-Delete ist Folge-Ausbau, das Token läuft
+     ohnehin ab).
+  Der Server bleibt letzte Instanz (`401` bei abgelaufenem/unbekanntem Token, 4.3) — die
+  Client-Checks verhindern zusätzlich, dass gespeicherte fremde Daten überhaupt angezeigt
+  werden.
 
 ### 5.2 Anmeldung (drei Schritte, ein Screen — Ablauf-Vorbild `Username.tsx:196-269`)
 
@@ -452,15 +503,48 @@ Header: Anzeigename + Abmelden-Button, kein Manager-Nav). Wiederverwendete Conso
 - `EmptyState` für den Leerzustand.
 - `listMotion` (Stagger) und `rowStyles`/`tokens.css`-Token-Utilities.
 Das ist eine bewusste Inhaber-Entscheidung ("recycle … css/ui/ux mässig"): das Portal nutzt
-die Manager-Console-Optik, obwohl es eine Kind-Fläche ist. `design.md` wird im UI-WP um den
-Portal-Kanon ergänzt (stehende Regel: neue Flächen-Entscheide sofort als Kanon nachziehen).
+die Manager-Console-Optik, obwohl es eine Kind-Fläche ist.
+
+**Portal-Design-Kanon (Review-Auflage: hier entschieden, WP-0c schreibt ihn VOR Welle 2 als
+eigenen Flächen-Abschnitt in `design.md` fest — C3 implementiert gegen diesen Kanon, nicht
+gegen Gefühl):**
+1. **Farben:** KEINE neue Kinder-Palette — ausschliesslich die bestehenden semantischen
+   Token-Utilities (Governance-Regel 2; eine eigene Palette hiesse neue Tokens, neue
+   Validator-Mappings und einen zweiten Kanon für eine einzige Fläche — abgelehnt, YAGNI).
+   Status-Zuordnung: "Offen" = Akzent-/Interactive-Token der Console-Rows, "Erledigt" =
+   Success-Token + Punktebadge, "Abgelaufen" = die `rowStyles`-Disabled-Variante. Farbe trägt
+   NIE allein Bedeutung: jede Gruppe führt zusätzlich ein Emoji als Affordance
+   (📬 Offen · ✅ Erledigt · ⌛ Abgelaufen) im Gruppentitel.
+2. **Typographie:** bestehende Token-Skala, aber Portal-Zeilen eine Stufe grösser als die
+   Manager-Listen (Row-Title auf der nächsthöheren Skalenstufe, Meta-Zeile nicht unter der
+   heutigen Meta-Grösse) — Zielgruppe liest auf Tablet-Distanz; keine neuen Fonts.
+3. **Touch:** alle interaktiven Elemente ≥ 44 px Klickfläche (`ListRow` im Portal mit
+   `min-h`-Token-Utility, ebenso Abmelden-, Retry- und Login-Buttons); KEINE
+   hover-only-Affordances — was der Manager auf Hover zeigt, ist im Portal permanent sichtbar.
+   Verifikation: `pnpm tokens:neural` (375/390/440 px) + Sichtprüfung der Klickflächen im
+   `tokens:ai-audit`-Pass; ein Verstoss ist ein RED-Finding des UI-Gates.
+4. **Dark/Light:** Portal folgt dem bestehenden Theme-Mechanismus der Player-Flächen
+   unverändert — keine Portal-eigene Theme-Entscheidung.
+5. **Motion:** `listMotion`-Stagger wie in den Console-Listen; keine zusätzlichen Animationen.
+6. **Semantik/A11y (Review-Nachtrag):** die drei Gruppen sind `<section aria-labelledby=…>`
+   mit sichtbarer Gruppen-Überschrift als Label — keine anonymen `div`-Container; rendert
+   `SectionCard` heute nur `div`, bekommt sie in WP-C3 eine optionale `as`-/ARIA-Prop
+   (generisch-präsentational laut `console/index.ts:1-3`, die Erweiterung bleibt
+   abwärtskompatibel). Tab-Reihenfolge: Gruppen in Dokumentreihenfolge, Rows als Buttons.
+
+(Stehende Regel bleibt: neue Flächen-Entscheide sofort als Kanon in `design.md` nachziehen —
+WP-0c ist genau dieses Nachziehen, vorgezogen vor die Implementation. Zieldatei ist das
+Root-`design.md` (im Worktree verifiziert: getrackt, nicht gitignored — die bekannte
+Doc-WP-Falle mit gitignorten Dateien greift hier nicht).)
 
 ### 5.4 Zustände, je mit Verhalten
 
 - **Keine Aufgaben** (alle drei Listen leer): `EmptyState` (Icon `ListChecks`), Text
   "Gerade ist nichts offen — schau später wieder rein." Kein CTA.
-- **Offene Aufgaben**: klickbare `ListRow`s; meta zeigt "bis <Datum>" (Frist, lokalisiert)
-  bzw. "Noch <n> Versuche" wenn `maxAttempts` gesetzt; Klick startet (5.5).
+- **Offene Aufgaben**: klickbare `ListRow`s; meta zeigt "von <targetLabel> · bis <Datum>"
+  (Herkunft nur wenn `targetLabel` gesetzt; Frist lokalisiert) bzw. "Noch <n> Versuche" wenn
+  `maxAttempts` gesetzt; Klick startet (5.5). Die Herkunftsangabe ist die Antwort auf den
+  Review-Befund "zwei gleichnamige Aufträge verwirren" — siehe 8.5.
 - **Erledigte Aufgaben**: `ListRow` mit Punktebadge (`bestScore`) und Abgabedatum. Klick:
   wenn Versuche übrig → erneut spielbar ("Nochmal spielen", zählt als weiterer Versuch,
   Server prüft ohnehin), sonst inert (nur Anzeige).
@@ -478,22 +562,41 @@ auf die bestehende Route `/quizz/$quizzId/assignment/$assignmentId` mit `student
 `assignment.$assignmentId.tsx:152`). Die Assignment-Route überspringt bei vorhandenem Token
 die Freitext-`NameScreen` (heute 246-256) — `playerName` ist serverbekannt und wird ohnehin
 serverseitig gesetzt (4.1). `finishGame` sendet `studentToken` im `/solo-score`-Body mit.
-Session-Mint-Fehler auf der Liste: `410` → Toast "Diese Aufgabe wurde zurückgezogen" +
-Refresh; `403 deadline/attempts` → Toast + Eintrag wandert beim Refresh in die passende Gruppe.
+Session-Mint-Fehler auf der Liste, je Code eine eigene lokalisierte Meldung (Codes und
+Leittexte in 4.3): `not-found`, `revoked`, `deadline`, `attempts` → Toast mit dem passenden
+Text; `invalid` oder `401` → Storage leeren, zurück zum Login (die Sitzung ist nicht mehr
+vertrauenswürdig). Nach jedem dieser Toasts stösst die Liste **2 s später automatisch** einen
+frischen `GET /api/portal/assignments` an (Refresh-Mechanik 5.6) — das Kind sieht, wie der
+Eintrag in die passende Gruppe wandert ("offen" → "abgelaufen"), statt auf einem toten
+Eintrag sitzen zu bleiben.
 
 ### 5.6 Nach dem Abschluss
 
 - `FinishedScreen` (`SoloFinishedScreen`) erhält eine optionale `onBackToPortal`-Prop; die
   Assignment-Route reicht sie nur durch, wenn der Lauf aus dem Portal kam (Router-State-Flag).
-  Klick → zurück zu `/portal`, Liste wird neu geladen — der Auftrag liegt jetzt unter
-  "Erledigt" mit Punktzahl.
-- **Submit-Fehler sichtbar machen (neu, Korrektur aus 2.1):** der Store bekommt
-  `submitError: string | null`; schlägt der `/solo-score`-POST für einen Auftrag fehl
-  (Frist/Versuche/Token/Netz), rendert die Assignment-Route statt des Finished-Screens den
-  vorhandenen `AssignmentErrorScreen` (`assignment.$assignmentId.tsx:36-64`) mit gemappter
-  Meldung ("Die Frist ist leider abgelaufen — deine Antworten wurden nicht mehr gewertet" /
-  "Sitzung abgelaufen — geh zurück zum Portal und starte neu") und Rücksprung-Button.
-  Der stumme catch bleibt nur für den anonymen Solo-Pfad ohne `assignmentId`.
+  Klick → zurück zu `/portal` — der Auftrag liegt jetzt unter "Erledigt" mit Punktzahl.
+- **Refresh-Mechanik (Review-Auflage, präzisiert):** die Rückkehr ist SPA-Navigation, kein
+  Seiten-Reload. `PortalAssignmentList` ruft bei JEDEM Mount und nach jedem Toast-Trigger
+  (5.5) `GET /api/portal/assignments` frisch auf — es gibt keinen Client-Cache der Liste;
+  einziger Zustand ist die letzte Antwort im Komponenten-State, und die wird beim Start eines
+  neuen Fetches durch einen Lade-Zustand ersetzt (Spinner nach Bestandsmuster der
+  Console-Listen), NICHT weiter angezeigt. Schlägt der Fetch fehl (Netz weg): Fehlerzustand
+  mit "Nochmal versuchen"-Button (`portal-retry-btn`) — NIE stillschweigend auf die zuletzt
+  bekannte Liste zurückfallen, sonst hielte das Kind einen erledigten Auftrag für offen oder
+  umgekehrt.
+- **Submit-Fehler sichtbar machen (neu, Korrektur aus 2.1 — explizites WP-C4-Deliverable):**
+  der Store bekommt `submitError: "revoked" | "invalid-session" | "deadline" | "attempts" |
+  "network" | null` (die vier Wire-Codes aus 4.1 plus Netzfehler; Typ in `packages/common`,
+  WP-0b). `finishGame` prüft die `/solo-score`-Antwort: nicht-2xx mit `assignmentId` UND
+  `studentToken` ⇒ Body parsen, Code in `submitError` schreiben (unparsebarer Body/Netz ⇒
+  `"network"`); der bisherige stumme catch bleibt NUR für den anonymen Solo-Pfad ohne
+  `assignmentId`. Die Assignment-Route rendert bei gesetztem `submitError` statt des
+  Finished-Screens den vorhandenen `AssignmentErrorScreen` (`assignment.$assignmentId.tsx:36-64`)
+  mit je Code lokalisierter Meldung ("Die Frist ist leider abgelaufen — deine Antworten wurden
+  nicht mehr gewertet" / "Sitzung abgelaufen — geh zurück zum Portal und starte neu" /
+  "Keine Verbindung — deine Antworten konnten nicht gesendet werden") und Rücksprung-Button
+  zum Portal. Serverseite dieser Codes = WP-S2, Store+Screen = WP-C4, Texte ×6 = WP-C5 —
+  alle drei WPs nennen den Punkt ausdrücklich (13).
 
 ## 6. Manager-Seite (play-Tab)
 
@@ -535,8 +638,10 @@ damit automatisch `/manager/config/assignments` über den bestehenden `$tab`-Mec
 Komponente **`ConfigAssignments`** (Scaffold `pnpm g:console`, verschoben nach
 `configurations/`):
 - Liste der Zuweisungsakte via `GET /api/assignment/groups`: je Gruppe eine `ListRow`
-  (title = subject, meta = "zugewiesen am … · Frist …", footer = Fortschritts-Badge
-  "17 / 24 erledigt", revocierte Gruppen mit "Zurückgezogen"-Badge ausgegraut).
+  (title = subject, meta = "an <targetLabel> · zugewiesen am … · Frist …" — `targetLabel`
+  ist der Klassennamen-Snapshot aus 4.1, bei Einzelzuweisungen "<n> Schüler"; footer =
+  Fortschritts-Badge "17 / 24 erledigt", revocierte Gruppen mit "Zurückgezogen"-Badge
+  ausgegraut).
 - Klick expandiert die Pro-Kind-Ansicht via `GET /api/assignment/group/:groupId/results`:
   je Kind eine Zeile mit Status-Chip — "erledigt · 4200 P. · 2 Versuche" / "offen" /
   zusätzlich "deaktiviert"-Marker wenn `active=false`. `bestScore == null` ⇒ offen.
@@ -565,11 +670,21 @@ geschlossen; die dort erwähnte fehlende Listing-Route ist `GET /api/assignment/
    Ergebnisse bleiben vollständig erhalten (Schüler überleben die Löschung seit Migration 015,
    Trigger-Drop `015:4-7`). Der Klassen-Code stirbt mit der Klasse → Portal-Zugang nur noch
    über eine andere Klasse oder den Direktlink. Gruppenansicht zeigt weiterhin die
-   Schülerliste, nur keinen Klassennamen (kein Snapshot-Feld, offene Frage 6).
+   Schülerliste UND den Klassennamen zum Zuweisungszeitpunkt (`metadata.targetLabel`, 4.1) —
+   der Review-Befund "Auswertung nach Klassenlöschung nicht mehr zuordenbar" ist damit
+   geschlossen; die Lehrkraft sieht "Brüche — Klasse 4b (gelöscht am …)" statt einer
+   namenlosen Schülerliste. Eine `assignment_groups`-Metatabelle braucht es dafür nicht
+   (offene Frage 6).
 5. **Dieselbe Aufgabe zweimal zugewiesen** (Doppelklick der Lehrkraft, überlappende Klassen):
    keine Deduplizierung — zwei eigenständige Zeilen mit eigener Frist, eigenem Versuchsbudget,
-   eigenem Ergebnis-Slot. Portal zeigt zwei Einträge, unterscheidbar über Zuweisungsdatum und
-   Frist in der meta-Zeile (offene Frage 4 der Targets-Spec, Standard beibehalten).
+   eigenem Ergebnis-Slot. **UX-Entscheid nach Review** (der Prüfer bot Dedup-Badge "Option A"
+   oder Herkunfts-Kennzeichnung "Option B" an — Option B gewählt: Dedup würde zwei getrennte
+   Versuchsbudgets/Fristen hinter EINEM Eintrag verstecken und das Fortschritts-Ledger je
+   Zuweisungsakt verfälschen): das Portal zeigt beide Einträge, die meta-Zeile macht die
+   Herkunft explizit — "Brüche — von Klasse 4b · bis 01.08." vs. "Brüche — von Klasse 4c ·
+   bis 02.08." (`targetLabel` aus 4.1; bei Einzelzuweisung ohne Label bleibt das
+   Zuweisungsdatum der Diskriminator). So versteht auch ein Grundschulkind: zwei verschiedene
+   Lehrkraft-Aufträge, nicht ein Duplikat.
 6. **Frist läuft während der Bearbeitung ab:** Client prüft nur beim Laden
    (`assignment.$assignmentId.tsx:135-148`); der Submit wird serverseitig abgelehnt
    (`solo.rs:587-592`; exakt auf der Frist gilt noch als pünktlich, Vertrag
@@ -599,8 +714,11 @@ geschlossen; die dort erwähnte fehlende Listing-Route ist `GET /api/assignment/
   Session-Mint verlangen das Bearer-Token (Identität), der Login verlangt Code + Mitgliedschaft
   + PIN. Ein gültiger eigener PIN öffnet keine fremden Aufträge (Adressatenprüfung), ein
   fremder Klassen-Code ohne Mitgliedschaft keinen Login (4.3 Schritt 3). Der Roster-Endpunkt
-  exponiert hinter dem Code nur Anzeigenamen — dieselbe Exposition wie der bestehende
-  Live-Join-Roster. PINs verlassen den Server in keiner Portal-Antwort.
+  exponiert hinter dem Code `studentId` + Anzeigename aktiver Mitglieder GENAU dieser Klasse
+  — die IDs sind sequenziell erratbar und bewusst kein Schutzgut (Review-Präzisierung:
+  Aufträge öffnen sich ausschliesslich über gültigen PIN + Klassenmitgliedschaft beim Login
+  bzw. das Bearer-Token bei Liste/Session-Mint); die Namens-Exposition entspricht dem
+  bestehenden Live-Join-Roster. PINs verlassen den Server in keiner Portal-Antwort.
 - **Token-Hygiene:** Portal-Token nur als SHA-256-Hash at rest (Muster `020_sessions.sql`),
   TTL 8 h, `sessionStorage` statt `localStorage` auf geteilten Geräten; `solo_sessions`
   bleiben 120-min-Einweg-Token. Abgelaufene Zeilen räumt ein späteres Vacuum-WP (nicht
@@ -643,8 +761,12 @@ geschlossen; die dort erwähnte fehlende Listing-Route ist `GET /api/assignment/
 5. **Join-Code:** Standard: 6 Zeichen A-Z (ohne I/O) + 2-9, lazy erzeugt, Rotation
    invalidiert sofort nur den Login (laufende Sitzungen unberührt). Format/UX umkehrbar,
    Spalte bleibt TEXT.
-6. **Klassenname-Snapshot auf Gruppen:** Standard: **nein** (YAGNI); bei Bedarf später
-   `assignment_groups`-Metatabelle oder Textspalte.
+6. **Klassenname-Snapshot auf Gruppen:** Standard nach Review-Befunden **gedreht: ja**, aber
+   als `metadata.targetLabel` im bestehenden JSONB beim INSERT (4.1) — kein Schemazusatz,
+   keine `assignment_groups`-Metatabelle (die bleibt YAGNI). Begründung: zwei unabhängige
+   Befunde (Kind-Verwirrung bei Doppel-Zuweisung 8.5, Audit-Lücke nach Klassenlöschung 8.4)
+   werden durch EIN Snapshot-Feld zu Null-Schemakosten gelöst. Umkehrbar: Feld einfach nicht
+   mehr schreiben/anzeigen.
 7. **"Solo-Link kopieren":** bleibt? Standard: **ja, unverändert** neben "Zuweisen".
 8. **Portal-Token-TTL:** Standard: **8 h** (ein Schultag). Umkehrbar per Konstante.
 9. **`requireIdentifier`/`showCorrectAnswers` im Dialog:** Standard: **nicht anbieten** —
@@ -666,7 +788,8 @@ geschlossen; die dort erwähnte fehlende Listing-Route ist `GET /api/assignment/
 - Portal: `portal-code-input`, `portal-code-submit`, `portal-name-select`,
   `portal-pin-input`, `portal-login-submit`, `portal-empty`, `portal-open-list`,
   `portal-done-list`, `portal-expired-list`, `portal-assignment-item-<assignmentId>`,
-  `portal-logout`, `portal-back-btn` (Finished-Screen), `assignment-submit-error`.
+  `portal-logout`, `portal-retry-btn` (Fetch-Fehlerzustand, 5.6), `portal-back-btn`
+  (Finished-Screen), `assignment-submit-error`.
 
 **Abnahmekriterien (prüfbar):**
 1. `POST /api/assignment` mit fremder `classId` → `403`, null Zeilen; mit eigener Klasse
@@ -693,6 +816,22 @@ geschlossen; die dort erwähnte fehlende Listing-Route ist `GET /api/assignment/
     ändert sich nur seine Zeile.
 12. Locale-Gate: neue Namespaces `assignment.json` + `portal.json` in ALLEN 6 Locales,
     `scripts/check-locales.sh` grün in jedem Gate.
+13. Geteiltes Gerät: nach 15 min ohne Interaktion zeigt `/portal` den Login, nicht die Liste
+    (Idle-Timeout 5.1); abgelaufenes `expiresAt` beim Mount → sofort Login, die alte Liste
+    wird zu keinem Zeitpunkt gerendert; `portal-logout` leert den Storage sofort.
+14. Rückkehr aus dem Spiel (`portal-back-btn`): die Liste wird frisch gefetcht
+    (Spinner sichtbar, Netzwerk-Request beobachtbar), der eben erledigte Auftrag liegt unter
+    "Erledigt"; simulierter Netzausfall beim Refresh → `portal-retry-btn`, NICHT die alte
+    Liste.
+15. Session-Mint-Fehler: je Code (`not-found`/`revoked`/`deadline`/`attempts`)
+    unterscheidbare Toast-Meldung, Auto-Refresh nach ~2 s verschiebt den Eintrag in die
+    passende Gruppe.
+16. Doppel-Zuweisung über zwei Klassen: Portal zeigt zwei Einträge mit unterscheidbarer
+    Herkunft in der meta-Zeile ("von Klasse 4b" / "von Klasse 4c"); nach Löschung einer
+    Klasse zeigt die Gruppen-Auswertung weiterhin deren `targetLabel`.
+17. A11y: die drei Portal-Gruppen sind als `<section>` mit zugänglichem Namen im
+    Accessibility-Tree; alle Portal-Interaktionsflächen ≥ 44 px (tokens:neural/ai-audit-Pass,
+    5.3 Kanon Punkt 3/6).
 
 **Werkzeuge und Pflichten:** e2e via Stagehand-Lane (echte Browser-Kontexte, act-Cache;
 Multi-Kind-Szenarien über getrennte Kontexte, NIE same-origin-iframes — bekannte
@@ -711,29 +850,46 @@ Lobby erreichen ist kein Pass).
   dokumentiert.
 - WP-0b: Wire-Contracts — `assignmentValidator`-Erweiterung (`packages/common/src/validators/
   assignment.ts`), `SoloScoreRequest.studentToken` (Rust-Struct `solo.rs:137` + Zod-Spiegel),
-  Response-Typen der neuen Endpunkte als TS-Typen in `packages/common`. Friert alle
-  Signaturen aus Abschnitt 4 ein.
+  Response-Typen der neuen Endpunkte als TS-Typen in `packages/common`. **Ausdrücklich Teil
+  des Freeze (Review-Auflage):** die typisierten Fehler-Codes als const-Union —
+  `"not-found" | "revoked" | "deadline" | "attempts" | "invalid" | "invalid-session"`
+  (4.1/4.3) — sowie der `submitError`-Typ des Solo-Stores (Wire-Codes + `"network"`, 5.6)
+  und `metadata.targetLabel` in den Group-/Portal-Response-Typen (4.1/4.2/4.3). Die Codes
+  sind Wire-Contract; die Anzeigetexte sind i18n-Sache (C5). Friert alle Signaturen aus
+  Abschnitt 4 ein.
+- WP-0c (Review-Auflage, reines Doc-WP): Portal-Design-Kanon aus 5.3 (Punkte 1–6) als
+  eigener Flächen-Abschnitt ins Root-`design.md` festschreiben (getrackt, nicht gitignored
+  — verifiziert) — bindende Spec für WP-C3, VOR Welle-2-Freigabe gemergt.
 
 **Welle 1 — Server-Kern (parallel auf Welle 0):**
-- WP-S1: `POST /api/assignment` Fan-out + Owner-Checks + `authorize_manager_request` gibt
-  User zurück (4.1/4.2-Grundsatz).
+- WP-S1: `POST /api/assignment` Fan-out + Owner-Checks + `metadata.targetLabel`-Snapshot im
+  classId-Modus + `authorize_manager_request` gibt User zurück (4.1/4.2-Grundsatz).
 - WP-S2: `validate_student_pin`-Adressaten-/Revoked-Scope + `solo-score`-Token-Konsum +
   serverseitiger `player_name` (4.1) — die beiden Lückenschlüsse; besitzt `pins.rs` und den
-  Assignment-Block in `solo.rs`.
-- WP-S3: Gruppen-Endpunkte (`groups`, `group/:id/results`, `DELETE group/:id`) + Owner-Check
-  auf `:id/results` + `410`/`requiresPin` auf `GET /api/assignment/:id` (4.1/4.2).
-- WP-S4: Portal-Endpunkte (`roster`, `login`, `assignments`, `session`) + `student_sessions`-
-  DB-Layer + Join-Code-Endpunkte (4.2/4.3).
+  Assignment-Block in `solo.rs`. **Liefert die typisierten Fehler-Bodies** `revoked` /
+  `invalid-session` / `deadline` / `attempts` statt generischer Texte (4.1,
+  Fehler-Contract-Kasten) — Abnahmekriterium 9/15 hängt daran.
+- WP-S3: Gruppen-Endpunkte (`groups` inkl. `targetLabel`, `group/:id/results`,
+  `DELETE group/:id`) + Owner-Check auf `:id/results` + `410`/`requiresPin` auf
+  `GET /api/assignment/:id` (4.1/4.2).
+- WP-S4: Portal-Endpunkte (`roster`, `login`, `assignments` inkl. `targetLabel`, `session`
+  **mit den fünf typisierten Fehler-Bodies aus 4.3**) + `student_sessions`-DB-Layer +
+  Join-Code-Endpunkte (4.2/4.3).
 
 **Welle 2 — Client (je auf dem passenden Server-WP):**
 - WP-C1 (nach S1): `AssignQuizzDialog` + `AssignStudentPicker` + Footer-Button (6).
 - WP-C2 (nach S3): Tab `assignments` + `ConfigAssignments` (7).
-- WP-C3 (nach S4): Portal — Route, `PortalShell`, `PortalCodeEntry`, Login-Steps,
-  `PortalAssignmentList` (5.1-5.4) + Klassen-Code-Dialog im Klassen-Tab (6.4).
-- WP-C4 (nach S2+S4): Spiel-Integration — Store-`studentToken`/`submitError`,
-  NameScreen-Skip, `onBackToPortal`, Fehler-Screens (5.5/5.6).
-- WP-C5: i18n — Namespaces `assignment.json`/`portal.json` ×6 + neue `manager:`-Keys;
-  eigenes WP, Locale-Merges nie textuell.
+- WP-C3 (nach S4 + 0c): Portal — Route, `PortalShell` **inkl. Idle-Timeout/TTL-Mount-Check/
+  Logout (5.1, Review-Blocker)**, `PortalCodeEntry`, Login-Steps, `PortalAssignmentList`
+  **inkl. Frisch-Fetch/Spinner/Retry (5.6) und `<section>`-Semantik (5.3 Punkt 6)** +
+  Klassen-Code-Dialog im Klassen-Tab (6.4). Implementiert GEGEN den Kanon aus WP-0c.
+- WP-C4 (nach S2+S4): Spiel-Integration — Store-`studentToken` + **`submitError`-Pfad
+  explizit: `finishGame` parst Fehler-Codes, Route rendert `AssignmentErrorScreen` je Code
+  (5.6, Review-Auflage)**, NameScreen-Skip, `onBackToPortal`, Session-Mint-Toasts mit
+  2-s-Auto-Refresh (5.5).
+- WP-C5: i18n — Namespaces `assignment.json`/`portal.json` ×6 (inkl. der Meldungstexte je
+  Fehler-Code aus 4.3/5.5/5.6) + neue `manager:`-Keys; eigenes WP, Locale-Merges nie
+  textuell.
 
 **Welle 3 — Absicherung und Nacharbeit:**
 - WP-T1: Stagehand-e2e über den vollen Kreis (zuweisen → Portal-Login → spielen → Auswertung
@@ -742,6 +898,58 @@ Lobby erreichen ist kein Pass).
 - WP-N2 (später, unabhängig): `solo_results.student_id` + Befüllung aus dem Token-Pfad.
 - WP-N3 (später): Vacuum abgelaufener `student_sessions`/`solo_sessions`.
 
-Harte Ketten: 0a→S1/S2/S4 (Schema), 0b→alle S-WPs (Contracts), S1→C1, S3→C2, S4→C3,
-S2+S4→C4; C5 ist nur von den finalen Key-Listen der C-WPs abhängig; T1 nach Welle 2 komplett.
-Nach jeder Welle: Deploy + Live-Smoke (Abschnitt 12), erst dann die nächste Welle.
+Harte Ketten: 0a→S1/S2/S4 (Schema), 0b→alle S-WPs (Contracts), 0c→C3 (Design-Kanon),
+S1→C1, S3→C2, S4→C3, S2+S4→C4; C5 ist nur von den finalen Key-Listen der C-WPs abhängig;
+T1 nach Welle 2 komplett. Nach jeder Welle: Deploy + Live-Smoke (Abschnitt 12), erst dann
+die nächste Welle.
+
+## 14. Was die Prüfung geändert hat
+
+Zwei unabhängige Prüfer (codex, agy) haben den Entwurf begutachtet; Verdikt
+"trägt mit Auflagen". Jeder Blocker und jeder wichtige Befund wurde umgesetzt oder begründet
+entschieden — nichts stillschweigend übergangen:
+
+1. **Blocker "sessionStorage auf geteilten Tablets"** → umgesetzt (5.1): "Tab zu =
+   abgemeldet" war für Klassenzimmer-Realität zu schwach. Neu: Inaktivitäts-Abmeldung nach
+   15 min (`lastActivity`-Tracking in `PortalShell`), TTL-Prüfung beim Mount (abgelaufen ⇒
+   direkt Login, nie erst die alte Liste), Abmelden-Button. Abnahmekriterium 13.
+2. **Blocker "Roster ohne IDs widerspricht Login"** → umgesetzt (4.3, 9): der Prosa-Satz
+   "nur Anzeigenamen" widersprach dem eigenen Response-Beispiel. Klargestellt: Roster
+   exponiert `studentId` + `displayName`; IDs sind sequenziell erratbar und bewusst kein
+   Schutzgut — Zugangshürde ist PIN + Mitgliedschaft. Sicherheitsabschnitt entsprechend
+   präzisiert.
+3. **"submitError-Flow nirgends als WP-Punkt"** → umgesetzt (5.6, 13): `submitError` ist
+   jetzt typisiert spezifiziert (Wire-Codes + `"network"`), mit klarer Zuständigkeit —
+   Codes: WP-S2/WP-0b, Store+Screen: WP-C4, Texte: WP-C5.
+4. **"Refresh nach Abschluss unterspezifiziert"** → umgesetzt (5.6): Frisch-Fetch bei jedem
+   Mount, Spinner statt alter Liste, Retry-Button bei Netzfehler, nie stiller Fallback auf
+   Stale-Daten. Abnahmekriterium 14, Test-ID `portal-retry-btn`.
+5. **"Portal-Design-Kanon nie definiert"** → umgesetzt (5.3, WP-0c): Kanon in sechs Punkten
+   im Plan entschieden (Token-only-Farben + Emoji-Affordances, grössere Typo-Stufe,
+   44-px-Touch-Targets, kein Hover-only, Theme-Folge, Motion, `<section>`-Semantik); WP-0c
+   schreibt ihn vor Welle 2 in `design.md`. Eine eigene Kinder-Farbpalette wurde dabei
+   begründet ABGELEHNT (neue Tokens + zweiter Kanon für eine Fläche = YAGNI, Governance-
+   Regel 2 bleibt einziger Farbweg).
+6. **"Session-Mint-Fehler nicht unterscheidbar"** → umgesetzt (4.3, 5.5): fünf typisierte
+   Bodies (`not-found`/`revoked`/`invalid`/`deadline`/`attempts`), je eigene lokalisierte
+   Meldung, Auto-Refresh der Liste 2 s nach Toast. Dasselbe Code-Vokabular gilt im
+   solo-score-Block (4.1) — Teil des Contract-Freeze (WP-0b). Abnahmekriterium 15.
+7. **"Doppel-Zuweisung verwirrt Kinder"** → umgesetzt als Option B des Prüfers (8.5):
+   Herkunfts-Kennzeichnung "von Klasse 4b" in der meta-Zeile statt Deduplizierung.
+   Option A (Dedup) ABGELEHNT: sie würde zwei getrennte Fristen/Versuchsbudgets hinter einem
+   Eintrag verstecken und das Pro-Zuweisungsakt-Ledger (Vorgabe 1) verfälschen. Träger ist
+   ein `metadata.targetLabel`-Snapshot beim INSERT (4.1) — kein Schemazusatz.
+8. **Nachrangig "SectionCard-Semantik/Screenreader"** → umgesetzt (5.3 Punkt 6,
+   Abnahmekriterium 17): `<section aria-labelledby>` statt anonymer `div`s.
+9. **Nachrangig "Klassenname nach Löschung = Audit-Lücke"** → umgesetzt, und zwar sofort
+   statt als Folge-ADR: der ohnehin für Befund 7 nötige `targetLabel`-Snapshot löst auch das
+   (8.4); offene Frage 6 wurde entsprechend von "nein (YAGNI)" auf "ja, als metadata-Feld"
+   gedreht — die vom Prüfer vorgeschlagene `assignment_groups`-Metatabelle bleibt abgelehnt
+   (JSONB reicht, Null-Schemakosten).
+10. **Nachrangig "Contract-Freeze-Lücke Fehler-Codes"** → umgesetzt in WP-0b (const-Union
+    aller Codes, `submitError`-Typ, `targetLabel`-Felder).
+11. **Nachrangig "Touch-Targets in Manager-Komponenten ungeprüft"** → umgesetzt im Kanon
+    (5.3 Punkt 3: `min-h` ≥ 44 px auf Portal-Rows, kein Hover-only; Verstoss = RED im
+    UI-Gate) und Abnahmekriterium 17. Eine Erweiterung des `tokens:neural`-Tools selbst um
+    einen generischen "Touch-Mode" wurde NICHT aufgenommen — Tooling-Ausbau ist ausserhalb
+    dieses Plans; die Prüfpflicht liegt stattdessen explizit beim C3-Gate.
