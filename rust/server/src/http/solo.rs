@@ -421,6 +421,26 @@ pub async fn handle_practice_score(
     })))
 }
 
+/// #471: true if a submission arriving at `now_ms` is past `deadline_ms`.
+/// Mirrors the client's `deadline < Date.now()` gate in
+/// `assignment.$assignmentId.tsx` (exactly-on-deadline still passes) so the
+/// server enforces the same rule the client already advertises to players,
+/// instead of a stricter one that would reject submissions the UI told them
+/// were still allowed.
+fn deadline_passed(deadline_ms: i64, now_ms: i64) -> bool {
+    now_ms > deadline_ms
+}
+
+/// #471: true if `attempt_count` prior submissions already exhaust
+/// `max_attempts` for this assignment. The submission under review would be
+/// attempt number `attempt_count + 1`, so equality already means no
+/// attempts are left (e.g. max_attempts=3, attempt_count=2 is the 3rd/last
+/// allowed attempt and must still pass; attempt_count=3 is the 4th and must
+/// be rejected).
+fn attempt_limit_reached(attempt_count: i64, max_attempts: i64) -> bool {
+    attempt_count >= max_attempts
+}
+
 pub async fn handle_solo_score(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(quiz_id): Path<String>,
@@ -545,6 +565,51 @@ pub async fn handle_solo_score(
         Some(p) => p,
         None => return Err((StatusCode::INTERNAL_SERVER_ERROR, "database not configured".to_string())),
     };
+
+    // #471: server-side deadline + attempt-limit enforcement for assignment
+    // submissions. Only runs when an assignmentId was actually submitted;
+    // both restrictions inside are independently optional (missing metadata
+    // key = no restriction for that rule) so an assignment without a
+    // deadline or without a max_attempts keeps working exactly as before.
+    // An assignmentId that doesn't match any row is treated the same as no
+    // assignmentId at all (fail-open) — this handler has never validated
+    // assignment existence and adding that check is out of scope here.
+    if let Some(ref assignment_id) = payload.assignment_id {
+        let metadata: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT metadata FROM assignments WHERE id = $1"
+        )
+        .bind(assignment_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load assignment: {}", e)))?;
+
+        if let Some(metadata) = metadata {
+            if let Some(deadline) = metadata.get("deadline").and_then(|v| v.as_i64()) {
+                if deadline_passed(deadline, now.timestamp_millis()) {
+                    warn!("solo_score: submission after deadline for assignment {}", assignment_id);
+                    return Err((StatusCode::FORBIDDEN, "Assignment deadline has passed".to_string()));
+                }
+            }
+
+            if let Some(max_attempts) = metadata.get("maxAttempts").and_then(|v| v.as_i64()) {
+                let attempt_count: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM solo_results WHERE assignment_id = $1"
+                )
+                .bind(assignment_id)
+                .fetch_one(pool)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to count attempts: {}", e)))?;
+
+                if attempt_limit_reached(attempt_count, max_attempts) {
+                    warn!(
+                        "solo_score: attempt limit reached for assignment {} ({} >= {})",
+                        assignment_id, attempt_count, max_attempts
+                    );
+                    return Err((StatusCode::FORBIDDEN, "Maximum number of attempts reached".to_string()));
+                }
+            }
+        }
+    }
 
     // Generate unique ID: format!("{}-{}", quiz_id, uuid12)
     let uuid12 = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
@@ -1009,6 +1074,52 @@ mod tests {
             answer(99, Some(0)), // Out of bounds index
         ];
         assert!(oversized_answers.len() > quiz.questions.len());
+    }
+
+    // ── #471: server-side deadline + attempt-limit enforcement ──────────────
+    //
+    // These construct the "filled-in" case explicitly (deadline_ms /
+    // max_attempts / attempt_count as if an assignmentId metadata row was
+    // actually loaded) rather than going through SoloScoreRequest — the real
+    // client→server wiring for assignmentId is fixed in a separate package
+    // (see #471/#498 contract note); these gate functions are what the
+    // handler calls once that field is populated, and are correct/tested
+    // independently of that wiring.
+
+    #[test]
+    fn deadline_allows_submission_before_deadline() {
+        assert!(!deadline_passed(10_000, 5_000));
+    }
+
+    #[test]
+    fn deadline_rejects_submission_after_deadline() {
+        assert!(deadline_passed(10_000, 10_001));
+    }
+
+    #[test]
+    fn deadline_boundary_exact_deadline_still_allowed() {
+        // Mirrors the client's `deadline < Date.now()` gate: equality passes.
+        assert!(!deadline_passed(10_000, 10_000));
+    }
+
+    #[test]
+    fn attempt_limit_allows_submission_under_limit() {
+        // max_attempts=3, 1 prior attempt -> this would be the 2nd, allowed.
+        assert!(!attempt_limit_reached(1, 3));
+    }
+
+    #[test]
+    fn attempt_limit_rejects_submission_over_limit() {
+        // max_attempts=3, 3 prior attempts already used -> this would be the
+        // 4th, rejected.
+        assert!(attempt_limit_reached(3, 3));
+    }
+
+    #[test]
+    fn attempt_limit_boundary_last_allowed_attempt_still_allowed() {
+        // max_attempts=3, 2 prior attempts -> this would be the 3rd/last
+        // allowed attempt, must still pass.
+        assert!(!attempt_limit_reached(2, 3));
     }
 
 }
