@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import Button from "@razzoozle/web/components/Button"
 import AnimatedPoints from "@razzoozle/web/features/game/components/AnimatedPoints"
 import SoloLeaderboard from "@razzoozle/web/features/game/components/SoloLeaderboard"
+import type { SoloQuestionResult } from "@razzoozle/web/features/game/stores/solo"
 
 // ---------------------------------------------------------------------------
 // Finished / result screen after all questions
@@ -14,6 +15,61 @@ interface FinishedScreenProps {
   leaderboard: import("@razzoozle/common/types/game").SoloScoreEntry[]
   playerName: string
   onReplay: () => void
+  // Optional answer trail from the solo store — powers the personal recap
+  // card below. Undefined/empty just skips the card (no data, no crash).
+  answers?: SoloQuestionResult[]
+}
+
+// Personal recap for a solo round, parity with PlayerFinished's MyRecapCard
+// minus the `fastest` stat — solo tracks no per-answer timing, so there is
+// nothing to report there (not a gap, just no such measurement in solo).
+const SoloRecapCard = ({ answers }: { answers: SoloQuestionResult[] }) => {
+  const { t } = useTranslation()
+
+  const correct = answers.filter((a) => a.correct).length
+  const wrong = answers.length - correct
+  const accuracyPct =
+    answers.length > 0 ? Math.round((correct / answers.length) * 100) : 0
+
+  let peakStreak = 0
+  let streak = 0
+  for (const a of answers) {
+    streak = a.correct ? streak + 1 : 0
+    peakStreak = Math.max(peakStreak, streak)
+  }
+
+  const stats: { label: string; value: string }[] = [
+    { label: t("game:recap.myCard.accuracy"), value: `${accuracyPct}%` },
+    { label: t("game:recap.myCard.correct"), value: `${correct}` },
+    { label: t("game:recap.myCard.wrong"), value: `${wrong}` },
+    {
+      label: t("game:recap.myCard.peakStreak"),
+      value: t("game:recap.myCard.streakValue", { count: peakStreak }),
+    },
+  ]
+
+  return (
+    <div data-testid="solo-finished-recap" className="w-full max-w-md">
+      <h2 className="mb-3 text-center text-xl font-extrabold text-[color:var(--game-fg)] drop-shadow">
+        {t("game:recap.title")}
+      </h2>
+      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="flex flex-col items-center gap-0.5 rounded-2xl border border-[var(--border-hairline)] bg-white px-3 py-3 text-center shadow-sm"
+          >
+            <span className="text-2xl font-extrabold text-[color:var(--color-field-ink)] tabular-nums">
+              {s.value}
+            </span>
+            <span className="text-xs font-semibold tracking-wide text-[color:var(--color-field-ink)]/60 uppercase">
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 const FinishedScreen = ({
@@ -22,6 +78,7 @@ const FinishedScreen = ({
   leaderboard,
   playerName,
   onReplay,
+  answers,
 }: FinishedScreenProps) => {
   const { t } = useTranslation()
   const reduced = useReducedMotion() ?? false
@@ -63,6 +120,8 @@ const FinishedScreen = ({
             totalPoints={totalPoints}
           />
         </div>
+
+        {answers && answers.length > 0 && <SoloRecapCard answers={answers} />}
 
         <div className="flex flex-col gap-3 pb-10 sm:flex-row">
           <Button
