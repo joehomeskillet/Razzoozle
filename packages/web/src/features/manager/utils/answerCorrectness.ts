@@ -1,3 +1,4 @@
+import { isUnscoredQuestionType } from "@razzoozle/common/constants"
 import type { PlayerAnswerRecord, QuestionResult } from "@razzoozle/common/types/game"
 import { matchAnswer } from "@razzoozle/web/features/game/utils/text-match"
 
@@ -10,7 +11,9 @@ export const isAnswerCorrect = (
   question: QuestionResult,
   pa: PlayerAnswerRecord,
 ): boolean => {
-  if (question.type === "poll") {
+  // Neutral types (poll, word-cloud, brainstorm, confidence, micro-lesson) never
+  // score right/wrong — mirrors the eval.rs branches, see UNSCORED_QUESTION_TYPES.
+  if (isUnscoredQuestionType(question.type)) {
     return false
   }
 

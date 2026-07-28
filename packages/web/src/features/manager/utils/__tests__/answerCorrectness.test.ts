@@ -1,3 +1,4 @@
+import { UNSCORED_QUESTION_TYPES } from "@razzoozle/common/constants"
 import type { PlayerAnswerRecord, QuestionResult } from "@razzoozle/common/types/game"
 import { describe, expect, it } from "vitest"
 
@@ -18,16 +19,19 @@ const makeQuestion = (
 })
 
 describe("isAnswerCorrect", () => {
-  describe("poll type", () => {
-    it("always returns false for poll questions", () => {
-      const question = makeQuestion({ type: "poll" })
-      const pa: PlayerAnswerRecord = {
-        playerName: "Player 1",
-        answerId: 0,
-      }
+  describe("unscored types (poll, word-cloud, brainstorm, confidence, micro-lesson)", () => {
+    it.each(UNSCORED_QUESTION_TYPES)(
+      "always returns false for %s questions",
+      (type) => {
+        const question = makeQuestion({ type })
+        const pa: PlayerAnswerRecord = {
+          playerName: "Player 1",
+          answerId: 0,
+        }
 
-      expect(isAnswerCorrect(question, pa)).toBe(false)
-    })
+        expect(isAnswerCorrect(question, pa)).toBe(false)
+      },
+    )
   })
 
   describe("choice type", () => {

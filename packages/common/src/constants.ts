@@ -487,6 +487,23 @@ export const QUESTION_TYPES = [
 
 export type QuestionType = (typeof QUESTION_TYPES)[number]
 
+// Question types that never receive a right/wrong verdict — opinion polls,
+// free-form collection formats, self-assessment, teaching content. Mirrors the
+// explicit `correct: false, base: 0.0` branches in rust/engine/src/eval.rs.
+// APPEND-ONLY: add a new member here (not a per-callsite `type === "..."`
+// check) so every correctness display picks up the exemption automatically.
+export const UNSCORED_QUESTION_TYPES = [
+  "poll",
+  "word-cloud",
+  "brainstorm",
+  "confidence",
+  "micro-lesson",
+] as const
+
+export const isUnscoredQuestionType = (type: QuestionType | undefined): boolean =>
+  type != null &&
+  (UNSCORED_QUESTION_TYPES as readonly QuestionType[]).includes(type)
+
 // ---- AI provider abstraction (standardized interface) ----------------------
 // Two transport shapes cover every supported text backend:
 //   - "openai-compatible": local Ollama/LM Studio, OpenAI, OpenRouter, ...
