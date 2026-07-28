@@ -84,7 +84,7 @@ export function ParticipantCapSetting({
                 className={clsx(
                   "rounded-lg px-3 py-2 text-xs font-bold transition-all border",
                   isSelected
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" // token-ok: white-on-primary, AA per design.md §8·B D6
                     : "border-[var(--border-hairline)] bg-[var(--surface-2)] text-[var(--ink-medium)] hover:bg-[var(--surface-3)]",
                   disabled && "cursor-not-allowed opacity-60",
                 )}

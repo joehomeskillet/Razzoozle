@@ -67,7 +67,7 @@ export function QuizVersionHistoryModal({
                   v{ver.version}
                 </span>
                 {ver.isCurrent && (
-                  <span className="rounded-md bg-[var(--color-primary)] px-2 py-0.5 text-xs font-bold text-white">
+                  <span className="rounded-md bg-[var(--color-primary)] px-2 py-0.5 text-xs font-bold text-white"> {/* token-ok: white-on-primary, AA per design.md §8·B D6 */}
                     {t("manager:version.current", { defaultValue: "Aktuell" })}
                   </span>
                 )}

@@ -52,15 +52,24 @@ grep -rnoE '[a-zA-Z][a-zA-Z0-9:_/-]*-(gray|red|green|amber|blue)-[0-9]+' \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D1 forbidden color token '\2'/" >>"$TMPFILE" || true
 
 # D1: White shorthand utilities (bg-white, text-white).
-grep -rnoE '\b(bg-white|text-white)\b' \
+# Trailing (-[a-zA-Z0-9]+)* absorbs mapped extended forms (e.g. bg-white-tint)
+# into the match so the content filter below can drop them; \b alone treats
+# '-' as a word boundary and would otherwise still flag the naked prefix.
+grep -rnoE '\b(bg-white|text-white)(-[a-zA-Z0-9]+)*\b' \
   --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -vE -- '(bg|text)-white-' | \
   grep -vF -f "$EXCLUDE" | \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D1 forbidden white utility '\2'/" >>"$TMPFILE" || true
 
 # D2: Shorthand design-token utilities (must use var() form).
 # Matches primary, secondary, accent in full utility form: bg-primary, border-secondary, etc.
-grep -rnoE '\b(bg|text|border|ring|outline|from|to)-(primary|secondary|accent)\b' \
+# Same '-' boundary trap as D1 white: \b matches between 'accent' and the '-'
+# in 'bg-accent-tint', so the trailing group pulls any extended segment into
+# the match and the content filter drops matches that turn out to be mapped
+# extended utilities (bg-accent-tint, text-accent-contrast, ...).
+grep -rnoE '\b(bg|text|border|ring|outline|from|to)-(primary|secondary|accent)(-[a-zA-Z0-9]+)*\b' \
   --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
+  grep -vE -- '-(primary|secondary|accent)-' | \
   grep -vF -f "$EXCLUDE" | \
   sed "s/\([^:]*:[^:]*:\)\(.*\)/\1D2 shorthand '\2' must use var() form (e.g., bg-[var(--color-primary)])/" >>"$TMPFILE" || true
 
@@ -77,7 +86,7 @@ grep -rnoE 'bg-black/[0-9]+' \
 # Excludes opacity variants (e.g., from-black/40, to-white/30) and variable forms (e.g., to-[var(...)]).
 grep -rEn '\b(from|via|to)-(white|black)\b' \
   --include='*.tsx' --include='*.ts' "$SCAN_ROOT" 2>/dev/null | \
-  grep -vE '(from|via|to)-(white|black)(/|\[)' | \
+  grep -vE '(from|via|to)-(white|black)(/|\[|-)' | \
   grep -vF -f "$EXCLUDE" | \
   sed 's/^\([^:]*:[^:]*\):.*/\1:D-GRAD forbidden gradient utility (use var() form)/' >>"$TMPFILE" || true
 
