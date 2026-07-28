@@ -22,6 +22,23 @@ pub use registry::GameRegistry;
 // Resource caps (parity with Node)
 pub const MAX_ACTIVE_GAMES: usize = 100;
 pub const MAX_PLAYERS_PER_GAME: usize = 200;
+
+// #477 — a manager may configure a lower per-game participant cap
+// (ParticipantCapSetting.tsx). MAX_PLAYERS_PER_GAME stays the hard server
+// ceiling: a configured value may only LOWER it, never raise it. `None`,
+// `0`, and negative values all mean "no cap requested" and resolve to the
+// hard ceiling — "unlimited" in this system means 200, not infinite. A
+// requested value above the ceiling is clamped down to it rather than
+// rejected outright, mirroring how the other per-game mode requests at
+// game creation (socket/game.rs) degrade gracefully instead of failing
+// the whole game creation.
+pub fn resolve_player_cap(requested: Option<i64>) -> Option<usize> {
+    match requested {
+        Some(v) if v > 0 => Some((v as usize).min(MAX_PLAYERS_PER_GAME)),
+        _ => None,
+    }
+}
+
 pub const USERNAME_MIN_LEN: usize = 4;
 pub const USERNAME_MAX_LEN: usize = 20;
 pub const AVATAR_MAX_BYTES: usize = 4_000_000;

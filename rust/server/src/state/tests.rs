@@ -1080,3 +1080,158 @@ async fn test_kick_player_cleans_socket_to_game_index() {
         "Player socket should NOT be indexed after kick and deindex (fix for #144)"
     );
 }
+
+// ── #477: configurable per-game participant cap ──────────────────────────────
+
+#[test]
+fn test_resolve_player_cap_none_and_nonpositive_default_to_hard_ceiling() {
+    assert_eq!(resolve_player_cap(None), None);
+    assert_eq!(resolve_player_cap(Some(0)), None);
+    assert_eq!(resolve_player_cap(Some(-5)), None);
+}
+
+#[test]
+fn test_resolve_player_cap_valid_value_passes_through() {
+    assert_eq!(resolve_player_cap(Some(50)), Some(50));
+}
+
+#[test]
+fn test_resolve_player_cap_clamps_above_hard_ceiling() {
+    assert_eq!(resolve_player_cap(Some(5000)), Some(MAX_PLAYERS_PER_GAME));
+    assert_eq!(resolve_player_cap(Some(201)), Some(MAX_PLAYERS_PER_GAME));
+}
+
+#[test]
+fn test_resolve_player_cap_exactly_at_ceiling_passes_through() {
+    assert_eq!(
+        resolve_player_cap(Some(MAX_PLAYERS_PER_GAME as i64)),
+        Some(MAX_PLAYERS_PER_GAME)
+    );
+    assert_eq!(resolve_player_cap(Some(200)), Some(200));
+}
+
+#[test]
+fn test_player_cap_allows_join_under_configured_limit() {
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+    let mut game = Game::new(
+        "game-1".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+    game.player_cap = Some(3);
+
+    for i in 0..2 {
+        game.add_player(
+            format!("socket-{i}"),
+            format!("client-{i}"),
+            format!("User{i}"),
+            None,
+        )
+        .unwrap();
+    }
+    assert!(!game.is_at_player_cap(), "2 players with cap 3 must still allow join");
+}
+
+#[test]
+fn test_player_cap_allows_join_exactly_at_configured_limit_boundary() {
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+    let mut game = Game::new(
+        "game-1".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+    game.player_cap = Some(3);
+
+    // 2 players: one under the limit — the 3rd (last allowed) join may still go through.
+    for i in 0..2 {
+        game.add_player(
+            format!("socket-{i}"),
+            format!("client-{i}"),
+            format!("User{i}"),
+            None,
+        )
+        .unwrap();
+    }
+    assert!(
+        !game.is_at_player_cap(),
+        "2/3: last allowed join must still be permitted"
+    );
+
+    // 3rd player joins — cap reached; a 4th join must be rejected by login.rs.
+    game.add_player(
+        "socket-2".to_string(),
+        "client-2".to_string(),
+        "User2".to_string(),
+        None,
+    )
+    .unwrap();
+    assert!(
+        game.is_at_player_cap(),
+        "3/3: limit reached, next join must be rejected"
+    );
+}
+
+#[test]
+fn test_player_cap_rejects_join_above_configured_limit() {
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+    let mut game = Game::new(
+        "game-1".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+    game.player_cap = Some(3);
+
+    for i in 0..3 {
+        game.add_player(
+            format!("socket-{i}"),
+            format!("client-{i}"),
+            format!("User{i}"),
+            None,
+        )
+        .unwrap();
+    }
+    assert!(
+        game.is_at_player_cap(),
+        "3 players at cap 3: a 4th join would be rejected in login.rs"
+    );
+}
+
+#[test]
+fn test_player_cap_unconfigured_falls_back_to_previous_hard_ceiling_behavior() {
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+    let game = Game::new(
+        "game-1".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+    // player_cap stays None from Game::new — prior hard-ceiling behaviour unchanged.
+    assert_eq!(game.effective_player_cap(), MAX_PLAYERS_PER_GAME);
+}

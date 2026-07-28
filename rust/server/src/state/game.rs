@@ -121,6 +121,10 @@ pub struct Game {
     pub auto_advance_task: Option<JoinHandle<()>>,
     // W1-M2: Snapshotted mode selections at game creation time (scoring, team, klassen, end-screen).
     pub selected_modes: SelectedModes,
+    // #477: per-game participant cap, already validated/clamped by
+    // resolve_player_cap. `None` = not configured, i.e. use the hard
+    // MAX_PLAYERS_PER_GAME ceiling (see effective_player_cap()).
+    pub player_cap: Option<usize>,
 }
 
 impl Game {
@@ -196,6 +200,7 @@ impl Game {
                 klassen: None,
                 end_screen: None,
             },
+            player_cap: None,
         }
     }
 
@@ -321,6 +326,20 @@ impl Game {
     /// actually abandoned.
     pub fn has_connected_players(&self) -> bool {
         self.players.iter().any(|p| p.connected)
+    }
+
+    /// #477: resolved per-game player cap — the configured value if one was
+    /// set (already clamped to MAX_PLAYERS_PER_GAME by resolve_player_cap),
+    /// otherwise the hard ceiling.
+    pub fn effective_player_cap(&self) -> usize {
+        self.player_cap.unwrap_or(crate::state::MAX_PLAYERS_PER_GAME)
+    }
+
+    /// #477: true once the game has reached its (configured or hard)
+    /// participant cap — the join path must reject before adding a player
+    /// when this is true, never after.
+    pub fn is_at_player_cap(&self) -> bool {
+        self.players.len() >= self.effective_player_cap()
     }
 
     /// Update last_activity_ms to current time — prevents C4 reaper eviction of active games
