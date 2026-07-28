@@ -91,6 +91,30 @@
       "cooldown": 5
     },
     {
+      "type": "brainstorm",
+      "question": "Nenne einen Vorteil von Fernarbeit.",
+      "answers": ["Weniger Pendelzeit", "Flexiblere Zeiteinteilung"],
+      "solutions": [0],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "confidence",
+      "question": "Wie sicher bist du bei kniffligen Fragen?",
+      "answers": ["Sehr sicher", "Unsicher", "Geraten"],
+      "solutions": [0],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
+      "type": "micro-lesson",
+      "question": "Wusstest du das?",
+      "answers": ["Razzoozle unterstützt jetzt auch wertungsfreie Fragetypen.", "Sie zählen nie als falsch beantwortet."],
+      "solutions": [0],
+      "time": 10,
+      "cooldown": 5
+    },
+    {
       "type": "fill-blank",
       "question": "The capital of _____ is Paris.",
       "segments": ["The capital of ", " is Paris."],
