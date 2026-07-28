@@ -301,10 +301,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
   finishGame: async (id: string) => {
     const { playerName, totalPoints, answers, assignmentId } = get()
     try {
-      let url = `/api/quizz/${encodeURIComponent(id)}/solo-score`
-      if (assignmentId) {
-        url += `?assignmentId=${encodeURIComponent(assignmentId)}`
-      }
+      const url = `/api/quizz/${encodeURIComponent(id)}/solo-score`
 
       const res = await fetch(url, {
         method: "POST",
@@ -312,6 +309,10 @@ export const useSoloStore = create<SoloState>((set, get) => ({
         body: JSON.stringify({
           playerName: playerName.trim() || "Anonym",
           score: totalPoints,
+          // #471: the server reads assignmentId from the JSON body (see
+          // SoloScoreRequest in rust/server/src/http/solo.rs) — it has no
+          // Query extractor, so a query-string param is silently dropped.
+          ...(assignmentId !== undefined ? { assignmentId } : {}),
           answers: answers.map((a) => ({
             questionIndex: a.questionIndex,
             correct: a.correct, // Anzeige-/Legacy-Kompat; Server ignoriert
