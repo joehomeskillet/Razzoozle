@@ -860,7 +860,9 @@
     "statusAll": "Todos los estados",
     "cannot_copy_self": "No puedes copiar tu propia cuenta",
     "bulkFailed": "Acción masiva fallida",
-    "searchPlaceholder": "Buscar por nombre de usuario..."
+    "searchPlaceholder": "Buscar por nombre de usuario...",
+    "usernamePlaceholder": "p. ej. max.mustermann",
+    "passwordPlaceholder": "Al menos 6 caracteres"
   },
   "profile": {
     "intro": "Tu perfil y tus ajustes personales.",

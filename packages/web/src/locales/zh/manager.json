@@ -860,7 +860,9 @@
     "statusAll": "所有状态",
     "cannot_copy_self": "你不能复制自己的账户",
     "bulkFailed": "批量操作失败",
-    "searchPlaceholder": "按用户名搜索..."
+    "searchPlaceholder": "按用户名搜索...",
+    "usernamePlaceholder": "例如 max.mustermann",
+    "passwordPlaceholder": "至少 6 个字符"
   },
   "profile": {
     "intro": "您的个人资料和设置",

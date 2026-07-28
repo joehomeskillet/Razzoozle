@@ -45,8 +45,8 @@ export default function CreateUserDialog({
               <UserPlus className="h-5 w-5 text-ink-muted" />
               <Dialog.Title className="text-lg font-bold text-ink">
                 {copySourceId
-                  ? t("manager:users.copyTitle", { defaultValue: "Benutzer kopieren" })
-                  : t("manager:users.createTitle", { defaultValue: "Neuen Benutzer anlegen" })}
+                  ? t("manager:users.copyDialogTitle")
+                  : t("manager:users.createTitle")}
               </Dialog.Title>
             </div>
             <Dialog.Close asChild>
@@ -62,60 +62,60 @@ export default function CreateUserDialog({
           <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink">
-                {t("manager:users.usernameLabel", { defaultValue: "Benutzername" })}
+                {t("manager:users.usernameLabel")}
               </label>
               <Input
                 type="text"
                 value={username}
                 onChange={(e) => onUsernameChange(e.target.value)}
-                placeholder={t("manager:users.usernamePlaceholder", { defaultValue: "z.B. max.mustermann" })}
+                placeholder={t("manager:users.usernamePlaceholder")}
                 required
               />
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink">
-                {t("manager:users.passwordLabel", { defaultValue: "Passwort" })}
+                {t("manager:users.passwordLabel")}
               </label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                placeholder={t("manager:users.passwordPlaceholder", { defaultValue: "Mindestens 6 Zeichen" })}
+                placeholder={t("manager:users.passwordPlaceholder")}
                 required
               />
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink">
-                {t("manager:users.roleLabel", { defaultValue: "Rolle" })}
+                {t("manager:users.roleLabel")}
               </label>
               <Select
                 value={role}
                 onChange={(e) => onRoleChange(e.target.value as "user" | "admin" | "lehrkraft")}
               >
                 <option value="user">
-                  {t("manager:users.role.user", { defaultValue: "Schüler/in" })}
+                  {t("manager:users.role.user")}
                 </option>
                 <option value="lehrkraft">
-                  {t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })}
+                  {t("manager:users.role.lehrkraft")}
                 </option>
                 <option value="admin">
-                  {t("manager:users.role.admin", { defaultValue: "Admin" })}
+                  {t("manager:users.role.admin")}
                 </option>
               </Select>
             </div>
 
             <div className="mt-2 flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={onClose}>
-                {t("manager:common.cancel", { defaultValue: "Abbrechen" })}
+                {t("common:cancel")}
               </Button>
               <Button type="submit" variant="primary" disabled={creating}>
                 {creating
-                  ? t("manager:common.saving", { defaultValue: "Speichern..." })
+                  ? t("common:saving")
                   : copySourceId
-                    ? t("manager:users.copyConfirm", { defaultValue: "Benutzer kopieren" })
-                    : t("manager:users.createConfirm", { defaultValue: "Benutzer anlegen" })}
+                    ? t("manager:users.copyUser")
+                    : t("manager:users.create")}
               </Button>
             </div>
           </form>

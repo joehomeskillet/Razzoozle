@@ -860,7 +860,9 @@
     "roleFilter": "Rollenfilter",
     "statusFilter": "Statusfilter",
     "roleAll": "Alle Rollen",
-    "statusAll": "Alle Status"
+    "statusAll": "Alle Status",
+    "usernamePlaceholder": "z.B. max.mustermann",
+    "passwordPlaceholder": "Mindestens 6 Zeichen"
   },
   "profile": {
     "intro": "Dein Profil und deine persönlichen Einstellungen.",

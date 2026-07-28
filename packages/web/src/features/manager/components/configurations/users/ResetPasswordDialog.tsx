@@ -37,10 +37,7 @@ export default function ResetPasswordDialog({
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5 text-ink-muted" />
               <Dialog.Title className="text-lg font-bold text-ink">
-                {t("manager:users.resetPasswordTitle", {
-                  defaultValue: "Passwort zurücksetzen für {{name}}",
-                  name: user.username,
-                })}
+                {t("manager:users.resetPasswordTitle")}
               </Dialog.Title>
             </div>
             <Dialog.Close asChild>
@@ -62,25 +59,25 @@ export default function ResetPasswordDialog({
           >
             <div>
               <label className="mb-1 block text-sm font-semibold text-ink">
-                {t("manager:users.newPasswordLabel", { defaultValue: "Neues Passwort" })}
+                {t("manager:users.passwordLabel")}
               </label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                placeholder={t("manager:users.newPasswordPlaceholder", { defaultValue: "Mindestens 6 Zeichen" })}
+                placeholder={t("manager:users.enterNewPassword")}
                 required
               />
             </div>
 
             <div className="mt-2 flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={onClose}>
-                {t("manager:common.cancel", { defaultValue: "Abbrechen" })}
+                {t("common:cancel")}
               </Button>
               <Button type="submit" variant="primary" disabled={resetting || !newPassword}>
                 {resetting
-                  ? t("manager:common.saving", { defaultValue: "Speichern..." })
-                  : t("manager:users.resetPasswordConfirm", { defaultValue: "Passwort zurücksetzen" })}
+                  ? t("common:saving")
+                  : t("manager:users.resetPassword")}
               </Button>
             </div>
           </form>

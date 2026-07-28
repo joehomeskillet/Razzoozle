@@ -30,5 +30,6 @@
   "add": "Ajouter",
   "removeLabelNamed": "Supprimer {{name}}",
   "copy": "Copier",
-  "restartRequired": "Redémarrage requis"
+  "restartRequired": "Redémarrage requis",
+  "saving": "Enregistrement..."
 }

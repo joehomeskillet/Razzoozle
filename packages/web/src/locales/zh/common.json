@@ -30,5 +30,6 @@
   "add": "添加",
   "removeLabelNamed": "移除{{name}}",
   "copy": "复制",
-  "restartRequired": "需要重启"
+  "restartRequired": "需要重启",
+  "saving": "保存中…"
 }
