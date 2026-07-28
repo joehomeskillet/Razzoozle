@@ -27,7 +27,14 @@
     "classInactive": "Questa classe è disattivata.",
     "duplicateName": "Questo nome è già in uso.",
     "statusError": "Errore nel caricamento del quiz.",
-    "networkError": "Errore di rete durante il caricamento del quiz."
+    "networkError": "Errore di rete durante il caricamento del quiz.",
+    "submitRejectedTitle": "Invio non accettato",
+    "submitDeadlinePassed": "La scadenza per la consegna è passata.",
+    "submitAttemptLimitReached": "Hai già consegnato il numero massimo di volte consentito.",
+    "submitRejectedOther": "Il tuo invio non è stato accettato.",
+    "submitNetworkTitle": "Invio non riuscito",
+    "submitNetworkMessage": "Il tuo invio non è arrivato. Controlla la connessione e riprova.",
+    "submitRetry": "Invia di nuovo"
   },
   "manager": {
     "failedToReadConfig": "Impossibile leggere la configurazione del gioco",

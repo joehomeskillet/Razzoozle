@@ -32,7 +32,14 @@
     "classInactive": "该班级已停用。",
     "duplicateName": "该名字已被使用。",
     "statusError": "加载测验失败。",
-    "networkError": "加载测验时网络错误。"
+    "networkError": "加载测验时网络错误。",
+    "submitRejectedTitle": "提交未被接受",
+    "submitDeadlinePassed": "提交截止时间已过。",
+    "submitAttemptLimitReached": "你已经用完了允许的提交次数。",
+    "submitRejectedOther": "你的提交未被接受。",
+    "submitNetworkTitle": "提交未发送成功",
+    "submitNetworkMessage": "你的提交没有送达。请检查网络连接后再试一次。",
+    "submitRetry": "重新发送"
   },
   "manager": {
     "failedToReadConfig": "读取游戏配置失败",

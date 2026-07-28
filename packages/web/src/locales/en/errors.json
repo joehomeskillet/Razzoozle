@@ -32,7 +32,14 @@
     "classInactive": "This class is deactivated.",
     "duplicateName": "This name is already taken.",
     "statusError": "Failed to load the quiz.",
-    "networkError": "Network error while loading the quiz."
+    "networkError": "Network error while loading the quiz.",
+    "submitRejectedTitle": "Submission not accepted",
+    "submitDeadlinePassed": "The submission deadline has passed.",
+    "submitAttemptLimitReached": "You've already submitted as many times as allowed.",
+    "submitRejectedOther": "Your submission was not accepted.",
+    "submitNetworkTitle": "Submission not sent",
+    "submitNetworkMessage": "Your submission didn't arrive. Check your connection and try again.",
+    "submitRetry": "Send again"
   },
   "manager": {
     "failedToReadConfig": "Failed to read game config",
