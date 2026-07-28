@@ -82,6 +82,11 @@ pub struct SelectedModes {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub end_screen: Option<EndScreen>,
+    /// Per-game participant cap. None or 0 = unlimited (up to server ceiling of 200).
+    /// Validated and clamped server-side via resolve_player_cap().
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub participant_cap: Option<i64>,
 }
 
 /// End-screen display mode (mutually exclusive)
@@ -385,6 +390,7 @@ mod tests {
                 team_mode: Some(true),
                 klassen: Some(false),
                 end_screen: Some(EndScreen::Top3),
+                participant_cap: None,
             }),
             class_id: Some(7),
         };
@@ -401,10 +407,26 @@ mod tests {
             team_mode: Some(false),
             klassen: None,
             end_screen: None,
+            participant_cap: None,
         };
         let json = serde_json::to_value(&modes).unwrap();
         let parsed: SelectedModes = serde_json::from_value(json).unwrap();
         assert_eq!(parsed.team_mode, Some(false));
         assert!(parsed.scoring_mode.is_none());
+    }
+
+    #[test]
+    fn test_selected_modes_participant_cap() {
+        let modes = SelectedModes {
+            scoring_mode: None,
+            team_mode: None,
+            klassen: None,
+            end_screen: None,
+            participant_cap: Some(50),
+        };
+        let json = serde_json::to_value(&modes).unwrap();
+        assert_eq!(json["participantCap"], 50);
+        let parsed: SelectedModes = serde_json::from_value(json).unwrap();
+        assert_eq!(parsed.participant_cap, Some(50));
     }
 }

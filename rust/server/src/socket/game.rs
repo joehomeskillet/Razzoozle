@@ -205,15 +205,13 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             // Wave-1: bind class for klassen mode
                             g.class_id = bound_class_id;
 
-                            // #477: per-game participant cap. No client-supplied value
-                            // exists on the create payload yet — wiring that through
-                            // razzoozle_protocol::game::{CreateGamePayload, SelectedModes}
-                            // (a shared contract with packages/common) is a separate
-                            // follow-up package. resolve_player_cap is already the single
-                            // validate/clamp entry point that payload field would call here.
-                            g.player_cap = crate::state::resolve_player_cap(None);
+                            // #477: per-game participant cap. Validate and clamp via the
+                            // single validation point (resolve_player_cap).
+                            let requested_player_cap = selected_modes.as_ref().and_then(|m| m.participant_cap);
+                            g.player_cap = crate::state::resolve_player_cap(requested_player_cap);
 
-                            // Snapshot per-game mode selection
+                            // Snapshot per-game mode selection with CLAMPED cap value
+                            // (not the raw client value, so snapshot always reflects wirksam state)
                             g.selected_modes = SelectedModes {
                                 scoring_mode: Some(
                                     if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() }
@@ -222,6 +220,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                                 team_mode: Some(validated_team_mode),
                                 klassen: Some(validated_klassen),
                                 end_screen: Some(validated_end_screen),
+                                participant_cap: g.player_cap.map(|u| u as i64),
                             };
                         }
 

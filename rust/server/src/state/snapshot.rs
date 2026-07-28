@@ -126,6 +126,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
             "teamMode": game.selected_modes.team_mode,
             "klassen": game.selected_modes.klassen,
             "endScreen": game.selected_modes.end_screen,
+            "participantCap": game.selected_modes.participant_cap,
         },
         // W1-1: Persist in-flight answer data and per-question stats
         "currentAnswers": current_answers,
@@ -229,12 +230,14 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
             team_mode,
             klassen,
             end_screen,
+            participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
         })
     }).unwrap_or(razzoozle_protocol::game::SelectedModes {
         scoring_mode: None,
         team_mode: None,
         klassen: None,
         end_screen: None,
+        participant_cap: None,
     });
 
     // W1-1 Fix: Restore in-flight answers with backward compatibility
@@ -322,6 +325,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         engine.questions_history = history;
     }
 
+    let player_cap_value = selected_modes.participant_cap.map(|u| u as usize);
     let mut game = Game {
         game_id,
         invite_code,
@@ -355,9 +359,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         shuffled_chunks: None,
         shuffled_items: None,
         selected_modes,
-        // #477: snapshot restore does not yet persist player_cap; fall back to
-        // hard ceiling until a follow-up wires the field through snapshots.
-        player_cap: None,
+        player_cap: player_cap_value,
     };
 
     // Restore last manager status if present

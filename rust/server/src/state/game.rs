@@ -199,6 +199,7 @@ impl Game {
                 team_mode: None,
                 klassen: None,
                 end_screen: None,
+                participant_cap: None,
             },
             player_cap: None,
         }

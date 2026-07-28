@@ -17,6 +17,7 @@ import {
 } from "@razzoozle/web/features/manager/components/console/listMotion"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
 import { useClassManager } from "@razzoozle/web/features/manager/components/configurations/klassen/useClassManager"
+import { ParticipantCapSetting } from "@razzoozle/web/features/manager/components/configurations/ParticipantCapSetting"
 import { useNavigate } from "@tanstack/react-router"
 import { Copy, ListChecks, Play } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -36,6 +37,7 @@ const ConfigSelectQuizz = () => {
   const [klassenMode, setKlassenMode] = useState(false)
   const [classId, setClassId] = useState<string>("")
   const [endScreen, setEndScreen] = useState<string>("full")
+  const [participantCap, setParticipantCap] = useState<number | null>(null)
   const [search, setSearch] = useState("")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -136,6 +138,12 @@ const ConfigSelectQuizz = () => {
       hasCustomModes = true
     }
 
+    // Participant cap from manager form (optional)
+    if (participantCap !== null) {
+      selectedModes.participantCap = participantCap
+      hasCustomModes = true
+    }
+
     if (hasCustomModes) {
       socket.emit(EVENTS.GAME.CREATE, {
         quizzId: selected,
@@ -145,7 +153,7 @@ const ConfigSelectQuizz = () => {
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
     }
-  }, [socket, selected, config, scoringMode, teamMode, klassenMode, classId, endScreen, t])
+  }, [socket, selected, config, scoringMode, teamMode, klassenMode, classId, endScreen, participantCap, t])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -347,6 +355,13 @@ const ConfigSelectQuizz = () => {
                 </div>
               </LabelRow>
             )}
+
+            {/* Participant cap setting for per-game player limit */}
+            <ParticipantCapSetting
+              value={participantCap}
+              onChange={setParticipantCap}
+              testIdPrefix="select-quizz-"
+            />
           </motion.div>
         )}
       </div>

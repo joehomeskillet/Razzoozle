@@ -11,7 +11,8 @@ export interface ParticipantCapSettingProps {
   className?: string
 }
 
-export const CAP_PRESETS = [25, 50, 100, 250, 500, null] as const
+// Server ceiling is MAX_PLAYERS_PER_GAME = 200; presets stay within this bound
+export const CAP_PRESETS = [25, 50, 100, 200, null] as const
 
 export function ParticipantCapSetting({
   value = null,
@@ -61,7 +62,7 @@ export function ParticipantCapSetting({
           <Input
             type="number"
             min={0}
-            max={5000}
+            max={200}
             value={value ?? ""}
             onChange={handleInputChange}
             placeholder={t("manager:cap.unlimited", { defaultValue: "Unbegrenzt" })}
