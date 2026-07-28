@@ -1,6 +1,8 @@
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
+import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
@@ -78,13 +80,24 @@ const ConfigUsers = () => {
 
   const selection = useEntitySelection<number>(filteredUsers.map((u) => u.id))
 
+  // Bulk confirm dialog: first five affected usernames + "and N more"
+  const bulkNamePreview = useMemo(() => {
+    const selectedUsers = users.filter((u) => selection.selected.has(u.id))
+    const names = selectedUsers.slice(0, 5).map((u) => u.username)
+    const extra = selectedUsers.length - names.length
+    if (extra > 0) {
+      return `${names.join(", ")} ${t("manager:bulk.andNMore", { count: extra })}`
+    }
+    return names.join(", ")
+  }, [users, selection.selected, t])
+
   const loadUsersData = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchUsers()
       setUsers(data)
     } catch {
-      toast.error(t("manager:users.loadFailed", { defaultValue: "Fehler beim Laden der Benutzer" }))
+      toast.error(t("manager:users.loadFailed"))
     } finally {
       setLoading(false)
     }
@@ -98,7 +111,7 @@ const ConfigUsers = () => {
     event.preventDefault()
 
     if (!username || !password) {
-      toast.error(t("manager:users.invalidInput", { defaultValue: "Bitte Benutzername und Passwort eingeben" }))
+      toast.error(t("manager:users.invalidInput"))
       return
     }
 
@@ -107,14 +120,11 @@ const ConfigUsers = () => {
       const response = await createUserApi({ username, password, role })
 
       if (!response.ok) {
-        toast.error(
-          (await parseErrorMessage(response)) ??
-            t("manager:users.createFailed", { defaultValue: "Fehler beim Erstellen des Benutzers" }),
-        )
+        toast.error((await parseErrorMessage(response)) ?? t("manager:users.createFailed"))
         return
       }
 
-      toast.success(t("manager:users.created", { defaultValue: "Benutzer erfolgreich erstellt" }))
+      toast.success(t("manager:users.created"))
       setUsername("")
       setPassword("")
       setRole("user")
@@ -122,7 +132,7 @@ const ConfigUsers = () => {
       setIsCreateDialogOpen(false)
       await loadUsersData()
     } catch {
-      toast.error(t("manager:users.networkError", { defaultValue: "Netzwerkfehler beim Erstellen" }))
+      toast.error(t("manager:users.networkError"))
     } finally {
       setCreating(false)
     }
@@ -136,14 +146,10 @@ const ConfigUsers = () => {
         throw new Error(`status ${response.status}`)
       }
 
-      toast.success(
-        user.active
-          ? t("manager:users.disabled", { defaultValue: "Benutzer deaktiviert" })
-          : t("manager:users.enabled", { defaultValue: "Benutzer aktiviert" }),
-      )
+      toast.success(user.active ? t("manager:users.disabled") : t("manager:users.enabled"))
       await loadUsersData()
     } catch {
-      toast.error(t("manager:users.toggleFailed", { defaultValue: "Fehler beim Ändern des Status" }))
+      toast.error(t("manager:users.toggleFailed"))
     } finally {
       setPendingId(null)
     }
@@ -151,7 +157,7 @@ const ConfigUsers = () => {
 
   const handleResetPassword = async (targetUser: ManagedUser) => {
     if (!resetNewPassword) {
-      toast.error(t("manager:users.passwordRequired", { defaultValue: "Neues Passwort erforderlich" }))
+      toast.error(t("manager:users.passwordRequired"))
       return
     }
 
@@ -162,12 +168,12 @@ const ConfigUsers = () => {
         throw new Error(`status ${response.status}`)
       }
 
-      toast.success(t("manager:users.passwordReset", { defaultValue: "Passwort erfolgreich zurückgesetzt" }))
+      toast.success(t("manager:users.passwordReset"))
       setResetUser(null)
       setResetNewPassword("")
       await loadUsersData()
     } catch {
-      toast.error(t("manager:users.resetFailed", { defaultValue: "Fehler beim Zurücksetzen" }))
+      toast.error(t("manager:users.resetFailed"))
     } finally {
       setResettingPassword(false)
     }
@@ -180,18 +186,15 @@ const ConfigUsers = () => {
     try {
       const response = await deleteUserApi(pendingDelete.id)
       if (!response.ok) {
-        toast.error(
-          (await parseErrorMessage(response)) ??
-            t("manager:users.deleteFailed", { defaultValue: "Fehler beim Löschen des Benutzers" }),
-        )
+        toast.error((await parseErrorMessage(response)) ?? t("manager:users.deleteFailed"))
         return
       }
 
-      toast.success(t("manager:users.deleted", { defaultValue: "Benutzer {{name}} gelöscht", name: pendingDelete.username }))
+      toast.success(t("manager:users.deleted", { name: pendingDelete.username }))
       setPendingDelete(null)
       await loadUsersData()
     } catch {
-      toast.error(t("manager:users.toggleFailed", { defaultValue: "Fehler beim Löschen" }))
+      toast.error(t("manager:users.toggleFailed"))
     } finally {
       setDeleting(false)
     }
@@ -215,7 +218,7 @@ const ConfigUsers = () => {
         parts.push(t("manager:bulk.resultFailed", { count: result.failed.length }))
       }
 
-      const message = parts.length > 0 ? parts.join(", ") : t("manager:bulk.resultCompleted", { defaultValue: "Aktion abgeschlossen" })
+      const message = parts.length > 0 ? parts.join(", ") : t("manager:bulk.resultCompleted")
       toast.success(message)
 
       selection.clear()
@@ -223,39 +226,34 @@ const ConfigUsers = () => {
       setBulkAction(null)
       await loadUsersData()
     } catch {
-      toast.error(t("manager:users.bulkFailed", { defaultValue: "Bulk-Aktion fehlgeschlagen" }))
+      toast.error(t("manager:users.bulkFailed"))
     } finally {
       setBulkProcessing(false)
     }
   }
 
   const handleCopyUser = (sourceUser: ManagedUser) => {
-    setUsername(`${sourceUser.username}_copy`)
-    setRole(sourceUser.role as "user" | "admin" | "lehrkraft")
+    if (currentUsername != null && sourceUser.username === currentUsername) {
+      toast.error(
+        t("manager:users.cannot_copy_self"),
+      )
+      return
+    }
+
     setCopySourceId(sourceUser.id)
+    setUsername(`${sourceUser.username}-kopie`)
+    setPassword("")
+    setRole(sourceUser.role as "user" | "admin" | "lehrkraft")
     setIsCreateDialogOpen(true)
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <>
+    {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
+    <div className="flex flex-1 flex-col gap-4 pb-20">
       <PageHeader
-        title={t("manager:users.title", { defaultValue: "Benutzerverwaltung" })}
-        subtitle={t("manager:users.subtitle", { defaultValue: "Verwalte Konten, Rollen und Berechtigungen" })}
-        action={
-          <Button
-            variant="primary"
-            onClick={() => {
-              setCopySourceId(null)
-              setUsername("")
-              setPassword("")
-              setRole("user")
-              setIsCreateDialogOpen(true)
-            }}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            {t("manager:users.createButton", { defaultValue: "Benutzer anlegen" })}
-          </Button>
-        }
+        title={t("manager:users.title")}
+        subtitle={t("manager:users.intro")}
       />
 
       <UserFilterPanel
@@ -267,11 +265,68 @@ const ConfigUsers = () => {
         onStatusFilterChange={setStatusFilter}
       />
 
+      {/* bulk toolbar after filter pills, before SelectAllControl + StudentList */}
+      {selection.selectionActive && (
+        <BulkActionToolbar
+          count={selection.selected.size}
+          label={t("manager:bulk.selected", { count: selection.selected.size })}
+          onClear={selection.clear}
+        >
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setBulkAction("activate")
+              setBulkConfirm(true)
+            }}
+            disabled={bulkProcessing}
+          >
+            {t("manager:bulk.activate")}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setBulkAction("deactivate")
+              setBulkConfirm(true)
+            }}
+            disabled={bulkProcessing}
+          >
+            {t("manager:bulk.deactivate")}
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => {
+              setBulkAction("delete")
+              setBulkConfirm(true)
+            }}
+            disabled={bulkProcessing}
+          >
+            {t("manager:bulk.deleteSelected")}
+          </Button>
+        </BulkActionToolbar>
+      )}
+
+      {filteredUsers.length > 0 && (
+        <SelectAllControl
+          id="users-select-all"
+          data-testid="users-select-all"
+          allSelected={selection.allSelected}
+          someSelected={selection.someSelected}
+          selectedCount={selection.selected.size}
+          totalCount={filteredUsers.length}
+          onToggleAll={selection.toggleAll}
+        />
+      )}
+
       <UserManagementList
         loading={loading}
+        hasAnyUsers={users.length > 0}
         filteredUsers={filteredUsers}
         selection={selection}
         pendingId={pendingId}
+        busy={resettingPassword || deleting || bulkProcessing}
         currentUsername={currentUsername}
         onToggleActive={handleToggleActive}
         onCopyUser={handleCopyUser}
@@ -280,10 +335,6 @@ const ConfigUsers = () => {
           setResetNewPassword("")
         }}
         onOpenDelete={(u) => setPendingDelete({ id: u.id, username: u.username, role: u.role })}
-        onTriggerBulkAction={(act) => {
-          setBulkAction(act)
-          setBulkConfirm(true)
-        }}
       />
 
       <CreateUserDialog
@@ -314,13 +365,15 @@ const ConfigUsers = () => {
       <AlertDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title={t("manager:users.deleteConfirmTitle", { defaultValue: "Benutzer löschen" })}
+        title={t("manager:users.deleteConfirmTitle")}
         description={
           pendingDelete
-            ? t("manager:users.deleteConfirmDescription", { defaultValue: "Möchtest du {{name}} wirklich löschen?", name: pendingDelete.username })
+            ? pendingDelete.role === "lehrkraft"
+              ? `${t("manager:users.deleteConfirmDescription", { name: pendingDelete.username })}\n\n${t("manager:users.deleteConfirmCascade")}`
+              : t("manager:users.deleteConfirmDescription", { name: pendingDelete.username })
             : ""
         }
-        confirmLabel={t("manager:common.delete", { defaultValue: "Löschen" })}
+        confirmLabel={t("manager:users.delete")}
         confirmDisabled={deleting}
         onConfirm={handleDelete}
       />
@@ -329,21 +382,41 @@ const ConfigUsers = () => {
       <AlertDialog
         open={bulkConfirm}
         onOpenChange={(open) => !open && setBulkConfirm(false)}
-        title={t("manager:bulk.confirmTitle", { defaultValue: "Massen-Aktion bestätigen" })}
-        description={
-          bulkAction
-            ? `${selection.selected.size} Benutzer ${bulkAction}`
-            : ""
+        title={
+          bulkAction === "activate"
+            ? t("manager:users.bulkConfirmTitleActivate", { count: selection.selected.size })
+            : bulkAction === "deactivate"
+              ? t("manager:users.bulkConfirmTitleDeactivate", { count: selection.selected.size })
+              : bulkAction === "delete"
+                ? t("manager:users.bulkConfirmTitleDelete", { count: selection.selected.size })
+                : ""
         }
-        confirmLabel={t("manager:common.confirm", { defaultValue: "Bestätigen" })}
+        description={bulkAction ? bulkNamePreview : ""}
+        confirmLabel={t("common:confirm")}
         confirmDisabled={bulkProcessing}
         onConfirm={handleBulkAction}
       />
-
-      <ActionFooter>
-        <span />
-      </ActionFooter>
     </div>
+
+    <ActionFooter>
+      <Button
+        data-testid="users-create-btn"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+        onClick={() => {
+          setCopySourceId(null)
+          setUsername("")
+          setPassword("")
+          setRole("user")
+          setIsCreateDialogOpen(true)
+        }}
+      >
+        <UserPlus className="mr-2 h-4 w-4" />
+        {t("manager:users.create")}
+      </Button>
+    </ActionFooter>
+    </>
   )
 }
 

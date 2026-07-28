@@ -23,62 +23,62 @@ export default function UserFilterPanel({
   const { t } = useTranslation()
 
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="w-full sm:max-w-xs">
-        <Input
-          type="search"
-          placeholder={t("manager:users.searchPlaceholder", { defaultValue: "Benutzer suchen..." })}
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-      </div>
+    <div className="space-y-3 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface-2)] p-4">
+      <Input
+        data-testid="users-search"
+        type="text"
+        className="w-full"
+        placeholder={t("manager:users.searchPlaceholder")}
+        value={searchTerm}
+        onChange={(e) => onSearchChange(e.target.value)}
+      />
 
-      <div className="flex flex-wrap gap-2">
-        <FilterGroup label={t("manager:users.filterRole", { defaultValue: "Rolle" })}>
+      <div className="flex flex-wrap gap-4">
+        <FilterGroup label={t("manager:users.roleFilter")}>
           <FilterPill
             active={roleFilter === "all"}
             onClick={() => onRoleFilterChange("all")}
           >
-            {t("manager:users.filterAll", { defaultValue: "Alle" })}
+            {t("manager:users.roleAll")}
           </FilterPill>
           <FilterPill
             active={roleFilter === "user"}
             onClick={() => onRoleFilterChange("user")}
           >
-            {t("manager:users.role.user", { defaultValue: "Schüler/in" })}
+            {t("manager:users.role.user")}
           </FilterPill>
           <FilterPill
             active={roleFilter === "lehrkraft"}
             onClick={() => onRoleFilterChange("lehrkraft")}
           >
-            {t("manager:users.role.lehrkraft", { defaultValue: "Lehrkraft" })}
+            {t("manager:users.role.lehrkraft")}
           </FilterPill>
           <FilterPill
             active={roleFilter === "admin"}
             onClick={() => onRoleFilterChange("admin")}
           >
-            {t("manager:users.role.admin", { defaultValue: "Admin" })}
+            {t("manager:users.role.admin")}
           </FilterPill>
         </FilterGroup>
 
-        <FilterGroup label={t("manager:users.filterStatus", { defaultValue: "Status" })}>
+        <FilterGroup label={t("manager:users.statusFilter")}>
           <FilterPill
             active={statusFilter === "all"}
             onClick={() => onStatusFilterChange("all")}
           >
-            {t("manager:users.filterAll", { defaultValue: "Alle" })}
+            {t("manager:users.statusAll")}
           </FilterPill>
           <FilterPill
             active={statusFilter === "active"}
             onClick={() => onStatusFilterChange("active")}
           >
-            {t("manager:users.active", { defaultValue: "Aktiv" })}
+            {t("manager:users.active")}
           </FilterPill>
           <FilterPill
             active={statusFilter === "inactive"}
             onClick={() => onStatusFilterChange("inactive")}
           >
-            {t("manager:users.inactive", { defaultValue: "Inaktiv" })}
+            {t("manager:users.disabledStatus")}
           </FilterPill>
         </FilterGroup>
       </div>
