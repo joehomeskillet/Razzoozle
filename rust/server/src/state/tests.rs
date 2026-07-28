@@ -1370,3 +1370,97 @@ fn test_participant_cap_snapshot_stores_clamped_value_not_raw_client_value() {
         "snapshot.participant_cap must also be 200, not raw 250 — readers of snapshot must see wirksam value"
     );
 }
+
+#[test]
+fn test_participant_cap_snapshot_roundtrip_preserves_value() {
+    use razzoozle_protocol::game::SelectedModes;
+    use crate::state::snapshot::{game_to_snapshot, game_from_snapshot};
+
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+
+    // Create a game with a participant cap
+    let mut game = Game::new(
+        "game-roundtrip-test".to_string(),
+        "INV999".to_string(),
+        "manager-roundtrip".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz.clone(),
+    );
+
+    // Set participant cap to 50 (below ceiling, will pass through unmodified)
+    game.selected_modes = SelectedModes {
+        scoring_mode: Some("speed".to_string()),
+        team_mode: Some(true),
+        klassen: None,
+        end_screen: None,
+        participant_cap: Some(50),
+    };
+    game.player_cap = crate::state::resolve_player_cap(Some(50));
+
+    // Write to snapshot
+    let snapshot_json = game_to_snapshot(&game);
+
+    // Verify snapshot contains the participant_cap
+    assert_eq!(
+        snapshot_json.get("selectedModes")
+            .and_then(|m| m.get("participantCap"))
+            .and_then(|p| p.as_i64()),
+        Some(50),
+        "snapshot must contain participantCap = 50"
+    );
+
+    // Read from snapshot
+    let restored_game = game_from_snapshot(&snapshot_json)
+        .expect("snapshot restoration should not fail");
+
+    // Verify roundtrip: selected_modes.participant_cap restored
+    assert_eq!(
+        restored_game.selected_modes.participant_cap,
+        Some(50),
+        "restored selected_modes.participant_cap must be 50"
+    );
+
+    // Verify roundtrip: player_cap restored (clamped from selected_modes)
+    assert_eq!(
+        restored_game.player_cap,
+        Some(50),
+        "restored player_cap must be 50 (unclamped, below ceiling)"
+    );
+
+    // Test with a clamped value: client sends 500, ceiling is 200
+    let mut game2 = Game::new(
+        "game-roundtrip-clamped".to_string(),
+        "INV888".to_string(),
+        "manager-clamped".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+
+    // Simulate handler: clamp 500 to 200
+    game2.selected_modes.participant_cap = Some(200); // Already clamped by resolve_player_cap
+    game2.player_cap = Some(200); // MAX_PLAYERS_PER_GAME = 200
+
+    // Write to snapshot
+    let snapshot_json2 = game_to_snapshot(&game2);
+
+    // Read from snapshot
+    let restored_game2 = game_from_snapshot(&snapshot_json2)
+        .expect("snapshot restoration should not fail");
+
+    // Verify clamped value round-trips correctly
+    assert_eq!(
+        restored_game2.selected_modes.participant_cap,
+        Some(200),
+        "restored selected_modes.participant_cap must be 200 (clamped)"
+    );
+    assert_eq!(
+        restored_game2.player_cap,
+        Some(200),
+        "restored player_cap must be 200 (clamped ceiling)"
+    );
+}
