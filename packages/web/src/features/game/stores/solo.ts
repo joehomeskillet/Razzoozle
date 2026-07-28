@@ -129,6 +129,90 @@ const initialState = {
   autoAdvance: false,
 }
 
+// ---------------------------------------------------------------------------
+// sessionStorage persistence — a run survives an accidental reload/crash of
+// the tab, but not a closed browser (unlike localStorage), which matches how
+// long a single solo run should live. Manual read/write, same pattern as the
+// manager store's auth state (no persist middleware for one blob).
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY = "razzoozle_solo_progress"
+
+// What's worth resuming: which quiz, where the player is, and what they've
+// already scored/answered. `assignmentId` is deliberately excluded — it's
+// routing context the calling page re-establishes via setAssignmentId()
+// right before loadQuiz(), not part of the run's progress.
+interface StoredSoloProgress {
+  quizzId: string
+  subject: string
+  questions: SoloQuestion[]
+  currentIndex: number
+  phase: SoloPhase
+  playerName: string
+  totalPoints: number
+  streak: number
+  answers: SoloQuestionResult[]
+}
+
+function loadSoloProgress(quizzId: string): StoredSoloProgress | null {
+  try {
+    if (typeof window === "undefined") return null
+    const raw = window.sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as StoredSoloProgress
+    // Quiz-match guard: a saved run only ever resumes the SAME quiz that's
+    // being opened right now — a stand from quiz A must never surface in B.
+    if (parsed.quizzId !== quizzId) return null
+    if (!Array.isArray(parsed.questions) || parsed.questions.length === 0) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function clearSoloProgress() {
+  try {
+    if (typeof window !== "undefined") window.sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Ignore storage errors (private mode / quota).
+  }
+}
+
+// Wired up via useSoloStore.subscribe() below, so it runs after every state
+// change without threading a persist call into each action. Only writes on
+// "settled" phases — "loading" and "answering" are transient/in-flight and
+// must never become the resumable snapshot: reloading mid-submit would
+// otherwise continue a half-submitted answer whose server-side outcome is
+// unknown. Leaving storage untouched during those phases keeps the last good
+// snapshot (the state right before the in-flight request) intact for resume.
+function persistSoloProgress(state: SoloState) {
+  try {
+    if (typeof window === "undefined" || !state.quizzId) return
+    // A finished run has nothing left to resume — clean up.
+    if (state.phase === "finished") {
+      window.sessionStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    if (state.phase !== "name" && state.phase !== "question" && state.phase !== "result") {
+      return
+    }
+    const snapshot: StoredSoloProgress = {
+      quizzId: state.quizzId,
+      subject: state.subject,
+      questions: state.questions,
+      currentIndex: state.currentIndex,
+      phase: state.phase,
+      playerName: state.playerName,
+      totalPoints: state.totalPoints,
+      streak: state.streak,
+      answers: state.answers,
+    }
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+  } catch {
+    // Ignore storage errors (private mode / quota).
+  }
+}
+
 export const useSoloStore = create<SoloState>((set, get) => ({
   ...initialState,
 
@@ -137,6 +221,27 @@ export const useSoloStore = create<SoloState>((set, get) => ({
   setAssignmentId: (assignmentId) => set({ assignmentId }),
 
   loadQuiz: async (id: string) => {
+    // Resume a reload-surviving run for THIS quiz before hitting the network
+    // — skips re-fetching (and, more importantly, skips wiping progress back
+    // to zero) when there's a matching in-progress snapshot.
+    const saved = loadSoloProgress(id)
+    if (saved) {
+      set({
+        quizzId: id,
+        subject: saved.subject,
+        questions: saved.questions,
+        currentIndex: saved.currentIndex,
+        phase: saved.phase,
+        playerName: saved.playerName,
+        totalPoints: saved.totalPoints,
+        streak: saved.streak,
+        answers: saved.answers,
+        lastResult: null,
+        lastAchievements: [],
+        error: null,
+      })
+      return
+    }
     set({ phase: "loading", error: null, quizzId: id })
     try {
       const res = await fetch(`/api/quizz/${encodeURIComponent(id)}/solo`)
@@ -359,5 +464,12 @@ export const useSoloStore = create<SoloState>((set, get) => ({
     }
   },
 
-  reset: () => set(initialState),
+  reset: () => {
+    clearSoloProgress()
+    set(initialState)
+  },
 }))
+
+// Persist after every state change (see persistSoloProgress for which phases
+// actually write). Runs once at module load, alongside the store itself.
+useSoloStore.subscribe(persistSoloProgress)
