@@ -79,7 +79,15 @@
     "matching": "Zuordnung",
     "matchingDesc": "Begriffe per Dropdown zuordnen",
     "dropPin": "Drop-Pin",
-    "dropPinDesc": "Pin auf Bildzone setzen"
+    "dropPinDesc": "Pin auf Bildzone setzen",
+    "wordCloud": "Wortwolke",
+    "wordCloudDesc": "Sammelt kurze Begriffe der Klasse zu einer Frage",
+    "brainstorm": "Brainstorming",
+    "brainstormDesc": "Sammelt freie Ideen der Klasse ohne Wertung",
+    "confidence": "Selbsteinschätzung",
+    "confidenceDesc": "Spieler geben an, wie sicher sie sich bei der Antwort sind",
+    "microLesson": "Mikro-Lektion",
+    "microLessonDesc": "Kurzer Lerninhalt zum Durchklicken, keine Wertung"
   },
   "slider": {
     "min": "Min",

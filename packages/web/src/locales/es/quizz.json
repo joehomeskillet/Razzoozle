@@ -87,7 +87,15 @@
     "matching": "Emparejar",
     "matchingDesc": "Empareja elementos con desplegables",
     "dropPin": "Drop-pin",
-    "dropPinDesc": "Coloca un pin en la zona de la imagen"
+    "dropPinDesc": "Coloca un pin en la zona de la imagen",
+    "wordCloud": "Nube de palabras",
+    "wordCloudDesc": "Recoge términos breves de la clase para una pregunta",
+    "brainstorm": "Lluvia de ideas",
+    "brainstormDesc": "Recoge ideas libres de la clase, sin puntuación",
+    "confidence": "Nivel de confianza",
+    "confidenceDesc": "Los jugadores indican qué tan seguros están de su respuesta",
+    "microLesson": "Microlección",
+    "microLessonDesc": "Contenido breve para repasar, sin puntuación"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",

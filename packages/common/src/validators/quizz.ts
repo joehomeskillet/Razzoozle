@@ -247,6 +247,15 @@ export const questionValidator = z
           }
         })
       }
+    } else if (q.type === "word-cloud" || q.type === "brainstorm") {
+      // Word cloud / brainstorm: unscored collection formats, same shape as
+      // poll — need seed answers, no correct solution required.
+      if (!q.answers || q.answers.length < 2) {
+        ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })
+      }
+    } else if (q.type === "confidence" || q.type === "micro-lesson") {
+      // Confidence / micro-lesson: unscored, no extra fields required today
+      // (permissive stub, same pattern as mathematik/wortarten above).
     } else {
       if (!q.answers || q.answers.length < 2) {
         ctx.addIssue({ code: "custom", message: "errors:quizz.tooFewAnswers" })

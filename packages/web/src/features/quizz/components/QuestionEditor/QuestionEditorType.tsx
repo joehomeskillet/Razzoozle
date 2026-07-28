@@ -17,6 +17,10 @@ import {
   SlidersHorizontal,
   ToggleLeft,
   BookOpen,
+  Cloud,
+  Lightbulb,
+  Gauge,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -106,6 +110,30 @@ const TYPES: Array<{
     labelKey: "quizz:type.dropPin",
     descKey: "quizz:type.dropPinDesc",
     icon: MapPin,
+  },
+  {
+    key: "word-cloud",
+    labelKey: "quizz:type.wordCloud",
+    descKey: "quizz:type.wordCloudDesc",
+    icon: Cloud,
+  },
+  {
+    key: "brainstorm",
+    labelKey: "quizz:type.brainstorm",
+    descKey: "quizz:type.brainstormDesc",
+    icon: Lightbulb,
+  },
+  {
+    key: "confidence",
+    labelKey: "quizz:type.confidence",
+    descKey: "quizz:type.confidenceDesc",
+    icon: Gauge,
+  },
+  {
+    key: "micro-lesson",
+    labelKey: "quizz:type.microLesson",
+    descKey: "quizz:type.microLessonDesc",
+    icon: GraduationCap,
   },
   {
     key: "vokabelliste",
@@ -317,6 +345,90 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
         segments: undefined,
         slots: undefined,
         leftItems: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "word-cloud") {
+      // Word cloud: unscored collection format, same shape as poll — teacher
+      // seeds a few words, no correct solution (see UNSCORED_QUESTION_TYPES).
+      updateQuestion(currentIndex, {
+        type: "word-cloud",
+        answers: currentQuestion.answers?.length
+          ? currentQuestion.answers
+          : ["", ""],
+        solutions: [],
+        bonus: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        leftItems: undefined,
+        hotspots: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "brainstorm") {
+      // Brainstorm: unscored collection format, same shape as poll — teacher
+      // seeds a few ideas, players can add their own during play.
+      updateQuestion(currentIndex, {
+        type: "brainstorm",
+        answers: currentQuestion.answers?.length
+          ? currentQuestion.answers
+          : ["", ""],
+        solutions: [],
+        bonus: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        leftItems: undefined,
+        hotspots: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "confidence") {
+      // Confidence rating: three fixed levels hardcoded in
+      // ConfidenceSelector — no extra fields, just the question text.
+      updateQuestion(currentIndex, {
+        type: "confidence",
+        answers: undefined,
+        solutions: undefined,
+        bonus: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        leftItems: undefined,
+        hotspots: undefined,
+        ...SLIDER_CLEAR,
+      })
+    } else if (next === "micro-lesson") {
+      // Micro-lesson: today's player view renders a single slide — title
+      // from the question text, content from `answers` joined with
+      // newlines. Reuse the generic answers editor as the (short,
+      // line-based) content input; the richer multi-slide schema is #470.
+      updateQuestion(currentIndex, {
+        type: "micro-lesson",
+        answers: currentQuestion.answers?.length
+          ? currentQuestion.answers
+          : ["", ""],
+        solutions: [],
+        bonus: undefined,
+        acceptedAnswers: undefined,
+        matchMode: undefined,
+        chunks: undefined,
+        items: undefined,
+        correctOrder: undefined,
+        segments: undefined,
+        slots: undefined,
+        leftItems: undefined,
+        hotspots: undefined,
         ...SLIDER_CLEAR,
       })
     } else if (next === "vokabelliste") {

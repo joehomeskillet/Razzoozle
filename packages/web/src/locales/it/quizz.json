@@ -79,7 +79,15 @@
     "matching": "Abbinamento",
     "matchingDesc": "Abbina elementi con menu a tendina",
     "dropPin": "Drop-pin",
-    "dropPinDesc": "Metti un pin sulla zona immagine"
+    "dropPinDesc": "Metti un pin sulla zona immagine",
+    "wordCloud": "Nuvola di parole",
+    "wordCloudDesc": "Raccoglie brevi termini della classe per una domanda",
+    "brainstorm": "Brainstorming",
+    "brainstormDesc": "Raccoglie idee libere della classe, senza punteggio",
+    "confidence": "Livello di sicurezza",
+    "confidenceDesc": "I giocatori indicano quanto sono sicuri della risposta",
+    "microLesson": "Micro-lezione",
+    "microLessonDesc": "Breve contenuto didattico da scorrere, senza punteggio"
   },
   "slider": {
     "min": "Min",

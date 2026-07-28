@@ -87,7 +87,15 @@
     "matching": "配对",
     "matchingDesc": "用下拉菜单配对项目",
     "dropPin": "定点",
-    "dropPinDesc": "在图片区域放置标记"
+    "dropPinDesc": "在图片区域放置标记",
+    "wordCloud": "词云",
+    "wordCloudDesc": "收集全班针对问题给出的简短词语",
+    "brainstorm": "头脑风暴",
+    "brainstormDesc": "收集全班自由想法，不计分",
+    "confidence": "信心评级",
+    "confidenceDesc": "玩家表明对自己答案的把握程度",
+    "microLesson": "微课",
+    "microLessonDesc": "简短可翻阅的教学内容，不计分"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",
