@@ -145,7 +145,7 @@ struct SoloQuestionOutcome {
     index: usize,          // Frage-Index im Quiz zum Abgabezeitpunkt
     verdict: Verdict,      // Correct | Incorrect | Unscored
     points: i32,           // (eval_result.base * 1000).round()
-    question_text: String, // Snapshot, chars().take(80)
+    question_text: String, // Snapshot, chars().take(160), „…" bei Kürzung
 }
 struct SoloOutcome { score: i32, questions: Vec<SoloQuestionOutcome> }
 fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -> SoloOutcome
@@ -159,7 +159,9 @@ Regeln:
 - `verdict = Unscored`, wenn der Fragetyp wertungsfrei ist (die fünf Typen aus
   `eval.rs:114-150` / `constants.ts:495-501`); sonst `Correct`/`Incorrect` aus
   `eval_result.correct`. Wertungsfreie Fragen erscheinen damit nie fälschlich als „falsch".
-- `question_text` wird mit `chars().take(80)` gekürzt — **nie** `&s[..80]`
+- `question_text` wird mit `chars().take(160)` gekürzt; wurde gekürzt, wird „…"
+  angehängt, damit die Kürzung sichtbar ist (Prüfbefund G2-5: 80 Zeichen machten
+  Textaufgaben mit identischem Präfix ununterscheidbar). **Nie** `&s[..N]`
   (Byte-Slice-Truncation panict an UTF-8-Grenzen).
 - Invariante: `sum(points) == score`. Sie hält, weil jeder Summand ≤ 1000 ist, je Index nur
   einmal zählt und die Kappung `min(verified, theoretical_max)` (`solo.rs:549, 559`) nur
@@ -168,7 +170,7 @@ Regeln:
   welche falsch war" — das Urteil, nicht den Wortlaut. Antworttexte sind Freitext von
   Minderjährigen (personenbezogen) und bis 10 000 Zeichen pro Antwort gross
   (`SOLO_SCORE_ANSWER_TEXT_MAX`, `rust/server/src/state/mod.rs:118`). Weglassen ist die
-  datensparsame Standardannahme; additiv nachrüstbar (offene Frage 4).
+  datensparsame Standardannahme; additiv nachrüstbar (offene Frage 9).
 
 Der INSERT (`solo.rs:619-631`) bekommt eine siebte Spalte `answers` mit:
 
@@ -181,6 +183,8 @@ Der INSERT (`solo.rs:619-631`) bekommt eine siebte Spalte `answers` mit:
 
 `total` = Fragenzahl des Quiz zum Abgabezeitpunkt (Randfall 8.4). `v` erlaubt spätere
 Formatänderungen; leeres Objekt `{}` bleibt die eindeutige Signatur „Altlauf ohne Detail".
+Der Client behandelt `v` explizit: nur `v == 1` wird gerendert, jedes andere `v` fällt in
+einen definierten Hinweiszustand (5.5) — nie ein Crash, nie ein Teilrendering (G2-6).
 TS-Spiegel des Formats in `packages/common` (WP-E0); Zod-Spiegel von
 `SoloScoreSubmitAnswer` wird dabei korrigiert — `answerId`/`answerIds`/`answerText` fehlen
 dort heute und `correct` ist fälschlich Pflicht
@@ -296,6 +300,10 @@ ORDER BY s.display_name
 einzige Fan-out-Zeile im Zeitraum erscheinen nicht (die Liste ist eine Auswertung, kein
 Roster). Leere Liste = `{"students": []}`, kein Fehler.
 
+Live-Gate-Pflicht dieser Query (Prüfbefund G1): `EXPLAIN` gegen die lokale Postgres mit
+Testdaten; erwartet wird die Nutzung des 023-Index auf `assigned_student_id` (Portal-SDD
+§3.2). Liefert 023 ihn nicht, zieht WP-E2 ihn nach — nicht annehmen, nachweisen.
+
 ### 4.2 `GET /api/evaluation/student/:studentId?from&to` — ein Kind, alle Aufträge
 
 ```jsonc
@@ -344,6 +352,15 @@ im Portal-SDD §4.1 als zwingend markierte Korrektur (WP-S3 dort); **diese Fläc
 vor diesem Check deployt werden**, sonst macht ein prominenter Menüpunkt fremde Kinderdaten
 bequem klickbar. `404` für unbekannte ID wie heute (287).
 
+### 4.5 `POST /api/evaluation/export-log` — Export-Baseline (Prüfbefund G2-3)
+
+Fire-and-forget vom CSV-Button (6.1): Body `{ "view": "children" | "tasks", "rows": 42 }`,
+Antwort `204`. Der Handler schreibt genau eine personenfreie tracing-Zeile
+(`tracing::info!(user_id, view, rows, "evaluation: csv export")`) — keine Tabelle, keine
+Persistenz über die Server-Logs hinaus (persistentes Audit bleibt offene Frage 6).
+Auth-Vorspann wie alle Handler dieses Moduls (Abschnitt 4). Der Download wartet nie auf
+diese Antwort; ein fehlgeschlagener Log-Call bricht den Export nicht ab.
+
 ## 5. Oberfläche
 
 ### 5.1 Menüpunkt und Registrierung (zwei Stellen, beide Pflicht)
@@ -383,6 +400,11 @@ Muster der Portal-SDD-Flächen; bewusst nicht bulk in `ManagerConfig`).
 - Klick klappt die Zeile über den `details`-Slot auf (Muster `ClassList.tsx:263-266`) und
   lädt 4.2: je Auftrag eine Sub-Zeile (subject · targetLabel · Frist · Status-Chip ·
   bestScore · Versuche).
+- A11y-Pflicht des Drilldowns (Prüfbefund G2-8), gilt identisch für 5.4: aufklappbare
+  Zeilen setzen `aria-expanded` (Prop existiert bereits, `console/ListRow.tsx:38,
+  166-176`) und `aria-controls` auf die Sub-Liste; Enter/Space kommen vom nativen
+  `<button>`-Trigger (`ListRow.tsx:138`) frei Haus — keine Generator-Änderung nötig,
+  nur konsequente Nutzung (AK 19).
 - Klick auf eine Auftrags-Sub-Zeile mit `status = done` öffnet den Frage-Dialog (5.5).
 
 ### 5.4 Reiter „Nach Aufgabe"
@@ -406,12 +428,18 @@ Neue Komponente (g:console), geöffnet mit `assignmentId` + Kind-Kontext, lädt 
 - Kopf: Kind-Name, Quiz-subject, Punktebadge des besten Versuchs.
 - Bei mehreren Versuchen: Versuchsliste, neuester zuerst („Versuch 3 · 4200 P. · 28.07.
   10:15"), aufklappbar je Versuch.
-- Je Frage eine Zeile: laufende Nummer, `q`-Snapshot (80 Zeichen), Urteil als Icon+Text —
-  Check „richtig" / X „falsch" / neutrales Zeichen „ohne Wertung" (drittes Label, nie als
-  falsch dargestellt) — plus `points`. Optik nach dem Muster
-  `ResultModalAnswers.tsx`, Daten aus `detail.questions`.
+- Je Frage eine Zeile: laufende Nummer, `q`-Snapshot (max. 160 Zeichen + „…"-Marker,
+  3.2), Urteil als Icon+Text — Check „richtig" / X „falsch" / neutrales Zeichen „ohne
+  Wertung" (drittes Label, nie als falsch dargestellt) — plus `points`. Optik nach dem
+  Muster `ResultModalAnswers.tsx`, Daten aus `detail.questions`. Die Urteils-Icons tragen
+  `aria-hidden="true"` — das sichtbare Textlabel ist die zugängliche Beschreibung, es
+  gibt kein Icon-only-Urteil (Prüfbefund G2-9, AK 19).
 - `detail = null` (Altlauf): Hinweiszustand „Für diesen Lauf liegen keine Einzelantworten
   vor — er wurde vor der Detail-Erfassung gespielt." — keine Fragenliste, kein Fehler.
+- `detail.v ≠ 1` (künftiges, diesem Client unbekanntes Format, Prüfbefund G2-6):
+  Hinweiszustand „Detailformat unbekannt — bitte Anwendung aktualisieren"
+  (`attempt-detail-unknown`), nie Crash, nie Teilrendering; der TS-Typ (WP-E0)
+  modelliert `v` als Literal `1` mit explizitem Unknown-Fallback (AK 16).
 - `detail.total ≠` aktuelle Fragenzahl des Quiz: Hinweisbadge „Quiz wurde seither geändert"
   (8.4); gerendert wird ausschliesslich aus dem Snapshot, nie gegen das Live-Quiz aufgelöst.
 
@@ -447,7 +475,10 @@ denselben Owner-Scope trägt wie die Ansicht.
 - Vorkehrungen für Kinderdaten: Dateiname enthält nie einen Kindernamen; es entsteht keine
   Datei auf dem Server (reiner Client-Blob); Spaltenköpfe aus i18n; kein Anonymisier-Toggle
   (für eine Pro-Kind-Auswertung sinnwidrig — bewusste Abweichung vom Live-Spiel-Default
-  `result-modal-context.tsx`). Persistentes Export-Audit: offene Frage 6.
+  `result-modal-context.tsx`). Jeder Export feuert zusätzlich den fire-and-forget-Aufruf
+  `POST /api/evaluation/export-log` (4.5) — eine personenfreie Server-Logzeile als
+  Zugriffs-Baseline (Prüfbefund G2-3); der Download hängt nie an dieser Antwort.
+  Persistentes Export-Audit darüber hinaus: offene Frage 6.
 - Die Frageebene ist nicht Teil des CSV (offene Frage 4, Standard nein).
 
 ### 6.2 Filter nach Zeitraum
@@ -493,7 +524,8 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
   `assigned_student_id` + serverseitigem `player_name` (Portal-SDD §4.1); Freitext-Namen
   ungezielter Zuweisungen werden nie als Kind-Identität interpretiert (8.7).
 - **Datensparsamkeit der Frageebene:** gespeichert werden Urteil, Punkte und ein
-  80-Zeichen-Frage-Snapshot (Quiz-Inhalt, kein Kind-Inhalt) — kein Antworttext (3.2).
+  160-Zeichen-Frage-Snapshot (Quiz-Inhalt, kein Kind-Inhalt) — kein Antworttext (3.2,
+  offene Frage 9).
 - **Logs:** die Auswertungs-Handler loggen `user_id` und Zeilenzahl, nie Namen/PINs/
   Geburtsdaten — `REDACT_KEYS` (`logs.rs:81-96`) enthält keine Personenschlüssel und
   Freitext im `msg`-Feld ist prinzipiell nicht redigierbar (`logs.rs:186-188`). Flankierend
@@ -501,8 +533,9 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
   `studentId` in `REDACT_KEYS` auf (Einzeiler-Erweiterung, Rekursion vorhanden
   `logs.rs:100-114`).
 - **Export:** serialisiert nur die geladene, gescopte Ansicht; Formel-Injection-Guard;
-  keine Server-Datei; personenfreier Dateiname (6.1). Einmal exportiert, ist die Datei
-  ausserhalb des Systems — Randfall 8.5 erinnert daran.
+  keine Server-Datei; personenfreier Dateiname (6.1); jeder Export hinterlässt eine
+  personenfreie Server-Logzeile (4.5). Einmal exportiert, ist die Datei ausserhalb des
+  Systems — Randfall 8.5 erinnert daran.
 - **Verbotene Muster** (im Bestand vorhanden, hier ausdrücklich nicht wiederverwendet): die
   quiz-weite Leaderboard-Query `WHERE quiz_id = $1 … LIMIT 1000` (`solo.rs:634-636`) als
   Vorlage irgendeiner Liste — sie ist der bestehende Namens-Leak an Kinder; und der
@@ -510,8 +543,11 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
   (`rust/server/src/http/result_og.rs`). Keine Ansicht dieser Spec ist ohne Manager-Session
   erreichbar; es gibt keine öffentliche Auswertungs-URL.
 - **Aufbewahrung:** unverändert unbegrenzt — kein `DELETE FROM solo_results` existiert im
-  Bestand; einziger neuer Löschpfad ist die Kaskade bei Kind-Löschung (3.3). Frist =
-  offene Frage 7.
+  Bestand; einziger neuer Löschpfad ist die Kaskade bei Kind-Löschung (3.3). Die Prüfung
+  (G2-4) stuft das zu Recht als Compliance-Lücke ein: Schuldatenschutz verlangt
+  definierte Löschfristen für Leistungsdaten. Die Produktentscheidung aus offener
+  Frage 7 muss deshalb vor dem Produktiveinsatz an echten Klassen fallen — ein benannter
+  Betriebs-Blocker ausserhalb des Codes dieser Welle, keine ewige Vertagung.
 
 ## 8. Randfälle, je mit erwartetem Verhalten
 
@@ -556,7 +592,13 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
 ## 9. Nicht-Ziele
 
 - Keine Änderung am `results`-Tab (`ConfigResults.tsx`) oder an `GameResult` — Vorgabe 3.
-- Kein Speichern von Antworttexten (`answerText`) in `solo_results.answers` (3.2).
+- Kein Speichern von Antworttexten (`answerText`) in `solo_results.answers` (3.2;
+  didaktischer Preis und Nachrüstpfad ehrlich benannt in offener Frage 9).
+- Keine Fragen-Aggregation über Kinder hinweg („welche Frage fiel am schwersten?") in
+  dieser Welle — das v1-Format trägt mit `i`/`verdict` bereits alles Nötige, die
+  Auswertung ist additiv nachrüstbar (offene Frage 10).
+- Keine Freitext-Notizen der Lehrkraft pro Kind × Aufgabe (Prüfbefund G2-10): eigenes
+  Feature mit eigener Datenhaltung und eigenem Datenschutz-Profil; bei Bedarf eigenes SDD.
 - Kein Backfill der Frageebene für Altläufe (unmöglich, 3.4).
 - Kein Fix des Solo-Leaderboard-Leaks (`solo.rs:634-636`, quiz-weit statt
   assignment-gescopt) — eigenes P0-WP ausserhalb dieses Auftrags; hier nur: das Muster
@@ -575,7 +617,12 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
 
 1. **Reiter-Default:** Welcher Reiter ist initial aktiv? Standard: „Nach Kind", letzte Wahl
    in localStorage. Umkehrbar: eine Konstante; die Gleichwertigkeit (Vorgabe 1) bleibt in
-   jedem Fall — ein Klick trennt beide.
+   jedem Fall — ein Klick trennt beide. Die Prüfung (G2-7) argumentiert für „Nach
+   Aufgabe" als Erstaufruf-Default (nach einer gestellten Aufgabe fragt die Lehrkraft
+   zuerst „wie ist sie ausgefallen?") — vertretbar, ändert wegen des
+   localStorage-Merkens aber nur den allerersten Aufruf. Entscheidet der Projektinhaber;
+   Nutzungs-Telemetrie zur Default-Findung ist abgelehnt (Tracking in einer
+   Kinderdaten-Fläche widerspricht der Datensparsamkeits-Linie dieser Spec).
 2. **Zeitachse des Filters:** `assigned_at` (wann gestellt) oder `answered_at` (wann
    bearbeitet)? Standard: `assigned_at` — die Zuweisung ist die Primärentität, und die
    Säumig-Logik hängt ohnehin an ihr. Umkehrbar: reiner Query-Wechsel, Wire unverändert.
@@ -591,16 +638,35 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
    `user`-Rolle sieht im Fehlerfall den 401-Fehlerzustand statt Daten. Umkehrbar:
    einzeiliges `roleGate`, sobald das Mapping geklärt ist.
 6. **Persistentes Zugriffs-/Export-Audit** (Muster `students_audit`,
-   `014_class_students_junction.sql:41-48`): Standard: nein — nur die personenfreien
-   tracing-Zeilen aus Abschnitt 4. Umkehrbar: additive Tabelle plus ein
-   `POST /api/evaluation/export-audit`-Einzeiler beim CSV-Klick.
+   `014_class_students_junction.sql:41-48`): Standard nach Prüfung (G2-3) angehoben —
+   die personenfreien tracing-Zeilen aus Abschnitt 4 **plus** die Export-Logzeile (4.5)
+   sind Pflicht-Baseline; eine persistente Audit-Tabelle bleibt verneint. Umkehrbar:
+   additive Tabelle — der Endpunkt 4.5 existiert dann bereits als Schreibstelle.
 7. **Aufbewahrungsfrist für `solo_results`:** Standard: keine in dieser Welle; Träger wäre
    das bestehende Reaper-Muster (`rust/server/src/main.rs`, 60-s-Intervalle) mit
    `answered_at` (`001:94`). Umkehrbar/nachrüstbar ohne Schema-Änderung; braucht eine
-   Produktentscheidung (löschen vs. anonymisieren), nicht diese Spec.
+   Produktentscheidung (löschen vs. anonymisieren), nicht diese Spec. Nach Prüfung
+   (G2-4) heraufgestuft: die Entscheidung muss **vor dem Produktiveinsatz an echten
+   Klassen** fallen (7) — Schuldatenschutz verlangt definierte Löschfristen für
+   Leistungsdaten; „keine Frist" ist als Dauerzustand nicht haltbar.
 8. **Beamer-/Schulterblick-Schutz** (die Fläche zeigt Klarnamen, dieselbe Session bedient
    die Präsentationsfläche): Standard: kein zusätzlicher Mechanismus in dieser Welle.
    Umkehrbar: späterer „Namen ausblenden"-Schalter rein clientseitig.
+9. **Antworttexte in der Frageebene (Welle-2-Kandidat, Prüfbefund G2-1):** Die Prüfung
+   benennt den didaktischen Preis des Weglassens korrekt — die Lehrkraft sieht, DASS
+   Frage 3 falsch war, aber nicht, ob zwölf Kinder dasselbe Fehlkonzept teilen oder nur
+   vertippt sind. Standard bleibt trotzdem: nicht speichern. Antworttexte sind Freitext
+   Minderjähriger, bis 10 000 Zeichen pro Antwort (`SOLO_SCORE_ANSWER_TEXT_MAX`,
+   `rust/server/src/state/mod.rs:118`); sie zu persistieren ist eine
+   Datenschutz-Entscheidung des Projektinhabers, keine Standardannahme dieser Spec.
+   Nachrüstpfad ohne Bruch: additives Feld im versionierten Format (`v: 2`) — der
+   Unknown-v-Fallback (5.5) schützt alte Clients; es braucht keine Code-Vorleistung.
+10. **Fragen-Aggregation je Aufgabe** („welche Frage fiel am schwersten?", Prüfbefund
+    G2-2): Standard: nicht in dieser Welle — die bindenden Vorgaben nennen sie nicht,
+    und sie braucht entweder einen Aggregations-Endpunkt oder N Detail-Fetches.
+    Nachrüstbar rein additiv: `answers` trägt je Frage `i` + `verdict`; ein späterer
+    Summen-Endpunkt kann serverseitig aggregieren, ohne dass sich am Speicherformat
+    irgendetwas ändert.
 
 ## 11. Testbarkeit
 
@@ -611,7 +677,8 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
 `evaluation-child-row-<studentId>`, `evaluation-child-assignment-row-<assignmentId>`,
 `evaluation-csv-btn`, `evaluation-empty`, `evaluation-filter-empty`,
 `evaluation-error-retry`, `attempt-detail-dialog`, `attempt-row-<resultId>`,
-`attempt-question-row-<index>`, `attempt-detail-empty`, `quiz-changed-badge`.
+`attempt-question-row-<index>`, `attempt-detail-empty`, `attempt-detail-unknown`,
+`quiz-changed-badge`.
 
 **Abnahmekriterien (prüfbar):**
 1. Nach einem Solo-Submit enthält `solo_results.answers` das v1-Objekt mit
@@ -646,6 +713,20 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
 13. Mehrfachabgabe (3 Versuche): Liste zeigt `MAX(score)`/3 Versuche; Dialog listet drei
     Versuche, neuester zuerst, jeder mit eigener Fragenliste.
 14. Locale-Gate: alle neuen Keys ×6 Locales, `scripts/check-locales.sh` grün in jedem Gate.
+15. Gezielte Zuweisung (`assigned_student_id` gesetzt): eine Abgabe mit beliebigem
+    Client-`playerName` speichert `player_name` == `students.display_name` — der
+    Client-Freitext erreicht die Zeile nie (Regression auf Portal-SDD §4.1; Prüfbefund
+    G1: bislang nur implizit über AK 4 abgedeckt).
+16. `detail.v = 2` (künstlich eingespielt) → Dialog zeigt `attempt-detail-unknown`,
+    kein Crash, kein Teilrendering.
+17. Fragetext mit 200 Zeichen inkl. Umlaut/Emoji nahe der Grenze → Snapshot = 160
+    Zeichen + „…", kein Panic (UTF-8-Grenze); kürzere Fragen bleiben ungekürzt ohne
+    Marker.
+18. CSV-Klick erzeugt genau eine `evaluation: csv export`-Logzeile mit `user_id`,
+    `view`, `rows` und ohne Personendaten; der Download funktioniert auch, wenn der
+    Log-Call fehlschlägt (fire-and-forget, 4.5).
+19. Aufklappbare Zeilen tragen `aria-expanded`/`aria-controls`; Urteils-Icons im Dialog
+    sind `aria-hidden` mit sichtbarem Textlabel (vitest gegen gerenderte Attribute).
 
 **Werkzeuge und Pflichten:** Rust-Gate `bash rust/gate.sh` je Server-WP (Worktree braucht
 den config-Symlink); UI-WPs fahren die Pflicht-Verifikationskette
@@ -667,20 +748,24 @@ ist, desto mehr Läufe tragen Frage-Detail, wenn die Oberfläche kommt.
 - WP-E0 — Contract (`packages/common`): TS-Typ des `answers`-v1-Formats,
   Zod-Spiegel-Korrektur `validators/solo.ts` (3.2), Response-Typen der
   Evaluation-Endpunkte inkl. Status-Union `"done"|"open"|"overdue"|"revoked"`.
-- WP-E1 — Rust `http/solo.rs`: `SoloOutcome` + siebter INSERT-Bind + Tests (AK 1–3).
+- WP-E1 — Rust `http/solo.rs`: `SoloOutcome` (160-Zeichen-Snapshot + „…"-Marker) +
+  siebter INSERT-Bind + Tests (AK 1–3, 17).
 - WP-E2 — Migration `025_solo_results_assignment_fk.sql` (3.3) + Live-PG-Probe des FK.
 
 **Nach Portal-Welle 1:**
-- WP-E3 — Rust `http/evaluation.rs`: 4.1 + 4.2, `from`/`to` auf `groups` (4.3),
-  Frageebene in `:id/results` (4.4), `REDACT_KEYS`-Erweiterung (7). Tests: AK 4–8.
+- WP-E3 — Rust `http/evaluation.rs`: 4.1 + 4.2 + Export-Log 4.5, `from`/`to` auf
+  `groups` (4.3), Frageebene in `:id/results` (4.4), `REDACT_KEYS`-Erweiterung (7).
+  Tests: AK 4–8, 15, 18 (Serverseite).
 - WP-E4 — Web Gerüst: Tab-Registrierung (beide Stellen, 5.1), `SegmentedTabs`,
   `ConfigAssignments`-Rumpf mit Zuständen (5.6).
 - WP-E5 — Web „Nach Aufgabe" (5.4; absorbiert Portal-WP-C2-Inhalte — mit dem
   Portal-Orchestrator abstimmen, damit WP-C2 nicht doppelt gebaut wird).
 - WP-E6 — Web „Nach Kind" (5.3).
-- WP-E7 — Web `AttemptDetailDialog` (5.5). AK 10–13.
+- WP-E7 — Web `AttemptDetailDialog` (5.5, inkl. Unknown-v-Fallback und
+  aria-hidden-Icons). AK 10–13, 16, 19 (Dialog-Teil).
 - WP-E8 — Web Zeitraumfilter + Säumig-Pills/Badges (6.2/6.3). AK 7–8.
-- WP-E9 — Web CSV (`resultExport.ts` additiv + Buttons, 6.1). AK 9.
+- WP-E9 — Web CSV (`resultExport.ts` additiv + Buttons + fire-and-forget-Aufruf 4.5,
+  6.1). AK 9, 18 (Client-Teil).
 - WP-E10 — i18n: alle neuen `manager:`-Keys ×6 Locales; eigenes WP, Locale-Merges nie
   textuell. AK 14.
 - WP-E11 — Stagehand-e2e über den vollen Kreis (zuweisen → spielen → beide Reiter →
@@ -689,3 +774,70 @@ ist, desto mehr Läufe tragen Frage-Detail, wenn die Oberfläche kommt.
 Harte Ketten: E0→E1; Portal-W1→E3→{E5, E6}→E7; E8/E9 nach E5+E6; E10 nach den finalen
 Key-Listen; E11 zuletzt. E2 ist jederzeit einschiebbar. Jeder Worker im eigenen Worktree,
 `claude-wp-verify` nach jedem Report, Deploy + Live-Smoke nach jeder Welle.
+
+## 13. Was die Prüfung geändert hat
+
+Zwei unabhängige Gutachten wurden vollständig eingearbeitet — G1 (Verifikations-Review,
+WAVE-REVIEW CLEAN mit Auflagen) und G2 (agy-Lane, 9 nummerierte Findings plus ein
+zehnter Punkt „qualitative Notizen"). Jeder Befund ist umgesetzt oder hier begründet
+zurückgewiesen; nichts ist stillschweigend übergangen.
+
+**Umgesetzt:**
+
+- **G2-5 (Text-Kappung):** Frage-Snapshot von 80 auf 160 Zeichen erhöht, sichtbarer
+  „…"-Marker bei Kürzung (3.2, 5.5, 7, AK 17).
+- **G2-6 (Schema-Versionierung):** Unknown-`v`-Verhalten des Clients spezifiziert — nur
+  `v == 1` wird gerendert, alles andere fällt in `attempt-detail-unknown` (3.2, 5.5,
+  AK 16); der WP-E0-Typ modelliert `v` als Literal `1` mit explizitem Fallback.
+- **G2-3 (Export-Audit):** Baseline angenommen — neuer fire-and-forget-Endpunkt
+  `POST /api/evaluation/export-log` mit genau einer personenfreien tracing-Zeile (4.5,
+  6.1, 7, AK 18); die persistente Audit-Tabelle bleibt verneint, der Standard von
+  offener Frage 6 ist entsprechend angehoben.
+- **G2-8 (Drilldown-a11y):** `aria-expanded`/`aria-controls` + Tastatur sind Pflicht
+  der neuen Flächen (5.3, AK 19). Teil-Entwarnung am Bestand: `ListRow` bringt die
+  `aria-expanded`-Prop und einen nativen `<button>`-Trigger bereits mit
+  (`packages/web/src/features/manager/components/console/ListRow.tsx:38, 138,
+  166-176`) — keine Generator-Änderung nötig, nur konsequente Nutzung.
+- **G2-9, Dialog-Teil (sr-Labels):** Urteils-Icons `aria-hidden`, das sichtbare
+  Textlabel ist die zugängliche Beschreibung (5.5, AK 19).
+- **G2-10 (qualitative Notizen):** explizit als Nicht-Ziel aufgenommen (9) — vorher
+  weder Feature noch Ausschluss.
+- **G1 (player_name-Servertest):** neues Abnahmekriterium 15 — gezielte Zuweisungen
+  speichern nie Client-Freitext als `player_name`; das war bisher nur implizit über
+  AK 4 abgedeckt.
+- **G1 (Index-Nachweis):** `EXPLAIN`-Pflicht der 4.1-Query im Live-Gate, erwarteter
+  023-Index benannt (4.1).
+- **G2-4 (Aufbewahrungsfrist), teilweise:** weiterhin kein Löschjob in dieser Welle
+  (Produktentscheidung löschen vs. anonymisieren), aber heraufgestuft zum benannten
+  Betriebs-Blocker: die Entscheidung muss vor dem Produktiveinsatz an echten Klassen
+  fallen (7, offene Frage 7).
+
+**Begründet zurückgewiesen:**
+
+- **G2-1 (Antworttexte speichern):** abgelehnt für diese Welle. Der didaktische Preis
+  ist real und steht jetzt ehrlich im Dokument (offene Frage 9) — aber Freitext
+  Minderjähriger (bis 10 000 Zeichen pro Antwort) zu persistieren ist eine
+  Datenschutz-Entscheidung des Projektinhabers, keine Standardannahme. Der
+  versionierte `answers`-Container plus Unknown-v-Fallback macht die Nachrüstung
+  bruchfrei möglich; es braucht keine Code-Vorleistung.
+- **G2-2 (Fragen-Aggregation „Nach Aufgabe"):** abgelehnt für diese Welle — die
+  bindenden Vorgaben (zwei Reiter, Frageebene je Kind, drei Zusatzfunktionen) nennen
+  sie nicht; YAGNI. Als offene Frage 10 mit additivem Nachrüstpfad dokumentiert: das
+  gespeicherte Format trägt mit `i`/`verdict` bereits alles Nötige.
+- **G2-7 (Reiter-Default):** Standard bleibt „Nach Kind" (offene Frage 1, dort um das
+  Gegenargument ergänzt); wegen localStorage wirkt der Default nur beim allerersten
+  Aufruf, die Gleichwertigkeit (Vorgabe 1) ist davon unberührt. Telemetrie zur
+  Default-Findung abgelehnt: Nutzungs-Tracking in einer Kinderdaten-Fläche
+  widerspricht der Datensparsamkeits-Linie dieser Spec.
+- **G2-9, Pill-Teil (FilterPill-Tastatur):** Fehlalarm gegen den Bestand —
+  `FilterPill` ist ein natives `<button type="button">` mit `aria-pressed` und
+  `focus-visible`-Outline (`packages/web/src/components/manager/FilterPill.tsx:25-29`);
+  Enter/Space und Fokusreihenfolge kommen vom Element selbst. Ein Umbau auf
+  `role="radio"` wäre eine Verschlechterung gegenüber dem projektweiten
+  `aria-pressed`-Muster.
+
+**Von G1 bestätigt, unverändert:** der fehlende Owner-Check auf
+`GET /api/assignment/:id/results` ist ein akutes Loch im Bestand (`assignments.rs:271`,
+nur Rollen-Gate) und bleibt harter Deploy-Blocker vor WP-E3 (4.4, 7, AK 4); die
+Portal-W1-Abhängigkeit und die Reihenfolge „E0/E1 sofort, Fläche danach" gelten
+unverändert (12).
