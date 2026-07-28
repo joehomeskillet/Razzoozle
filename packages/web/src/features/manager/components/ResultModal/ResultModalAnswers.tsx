@@ -1,4 +1,4 @@
-import { MEDIA_TYPES } from "@razzoozle/common/constants"
+import { isUnscoredQuestionType, MEDIA_TYPES } from "@razzoozle/common/constants"
 import type { QuestionMedia } from "@razzoozle/common/types/game"
 import Markdown from "@razzoozle/web/components/Markdown"
 import Badge from "@razzoozle/web/components/manager/Badge"
@@ -62,7 +62,7 @@ const ResultModalAnswers = () => {
   const { t } = useTranslation()
 
   const noAnswerCount = totalPlayers - answeredCount
-  const isPoll = questionResult.type === "poll"
+  const isUnscored = isUnscoredQuestionType(questionResult.type)
   const isSlider = questionResult.type === "slider"
   const isTypeAnswer = questionResult.type === "type-answer"
 
@@ -247,7 +247,7 @@ const ResultModalAnswers = () => {
                     <Markdown>{row.label}</Markdown>
                   </span>
 
-                  {!isPoll && (
+                  {!isUnscored && (
                     <div className="shrink-0">
                       {row.isCorrect ? (
                         <Check className="size-5 text-[var(--state-correct)]" />

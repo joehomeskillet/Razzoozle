@@ -1,3 +1,4 @@
+import { isUnscoredQuestionType } from "@razzoozle/common/constants"
 import type { GameResult } from "@razzoozle/common/types/game"
 import { isAnswerCorrect } from "@razzoozle/web/features/manager/utils/answerCorrectness"
 
@@ -158,9 +159,10 @@ export const buildQuestionsCsv = (
         answerText = String(question.answers?.[pa.answerId] ?? pa.answerId)
       }
 
-      // Correctness: polls show empty, others show yes/no via the single source of truth
+      // Correctness: unscored types (poll, word-cloud, brainstorm, confidence,
+      // micro-lesson) show empty, others show yes/no via the single source of truth
       const correct =
-        question.type === "poll"
+        isUnscoredQuestionType(question.type)
           ? ""
           : isAnswerCorrect(question, pa)
             ? labels.yes

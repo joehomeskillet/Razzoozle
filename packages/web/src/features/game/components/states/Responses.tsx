@@ -1,3 +1,4 @@
+import { isUnscoredQuestionType } from "@razzoozle/common/constants"
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Markdown from "@razzoozle/web/components/Markdown"
 import AnswerButton from "@razzoozle/web/features/game/components/AnswerButton"
@@ -407,7 +408,9 @@ const Responses = ({
                   colorIndex={key}
                   label={answerLabel(key)}
                   correct={
-                    type === "poll" ? undefined : solutionList.includes(key)
+                    isUnscoredQuestionType(type)
+                      ? undefined
+                      : solutionList.includes(key)
                   }
                 >
                   <Markdown>{answer}</Markdown>

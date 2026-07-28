@@ -1,3 +1,4 @@
+import { isUnscoredQuestionType } from "@razzoozle/common/constants"
 import {
   answerColor,
   answerLabel,
@@ -75,7 +76,7 @@ const ResultModalTable = () => {
       <tbody className="divide-y divide-[var(--line)]">
         {questionResult.playerAnswers.map((pa) => {
           const isSlider = questionResult.type === "slider"
-          const isPoll = questionResult.type === "poll"
+          const isUnscored = isUnscoredQuestionType(questionResult.type)
           const isCorrect = isAnswerCorrect(pa)
           const label =
             !isSlider && pa.answerId !== null ? answerLabel(pa.answerId) : null
@@ -137,7 +138,7 @@ const ResultModalTable = () => {
                 )}
               </td>
               <td className="px-4 py-2.5">
-                {isPoll ? (
+                {isUnscored ? (
                   <span className="text-[var(--ink-faint)]">—</span>
                 ) : isCorrect ? (
                   <span className="flex items-center gap-1 text-[var(--state-correct)]">
