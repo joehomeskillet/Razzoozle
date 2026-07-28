@@ -254,6 +254,17 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 }
             }
         }
+        Some(QuestionType::WordCloud) | Some(QuestionType::Brainstorm) => {
+            // Word cloud / brainstorm: unscored collection formats, same shape as poll
+            // — need seed answers, no correct solution required.
+            if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {
+                return Err("errors:quizz.tooFewAnswers");
+            }
+        }
+        Some(QuestionType::Confidence) | Some(QuestionType::MicroLesson) => {
+            // Confidence / micro-lesson: unscored, no extra fields required
+            // (permissive stub, same pattern as mathematik/wortarten).
+        }
         // choice / boolean / None → default
         _ => {
             if question.answers.as_ref().map(|a| a.len()).unwrap_or(0) < 2 {
@@ -533,5 +544,121 @@ mod tests {
             "time": 15
         });
         assert_eq!(validate_question(&q), Err("errors:quizz.invalidPayload"));
+    }
+
+    #[test]
+    fn word_cloud_valid() {
+        let q = json!({
+            "question": "Share words about nature",
+            "type": "word-cloud",
+            "answers": ["tree", "flower"],
+            "cooldown": 5,
+            "time": 30
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn word_cloud_too_few_answers() {
+        let q = json!({
+            "question": "Share words about nature",
+            "type": "word-cloud",
+            "answers": ["tree"],
+            "cooldown": 5,
+            "time": 30
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.tooFewAnswers"));
+    }
+
+    #[test]
+    fn word_cloud_no_solution_required() {
+        let q = json!({
+            "question": "Share words about nature",
+            "type": "word-cloud",
+            "answers": ["tree", "flower"],
+            "cooldown": 5,
+            "time": 30
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn brainstorm_valid() {
+        let q = json!({
+            "question": "Ideas for improvement?",
+            "type": "brainstorm",
+            "answers": ["fast", "reliable"],
+            "cooldown": 5,
+            "time": 45
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn brainstorm_too_few_answers() {
+        let q = json!({
+            "question": "Ideas for improvement?",
+            "type": "brainstorm",
+            "answers": ["fast"],
+            "cooldown": 5,
+            "time": 45
+        });
+        assert_eq!(validate_question(&q), Err("errors:quizz.tooFewAnswers"));
+    }
+
+    #[test]
+    fn brainstorm_no_solution_required() {
+        let q = json!({
+            "question": "Ideas for improvement?",
+            "type": "brainstorm",
+            "answers": ["fast", "reliable"],
+            "cooldown": 5,
+            "time": 45
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn confidence_valid() {
+        let q = json!({
+            "question": "Are you confident?",
+            "type": "confidence",
+            "cooldown": 5,
+            "time": 10
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn confidence_permissive() {
+        let q = json!({
+            "question": "Are you confident?",
+            "type": "confidence",
+            "cooldown": 5,
+            "time": 10
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn micro_lesson_valid() {
+        let q = json!({
+            "question": "Watch this lesson",
+            "type": "micro-lesson",
+            "cooldown": 5,
+            "time": 60
+        });
+        assert!(validate_question(&q).is_ok());
+    }
+
+    #[test]
+    fn micro_lesson_permissive() {
+        let q = json!({
+            "question": "Watch this lesson",
+            "type": "micro-lesson",
+            "cooldown": 5,
+            "time": 60
+        });
+        assert!(validate_question(&q).is_ok());
     }
 }
