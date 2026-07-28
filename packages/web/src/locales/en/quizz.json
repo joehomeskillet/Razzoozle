@@ -87,7 +87,15 @@
     "matching": "Matching",
     "matchingDesc": "Match items with dropdowns",
     "dropPin": "Drop pin",
-    "dropPinDesc": "Place a pin on the image zone"
+    "dropPinDesc": "Place a pin on the image zone",
+    "wordCloud": "Word Cloud",
+    "wordCloudDesc": "Collects short terms from the class for a question",
+    "brainstorm": "Brainstorming",
+    "brainstormDesc": "Collects free ideas from the class, no scoring",
+    "confidence": "Confidence Rating",
+    "confidenceDesc": "Players indicate how sure they are of their answer",
+    "microLesson": "Micro-Lesson",
+    "microLessonDesc": "Short teaching content to click through, no scoring"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",

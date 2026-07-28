@@ -87,7 +87,15 @@
     "matching": "Association",
     "matchingDesc": "Associer des éléments via listes",
     "dropPin": "Drop-pin",
-    "dropPinDesc": "Placer une épingle sur la zone"
+    "dropPinDesc": "Placer une épingle sur la zone",
+    "wordCloud": "Nuage de mots",
+    "wordCloudDesc": "Recueille des mots courts de la classe pour une question",
+    "brainstorm": "Brainstorming",
+    "brainstormDesc": "Recueille des idées libres de la classe, sans points",
+    "confidence": "Niveau de confiance",
+    "confidenceDesc": "Les joueurs indiquent à quel point ils sont sûrs de leur réponse",
+    "microLesson": "Micro-leçon",
+    "microLessonDesc": "Contenu pédagogique court à parcourir, sans points"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marquer au moins 2 bonnes réponses",
