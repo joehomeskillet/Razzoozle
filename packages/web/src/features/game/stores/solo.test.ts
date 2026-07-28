@@ -15,6 +15,7 @@ afterEach(() => {
     playerName: "",
     totalPoints: 0,
     answers: [],
+    submitError: null,
   })
 })
 
@@ -57,5 +58,68 @@ describe("useSoloStore.finishGame", () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     const body = JSON.parse(init.body as string) as Record<string, unknown>
     expect("assignmentId" in body).toBe(false)
+  })
+
+  it("sets a rejected submitError with reason deadline when the server responds 403 with a deadline message, and does not touch the leaderboard as if it succeeded", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: async () => "Assignment deadline has passed",
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    useSoloStore.setState({
+      assignmentId: "assign-123",
+      playerName: "Alex",
+      totalPoints: 40,
+      answers: [],
+    })
+
+    await useSoloStore.getState().finishGame("quizz-1")
+
+    expect(useSoloStore.getState().submitError).toEqual({
+      kind: "rejected",
+      reason: "deadline",
+    })
+    expect(useSoloStore.getState().leaderboard).toEqual([])
+  })
+
+  it("sets a rejected submitError with reason attemptLimit when the server responds 403 with an attempt-limit message", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: async () => "Maximum number of attempts reached",
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    useSoloStore.setState({
+      assignmentId: "assign-123",
+      playerName: "Alex",
+      totalPoints: 40,
+      answers: [],
+    })
+
+    await useSoloStore.getState().finishGame("quizz-1")
+
+    expect(useSoloStore.getState().submitError).toEqual({
+      kind: "rejected",
+      reason: "attemptLimit",
+    })
+  })
+
+  it("sets a network submitError when the request throws, distinct from a server rejection", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network down"))
+    vi.stubGlobal("fetch", fetchMock)
+
+    useSoloStore.setState({
+      assignmentId: "assign-123",
+      playerName: "Alex",
+      totalPoints: 40,
+      answers: [],
+    })
+
+    await useSoloStore.getState().finishGame("quizz-1")
+
+    expect(useSoloStore.getState().submitError).toEqual({ kind: "network" })
   })
 })

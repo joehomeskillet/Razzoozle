@@ -27,7 +27,14 @@
     "classInactive": "Esta clase está desactivada.",
     "duplicateName": "Este nombre ya está en uso.",
     "statusError": "Error al cargar el cuestionario.",
-    "networkError": "Error de red al cargar el cuestionario."
+    "networkError": "Error de red al cargar el cuestionario.",
+    "submitRejectedTitle": "Entrega no aceptada",
+    "submitDeadlinePassed": "El plazo de entrega ha terminado.",
+    "submitAttemptLimitReached": "Ya has entregado tantas veces como estaba permitido.",
+    "submitRejectedOther": "Tu entrega no fue aceptada.",
+    "submitNetworkTitle": "Entrega no enviada",
+    "submitNetworkMessage": "Tu entrega no llegó. Revisa tu conexión e inténtalo de nuevo.",
+    "submitRetry": "Enviar de nuevo"
   },
   "manager": {
     "failedToReadConfig": "Error al leer la configuración del juego",

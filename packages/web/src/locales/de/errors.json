@@ -32,7 +32,14 @@
     "duplicateName": "Dieser Name ist schon vergeben.",
     "classInactive": "Diese Klasse ist deaktiviert.",
     "statusError": "Fehler beim Laden des Quiz.",
-    "networkError": "Netzwerkfehler beim Laden des Quiz."
+    "networkError": "Netzwerkfehler beim Laden des Quiz.",
+    "submitRejectedTitle": "Abgabe nicht angenommen",
+    "submitDeadlinePassed": "Die Abgabefrist ist abgelaufen.",
+    "submitAttemptLimitReached": "Du hast schon so oft abgegeben, wie erlaubt ist.",
+    "submitRejectedOther": "Deine Abgabe wurde nicht angenommen.",
+    "submitNetworkTitle": "Abgabe nicht gesendet",
+    "submitNetworkMessage": "Deine Abgabe ist nicht angekommen. Prüfe deine Verbindung und versuche es noch einmal.",
+    "submitRetry": "Erneut senden"
   },
   "manager": {
     "failedToReadConfig": "Spielkonfiguration konnte nicht gelesen werden",

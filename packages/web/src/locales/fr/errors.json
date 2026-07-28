@@ -27,7 +27,14 @@
     "classInactive": "Cette classe est désactivée.",
     "duplicateName": "Ce nom est déjà pris.",
     "statusError": "Échec du chargement du quiz.",
-    "networkError": "Erreur réseau lors du chargement du quiz."
+    "networkError": "Erreur réseau lors du chargement du quiz.",
+    "submitRejectedTitle": "Envoi non accepté",
+    "submitDeadlinePassed": "La date limite est dépassée.",
+    "submitAttemptLimitReached": "Tu as déjà envoyé autant de fois que permis.",
+    "submitRejectedOther": "Ton envoi n'a pas été accepté.",
+    "submitNetworkTitle": "Envoi non transmis",
+    "submitNetworkMessage": "Ton envoi n'est pas arrivé. Vérifie ta connexion et réessaie.",
+    "submitRetry": "Renvoyer"
   },
   "manager": {
     "failedToReadConfig": "Impossible de lire la configuration",

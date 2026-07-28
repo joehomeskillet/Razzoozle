@@ -31,11 +31,15 @@ import {
 interface AssignmentErrorScreenProps {
   title: string
   message: string
+  onRetry?: () => void
+  retryLabel?: string
 }
 
 const AssignmentErrorScreen = ({
   title,
   message,
+  onRetry,
+  retryLabel,
 }: AssignmentErrorScreenProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -52,13 +56,24 @@ const AssignmentErrorScreen = ({
         <p className="max-w-md text-lg text-[color:var(--color-field-ink)]/70">{message}</p>
       </motion.div>
 
-      <button
-        type="button"
-        onClick={() => navigate({ to: "/" })}
-        className="mt-6 rounded-xl bg-white px-6 py-3 font-bold text-black transition-all hover:bg-gray-100 active:scale-95"
-      >
-        {t("common:home", { defaultValue: "Zur Startseite" })}
-      </button>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-xl bg-white px-6 py-3 font-bold text-black transition-all hover:bg-gray-100 active:scale-95"
+          >
+            {retryLabel}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/" })}
+          className="rounded-xl bg-white px-6 py-3 font-bold text-black transition-all hover:bg-gray-100 active:scale-95"
+        >
+          {t("common:home", { defaultValue: "Zur Startseite" })}
+        </button>
+      </div>
     </section>
   )
 }
@@ -92,6 +107,7 @@ const AssignmentPlayPage = () => {
     lastAchievements,
     answers,
     error,
+    submitError,
     loadQuiz,
     setPlayerName,
     setAssignmentId,
@@ -258,6 +274,41 @@ const AssignmentPlayPage = () => {
 
   // ─ Finished
   if (phase === "finished") {
+    // #471: the score POST came back rejected (deadline/attempt limit) or
+    // never reached the server — don't show the local result as if the submit
+    // had landed; tell the player what happened. A network failure offers a
+    // retry, a definitive rejection does not.
+    if (submitError) {
+      const title =
+        submitError.kind === "network"
+          ? t("errors:game.submitNetworkTitle", { defaultValue: "Abgabe nicht gesendet" })
+          : t("errors:game.submitRejectedTitle", { defaultValue: "Abgabe nicht angenommen" })
+      const message =
+        submitError.kind === "network"
+          ? t("errors:game.submitNetworkMessage", {
+              defaultValue:
+                "Deine Abgabe ist nicht angekommen. Prüfe deine Verbindung und versuche es noch einmal.",
+            })
+          : submitError.reason === "deadline"
+            ? t("errors:game.submitDeadlinePassed", { defaultValue: "Die Abgabefrist ist abgelaufen." })
+            : submitError.reason === "attemptLimit"
+              ? t("errors:game.submitAttemptLimitReached", {
+                  defaultValue: "Du hast schon so oft abgegeben, wie erlaubt ist.",
+                })
+              : t("errors:game.submitRejectedOther", {
+                  defaultValue: "Deine Abgabe wurde nicht angenommen.",
+                })
+
+      return (
+        <AssignmentErrorScreen
+          title={title}
+          message={message}
+          onRetry={submitError.kind === "network" ? () => void finishGame(id) : undefined}
+          retryLabel={t("errors:game.submitRetry", { defaultValue: "Erneut senden" })}
+        />
+      )
+    }
+
     return (
       <FinishedScreen
         subject={subject}

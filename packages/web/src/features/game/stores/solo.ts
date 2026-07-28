@@ -52,6 +52,16 @@ export type SoloPhase =
   | "result"
   | "finished"
 
+// #471: finishGame's outcome once the score POST comes back. "rejected" is a
+// definitive server answer (403, deadline_passed/attempt_limit_reached in
+// rust/server/src/http/solo.rs) — the run is over, nothing to retry.
+// "network" means the request never got a server answer at all — unlike a
+// rejection, trying again may succeed.
+export type SubmitErrorReason = "deadline" | "attemptLimit" | "other"
+export type SubmitError =
+  | { kind: "rejected"; reason: SubmitErrorReason }
+  | { kind: "network" }
+
 export interface SoloQuestionResult {
   questionIndex: number
   correct: boolean
@@ -88,6 +98,10 @@ interface SoloState {
   answers: SoloQuestionResult[]
   leaderboard: SoloScoreEntry[]
   error: string | null
+  // #471: set by finishGame when the score POST is rejected (definitive server
+  // answer) or never reached the server (retryable). null while idle and after
+  // a successful submit. No dedicated setter — finishGame owns this field.
+  submitError: SubmitError | null
   // Session preference: when true (default), the result screen auto-advances to
   // the next question (or finished screen) after a short delay. Toggling off
   // lets the player linger on the result; the manual Next/Finish button is
@@ -126,6 +140,7 @@ const initialState = {
   answers: [] as SoloQuestionResult[],
   leaderboard: [] as SoloScoreEntry[],
   error: null as string | null,
+  submitError: null as SubmitError | null,
   autoAdvance: false,
 }
 
@@ -405,6 +420,9 @@ export const useSoloStore = create<SoloState>((set, get) => ({
 
   finishGame: async (id: string) => {
     const { playerName, totalPoints, answers, assignmentId } = get()
+    // A new attempt clears any previous submit error (e.g. the retry button on
+    // the assignment page after a network failure).
+    set({ submitError: null })
     try {
       const url = `/api/quizz/${encodeURIComponent(id)}/solo-score`
 
@@ -432,9 +450,25 @@ export const useSoloStore = create<SoloState>((set, get) => ({
         if (Array.isArray(data.leaderboard)) {
           set({ leaderboard: data.leaderboard })
         }
+      } else {
+        // #471: a definitive server answer (403 deadline/attempt-limit from
+        // rust/server/src/http/solo.rs). Axum renders the handler's
+        // (StatusCode, String) as a plain-text body, so classify the text —
+        // the page turns it into a localized reason instead of silently
+        // showing the local result as if the submit had landed.
+        const bodyText = await res.text().catch(() => "")
+        const lower = bodyText.toLowerCase()
+        const reason: SubmitErrorReason = lower.includes("deadline")
+          ? "deadline"
+          : lower.includes("attempt")
+            ? "attemptLimit"
+            : "other"
+        set({ submitError: { kind: "rejected", reason } })
       }
     } catch {
-      // Score submission failure is non-fatal; show what we have.
+      // #471: the request never got a server answer (offline, DNS, aborted).
+      // Unlike a rejection, a retry may succeed — the page offers one.
+      set({ submitError: { kind: "network" } })
     }
   },
 
