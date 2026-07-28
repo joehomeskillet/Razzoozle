@@ -6,6 +6,14 @@
 //
 // Requires: twins running externally, E2E_PW set, quiz "E2E All Types" upserted
 // (W0a upsert-quiz.mjs). data-testid contract from W0_SPEC / W0b-1.
+//
+// WP-504-E2E: covers 3 of the 4 unscored question types (brainstorm, confidence,
+// micro-lesson) end to end. `word-cloud` is deliberately NOT exercised here —
+// WordCloudDisplay (packages/web/.../answers/WordCloudDisplay.tsx) is a
+// read-only display component with no input/submit affordance in either the
+// multiplayer (Answers.tsx) or solo (SoloAnswers.tsx) answer screen, so a
+// player cannot answer a word-cloud question through the game UI at all. That
+// is a real product gap (not this file's job to fix) — see the WP report.
 import { test, expect, type Page, type BrowserContext } from "@playwright/test"
 // Path locked per W0_SPEC (W0a owns content; mirrored here for import/parse).
 import quizFixture from "./fixtures/all-types-quiz.json" with { type: "json" }
@@ -16,6 +24,13 @@ const E2E_USER = process.env.E2E_USER ?? "admin"
 const QUIZ_SUBJECT = quizFixture.subject
 
 type Question = (typeof quizFixture.questions)[number]
+
+// Question types that never receive a right/wrong verdict — mirrors
+// packages/common/src/constants.ts UNSCORED_QUESTION_TYPES, minus "word-cloud"
+// (not reachable in this suite, see file header). Kept as a local literal list
+// rather than importing the shared constant: e2e/ is a standalone pnpm project
+// outside the packages/ workspace (no @razzoozle/common dependency).
+const UNSCORED_IN_SUITE = ["poll", "brainstorm", "confidence", "micro-lesson"]
 
 type RolePages = {
   host: Page
@@ -180,6 +195,33 @@ async function answerSequencing(
   }
 }
 
+/** Brainstorm: submit one free-text idea via the input + submit button
+    (BrainstormBoard's own form — same wire shape as type-answer). */
+async function answerBrainstorm(
+  page: Page,
+  text: string,
+  opts?: { doubleSubmit?: boolean },
+) {
+  await page.getByTestId("brainstorm-input").fill(text)
+  const submit = page.getByTestId("brainstorm-submit")
+  await submit.click()
+  if (opts?.doubleSubmit) {
+    await submit.click({ force: true }).catch(() => {})
+  }
+}
+
+/** Confidence: pick one of the three fixed self-assessment levels
+    (ConfidenceSelector has no `answers` prop — the options are built in). */
+async function answerConfidence(page: Page, level: "high" | "medium" | "low") {
+  await page.getByTestId(`confidence-option-${level}`).click()
+}
+
+/** Micro-lesson: the fixture has a single slide, so "Lektion abschließen" is
+    the first and only nav tap (MicroLessonViewer marks isLast from mount). */
+async function answerMicroLesson(page: Page) {
+  await page.getByTestId("microlesson-next").click()
+}
+
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
@@ -232,6 +274,19 @@ function player1AnswerPlan(q: Question): {
         run: (page, opts) =>
           answerSequencing(page, q.correctOrder!, q.items!, opts),
       }
+    case "brainstorm":
+      return {
+        run: (page, opts) =>
+          answerBrainstorm(page, "Mehr Fokuszeit ohne Pendelweg", opts),
+      }
+    case "confidence":
+      return {
+        run: (page) => answerConfidence(page, "high"),
+      }
+    case "micro-lesson":
+      return {
+        run: (page) => answerMicroLesson(page),
+      }
     default: {
       const _exhaustive: never = q as never
       throw new Error(`Unknown question type: ${JSON.stringify(_exhaustive)}`)
@@ -277,6 +332,15 @@ function player2AnswerPlan(q: Question): {
         run: (page) =>
           answerSequencing(page, [...q.correctOrder!].reverse(), q.items!),
       }
+    case "brainstorm":
+      return {
+        run: (page) => answerBrainstorm(page, "Flexiblere Kernarbeitszeiten"),
+      }
+    case "confidence":
+      // Different from P1's "high" — still no right/wrong for self-assessment.
+      return { run: (page) => answerConfidence(page, "low") }
+    case "micro-lesson":
+      return { run: (page) => answerMicroLesson(page) }
     default: {
       const _exhaustive: never = q as never
       throw new Error(`Unknown question type: ${JSON.stringify(_exhaustive)}`)
@@ -375,6 +439,9 @@ async function advanceToNextQuestion(host: Page, player1: Page, nextQType: strin
     : nextQType === "mathematik" ? "mathematik-input"
     : nextQType === "wortarten" ? "wortarten-token-0"
     : nextQType === "sequencing" ? "sequencing-item-0"
+    : nextQType === "brainstorm" ? "brainstorm-input"
+    : nextQType === "confidence" ? "confidence-option-high"
+    : nextQType === "micro-lesson" ? "microlesson-next"
     : "answer-btn-0"
 
   for (let s = 0; s < maxSteps; s++) {
@@ -442,6 +509,15 @@ async function waitForAnswerControl(page: Page, questionType: string) {
     case "sequencing":
       await expect(page.getByTestId("sequencing-item-0")).toBeVisible({ timeout: 45_000 })
       break
+    case "brainstorm":
+      await expect(page.getByTestId("brainstorm-input")).toBeVisible({ timeout: 45_000 })
+      break
+    case "confidence":
+      await expect(page.getByTestId("confidence-option-high")).toBeVisible({ timeout: 45_000 })
+      break
+    case "micro-lesson":
+      await expect(page.getByTestId("microlesson-next")).toBeVisible({ timeout: 45_000 })
+      break
     default:
       throw new Error(`Unknown question type: ${questionType}`)
   }
@@ -501,6 +577,13 @@ test.describe("Answer flow — E2E All Types", () => {
       // Use boolean (index 1) for deadline; multiple-select (index 4) for double-submit.
       const DEADLINE_Q = 1
       const DOUBLE_SUBMIT_Q = 4
+
+      // Running leaderboard scores, captured after each question's reveal —
+      // used to compute THIS question's point delta (WP-504-E2E), since the
+      // cumulative "P1 > P2" check below stays trivially true once P1 has any
+      // lead, regardless of what the current question scored.
+      let prevScoreP1 = 0
+      let prevScoreP2 = 0
 
       for (let i = 0; i < quizFixture.questions.length; i++) {
         const q = quizFixture.questions[i]
@@ -583,7 +666,7 @@ test.describe("Answer flow — E2E All Types", () => {
             await advanceToState(host, "leaderboard", player1)
 
             // P1 should see correct-answer-highlight after reveal (scored types).
-            if (q.type !== "poll") {
+            if (!UNSCORED_IN_SUITE.includes(q.type)) {
               await expect(
                 player1.getByTestId("correct-answer-highlight"),
               ).toBeVisible({ timeout: 20_000 })
@@ -599,6 +682,29 @@ test.describe("Answer flow — E2E All Types", () => {
               }, { timeout: 10_000 }).toBe(true)
             }
 
+            // WP-504-E2E — the actual assertion this WP exists for: an unscored
+            // question must leave BOTH players' scores exactly where they were
+            // before it (no wrong-marking side effect, no silent points).
+            if (q.type === "brainstorm" || q.type === "confidence" || q.type === "micro-lesson") {
+              await expect.poll(async () => {
+                const s1 = await parseLeaderboardScore(host, PLAYER1)
+                const s2 = await parseLeaderboardScore(host, PLAYER2)
+                return s1 === prevScoreP1 && s2 === prevScoreP2
+              }, { timeout: 10_000 }).toBe(true)
+            }
+
+            // Gegenprobe (choice, Q1): a genuinely scored wrong answer must
+            // still produce a real point differential — proves the delta
+            // check above isn't a vacuous no-op that would stay green even if
+            // scoring silently broke for everyone.
+            if (q.type === "choice") {
+              await expect.poll(async () => {
+                const s1 = await parseLeaderboardScore(host, PLAYER1)
+                const s2 = await parseLeaderboardScore(host, PLAYER2)
+                return s1 > prevScoreP1 && s2 === prevScoreP2
+              }, { timeout: 10_000 }).toBe(true)
+            }
+
             // Double-submit must not explode score unreasonably (no double count).
             // Cap: theoretical max ~1000 * questions answered correctly.
             await expect.poll(async () => {
@@ -606,6 +712,11 @@ test.describe("Answer flow — E2E All Types", () => {
               // ponytail: achievement bonuses accrue PER question (observed ≤420/round on prod config), so the margin scales with i; early rounds still catch a double-counted answer (+1000), later rounds are covered by the dedicated double-submit test (DOUBLE_SUBMIT_Q)
               return s1 <= 1600 * (i + 1)
             }, { timeout: 10_000 }).toBe(true)
+
+            // Capture this question's final scores as the baseline for the
+            // next question's delta checks above.
+            prevScoreP1 = await parseLeaderboardScore(host, PLAYER1)
+            prevScoreP2 = await parseLeaderboardScore(host, PLAYER2)
 
             // Advance to next question (effect-verified: re-click only if leaderboard still visible).
             // After this, waitForAnswerControl will verify we reached SELECT_ANSWER.
