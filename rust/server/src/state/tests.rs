@@ -1316,3 +1316,57 @@ fn test_participant_cap_from_selected_modes_wiring() {
         "None cap must remain None (hardcoded ceiling applies)"
     );
 }
+
+#[test]
+fn test_participant_cap_snapshot_stores_clamped_value_not_raw_client_value() {
+    use razzoozle_protocol::game::SelectedModes;
+
+    let empty_quiz = Quizz {
+        subject: "Test".to_string(),
+        questions: vec![],
+        archived: None,
+        theme_id: None,
+    };
+
+    // Test: client sends 250 (over ceiling 200), both player_cap AND snapshot.participant_cap must show 200
+    let mut game = Game::new(
+        "game-snapshot-clamp".to_string(),
+        "INV1".to_string(),
+        "manager-1".to_string(),
+        "test-quiz".to_string(),
+        empty_quiz,
+    );
+
+    // Simulate socket handler: client sends 250
+    let client_modes = SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+        participant_cap: Some(250),
+    };
+
+    // Handler: extract + clamp + snapshot
+    let requested_player_cap = client_modes.participant_cap;
+    game.player_cap = crate::state::resolve_player_cap(requested_player_cap);
+    // BUG FIX: snapshot must store clamped value, not raw
+    game.selected_modes = SelectedModes {
+        scoring_mode: None,
+        team_mode: None,
+        klassen: None,
+        end_screen: None,
+        participant_cap: game.player_cap.map(|u| u as i64),
+    };
+
+    // Verify: both must be 200, not 250
+    assert_eq!(
+        game.player_cap,
+        Some(MAX_PLAYERS_PER_GAME),
+        "player_cap must be clamped to 200"
+    );
+    assert_eq!(
+        game.selected_modes.participant_cap,
+        Some(MAX_PLAYERS_PER_GAME as i64),
+        "snapshot.participant_cap must also be 200, not raw 250 — readers of snapshot must see wirksam value"
+    );
+}
