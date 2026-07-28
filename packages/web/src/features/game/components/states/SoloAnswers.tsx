@@ -316,6 +316,21 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     void submitAnswer(quizzId, { answerText: trimmed })
   }
 
+  // Brainstorm: submit one free-text idea. Same REST payload shape as
+  // type-answer ({ answerText }) — check-answer has no per-type text
+  // requirement for "brainstorm". Locks the board after the first idea
+  // (same as type-answer); multi-idea submission would need engine support.
+  const submitBrainstormIdea = (text: string) => {
+    if (submitted) return
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, { answerText: trimmed })
+  }
+
 
   const submitMathematikAnswer = () => {
     if (submitted || !mathematikAnswer.trim()) return
@@ -517,9 +532,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
         ) : isBrainstorm ? (
           <BrainstormBoard
             ideas={question.answers?.map((text, i) => ({ id: String(i), text, upvotes: 1 })) ?? []}
-            onAddIdea={() => {
-              handleAnswer(0)()
-            }}
+            onAddIdea={submitBrainstormIdea}
             disabled={submitted}
           />
         ) : isConfidence ? (
