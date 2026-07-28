@@ -355,6 +355,9 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         shuffled_chunks: None,
         shuffled_items: None,
         selected_modes,
+        // #477: snapshot restore does not yet persist player_cap; fall back to
+        // hard ceiling until a follow-up wires the field through snapshots.
+        player_cap: None,
     };
 
     // Restore last manager status if present

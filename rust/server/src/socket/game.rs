@@ -205,6 +205,14 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             // Wave-1: bind class for klassen mode
                             g.class_id = bound_class_id;
 
+                            // #477: per-game participant cap. No client-supplied value
+                            // exists on the create payload yet — wiring that through
+                            // razzoozle_protocol::game::{CreateGamePayload, SelectedModes}
+                            // (a shared contract with packages/common) is a separate
+                            // follow-up package. resolve_player_cap is already the single
+                            // validate/clamp entry point that payload field would call here.
+                            g.player_cap = crate::state::resolve_player_cap(None);
+
                             // Snapshot per-game mode selection
                             g.selected_modes = SelectedModes {
                                 scoring_mode: Some(

@@ -532,8 +532,10 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         None
                                     };
 
-                                    // H — per-game player cap
-                                    if game.players.len() >= crate::state::MAX_PLAYERS_PER_GAME {
+                                    // H — per-game player cap (#477: configurable per game,
+                                    // hard-capped at MAX_PLAYERS_PER_GAME — see
+                                    // Game::is_at_player_cap / effective_player_cap).
+                                    if game.is_at_player_cap() {
                                         drop(game);
                                         socket
                                             .emit(
