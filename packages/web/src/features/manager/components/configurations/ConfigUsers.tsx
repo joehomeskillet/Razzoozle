@@ -226,7 +226,7 @@ const ConfigUsers = () => {
       setBulkAction(null)
       await loadUsersData()
     } catch {
-      toast.error(t("errors:bulkFailed"))
+      toast.error(t("manager:users.bulkFailed"))
     } finally {
       setBulkProcessing(false)
     }
@@ -235,9 +235,7 @@ const ConfigUsers = () => {
   const handleCopyUser = (sourceUser: ManagedUser) => {
     if (currentUsername != null && sourceUser.username === currentUsername) {
       toast.error(
-        t("manager:users.cannot_copy_self", {
-          defaultValue: "Du kannst dein eigenes Konto nicht kopieren",
-        }),
+        t("manager:users.cannot_copy_self"),
       )
       return
     }
