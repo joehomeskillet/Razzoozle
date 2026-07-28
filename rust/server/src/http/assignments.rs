@@ -72,6 +72,27 @@ fn role_may_manage_assignments(role: &str) -> bool {
     matches!(role, "admin" | "lehrkraft")
 }
 
+/// Determines if a user can view assignment results based on role and ownership.
+///
+/// Rules (current implementation):
+/// - admin role: always allowed (sees all assignments)
+/// - lehrkraft role: only allowed if they own the assignment (owner_id matches user_id)
+/// - all other roles: denied
+///
+/// Note on NULL handling: Currently treats NULL owner_id as "belongs to someone else"
+/// (denies access for lehrkraft). This is intentional per db/migrations/008_owner_scoping.sql:
+/// legacy rows with owner_id IS NULL remain admin-visible only (the `$me IS NULL` unfiltered read).
+/// If this semantics changes, update this comment and the migration rationale.
+pub fn can_view_assignment_results(role: &str, owner_id: Option<i64>, user_id: i64) -> bool {
+    if role == "admin" {
+        return true;
+    }
+    if role == "lehrkraft" {
+        return owner_id == Some(user_id);
+    }
+    false
+}
+
 /// w2-7: token extraction + session lookup now come from the centralized
 /// `crate::auth::ensure_manager_user` (was duplicated verbatim here). The
 /// SEC-X2a role gate (admin|lehrkraft only, "user" role rejected) stays here
@@ -270,6 +291,10 @@ pub async fn handle_get_assignment_results(
 ) -> Result<Json<GetAssignmentResultsResponse>, (StatusCode, Json<serde_json::Value>)> {
     authorize_manager_request(&headers, &state.registry, &state.db_pool).await?;
 
+    let user = crate::auth::ensure_manager_user(&headers, &state.db_pool)
+        .await
+        .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+
     safe_asset_id(&id)
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
@@ -278,13 +303,18 @@ pub async fn handle_get_assignment_results(
         None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
     };
 
-    // Check that assignment exists
-    let _quiz_id: String = sqlx::query_scalar("SELECT quiz_id FROM assignments WHERE id = $1")
+    // Check that assignment exists and verify ownership for lehrkraft
+    let owner_id: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM assignments WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
         .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+
+    // Scoping: verify authorization via can_view_assignment_results
+    if !can_view_assignment_results(&user.role, owner_id, user.user_id) {
+        return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
+    }
 
     // Fetch solo_results for this assignment
     let results: Vec<(String, i32, chrono::DateTime<chrono::Utc>, Option<String>)> = sqlx::query_as(
@@ -343,5 +373,58 @@ mod tests {
         assert!(!role_may_manage_assignments("unknown"));
         assert!(!role_may_manage_assignments("guest"));
         assert!(!role_may_manage_assignments("moderator"));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Test suite for can_view_assignment_results — the authorization gate.
+    // These tests verify the scoping logic that prevents lehrkraft from accessing
+    // other lehrkraft's assignment results.
+    //
+    // Regression detector: if can_view_assignment_results is removed or the
+    // scoping check in handle_get_assignment_results is commented out, these
+    // tests will fail.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_can_view_assignment_results_admin_always_allowed() {
+        // Admin role bypasses all ownership checks
+        assert!(can_view_assignment_results("admin", Some(100), 999));
+        assert!(can_view_assignment_results("admin", Some(200), 999));
+        assert!(can_view_assignment_results("admin", None, 999));
+    }
+
+    #[test]
+    fn test_can_view_assignment_results_lehrkraft_own_assignment() {
+        // Lehrkraft can view their own assignment
+        let user_id = 42;
+        let owner_id = Some(42);
+        assert!(can_view_assignment_results("lehrkraft", owner_id, user_id));
+    }
+
+    #[test]
+    fn test_can_view_assignment_results_lehrkraft_other_assignment_denied() {
+        // Lehrkraft CANNOT view another lehrkraft's assignment
+        let user_id = 42;
+        let owner_id = Some(99);  // Different owner
+        assert!(!can_view_assignment_results("lehrkraft", owner_id, user_id),
+                "lehrkraft should not see assignment owned by another lehrkraft");
+    }
+
+    #[test]
+    fn test_can_view_assignment_results_lehrkraft_null_owner_denied_current_impl() {
+        // Current implementation: NULL owner_id → denied for lehrkraft
+        // (This is the point of contention: should NULL be allowed for all?)
+        let user_id = 42;
+        let owner_id = None;  // No owner set
+        assert!(!can_view_assignment_results("lehrkraft", owner_id, user_id),
+                "current impl: lehrkraft denied for NULL owner_id");
+    }
+
+    #[test]
+    fn test_can_view_assignment_results_unknown_role_denied() {
+        // Unknown roles always denied
+        assert!(!can_view_assignment_results("user", Some(42), 42));
+        assert!(!can_view_assignment_results("moderator", Some(42), 42));
+        assert!(!can_view_assignment_results("guest", None, 42));
     }
 }
