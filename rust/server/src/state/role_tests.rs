@@ -1,4 +1,6 @@
-use super::socket_role::{release, try_claim, VerifiedRole};
+use super::socket_role::{release, role_of, try_claim, VerifiedRole};
+use std::sync::{Arc, Barrier};
+use std::thread;
 
 /// Same socket cannot hold two different roles at once.
 #[test]
@@ -80,4 +82,60 @@ fn multi_socket_may_hold_different_roles() {
     assert!(try_claim(sid_b, VerifiedRole::Player).is_ok());
     release(sid_a);
     release(sid_b);
+}
+
+/// Race condition test: two threads claiming different roles on the same socket
+/// must atomically exclude — exactly one wins, the other gets Err.
+#[test]
+fn concurrent_claim_different_roles_atomicity() {
+    let sid = "role-test-concurrent-99999999-9999-9999-9999-999999999999";
+    release(sid); // Clean slate
+
+    let barrier = Arc::new(Barrier::new(2));
+    let mut handles = vec![];
+
+    // Thread 1: claim Manager
+    {
+        let barrier_clone = Arc::clone(&barrier);
+        let sid_clone = sid.to_string();
+        let h1 = thread::spawn(move || {
+            barrier_clone.wait(); // Synchronize at the gate
+            try_claim(&sid_clone, VerifiedRole::Manager)
+        });
+        handles.push(h1);
+    }
+
+    // Thread 2: claim Player
+    {
+        let barrier_clone = Arc::clone(&barrier);
+        let sid_clone = sid.to_string();
+        let h2 = thread::spawn(move || {
+            barrier_clone.wait(); // Synchronize at the gate
+            try_claim(&sid_clone, VerifiedRole::Player)
+        });
+        handles.push(h2);
+    }
+
+    // Collect both results
+    let r1 = handles.remove(0).join().unwrap();
+    let r2 = handles.remove(0).join().unwrap();
+
+    // Exactly one must succeed, the other must fail
+    let outcomes = (r1, r2);
+    match outcomes {
+        (Ok(()), Err(VerifiedRole::Manager)) => {
+            // Player lost, Manager won
+            assert_eq!(role_of(sid), Some(VerifiedRole::Manager));
+        }
+        (Err(VerifiedRole::Player), Ok(())) => {
+            // Manager lost, Player won
+            assert_eq!(role_of(sid), Some(VerifiedRole::Player));
+        }
+        _ => panic!(
+            "Race condition violated: both must not succeed. Got: {:?}, {:?}",
+            r1, r2
+        ),
+    }
+
+    release(sid);
 }
