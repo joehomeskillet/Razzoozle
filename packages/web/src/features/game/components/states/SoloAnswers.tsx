@@ -9,6 +9,7 @@
  * Wires the shared answers/ leaf components (ChoiceGrid, MultiSelectGrid, ...)
  * with `testIdPrefix="solo-"`, keeping transport/timer/feedback logic here.
  */
+import { isUnscoredQuestionType } from "@razzoozle/common/constants"
 import type { SoloQuestion } from "@razzoozle/common/types/game"
 import QuestionMedia from "@razzoozle/web/components/QuestionMedia"
 import { QuestionStage } from "@razzoozle/web/features/game/components/stage/QuestionStage"
@@ -119,6 +120,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
   const isBrainstorm = question.type === "brainstorm"
   const isConfidence = question.type === "confidence"
   const isMicroLesson = question.type === "micro-lesson"
+  // Wertungsfreie Typen (Poll + die 4 Sammelformate) bekommen serverseitig nie
+  // ein richtig/falsch-Urteil (rust/engine/src/eval.rs: correct stets false,
+  // nur Poll setzt zusaetzlich `poll: true`). Gemeinsames Merkmal fuer Ton,
+  // Haptik und die Feedback-Faerbung der Antwortkacheln unten.
+  const isUnscored = isUnscoredQuestionType(question.type)
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | undefined>()
 
   useEffect(() => {
@@ -208,7 +214,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       sfxCorrect()
       hapticSuccess()
       fireCenterSalvo(reduced)
-    } else if (!lastResult.poll) {
+    } else if (!isUnscored) {
       sfxWrong()
       hapticError()
     }
@@ -562,7 +568,7 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
             }}
             onSubmit={() => {}}
             disabled={submitted}
-            feedback={resultReady ? { correct: lastResult.correct } : undefined}
+            feedback={resultReady && !isUnscored ? { correct: lastResult.correct } : undefined}
             testIdPrefix="solo-"
             answers={question.answers}
           />
