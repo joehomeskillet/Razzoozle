@@ -41,9 +41,14 @@ const QuestionEditorMedia = () => {
   }
 
   const hadnleChangeMediaType = (type: QuestionMediaType) => () => {
+    // questionMedia?.url is undefined until a URL has been typed/pasted into
+    // the empty-state input. Defaulting it to "" here guarantees the parsed
+    // value always matches the validator's z.string() field, so a missing URL
+    // hits the friendly, translated "invalidMediaUrl" message below instead of
+    // zod's untranslated built-in "expected string, received undefined" text.
     const result = questionMediaValidator.safeParse({
       type,
-      url: questionMedia?.url,
+      url: questionMedia?.url ?? "",
     })
 
     if (!result.success) {
