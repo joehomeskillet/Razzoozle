@@ -1,0 +1,191 @@
+# docker-compose.yaml — hardened, ISOLATED dev/reference stack (WP DCK-09).
+#
+# This is NOT the production deployment. Prod runs a single `razzoozle-rust`
+# container via `docker run` (see /nvmetank1/projects/Razzoozle/rust-cd-poll.sh)
+# behind Caddy/Kubernetes; the legacy dual-backend `docker compose` setup was
+# retired 2026-07-15 (see AGENTS.md). This file is a self-contained, hardened
+# reference stack — own network, own volumes, own port, own container names —
+# that never touches the shared /nvmetank1/projects/Razzoozle/config tree.
+#
+# Usage:
+#   mkdir -p .secrets && cp secrets.example/*.example .secrets/ (rename each
+#     file, stripping the .example suffix, and fill in real values —
+#     .secrets/ is already gitignored via the repo's existing ".secrets" rule)
+#   Also add a line to the repo's (gitignored) .env with the SAME
+#     DATABASE_URL as .secrets/database_url — the `migrate` one-shot job
+#     below reads DATABASE_URL as a plain env var because
+#     rust/server/src/migrate.rs::execute_migrate() calls
+#     std::env::var("DATABASE_URL") directly and does not go through
+#     resolve_secret()/the *_FILE pattern like the rest of the server does
+#     (pre-existing gap in the app code, outside WP DCK-09's scope — see
+#     the "migrate" service comment below).
+#   docker compose up --build
+#   docker compose down -v   (tears down ONLY this stack's containers/volumes)
+#
+# Hardening applied to every service:
+#   - non-root user
+#   - cap_drop: ALL (+ the minimal cap_add postgres' init needs)
+#   - security_opt: no-new-privileges:true
+#   - read_only root filesystem (tmpfs/volumes for the few writable paths)
+#   - resource limits (cpus/memory)
+#   - restart policy
+#   - healthcheck with sane wait times
+#   - secrets via the *_FILE pattern (rust/server/src/config/config_secret.rs)
+#     — no plaintext credentials in this file.
+
+services:
+  # One-shot migration runner (razzoozle-server ships a dedicated `migrate`
+  # subcommand for exactly this — see rust/server/src/cli.rs /
+  # rust/server/src/migrate.rs). Runs sqlx::migrate!() against `db`, then
+  # exits; `app` only starts once this has completed successfully, so
+  # /readyz is never left spinning on missing tables on a fresh volume.
+  #
+  # NOTE: migrate.rs::execute_migrate() reads DATABASE_URL via plain
+  # std::env::var(), unlike the rest of the server which resolves secrets
+  # through resolve_secret()/*_FILE (rust/server/src/config/config_secret.rs).
+  # It therefore gets its value from the repo's own (already-gitignored)
+  # `.env` via env_file: below, instead of the Compose `secrets:` mechanism
+  # used everywhere else in this file — still never a literal value in this
+  # checked-in file.
+  migrate:
+    image: razzoozle-app:dck09-hardened
+    container_name: razzoozle-dck09-migrate
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    command: ["/usr/local/bin/razzoozle-server", "migrate"]
+    env_file:
+      - .env
+    networks:
+      - dck09_net
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: rust/Dockerfile
+    image: razzoozle-app:dck09-hardened
+    container_name: razzoozle-dck09-app
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    environment:
+      PORT: "3020"
+      CONFIG_PATH: "/config"
+      DATABASE_URL_FILE: /run/secrets/database_url
+      AI_KEY_ENCRYPTION_KEY_FILE: /run/secrets/ai_key_encryption_key
+      BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/bootstrap_admin_password
+    secrets:
+      - database_url
+      - ai_key_encryption_key
+      - bootstrap_admin_password
+    ports:
+      - "127.0.0.1:3099:3020"
+    volumes:
+      - dck09_config:/config
+    networks:
+      - dck09_net
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    healthcheck:
+      # razzoozle-server ships its own `healthcheck` subcommand (reqwest-based
+      # GET /readyz, no external HTTP client needed) — the runtime image has
+      # neither curl nor wget installed, so this is the only clean option.
+      test: ["CMD", "/usr/local/bin/razzoozle-server", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  db:
+    image: postgres:16.4-alpine
+    container_name: razzoozle-dck09-db
+    cap_drop:
+      - ALL
+    # postgres' entrypoint needs to chown/initialize a fresh PGDATA volume and
+    # then setuid/setgid down to the `postgres` user on first boot — that
+    # requires these four caps back. Nothing else is granted.
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+      - /var/run/postgresql:mode=0755,size=16m
+    environment:
+      POSTGRES_USER: razzoozle
+      POSTGRES_DB: razzoozle
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - dck09_pgdata:/var/lib/postgresql/data
+    networks:
+      - dck09_net
+    # SECURE: no `ports:` — the database is reachable only from the app
+    # service, on the internal dck09_net network, never published on the host.
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U razzoozle -d razzoozle"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  dck09_net:
+    name: razzoozle_dck09_net
+    driver: bridge
+
+volumes:
+  dck09_pgdata:
+    name: razzoozle_dck09_pgdata
+  dck09_config:
+    name: razzoozle_dck09_config
+
+secrets:
+  database_url:
+    file: ./.secrets/database_url
+  ai_key_encryption_key:
+    file: ./.secrets/ai_key_encryption_key
+  bootstrap_admin_password:
+    file: ./.secrets/bootstrap_admin_password
+  postgres_password:
+    file: ./.secrets/postgres_password
