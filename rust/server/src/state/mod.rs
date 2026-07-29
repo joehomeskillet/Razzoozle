@@ -80,7 +80,6 @@ pub fn safe_asset_id(id: &str) -> Result<(), String> {
 pub const SOLO_RATE_MAX_PER_CLIENT: i32 = 120; // max 120 solo calls/min per client IP
 pub const AUTH_RATE_MAX_PER_CLIENT: i32 = 10; // max 10 auth failures/min per client IP
 pub const SOLO_RATE_WINDOW_MS: u64 = 60_000; // 60 seconds
-pub const SOLO_RESULTS_MAX_ENTRIES: usize = 1000; // cap solo leaderboard growth
 
 // ── Public question submission rate limiting (durable per-client + global cap) ──
 pub const SUBMISSION_RATE_MAX_PER_CLIENT: i32 = 3; // max 3 submissions/60s per durable client
