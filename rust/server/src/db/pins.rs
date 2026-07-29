@@ -1,44 +1,5 @@
 use sqlx::{FromRow, PgPool};
 
-/// Get the PIN for a student.
-/// Permission: admin (me is None) OR me is the student's owner_id (direct owner).
-pub async fn get_student_pin(
-    pool: &PgPool,
-    student_id: i64,
-    me: Option<i64>,
-) -> Result<Option<String>, String> {
-    let row = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT pin FROM students WHERE id = $1 AND (owner_id IS NULL OR owner_id = $2)",
-    )
-    .bind(student_id)
-    .bind(me)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Failed to get student PIN: {}", e))?;
-
-    Ok(row.flatten())
-}
-
-/// Set or update a student's PIN.
-/// Permission: admin (me is None) OR me is the student's owner_id (direct owner).
-pub async fn set_student_pin(
-    pool: &PgPool,
-    student_id: i64,
-    pin: &str,
-    me: Option<i64>,
-) -> Result<u64, String> {
-    let result = sqlx::query(
-        "UPDATE students SET pin = $1 WHERE id = $2 AND (owner_id IS NULL OR owner_id = $3)",
-    )
-    .bind(pin)
-    .bind(student_id)
-    .bind(me)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Failed to set student PIN: {}", e))?;
-
-    Ok(result.rows_affected())
-}
 
 /// Create a solo session token for assignment playback.
 pub async fn create_solo_session(
@@ -98,30 +59,6 @@ pub async fn validate_student_pin(
     }
 }
 
-/// Wave-1 live join: verify emoji PIN against plaintext `students.pin`.
-/// No assignment gate — identity is (student_id ∈ class roster) enforced by the caller.
-/// Constant-shape: Ok(false) for mismatch / missing / inactive student; Err only on DB failure.
-/// NEVER log `pin` or student_id values at call sites (security audit gate).
-pub async fn validate_student_pin_plain(
-    pool: &PgPool,
-    student_id: i64,
-    pin: &str,
-) -> Result<bool, String> {
-    let row: Option<(Option<String>, bool)> = sqlx::query_as(
-        "SELECT pin, active FROM students WHERE id = $1",
-    )
-    .bind(student_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|_| "validation_failed".to_string())?;
-
-    match row {
-        // Inactive: treat as wrong PIN (no info leak).
-        Some((_, false)) => Ok(false),
-        Some((Some(stored), true)) => Ok(stored == pin),
-        Some((None, true)) | None => Ok(false),
-    }
-}
 
 /// Wave-1 §B: Fetch students in a class WITH stored PINs for klassen login validation.
 /// Returns (id, display_name, stored_pin, active) tuples. PINs are required for credential checking.

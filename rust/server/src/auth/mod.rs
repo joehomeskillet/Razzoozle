@@ -46,12 +46,6 @@ async fn resolve_session_user(
     crate::db::users::session_user(pool, token).await.ok().flatten()
 }
 
-/// Base manager check: any authenticated session user, no role restriction.
-/// Ported verbatim from the former `http::authorize_manager_request`
-/// (http/mod.rs:98) — that function had zero live callers in the codebase.
-pub async fn ensure_manager(headers: &HeaderMap, db_pool: &Option<sqlx::PgPool>) -> bool {
-    resolve_session_user(headers, db_pool).await.is_some()
-}
 
 /// Admin-only check. Ported verbatim from the former
 /// `http::authorize_admin_request` (http/mod.rs:124), which was already
