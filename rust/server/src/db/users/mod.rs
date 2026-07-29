@@ -349,7 +349,6 @@ pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
     Ok(result.0)
 }
 
-
 // ── Bulk user ops (WP-C1) ──────────────────────────────────────────────────
 
 /// Max IDs accepted per bulk request (HTTP layer also enforces).
