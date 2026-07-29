@@ -89,10 +89,11 @@ ENV PORT=3020 \
 # Expose listening port
 EXPOSE 3020
 
-# Health check: Verify server is responsive via /health endpoint
-# Retry up to 3 times with 30s intervals, 5s timeout, 10s start grace
+# Health check: Use built-in healthcheck subcommand (checks /readyz endpoint).
+# Retry up to 3 times with 30s intervals, 5s timeout, 10s start grace.
+# No curl needed; razzoozle-server binary is always present.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:3020/health || exit 1
+    CMD razzoozle-server healthcheck
 
 # Start server
 CMD ["razzoozle-server"]
