@@ -30,6 +30,13 @@ WORKDIR /build
 # fixture-quiz.json is include_str!'d at compile time, so it must be present
 # in rust/server/ during the build (it is — copied with rust/).
 COPY rust/ ./rust/
+# rust/server/src/migrate.rs embeds migrations at compile time via
+# sqlx::migrate!("../../db/migrations/"), resolved relative to the
+# razzoozle-server crate (rust/server) — i.e. /build/db/migrations. Without
+# this, the build fails with "error canonicalizing migration directory"
+# (pre-existing gap, unrelated to WP DCK-09; needed here so the compose
+# build in DCK-09 — and every other fresh build — succeeds).
+COPY db/ ./db/
 WORKDIR /build/rust
 # BuildKit cache mounts persist the cargo registry/git + compiled target/ across
 # image builds so dependencies are not recompiled every time. target/ is a cache
