@@ -7,12 +7,11 @@ use razzoozle_engine::eval::{evaluate_answer, AnswerInput};
 use razzoozle_protocol::quizz::{QuestionType, Quizz, SequencingItem};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use tokio::sync::RwLock;
 use tracing::warn;
 
 use super::AppState;
 use crate::question_type_wire;
-use crate::state::{safe_asset_id, GameRegistry, RateLimiter, SOLO_RESULTS_MAX_ENTRIES};
+use crate::state::safe_asset_id;
 
 // ── Solo play types ─────────────────────────────────────────────────────────
 
@@ -122,9 +121,6 @@ pub struct CheckAnswerResponse {
 pub struct SoloScoreSubmitAnswer {
     #[serde(rename = "questionIndex")]
     pub question_index: i32,
-    /// SEC-05: kept only for deserializing older clients — never read for scoring.
-    #[serde(default)]
-    pub correct: Option<bool>,
     #[serde(rename = "answerId")]
     pub answer_id: Option<i32>,
     #[serde(rename = "answerIds")]
@@ -137,7 +133,6 @@ pub struct SoloScoreSubmitAnswer {
 pub struct SoloScoreRequest {
     #[serde(rename = "playerName")]
     pub player_name: String,
-    pub score: i32,
     pub answers: Option<Vec<SoloScoreSubmitAnswer>>,
     #[serde(rename = "assignmentId")]
     pub assignment_id: Option<String>,
@@ -346,7 +341,7 @@ pub async fn handle_check_answer(
     Ok(Json(response))
 }
 
-/// Server-side re-scoring of solo answers (SEC-05). Ignores `payload.score` and
+/// Server-side re-scoring of solo answers (SEC-05). Ignores
 /// each answer's client-supplied `correct` flag entirely — recomputes points via
 /// `razzoozle_engine::eval::evaluate_answer`, the same scoring truth used by
 /// `/check-answer` and multiplayer. Fail-closed: missing/empty answers score 0.
@@ -576,8 +571,8 @@ pub async fn handle_solo_score(
 
     drop(registry);
 
-    // Recompute score server-side (SEC-05): payload.score and each answer's
-    // client-supplied `correct` flag are never trusted. Missing/empty answers
+    // Recompute score server-side (SEC-05): each answer's
+    // client-supplied `correct` flag is never trusted. Missing/empty answers
     // fail closed to 0 — a client that wants points must submit real answers.
     let verified_score = compute_solo_score(&quiz, payload.answers.as_deref());
 
@@ -979,12 +974,10 @@ mod tests {
         }
     }
 
-    /// Builds a submitted answer with a client-claimed `correct: true` — the
-    /// server must ignore this flag entirely and re-derive it.
+    /// Builds a submitted answer — the server must ignore this flag entirely and re-derive it.
     fn answer(question_index: i32, answer_id: Option<i32>) -> SoloScoreSubmitAnswer {
         SoloScoreSubmitAnswer {
             question_index,
-            correct: Some(true),
             answer_id,
             answer_ids: None,
             answer_text: None,
@@ -993,7 +986,7 @@ mod tests {
 
     #[test]
     fn compute_solo_score_ignores_manipulated_correct_flag_wrong_answer() {
-        // Bypass #2 from SEC-05: correct:true + answerId on the WRONG option
+        // Bypass #2 from SEC-05: answerId on the WRONG option
         // must score 0, not the claimed 1000.
         let quiz = test_quiz();
         let answers = vec![answer(0, Some(0))]; // solution is 1, submits 0
@@ -1002,8 +995,7 @@ mod tests {
 
     #[test]
     fn compute_solo_score_fail_closed_on_missing_answers() {
-        // Bypass #1 from SEC-05: no answers submitted → 0, regardless of any
-        // client-claimed score (score: 999999 never reaches this function).
+        // Bypass #1 from SEC-05: no answers submitted → 0.
         let quiz = test_quiz();
         assert_eq!(compute_solo_score(&quiz, None), 0);
         assert_eq!(compute_solo_score(&quiz, Some(&[])), 0);
@@ -1016,7 +1008,6 @@ mod tests {
         let quiz = test_quiz();
         let answers = vec![SoloScoreSubmitAnswer {
             question_index: 1,
-            correct: Some(false),
             answer_id: None,
             answer_ids: None,
             answer_text: Some(r#"["Artikel","Verb","Adjektiv"]"#.to_string()),
@@ -1087,7 +1078,6 @@ mod tests {
             answer(0, Some(1)), // choice correct
             SoloScoreSubmitAnswer {
                 question_index: 1,
-                correct: Some(true),
                 answer_id: None,
                 answer_ids: None,
                 answer_text: Some(r#"["Artikel","Nomen","Adjektiv"]"#.to_string()), // full correct
