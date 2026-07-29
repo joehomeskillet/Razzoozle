@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/hero.webp" width="640" alt="Razzoozle" />
+<img src="docs/screenshots/hero.webp" width="640" alt="Razzoozle welcome screen with PIN entry and animated backdrop" />
 
 # Razzoozle
 
@@ -26,26 +26,6 @@
 Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and faster correct answers score more. It's a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) with a manager-driven theme cockpit, gamification, team & solo play, and local AI images — keeping the classic colored-tile presenter + phone experience.
 
 > Independent open-source project. Not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-
-| Presenter / host | Desktop game client |
-| :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
-
-| Player phone | Avatar selection |
-| :---: | :---: |
-| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
-
-<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
-
-<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
-
-</div>
 
 ---
 
@@ -83,6 +63,10 @@ docker run -d \
   razzoozle:latest
 ```
 
+<div align="center">
+<img src="docs/screenshots/start.webp" width="680" alt="Host start screen displaying Game PIN and QR code for players to join" />
+</div>
+
 The server runs on port `3020` and requires a PostgreSQL database. Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname. See **[Self-Hosting](docs/Self-Hosting.md)** for detailed setup.
 
 ---
@@ -111,6 +95,48 @@ The server runs on port `3020` and requires a PostgreSQL database. Open the app,
 | 🎛️ | **Unified manager console** — a redesigned manager UI with a row-based system, multi-select actions, bulk operations, and consistent controls across all management tabs. |
 
 Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game resource caps + game eviction, per-IP rate-limits, manager-auth brute-force throttling, server-minted host-token auth closing IDOR), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
+
+---
+
+## Game Experience
+
+### Presenter & host screen
+
+The host controls the game on a large screen with the classic Kahoot-style answer tiles:
+
+<div align="center">
+<img src="docs/screenshots/presenter.webp" width="680" alt="Presenter screen with large answer tiles, timer, and answers-received counter" />
+</div>
+
+### Player phones & desktop clients
+
+Players join from mobile devices or desktops and see the same question with tiles, their current score, and a countdown timer:
+
+<div align="center">
+
+| Mobile player | Desktop player |
+| :---: | :---: |
+| <img src="docs/screenshots/phone.webp" width="280" alt="Mobile player view with question and answer buttons" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop player view with answer tiles" /> |
+
+</div>
+
+### Avatar selection
+
+Each player chooses or generates an avatar before joining:
+
+<div align="center">
+<img src="docs/screenshots/avatar.webp" width="420" alt="Avatar selection screen with DiceBear style options and upload option" />
+</div>
+
+---
+
+## Manager theme cockpit
+
+Customize the entire look and feel in real time — colors, backgrounds, animations, and typography — without touching code:
+
+<div align="center">
+<img src="docs/screenshots/admin.webp" width="680" alt="Manager design control panel with theme settings and live preview" />
+</div>
 
 ---
 
