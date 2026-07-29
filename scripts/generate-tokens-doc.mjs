@@ -29,7 +29,7 @@ let markdown = `# Razzoozle Living Design System Specifications
 `
 
 const metadata = data.$metadata || {}
-const order = metadata.tokenSetOrder || Object.keys(data).filter((k) => !k.startsWith('$'))
+const order = metadata.tokenSetOrder || Object.keys(data).filter((k) => !k.startsWith('$')).sort()
 
 for (const group of order) {
   const tokensObj = data[group]
@@ -39,7 +39,9 @@ for (const group of order) {
   markdown += `| Token Name | CSS Custom Property | Value | Type | Description |\n`
   markdown += `|---|---|---|---|---|\n`
 
-  for (const [key, token] of Object.entries(tokensObj)) {
+  const sortedKeys = Object.keys(tokensObj).sort()
+  for (const key of sortedKeys) {
+    const token = tokensObj[key]
     if (typeof token !== 'object' || !token.$value) continue
 
     const cssVar = `--${toKebab(group)}-${toKebab(key)}`
@@ -54,7 +56,7 @@ for (const group of order) {
 }
 
 markdown += `---
-*Last updated from W3C design.tokens.json on ${new Date().toISOString().split('T')[0]}.*
+> Generated from W3C design.tokens.json. Do not edit manually.
 `
 
 const outputDir = path.dirname(outputPath)
