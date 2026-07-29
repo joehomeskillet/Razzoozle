@@ -349,31 +349,6 @@ pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
     Ok(result.0)
 }
 
-/// Get (role, active) for a user id. None if the user does not exist.
-pub async fn get_user_role_active(
-    pool: &PgPool,
-    user_id: i64,
-) -> Result<Option<(String, bool)>, sqlx::Error> {
-    let result =
-        sqlx::query_as::<_, (String, bool)>("SELECT role, active FROM users WHERE id = $1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await?;
-
-    Ok(result)
-}
-
-/// Permanently delete a user row. Returns true if a row was deleted, false if
-/// no user with that id existed. Callers are responsible for revoking
-/// sessions and enforcing self-delete/last-admin guards before calling this.
-pub async fn delete_user(pool: &PgPool, user_id: i64) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM users WHERE id = $1")
-        .bind(user_id)
-        .execute(pool)
-        .await?;
-
-    Ok(result.rows_affected() > 0)
-}
 
 // ── Bulk user ops (WP-C1) ──────────────────────────────────────────────────
 
@@ -798,29 +773,6 @@ pub async fn delete_user_guarded(
 
     tx.commit().await?;
     Ok(DeleteUserOutcome::Deleted)
-}
-
-/// Hash and store a new password for the given user.
-///
-/// **For password changes followed by session revocation, prefer
-/// set_password_and_revoke() which performs both operations atomically.**
-pub async fn set_password(pool: &PgPool, user_id: i64, new_password: &str) -> Result<(), String> {
-    // Hash password using argon2 (same pattern as create_user).
-    let salt = SaltString::generate(rand::thread_rng());
-    let argon2 = Argon2::default();
-    let password_hash = argon2
-        .hash_password(new_password.as_bytes(), &salt)
-        .map_err(|e| format!("Failed to hash password: {}", e))?
-        .to_string();
-
-    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
-        .bind(&password_hash)
-        .bind(user_id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
 }
 
 /// Atomically update a user's password and revoke their sessions in a single transaction.
