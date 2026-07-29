@@ -47,7 +47,9 @@ jobs:
         run: |
           git config user.name "razzoozle-bot[bot]"
           git config user.email "bot@razzoozle.local"
-          git add -A
-          git update-index -q --refresh
-          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, agent rules, and Living Design System spec"
+          git add \
+            packages/common/src/theme-tokens.generated.ts \
+            build/css/tokens.css \
+            docs/design/LIVING_DESIGN_SYSTEM.md
+          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, and Living Design System spec"
           git push origin main
