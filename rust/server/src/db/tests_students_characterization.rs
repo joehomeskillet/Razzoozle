@@ -18,14 +18,12 @@
 mod tests {
     use super::super::*;
     use sqlx::postgres::PgPoolOptions;
-    use std::sync::{Mutex, MutexGuard};
+    use tokio::sync::Mutex;
 
-    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::new(());
+    static DB_ISOLATION_LOCK: Mutex<()> = const { Mutex::const_new(()) };
 
-    fn lock_db_isolation() -> MutexGuard<'static, ()> {
-        DB_ISOLATION_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    async fn lock_db_isolation() -> tokio::sync::MutexGuard<'static, ()> {
+        DB_ISOLATION_LOCK.lock().await
     }
 
     async fn get_test_pool() -> Option<sqlx::PgPool> {
@@ -104,7 +102,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_add_student_invalid_class_id_leaks_raw_db_error() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_addstudent");
 
         let err = add_student(&opt, 9_999_999_999, "test_cc_addstudent_s1", owner)
@@ -123,7 +121,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_get_students_includes_inactive_students() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_getstudents");
         let class_id = create_class(&opt, "test_cc_getstudents_class", owner)
             .await
@@ -151,7 +149,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_students_for_class_orders_alphabetically() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_sfc");
         let class_id = create_class(&opt, "test_cc_sfc_class", owner)
             .await
@@ -177,7 +175,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_remove_student_missing_id_is_ok_zero() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_rmstudent");
 
         assert_eq!(
@@ -203,7 +201,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_update_student_first_name_only_preserves_last_name() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_updstudent");
         let student_id = create_student(
             &opt,
@@ -261,7 +259,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_update_student_birthdate_preserved_and_wrong_owner_noop() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_updbday");
         let bday = chrono::NaiveDate::from_ymd_opt(2015, 6, 1).unwrap();
         let student_id = create_student(
@@ -349,7 +347,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_move_student_to_class_idempotent_and_owner_checked() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_movestudent");
         let class_id = create_class(&opt, "test_cc_movestudent_class", owner)
             .await
@@ -399,7 +397,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_remove_student_from_class_no_longer_orphan_deletes() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_rmfromclass");
         let class_id = create_class(&opt, "test_cc_rmfromclass_class", owner)
             .await
@@ -445,7 +443,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_get_student_classes_scoped_silently_and_ordered() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_studclasses");
         let c1 = create_class(&opt, "test_cc_studclasses_c1", owner)
             .await
@@ -496,7 +494,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_list_all_students_dedupes_multi_class_membership() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_listall");
         let c1 = create_class(&opt, "test_cc_listall_c1", owner)
             .await
@@ -537,7 +535,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_can_manage_student_admin_owner_and_stranger() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_canmanage");
         let student_id = create_student(
             &opt,
@@ -570,7 +568,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_create_student_partial_class_ownership_aborts_entirely() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_createstud_partial");
         let mine = create_class(&opt, "test_cc_createstud_partial_mine", owner)
             .await
@@ -617,7 +615,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_create_student_empty_last_name_and_no_classes() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_createstud_empty");
         let student_id = create_student(
             &opt,
@@ -665,7 +663,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_get_class_pins_coalesces_null_and_owner_scoped() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_classpins");
         let class_id = create_class(&opt, "test_cc_classpins_class", owner)
             .await
@@ -696,7 +694,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_class_pin_get_set_permission_asymmetry() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_pinasym");
         let student_id = create_student(
             &opt,
