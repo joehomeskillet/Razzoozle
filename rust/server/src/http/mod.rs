@@ -9,6 +9,7 @@ mod metrics;
 mod observability;
 mod plugins;
 mod result_og;
+mod security_headers;
 pub mod skeleton;
 pub mod solo;
 mod static_files;
@@ -379,6 +380,14 @@ pub fn router(state: AppState) -> Router {
         .layer(axum::middleware::from_fn(metrics::track_metrics))
         // SPA fallback for unknown routes
         .fallback(static_files::handle_spa_fallback)
+        // Security headers layer goes LAST (after .fallback()): axum's
+        // Router::layer wraps the path router *and* whatever fallback is set
+        // at the time of the call. Adding it here -- rather than next to the
+        // metrics layer above -- means it also covers the SPA fallback and
+        // any 404/error response, not just the explicitly listed routes.
+        .layer(axum::middleware::from_fn(
+            security_headers::apply_security_headers,
+        ))
         .with_state(state)
 }
 
@@ -405,5 +414,113 @@ mod tests_health {
         let (status, msg) = handle_healthz().await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(msg, "ok");
+    }
+}
+
+#[cfg(test)]
+mod tests_security_headers {
+    //! ISSUE: #709, #710, #711 — the original version of this test (commit
+    //! f9b1b5493) never called any handler: it was an unconditional
+    //! `panic!()` used as a documentation placeholder, so no header fix
+    //! could ever turn it green. Replaced with a real request against the
+    //! actual `router()` (the same axum `Service` `main.rs` serves), which
+    //! is what the commit's own description said the test did.
+    use super::{router, AppState};
+    use crate::state::GameRegistry;
+    use axum::body::Body;
+    use axum::http::Request;
+    use socketioxide::SocketIo;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+    use tower::ServiceExt;
+
+    fn make_socket_io() -> SocketIo {
+        let (_layer, io) = SocketIo::builder().build_layer();
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+        io
+    }
+
+    async fn make_test_app_state() -> AppState {
+        let empty_quiz = razzoozle_protocol::quizz::Quizz {
+            subject: "Test".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let registry = GameRegistry::new(&None, empty_quiz).await;
+
+        AppState {
+            registry: Arc::new(RwLock::new(registry)),
+            db_pool: None,
+            io: make_socket_io(),
+        }
+    }
+
+    /// Drives one request through the real router and asserts the three
+    /// baseline security headers are present — regardless of status code.
+    /// WEB_DIST/config fixtures don't exist in the test sandbox, so most of
+    /// these come back 404; that is the point, not a limitation: the
+    /// headers must wrap every response the router produces (including the
+    /// SPA fallback and other error paths), not just handlers that return
+    /// 200 with a real file body.
+    async fn assert_security_headers(uri: &str) {
+        let app = router(make_test_app_state().await);
+        let response = app
+            .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let headers = response.headers();
+        assert_eq!(
+            headers
+                .get("x-content-type-options")
+                .and_then(|v| v.to_str().ok()),
+            Some("nosniff"),
+            "missing X-Content-Type-Options on {uri} (status {})",
+            response.status()
+        );
+        assert_eq!(
+            headers.get("x-frame-options").and_then(|v| v.to_str().ok()),
+            Some("SAMEORIGIN"),
+            "missing X-Frame-Options on {uri} (status {})",
+            response.status()
+        );
+        assert_eq!(
+            headers.get("referrer-policy").and_then(|v| v.to_str().ok()),
+            Some("strict-origin-when-cross-origin"),
+            "missing Referrer-Policy on {uri} (status {})",
+            response.status()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_root_has_security_headers() {
+        // handle_root() (static_files.rs)
+        assert_security_headers("/").await;
+    }
+
+    #[tokio::test]
+    async fn test_spa_fallback_has_security_headers() {
+        // handle_spa_fallback() (static_files.rs) via .fallback()
+        assert_security_headers("/some/unknown/route").await;
+    }
+
+    #[tokio::test]
+    async fn test_assets_has_security_headers() {
+        // handle_assets() (static_files.rs)
+        assert_security_headers("/assets/whatever.js").await;
+    }
+
+    #[tokio::test]
+    async fn test_media_asset_has_security_headers() {
+        // handle_media_asset() (static_files.rs)
+        assert_security_headers("/media/whatever.png").await;
+    }
+
+    #[tokio::test]
+    async fn test_guarded_fallback_prefix_still_has_security_headers() {
+        // Path under a protected prefix -> handle_spa_fallback()'s explicit
+        // 404, not even an attempted file read. Still must carry the headers.
+        assert_security_headers("/api/does-not-exist").await;
     }
 }
