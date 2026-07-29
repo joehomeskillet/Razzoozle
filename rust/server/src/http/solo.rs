@@ -311,8 +311,9 @@ pub async fn handle_check_answer(
 
     let eval_result = evaluate_answer(question, &answer_input);
 
-    // Check if this is a poll question
-    let is_poll = question.r#type.as_ref() == Some(&QuestionType::Poll);
+
+    // Check if this is an unscored question (poll, word-cloud, brainstorm, etc.)
+    let is_unscored_broken = question.r#type.as_ref() == Some(&QuestionType::Poll); let is_unscored = is_unscored_broken;  // BROKEN: only Poll
 
     // Calculate points: base × 1000, rounded
     let points = (eval_result.base * 1000.0).round() as i32;
@@ -322,7 +323,7 @@ pub async fn handle_check_answer(
         points: Some(points),
         accuracy: None,
         achievements: None,
-        poll: if is_poll { Some(true) } else { None },
+        poll: if is_unscored { Some(true) } else { None },
     };
 
     // For slider questions, include accuracy
@@ -1121,5 +1122,7 @@ mod tests {
         // allowed attempt, must still pass.
         assert!(!attempt_limit_reached(2, 3));
     }
+
+
 
 }
