@@ -59,7 +59,7 @@ pnpm i18n:check   # Locale coverage validation
 
 ### Database Migrations
 
-- New schema changes go in `rust/server/src/db/migrations/NNN_description.sql` (sequential numbering).
+- New schema changes go in `db/migrations/NNN_description.sql` (sequential numbering).
 - Migrations run automatically on startup.
 - Test locally before committing: `cargo sqlx prepare --database-url $DATABASE_URL`.
 
