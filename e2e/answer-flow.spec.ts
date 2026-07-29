@@ -23,11 +23,11 @@ const QUIZ_SUBJECT = quizFixture.subject
 type Question = (typeof quizFixture.questions)[number]
 
 // Question types that never receive a right/wrong verdict — mirrors
-// packages/common/src/constants.ts UNSCORED_QUESTION_TYPES, minus "word-cloud"
-// (not reachable in this suite, see file header). Kept as a local literal list
-// rather than importing the shared constant: e2e/ is a standalone pnpm project
-// outside the packages/ workspace (no @razzoozle/common dependency).
-const UNSCORED_IN_SUITE = ["poll", "brainstorm", "confidence", "micro-lesson"]
+// packages/common/src/constants.ts UNSCORED_QUESTION_TYPES (now includes word-cloud
+// after Q17 fixture expansion). Kept as a local literal list rather than importing
+// the shared constant: e2e/ is a standalone pnpm project outside the packages/
+// workspace (no @razzoozle/common dependency).
+const UNSCORED_IN_SUITE = ["poll", "brainstorm", "confidence", "micro-lesson", "word-cloud"]
 
 type RolePages = {
   host: Page
@@ -574,7 +574,7 @@ async function advanceToState(host: Page, target: "leaderboard" | "podium", play
       // Recap advances itself (final cue auto-fires after 1400ms); nudge it along
       // via its own buttons when present, never via the hidden toolbar next-btn.
       await host.getByTestId("recap-final-advance").click({ timeout: 2_000 }).catch(() => {})
-      await host.getByTestId("recap-advance").click({ timeout: 2_000 }).catch(() => {})
+      await host.getByTestId("recap-advance").first().click({ timeout: 2_000 }).catch(() => {})
     } else if (await host.getByTestId("responses-view").isVisible().catch(() => false)) {
       await host.getByTestId("next-btn").click()
     }
