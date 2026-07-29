@@ -86,11 +86,7 @@ async function run() {
       if (body.includes('satellit') || body.includes('display') || body.includes('pairing')) {
         console.log('W6-11: display/satellite copy visible without dedicated nav click');
       } else {
-        console.log(
-          'W6-11 SKIP-soft: no Display/Satellit nav on this build — lifecycle UI not exposed (P2)',
-        );
-        console.log('W6-11 display-lifecycle-extended PASSED (soft skip — UI absent)');
-        return;
+        throw new Error('no Display/Satellit nav on this build — lifecycle UI not exposed (P2) — feature must be enabled or test skipped explicitly');
       }
     } else {
       console.log(`Opened nav: ${opened}`);
