@@ -1,6 +1,7 @@
 name: Design Tokens Automated Sync & Governance
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'design.tokens.json'
