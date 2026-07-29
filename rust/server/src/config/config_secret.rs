@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::Path;
 
 /// Maximum file size for a secret file (64 KiB).
 const MAX_SECRET_FILE_SIZE: u64 = 64 * 1024;
@@ -15,8 +14,6 @@ pub enum SecretError {
     FileTooLarge(String, String), // (var_name, size_info)
     /// Error reading file.
     FileReadError(String, String, String), // (var_name, path, error_message)
-    /// Generic I/O error.
-    IoError(String),
 }
 
 impl std::fmt::Display for SecretError {
@@ -42,7 +39,6 @@ impl std::fmt::Display for SecretError {
             SecretError::FileReadError(var, _path, _err) => {
                 write!(f, "Failed to read secret file for variable {}", var)
             }
-            SecretError::IoError(msg) => write!(f, "I/O error: {}", msg),
         }
     }
 }
@@ -134,7 +130,6 @@ fn read_secret_file(path: &str, var_name: &str) -> Result<Option<String>, Secret
 mod tests {
     use super::*;
     use std::fs;
-    use std::path::PathBuf;
     use tempfile::TempDir;
 
     /// Helper to create a unique test variable name to avoid env conflicts in parallel tests

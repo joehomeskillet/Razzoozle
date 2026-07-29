@@ -18,11 +18,12 @@ pub struct EmptyGame {
 }
 
 /// Registry managing all active games and available quizzes.
+/// Not serde-serialized as a whole: crash recovery snapshots individual games
+/// via snapshot.rs → registry-rust.json (Game fields only).
 pub struct GameRegistry {
     pub(super) games_by_code: HashMap<String, Arc<Mutex<Game>>>,
     pub(super) games_by_id: HashMap<String, Arc<Mutex<Game>>>,
     pub quizzes: HashMap<String, Quizz>,
-    default_quiz: Quizz,
     // O(1) socket_id -> game_id lookup for the hot per-connection paths
     // (remove/mark-disconnected/set_player_team/set_player_avatar), which
     // used to scan every active game and lock its Mutex on every call.
@@ -85,13 +86,14 @@ impl GameRegistry {
         }
     }
 
-    pub async fn new(pool: &Option<PgPool>, quiz_fixture: Quizz) -> Self {
+    /// `quiz_fixture` is retained for call-site API stability; previously stored
+    /// as `default_quiz` but never read after construction.
+    pub async fn new(pool: &Option<PgPool>, _quiz_fixture: Quizz) -> Self {
         let quizzes = Self::load_quizzes(pool).await;
         Self {
             games_by_code: HashMap::new(),
             games_by_id: HashMap::new(),
             quizzes,
-            default_quiz: quiz_fixture,
             socket_to_game: HashMap::new(),
             empty_games: Vec::new(),
         }
