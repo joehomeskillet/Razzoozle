@@ -663,6 +663,7 @@ mod tests {
                 scoring_mode: None,
                 auto_advance_ms: None,
                 round_recap: None,
+                text_responses: None,
             },
         );
         Arc::new(Mutex::new(game))

@@ -134,6 +134,8 @@ export interface CommonStatusDataMap {
     // Scoring mode used in this game ('speed' for time-decay, 'accuracy' for
     // full base points on correct). OPTIONAL/additive; old clients ignore it.
     scoringMode?: "speed" | "accuracy"
+    // Word-cloud and brainstorm: normalized text -> count aggregation (additive).
+    textResponses?: Record<string, number>
   }
   WAIT: { text: string; teamMode?: boolean }
   PAUSED: { reason?: string }
