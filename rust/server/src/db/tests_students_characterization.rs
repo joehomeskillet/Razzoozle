@@ -46,10 +46,11 @@ mod tests {
         .bind(&pat)
         .execute(pool)
         .await;
-        let _ = sqlx::query("DELETE FROM students WHERE display_name LIKE $1 OR first_name LIKE $1")
-            .bind(&pat)
-            .execute(pool)
-            .await;
+        let _ =
+            sqlx::query("DELETE FROM students WHERE display_name LIKE $1 OR first_name LIKE $1")
+                .bind(&pat)
+                .execute(pool)
+                .await;
         let _ = sqlx::query("DELETE FROM classes WHERE name LIKE $1")
             .bind(&pat)
             .execute(pool)
@@ -124,16 +125,21 @@ mod tests {
     async fn test_get_students_includes_inactive_students() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_getstudents");
-        let class_id = create_class(&opt, "test_cc_getstudents_class", owner).await.unwrap();
+        let class_id = create_class(&opt, "test_cc_getstudents_class", owner)
+            .await
+            .unwrap();
         let student_id = add_student(&opt, class_id, "test_cc_getstudents_s1", owner)
             .await
             .unwrap();
 
-        set_student_active(&opt, student_id, false, Some(owner)).await.unwrap();
+        set_student_active(&opt, student_id, false, Some(owner))
+            .await
+            .unwrap();
 
         let rows = get_students(&opt, class_id, Some(owner)).await;
         assert!(
-            rows.iter().any(|r| r["id"] == serde_json::json!(student_id)),
+            rows.iter()
+                .any(|r| r["id"] == serde_json::json!(student_id)),
             "inactive student must still appear in get_students, got {rows:?}"
         );
 
@@ -147,9 +153,15 @@ mod tests {
     async fn test_students_for_class_orders_alphabetically() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_sfc");
-        let class_id = create_class(&opt, "test_cc_sfc_class", owner).await.unwrap();
-        add_student(&opt, class_id, "test_cc_sfc_zeta", owner).await.unwrap();
-        add_student(&opt, class_id, "test_cc_sfc_alpha", owner).await.unwrap();
+        let class_id = create_class(&opt, "test_cc_sfc_class", owner)
+            .await
+            .unwrap();
+        add_student(&opt, class_id, "test_cc_sfc_zeta", owner)
+            .await
+            .unwrap();
+        add_student(&opt, class_id, "test_cc_sfc_alpha", owner)
+            .await
+            .unwrap();
 
         let rows = students_for_class(&opt, class_id, owner).await;
         let names: Vec<&str> = rows.iter().map(|r| r.display_name.as_str()).collect();
@@ -168,7 +180,12 @@ mod tests {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_rmstudent");
 
-        assert_eq!(remove_student(&opt, 9_999_999_999, Some(owner)).await.unwrap(), 0);
+        assert_eq!(
+            remove_student(&opt, 9_999_999_999, Some(owner))
+                .await
+                .unwrap(),
+            0
+        );
         assert_eq!(remove_student(&opt, 9_999_999_999, None).await.unwrap(), 0);
 
         cleanup(&pool, "test_cc_rmstudent").await;
@@ -201,9 +218,17 @@ mod tests {
         .await
         .unwrap();
 
-        let rows = update_student(&opt, student_id, None, Some("Newfirst"), None, None, Some(owner))
-            .await
-            .unwrap();
+        let rows = update_student(
+            &opt,
+            student_id,
+            None,
+            Some("Newfirst"),
+            None,
+            None,
+            Some(owner),
+        )
+        .await
+        .unwrap();
         assert_eq!(rows, 1);
 
         let row: (String, Option<String>, Option<String>) = sqlx::query_as(
@@ -213,7 +238,11 @@ mod tests {
         .fetch_one(&pool)
         .await
         .unwrap();
-        assert_eq!(row.1.as_deref(), Some("Newfirst"), "first_name updates as requested");
+        assert_eq!(
+            row.1.as_deref(),
+            Some("Newfirst"),
+            "first_name updates as requested"
+        );
         assert_eq!(
             row.2.as_deref(),
             Some("Last"),
@@ -248,16 +277,28 @@ mod tests {
         .await
         .unwrap();
 
-        update_student(&opt, student_id, Some("Renamed"), None, None, None, Some(owner))
-            .await
-            .unwrap();
+        update_student(
+            &opt,
+            student_id,
+            Some("Renamed"),
+            None,
+            None,
+            None,
+            Some(owner),
+        )
+        .await
+        .unwrap();
         let stored: (Option<chrono::NaiveDate>,) =
             sqlx::query_as("SELECT birthdate FROM students WHERE id = $1")
                 .bind(student_id)
                 .fetch_one(&pool)
                 .await
                 .unwrap();
-        assert_eq!(stored.0, Some(bday), "birthdate survives an update that omits it");
+        assert_eq!(
+            stored.0,
+            Some(bday),
+            "birthdate survives an update that omits it"
+        );
 
         let wrong_owner = owner + 999_000;
         let before_audit: i64 = sqlx::query_as::<_, (i64,)>(
@@ -269,9 +310,17 @@ mod tests {
         .unwrap()
         .0;
         assert_eq!(
-            update_student(&opt, student_id, Some("Hijacked"), None, None, None, Some(wrong_owner))
-                .await
-                .unwrap(),
+            update_student(
+                &opt,
+                student_id,
+                Some("Hijacked"),
+                None,
+                None,
+                None,
+                Some(wrong_owner)
+            )
+            .await
+            .unwrap(),
             0,
             "non-owner update is a silent no-op"
         );
@@ -283,7 +332,10 @@ mod tests {
         .await
         .unwrap()
         .0;
-        assert_eq!(before_audit, after_audit, "rejected update must not write an audit row");
+        assert_eq!(
+            before_audit, after_audit,
+            "rejected update must not write an audit row"
+        );
 
         cleanup(&pool, "test_cc_updbday").await;
     }
@@ -299,13 +351,28 @@ mod tests {
     async fn test_move_student_to_class_idempotent_and_owner_checked() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_movestudent");
-        let class_id = create_class(&opt, "test_cc_movestudent_class", owner).await.unwrap();
-        let student_id = create_student(&opt, "test_cc_movestudent_s1", "", &[], owner, Some(owner), None, "1234")
+        let class_id = create_class(&opt, "test_cc_movestudent_class", owner)
             .await
             .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_movestudent_s1",
+            "",
+            &[],
+            owner,
+            Some(owner),
+            None,
+            "1234",
+        )
+        .await
+        .unwrap();
 
-        move_student_to_class(&opt, student_id, class_id, Some(owner)).await.unwrap();
-        move_student_to_class(&opt, student_id, class_id, Some(owner)).await.unwrap();
+        move_student_to_class(&opt, student_id, class_id, Some(owner))
+            .await
+            .unwrap();
+        move_student_to_class(&opt, student_id, class_id, Some(owner))
+            .await
+            .unwrap();
         assert_eq!(
             count_membership(&pool, student_id, class_id).await,
             1,
@@ -334,7 +401,9 @@ mod tests {
     async fn test_remove_student_from_class_no_longer_orphan_deletes() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_rmfromclass");
-        let class_id = create_class(&opt, "test_cc_rmfromclass_class", owner).await.unwrap();
+        let class_id = create_class(&opt, "test_cc_rmfromclass_class", owner)
+            .await
+            .unwrap();
         let student_id = create_student(
             &opt,
             "test_cc_rmfromclass_s1",
@@ -354,13 +423,17 @@ mod tests {
             .expect("removal must succeed even for the student's last class");
         let _ = result;
         assert_eq!(count_membership(&pool, student_id, class_id).await, 0);
-        let survives: i64 = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
-            .bind(student_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap()
-            .0;
-        assert_eq!(survives, 1, "the now-classless student row is left behind, not garbage-collected");
+        let survives: i64 =
+            sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
+                .bind(student_id)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+                .0;
+        assert_eq!(
+            survives, 1,
+            "the now-classless student row is left behind, not garbage-collected"
+        );
 
         cleanup(&pool, "test_cc_rmfromclass").await;
     }
@@ -374,13 +447,28 @@ mod tests {
     async fn test_get_student_classes_scoped_silently_and_ordered() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_studclasses");
-        let c1 = create_class(&opt, "test_cc_studclasses_c1", owner).await.unwrap();
-        let c2 = create_class(&opt, "test_cc_studclasses_c2", owner).await.unwrap();
-        let student_id = create_student(&opt, "test_cc_studclasses_s1", "", &[c1, c2], owner, Some(owner), None, "1234")
+        let c1 = create_class(&opt, "test_cc_studclasses_c1", owner)
             .await
             .unwrap();
+        let c2 = create_class(&opt, "test_cc_studclasses_c2", owner)
+            .await
+            .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_studclasses_s1",
+            "",
+            &[c1, c2],
+            owner,
+            Some(owner),
+            None,
+            "1234",
+        )
+        .await
+        .unwrap();
 
-        let mine = get_student_classes(&opt, student_id, Some(owner)).await.unwrap();
+        let mine = get_student_classes(&opt, student_id, Some(owner))
+            .await
+            .unwrap();
         let names: Vec<serde_json::Value> = mine.iter().map(|r| r["name"].clone()).collect();
         assert_eq!(
             names,
@@ -392,8 +480,13 @@ mod tests {
         );
 
         let wrong_owner = owner + 999_000;
-        let theirs = get_student_classes(&opt, student_id, Some(wrong_owner)).await.unwrap();
-        assert!(theirs.is_empty(), "wrong owner silently sees no classes, not an Err");
+        let theirs = get_student_classes(&opt, student_id, Some(wrong_owner))
+            .await
+            .unwrap();
+        assert!(
+            theirs.is_empty(),
+            "wrong owner silently sees no classes, not an Err"
+        );
 
         cleanup(&pool, "test_cc_studclasses").await;
     }
@@ -405,18 +498,35 @@ mod tests {
     async fn test_list_all_students_dedupes_multi_class_membership() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_listall");
-        let c1 = create_class(&opt, "test_cc_listall_c1", owner).await.unwrap();
-        let c2 = create_class(&opt, "test_cc_listall_c2", owner).await.unwrap();
-        let student_id = create_student(&opt, "test_cc_listall_s1", "", &[c1, c2], owner, Some(owner), None, "1234")
+        let c1 = create_class(&opt, "test_cc_listall_c1", owner)
             .await
             .unwrap();
+        let c2 = create_class(&opt, "test_cc_listall_c2", owner)
+            .await
+            .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_listall_s1",
+            "",
+            &[c1, c2],
+            owner,
+            Some(owner),
+            None,
+            "1234",
+        )
+        .await
+        .unwrap();
 
         let all = list_all_students(&opt, Some(owner)).await.unwrap();
         let matches: Vec<&serde_json::Value> = all
             .iter()
             .filter(|s| s["id"] == serde_json::json!(student_id))
             .collect();
-        assert_eq!(matches.len(), 1, "student must appear exactly once despite 2 memberships");
+        assert_eq!(
+            matches.len(),
+            1,
+            "student must appear exactly once despite 2 memberships"
+        );
         assert_eq!(matches[0]["classes"].as_array().unwrap().len(), 2);
 
         cleanup(&pool, "test_cc_listall").await;
@@ -429,13 +539,26 @@ mod tests {
     async fn test_can_manage_student_admin_owner_and_stranger() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_canmanage");
-        let student_id = create_student(&opt, "test_cc_canmanage_s1", "", &[], owner, Some(owner), None, "1234")
-            .await
-            .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_canmanage_s1",
+            "",
+            &[],
+            owner,
+            Some(owner),
+            None,
+            "1234",
+        )
+        .await
+        .unwrap();
 
         assert!(can_manage_student(&opt, student_id, None).await.unwrap());
-        assert!(can_manage_student(&opt, student_id, Some(owner)).await.unwrap());
-        assert!(!can_manage_student(&opt, student_id, Some(owner + 999_000)).await.unwrap());
+        assert!(can_manage_student(&opt, student_id, Some(owner))
+            .await
+            .unwrap());
+        assert!(!can_manage_student(&opt, student_id, Some(owner + 999_000))
+            .await
+            .unwrap());
 
         cleanup(&pool, "test_cc_canmanage").await;
     }
@@ -449,7 +572,9 @@ mod tests {
     async fn test_create_student_partial_class_ownership_aborts_entirely() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_createstud_partial");
-        let mine = create_class(&opt, "test_cc_createstud_partial_mine", owner).await.unwrap();
+        let mine = create_class(&opt, "test_cc_createstud_partial_mine", owner)
+            .await
+            .unwrap();
         let other_owner = create_user(&pool, "test_cc_createstud_partial_other", "pass123", "user")
             .await
             .unwrap();
@@ -478,7 +603,10 @@ mod tests {
         .await
         .unwrap()
         .0;
-        assert_eq!(n, 0, "no orphan student row must be left behind by the aborted call");
+        assert_eq!(
+            n, 0,
+            "no orphan student row must be left behind by the aborted call"
+        );
 
         cleanup(&pool, "test_cc_createstud_partial").await;
     }
@@ -491,9 +619,18 @@ mod tests {
     async fn test_create_student_empty_last_name_and_no_classes() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_createstud_empty");
-        let student_id = create_student(&opt, "test_cc_createstud_empty_X", "", &[], owner, Some(owner), None, "0000")
-            .await
-            .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_createstud_empty_X",
+            "",
+            &[],
+            owner,
+            Some(owner),
+            None,
+            "0000",
+        )
+        .await
+        .unwrap();
 
         let row: (String, Option<String>) =
             sqlx::query_as("SELECT display_name, last_name FROM students WHERE id = $1")
@@ -502,7 +639,10 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(row.0, "test_cc_createstud_empty_X");
-        assert_eq!(row.1, None, "empty last_name is stored as NULL, not an empty string");
+        assert_eq!(
+            row.1, None,
+            "empty last_name is stored as NULL, not an empty string"
+        );
 
         let memberships: i64 = sqlx::query_as::<_, (i64,)>(
             "SELECT COUNT(*) FROM class_students WHERE student_id = $1",
@@ -527,16 +667,25 @@ mod tests {
     async fn test_get_class_pins_coalesces_null_and_owner_scoped() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_classpins");
-        let class_id = create_class(&opt, "test_cc_classpins_class", owner).await.unwrap();
-        add_student(&opt, class_id, "test_cc_classpins_s1", owner).await.unwrap();
+        let class_id = create_class(&opt, "test_cc_classpins_class", owner)
+            .await
+            .unwrap();
+        add_student(&opt, class_id, "test_cc_classpins_s1", owner)
+            .await
+            .unwrap();
 
         let rows = get_class_pins(&opt, class_id, Some(owner)).await.unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["pin"], serde_json::json!(""));
 
         let wrong_owner = owner + 999_000;
-        let theirs = get_class_pins(&opt, class_id, Some(wrong_owner)).await.unwrap();
-        assert!(theirs.is_empty(), "wrong owner gets an empty list, not an Err");
+        let theirs = get_class_pins(&opt, class_id, Some(wrong_owner))
+            .await
+            .unwrap();
+        assert!(
+            theirs.is_empty(),
+            "wrong owner gets an empty list, not an Err"
+        );
 
         cleanup(&pool, "test_cc_classpins").await;
     }
@@ -549,9 +698,18 @@ mod tests {
     async fn test_class_pin_get_set_permission_asymmetry() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_pinasym");
-        let student_id = create_student(&opt, "test_cc_pinasym_s1", "", &[], owner, Some(owner), None, "1234")
-            .await
-            .unwrap();
+        let student_id = create_student(
+            &opt,
+            "test_cc_pinasym_s1",
+            "",
+            &[],
+            owner,
+            Some(owner),
+            None,
+            "1234",
+        )
+        .await
+        .unwrap();
         let wrong_owner = owner + 999_000;
 
         let err = class_get_student_pin(&opt, student_id, Some(wrong_owner))
@@ -562,7 +720,10 @@ mod tests {
         let rows_affected = class_set_student_pin(&opt, student_id, "9999", Some(wrong_owner))
             .await
             .expect("no-permission set must NOT Err");
-        assert_eq!(rows_affected, 0, "no-permission set is a silent Ok(0), unlike the get path");
+        assert_eq!(
+            rows_affected, 0,
+            "no-permission set is a silent Ok(0), unlike the get path"
+        );
 
         cleanup(&pool, "test_cc_pinasym").await;
     }

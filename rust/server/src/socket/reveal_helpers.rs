@@ -487,24 +487,25 @@ pub async fn perform_reveal_and_broadcast(
             // Aggregate text responses for word-cloud and brainstorm questions
             let is_word_cloud = matches!(question.r#type.as_ref(), Some(QuestionType::WordCloud));
             let is_brainstorm = matches!(question.r#type.as_ref(), Some(QuestionType::Brainstorm));
-            let text_responses: Option<HashMap<String, i32>> = if is_unscored && (is_word_cloud || is_brainstorm) {
-                let mut responses = HashMap::new();
-                for answer in game.engine.current_answers.values() {
-                    if let Some(answer_text) = &answer.answer_input.answer_text {
-                        let normalized_text = normalize_text(answer_text);
-                        if !normalized_text.is_empty() {
-                            *responses.entry(normalized_text).or_insert(0) += 1;
+            let text_responses: Option<HashMap<String, i32>> =
+                if is_unscored && (is_word_cloud || is_brainstorm) {
+                    let mut responses = HashMap::new();
+                    for answer in game.engine.current_answers.values() {
+                        if let Some(answer_text) = &answer.answer_input.answer_text {
+                            let normalized_text = normalize_text(answer_text);
+                            if !normalized_text.is_empty() {
+                                *responses.entry(normalized_text).or_insert(0) += 1;
+                            }
                         }
                     }
-                }
-                if responses.is_empty() {
-                    None
+                    if responses.is_empty() {
+                        None
+                    } else {
+                        Some(responses)
+                    }
                 } else {
-                    Some(responses)
-                }
-            } else {
-                None
-            };
+                    None
+                };
 
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
