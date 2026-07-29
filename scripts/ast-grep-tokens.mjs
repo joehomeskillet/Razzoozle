@@ -69,7 +69,7 @@ function walkDir(dir, callback) {
 }
 
 let totalFilesChecked = 0
-let totalASTViolations = 0
+let totalViolations = 0
 let totalFilesFixed = 0
 
 walkDir(srcDir, (filePath) => {
@@ -78,7 +78,7 @@ walkDir(srcDir, (filePath) => {
   const original = content
   let fileIssues = 0
 
-  // 1. AST Traversal for inline hex codes in className="bg-[#...]"
+  // Regex-based hex code detection in className="bg-[#...]"
   const hexClassRegex = /bg-\[#([0-9a-fA-F]{3,6})\]/g
   let match
   while ((match = hexClassRegex.exec(content)) !== null) {
@@ -93,26 +93,26 @@ walkDir(srcDir, (filePath) => {
   }
 
   if (fileIssues > 0) {
-    totalASTViolations += fileIssues
+    totalViolations += fileIssues
     if (isFix && content !== original) {
       fs.writeFileSync(filePath, content, 'utf-8')
       totalFilesFixed++
-      console.log(`\x1b[32m✔ TokenGuard Delta-E AST fixed:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+      console.log(`\x1b[32m✔ Hex Color Match Fixed:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     } else if (!isFix) {
-      console.log(`\x1b[33m⚠ AST Delta-E Token Match Violation in:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+      console.log(`\x1b[33m⚠ Hardcoded Hex Found:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     }
   }
 })
 
-console.log(`\n--- TokenGuard Delta-E AST Structural Token Linter Summary ---`)
+console.log(`\n--- Hex Color Lint Summary ---`)
 console.log(`Files checked:   ${totalFilesChecked}`)
-console.log(`AST Violations:  ${totalASTViolations}`)
+console.log(`Hex violations:  ${totalViolations}`)
 
 if (isFix) {
   console.log(`Files auto-fixed: ${totalFilesFixed}`)
-} else if (totalASTViolations > 0) {
-  console.log(`\x1b[33mRun 'pnpm tokens:ast --fix' to auto-replace hardcoded hex styles with nearest design tokens.\x1b[0m`)
+} else if (totalViolations > 0) {
+  console.log(`\x1b[33mRun 'pnpm tokens:hex-lint --fix' to auto-replace hardcoded hex colors with mapped design tokens.\x1b[0m`)
   process.exit(1)
 } else {
-  console.log(`\x1b[32m✔ All component AST structures clean of hardcoded hex values!\x1b[0m`)
+  console.log(`\x1b[32m✔ No hardcoded hex colors found!\x1b[0m`)
 }

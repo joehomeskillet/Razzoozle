@@ -20,7 +20,7 @@
     "tokens:doc": "node scripts/generate-tokens-doc.mjs",
     "tokens:sync": "node scripts/sync-figma-tokens.mjs",
     "tokens:validate": "node scripts/lint-design-tokens.mjs",
-    "tokens:ast": "node scripts/ast-grep-tokens.mjs",
+    "tokens:hex-lint": "node scripts/ast-grep-tokens.mjs",
     "tokens:wasm": "node scripts/wasm-token-codemod.mjs",
     "tokens:morph": "node scripts/ast-morph-tailwind.mjs",
     "tokens:neural": "node scripts/neural-design-core.mjs",

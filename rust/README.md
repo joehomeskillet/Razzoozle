@@ -152,7 +152,7 @@ and runs all checks:
    Checked via `scripts/check-question-types.sh`. Prevents types from slipping
    through the cracks during refactors.
 8. **Unified Design System Gate** — Runs the full token verification chain
-   (`pnpm tokens:validate`, `tokens:ast`, `tokens:wasm`, `tokens:morph`,
+   (`pnpm tokens:validate`, `tokens:hex-lint`, `tokens:wasm`, `tokens:morph`,
    `tokens:neural`, `tokens:ai-audit`, `tokens:daemon`) on the web frontend.
    Ensures component tokens stay mapped and no arbitrary hex sneaks in.
 

@@ -45,10 +45,10 @@ jobs:
       - name: Check manager design tokens (blocking)
         run: bash scripts/check-manager-tokens.sh
 
-      - name: Design token gates (tokens:validate + tokens:ast)
+      - name: Design token gates (tokens:validate + tokens:hex-lint)
         run: |
           corepack pnpm tokens:validate
-          corepack pnpm tokens:ast
+          corepack pnpm tokens:hex-lint
 
       - name: Check question type consistency (blocking)
         run: bash scripts/check-question-types.sh

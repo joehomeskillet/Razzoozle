@@ -839,7 +839,7 @@ client_id-Falle); e2e-Verzeichnis liegt ausserhalb des pnpm-Workspace (`source/e
 Install mit `--ignore-workspace`). Deep-Link-Pflicht: `/portal` und die Assignment-Route
 zusätzlich als Hard-Load (`page.goto`) testen, nicht nur In-App-Klick. Rust-Gate
 `bash rust/gate.sh` je Server-WP; UI-WPs fahren die Pflicht-Verifikationskette
-(`pnpm tokens:validate · tokens:ast · tokens:neural · tokens:ai-audit`) mit Verbatim-Ausgabe
+(`pnpm tokens:validate · tokens:hex-lint · tokens:neural · tokens:ai-audit`) mit Verbatim-Ausgabe
 im Report. Nach jeder Welle: Deploy + voller Browser-Smoke des Game-Loops (stehende Regel —
 Lobby erreichen ist kein Pass).
 
