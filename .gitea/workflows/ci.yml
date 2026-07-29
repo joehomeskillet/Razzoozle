@@ -50,6 +50,9 @@ jobs:
           corepack pnpm tokens:validate
           corepack pnpm tokens:ast
 
+      - name: Check question type consistency (blocking)
+        run: bash scripts/check-question-types.sh
+
       - name: Lint (warn-only)
         continue-on-error: true
         run: corepack pnpm lint
