@@ -387,5 +387,17 @@
     "banner": "Esercitazione — punteggio non classificato",
     "finished": "Esercitazione completata",
     "notRanked": "Non classificato — solo esercitazione"
+  },
+  "wordCloud": {
+    "inputPlaceholder": "Inserisci un termine...",
+    "addWord": "Aggiungi parola",
+    "emptyHint": "In attesa delle risposte dei giocatori...",
+    "wordAria": "{{text}} ({{count}} menzioni)"
+  },
+  "brainstorm": {
+    "inputPlaceholder": "Condividi la tua idea...",
+    "addIdea": "Aggiungi idea",
+    "emptyState": "Nessuna idea inviata ancora. Sii il primo!",
+    "upvoteAria": "Sostieni l'idea '{{text}}' ({{count}} voti)"
   }
 }

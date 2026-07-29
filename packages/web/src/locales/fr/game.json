@@ -387,5 +387,17 @@
     "banner": "Entraînement — score non classé",
     "finished": "Entraînement terminé",
     "notRanked": "Non classé — entraînement seul"
+  },
+  "wordCloud": {
+    "inputPlaceholder": "Entrez un terme...",
+    "addWord": "Ajouter un mot",
+    "emptyHint": "En attente des réponses des joueurs...",
+    "wordAria": "{{text}} ({{count}} mentions)"
+  },
+  "brainstorm": {
+    "inputPlaceholder": "Partage ton idée...",
+    "addIdea": "Ajouter une idée",
+    "emptyState": "Aucune idée soumise pour le moment. Sois le premier!",
+    "upvoteAria": "Soutenir l'idée '{{text}}' ({{count}} votes)"
   }
 }

@@ -387,5 +387,17 @@
     "banner": "Übungsrunde — Score zählt nicht",
     "finished": "Übung beendet",
     "notRanked": "Nicht gewertet — nur Übung"
+  },
+  "wordCloud": {
+    "inputPlaceholder": "Deinen Begriff eingeben...",
+    "addWord": "Wort hinzufügen",
+    "emptyHint": "Warten auf Antworten der Spieler...",
+    "wordAria": "{{text}} ({{count}} Nennungen)"
+  },
+  "brainstorm": {
+    "inputPlaceholder": "Deine Idee eingeben...",
+    "addIdea": "Idee hinzufügen",
+    "emptyState": "Noch keine Ideen eingereicht. Sei der Erste!",
+    "upvoteAria": "Idee '{{text}}' unterstützen ({{count}} Stimmen)"
   }
 }
