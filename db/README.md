@@ -7,7 +7,7 @@ This directory contains all database schema migrations for Razzoozle's shared Po
 **Current Architecture**: Single Postgres database (version 16) serving as single source of truth for all game state, quizzes, results, themes, and user data.
 
 - **DBMS**: PostgreSQL 16 (alpine container)
-- **Migrations**: 22 SQL files in `db/migrations/`, applied by embedded SQLx migrator at server startup
+- **Migrations**: 22 SQL files in `db/migrations/`, applied by explicit `razzoozle-server migrate` command
 - **Ledger**: `_sqlx_migrations` table tracks applied migrations (automatically created by SQLx)
 - **Connection Pool**: 10 connections per Rust backend, 5s acquire timeout
 - **Connection String**: Set via `DATABASE_URL` environment variable
@@ -50,21 +50,16 @@ sqlx::migrate!("../../db/migrations/").run(&pool).await
 
 **Behavior**:
 - Reads all `.sql` files from `db/migrations/` at build time
-- On server startup (or explicit `razzoozle-server migrate` invocation), applies pending migrations in order
+- On explicit `razzoozle-server migrate` invocation, applies pending migrations in order
 - Records each applied migration in the `_sqlx_migrations` table with timestamp and success status
 - Parallel runs are serialized via SQLx's advisory lock to prevent race conditions
 - Idempotency: Once a migration is recorded as `success = true`, it is never re-run
 
 ## Running Migrations
 
-### Automatic (during server startup)
-The Rust server runs migrations automatically when the `Serve` command is executed:
-```bash
-razzoozle-server
-```
+### Explicit migration execution
 
-### Manual migration execution
-To run migrations without starting the server:
+To run migrations:
 ```bash
 razzoozle-server migrate
 ```
@@ -74,6 +69,8 @@ This command:
 - Applies all pending migrations
 - Exits with code 0 on success
 - Exits with code 1 on any error (connection failure, SQL error, etc.)
+
+**Note:** Migrations are NOT run automatically during server startup. You must explicitly invoke the `migrate` command or run it as part of your deployment initialization.
 
 ## Ledger State: Pre-sqlx Databases
 
@@ -109,8 +106,8 @@ See issue #796 for ongoing decision on when and how to perform this baseline ini
 ### Users & Access Control
 - **users**: Teacher and admin user accounts with roles and authentication
 - **sessions**: Active user sessions (with expiry tracking)
-- **class_students_junction**: Many-to-many link between classes and students
-- **student_pins**: Student login PINs for class-based quizzes
+- **class_students**: Many-to-many link between classes and students
+- **solo_sessions**: Student login sessions for class-based quizzes
 - **classes**: Class groups with teacher ownership
 
 ### Media & Plugins
@@ -147,9 +144,9 @@ If no rows are affected, a ConflictError is raised (update failed, retry).
 - `media_assets`: (category, source, uploaded_at DESC)
 - `assignments`: (quiz_id, assigned_to), (assigned_at DESC)
 - `theme_revisions`: (theme_id, revision_number DESC)
-- `users`: (email), (username)
+- `users`: (username UNIQUE), (submit_token UNIQUE)
 - `classes`: (teacher_id), (active)
-- `student_pins`: (pin)
+- `solo_sessions`: (pin)
 
 ### Domain & Check Constraints
 - **safe_id DOMAIN**: All IDs validate the pattern `^[A-Za-z0-9_-]+$` (alphanumeric, underscore, hyphen)
@@ -190,11 +187,11 @@ When adding a new migration:
 1. Create a new `.sql` file in `db/migrations/` with the next sequential number (e.g., `023_my_change.sql`)
 2. Write pure SQL (no Rust code)
 3. Build the Rust server — the SQLx macro will include the new file at compile time
-4. On next server startup, the migration will be applied automatically
+4. Before deploying, run `razzoozle-server migrate` to verify the migration applies cleanly
 
 ## Notes
 
 - **Single source of truth**: All game state, quiz definitions, results, and user data centralize in Postgres. The embedded migrator ensures schema consistency across all deployments.
 - **Archived quizzes**: Use soft-delete pattern (`archived=true`). Hard deletion removes all dependent results via CASCADE.
 - **Media files**: Database stores metadata only; actual files live on disk in `/media/` (bind-mount). Orphan detection job should periodically scan for untracked files.
-- **No manual SQL scripts needed**: The embedded migrator eliminates the need for separate migration apply scripts. Simply start the server or run `razzoozle-server migrate`.
+- **No automatic startup migrations**: The server does not run migrations automatically. Explicitly invoke `razzoozle-server migrate` during deployment or initialization.
