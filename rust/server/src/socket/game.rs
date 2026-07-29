@@ -7,6 +7,7 @@ use razzoozle_protocol::game::EndScreen;
 use razzoozle_protocol::status::ScoringMode;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
+use crate::state::socket_role;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_create(socket, ctx.clone());
@@ -257,6 +258,7 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
         let socket_id = socket_id.clone();
 
         tokio::spawn(async move {
+            socket_role::release(&socket_id);
             let removed_player = {
                 let mut registry = registry.write().await;
                 // #83: transport disconnect is never a lobby hard-remove — a

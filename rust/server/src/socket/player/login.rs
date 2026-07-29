@@ -7,6 +7,7 @@ use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use std::net::IpAddr;
 use tracing::{info, warn};
+use crate::state::socket_role;
 
 /// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
 const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
@@ -606,6 +607,14 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     };
 
                                     // Bind student identity for klassen dedup (A6) + roster alreadyJoined.
+
+                                    // Claim Player role — observe only, don't reject on conflict
+                                    if let Err(held_role) = socket_role::try_claim(&socket_id, socket_role::VerifiedRole::Player) {
+                                        warn!(
+                                            "player role conflict: socketId={} held_role={:?} requested=Player",
+                                            socket_id, held_role
+                                        );
+                                    }
                                     // Stored in identifier_hash (server-side tracking key, Wave-1).
                                     if let Some(sid) = admit_student_id {
                                         let sid_str = sid.to_string();
