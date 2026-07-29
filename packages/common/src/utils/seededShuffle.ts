@@ -17,7 +17,7 @@ export function hashSeed(seed: string | number): number {
  */
 export function createMulberry32(seed: number): () => number {
   let a = seed
-  return function () {
+  return function mulberry32Random() {
     let t = (a += 0x6d2b79f5)
     t = Math.imul(t ^ (t >>> 15), t | 1)
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
