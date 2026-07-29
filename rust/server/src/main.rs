@@ -5,7 +5,7 @@ mod state;
 mod media_ai;
 mod http;
 mod db;
-
+mod cli;
 
 use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::MatchMode;
@@ -192,8 +192,8 @@ mod host_token_tests {
     }
 }
 
-#[tokio::main]
-async fn main() {
+/// Start the server with the given configuration.
+async fn start_server() {
     // fmt layer (stdout, unchanged behaviour) + ADDITIVE ring layer: every
     // event is also mirrored (redacted) into the bounded DEV log ring that
     // backs GET /api/v1/observability/logs/server (see http/logs.rs).
@@ -441,4 +441,38 @@ async fn main() {
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .expect("Failed to start server");
+}
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    match cli::parse_args(args) {
+        Ok(cli::CliAction::PrintVersion) => {
+            println!("{}", cli::version_string());
+            std::process::exit(0);
+        }
+        Ok(cli::CliAction::PrintHelp) => {
+            cli::print_help();
+            std::process::exit(0);
+        }
+        Ok(cli::CliAction::Execute(cmd)) => match cmd {
+            cli::Command::Serve => {
+                start_server().await;
+            }
+            cli::Command::Healthcheck => {
+                eprintln!("healthcheck: not yet implemented (see DCK-04)");
+                std::process::exit(1);
+            }
+            cli::Command::Migrate => {
+                eprintln!("migrate: not yet implemented (see DCK-05)");
+                std::process::exit(1);
+            }
+        },
+        Err(cli::ParseError::UnknownArgument(arg)) => {
+            eprintln!("error: unknown argument '{}'", arg);
+            eprintln!("\nRun 'razzoozle-server --help' for usage information.");
+            std::process::exit(2);
+        }
+    }
 }
