@@ -377,15 +377,18 @@ const AssignmentPlayPage = () => {
         {phase === "result" && autoAdvance && <SoloResultAutoAdvance />}
       </SoloShell>
 
+      {/* Gate by !poll so unscored question types do not show wrong-answer
+          feedback on empty/timeout submissions. After server hotfix, poll will be
+          true for all unscored types, suppressing toast display. */}
       <ScoreToast
         correct={lastResult?.correct ?? false}
         points={lastResult?.points ?? 0}
-        visible={phase === "result" && lastResult !== null}
+        visible={phase === "result" && lastResult !== null && !lastResult?.poll}
       />
 
       <SoloRewardToast
         achievementIds={lastAchievements}
-        visible={phase === "result" && lastResult !== null}
+        visible={phase === "result" && lastResult !== null && !lastResult?.poll}
       />
     </>
   )

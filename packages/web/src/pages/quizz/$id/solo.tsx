@@ -212,16 +212,21 @@ const SoloPlayPage = () => {
       {/* Top-center result toast. Rendered at the page level (sibling of
           SoloShell, portals to document.body) so SoloPlayPage stays mounted
           across question changes — letting the toast's AnimatePresence EXIT
-          (slide-up) finally play when advancing to the next question. */}
+          (slide-up) finally play when advancing to the next question.
+
+          Gate by !poll so unscored question types (poll, word-cloud,
+          brainstorm, confidence, micro-lesson) don't show wrong-answer feedback
+          even on empty/timeout submissions. After server hotfix, poll will be
+          true for all unscored types, suppressing toast display. */}
       <ScoreToast
         correct={lastResult?.correct ?? false}
         points={lastResult?.points ?? 0}
-        visible={phase === "result" && lastResult !== null}
+        visible={phase === "result" && lastResult !== null && !lastResult?.poll}
       />
 
       <SoloRewardToast
         achievementIds={lastAchievements}
-        visible={phase === "result" && lastResult !== null}
+        visible={phase === "result" && lastResult !== null && !lastResult?.poll}
       />
     </>
   )
