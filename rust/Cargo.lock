@@ -1593,7 +1593,7 @@ dependencies = [
 
 [[package]]
 name = "razzoozle-engine"
-version = "0.1.0"
+version = "3.0.0"
 dependencies = [
  "rand 0.8.6",
  "razzoozle-protocol",
@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "razzoozle-protocol"
-version = "0.1.0"
+version = "3.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1612,7 +1612,7 @@ dependencies = [
 
 [[package]]
 name = "razzoozle-server"
-version = "0.1.0"
+version = "3.0.0"
 dependencies = [
  "argon2",
  "axum",
