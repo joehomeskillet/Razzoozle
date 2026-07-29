@@ -40,11 +40,11 @@ Always read `AGENTS.md` for architecture details and gotchas.
 
 3. **Mandatory CLI Verification Chain**:
    - Before completing any UI task, ALWAYS run:
-     - `pnpm tokens:validate`   (Regex linter for unmapped var() syntax)
-     - `pnpm tokens:hex-lint`   (Regex validator for hardcoded hex colors)
-     - `pnpm tokens:wasm`       (Regex-based hex token replacer)
-     - `pnpm tokens:morph`      (Regex-based inline style replacer)
+     - `pnpm tokens:validate`   (Check for unmapped arbitrary token usages)
+     - `pnpm tokens:hex-lint`   (Regex-based hardcoded hex color validator)
+     - `pnpm tokens:wasm`       (High-speed SWC/AST token codemod transformer)
+     - `pnpm tokens:morph`      (Zero-runtime Tailwind v4 compiler)
      - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)
-     - `pnpm tokens:ai-audit`   (AI Design System Governance Audit)
-     - `pnpm tokens:daemon`     (Monorepo refactoring daemon)
+     - `pnpm tokens:ai-audit`   (Dual-Pass AI Design System Governance Audit)
+     - `pnpm tokens:daemon`     (Autonomous monorepo refactoring daemon)
 <!-- END UNIFIED DESIGN GOVERNANCE RULES -->
