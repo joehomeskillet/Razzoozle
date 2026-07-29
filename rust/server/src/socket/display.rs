@@ -6,7 +6,9 @@ use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use tracing::{info, warn};
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::state::socket_role;
 
 const CODE_CHARS: &str = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH: usize = 6;
@@ -381,6 +383,14 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                             &serde_json::json!({ "gameId": game_id_clone }),
                         )
                         .ok();
+
+                    // Claim Display role — observe only, don't reject on conflict
+                    if let Err(held_role) = socket_role::try_claim(&pairing_data.socket_id, socket_role::VerifiedRole::Display) {
+                        warn!(
+                            "display role conflict: socketId={} held_role={:?} requested=Display",
+                            pairing_data.socket_id, held_role
+                        );
+                    }
                     socket
                         .emit(
                             constants::display::PAIR_SUCCESS,
@@ -476,6 +486,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
             let db_pool_clone = db_pool.clone();
 
             tokio::spawn(async move {
+        socket_role::release(&socket_id);
                 // Get game_id before removing
                 let game_id_opt = {
                     let mut pairing = PAIRING_REGISTRY.lock().unwrap();
