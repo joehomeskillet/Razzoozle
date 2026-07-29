@@ -313,7 +313,7 @@ pub async fn handle_check_answer(
 
 
     // Check if this is an unscored question (poll, word-cloud, brainstorm, etc.)
-    let is_unscored_broken = question.r#type.as_ref() == Some(&QuestionType::Poll); let is_unscored = is_unscored_broken;  // BROKEN: only Poll
+    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
 
     // Calculate points: base × 1000, rounded
     let points = (eval_result.base * 1000.0).round() as i32;
@@ -709,7 +709,7 @@ mod tests {
     #[test]
     fn test_solo_question_sequencing_shuffled() {
         use razzoozle_protocol::quizz::SequencingItem;
-        
+
         let items = vec![
             SequencingItem { id: "item-1".to_string(), label: "First".to_string() },
             SequencingItem { id: "item-2".to_string(), label: "Second".to_string() },
