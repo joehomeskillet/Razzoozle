@@ -11,15 +11,13 @@ mod tests {
     use super::super::classes::BULK_MAX_IDS;
     use super::super::*;
     use sqlx::postgres::PgPoolOptions;
-    use std::sync::{Mutex, MutexGuard};
+    use tokio::sync::{Mutex, MutexGuard};
 
     /// Serializes DB-mutating bulk student tests (shared DATABASE_URL).
-    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::new(());
+    static DB_ISOLATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-    fn lock_db_isolation() -> MutexGuard<'static, ()> {
-        DB_ISOLATION_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    async fn lock_db_isolation() -> MutexGuard<'static, ()> {
+        DB_ISOLATION_LOCK.lock().await
     }
 
     /// Pool from DATABASE_URL, or None if unset / unreachable.
@@ -190,7 +188,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -286,7 +284,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -330,7 +328,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -409,7 +407,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -501,7 +499,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_delete_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -579,7 +577,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_delete_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -663,7 +661,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_assign_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -744,7 +742,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_assign_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -870,7 +868,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_remove_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -986,7 +984,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_pin_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
@@ -1052,7 +1050,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         cleanup_pin_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
