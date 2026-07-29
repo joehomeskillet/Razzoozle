@@ -749,7 +749,10 @@ pub async fn update_class(
     Ok(result.rows_affected())
 }
 
-/// Delete a class by id (cascades to class_students junction rows, which may trigger orphan deletion).
+/// Delete a class by id (cascades to class_students junction rows). Since
+/// migration 022 dropped the orphan-delete trigger, students left without
+/// any class membership are NOT deleted — they simply survive with zero
+/// class_students rows.
 /// Returns Ok(rows_affected): 0 = not found / not owned.
 pub async fn delete_class(
     pool: &Option<PgPool>,
@@ -991,6 +994,16 @@ pub async fn remove_student(
 }
 
 /// Update a student's display name and log to audit table.
+/// Each of `display_name_opt`, `first_name_opt`, `last_name_opt`, `birthdate_opt`
+/// is independently optional — `None` means "not touched by this update", the
+/// same COALESCE contract `birthdate_opt` already had. In particular,
+/// `last_name` is now gated on whether `last_name_opt` itself was passed, not
+/// on `first_name_opt` (previously a caller sending only a new first name
+/// silently wiped last_name to NULL). `last_name_opt = Some("")` still means
+/// "explicitly clear the last name" (same convention as `create_student`).
+/// `display_name` is recomputed from the FINAL first/last name whenever the
+/// caller does not supply an explicit `display_name_opt` override, so it can
+/// never go stale relative to the columns it summarizes.
 /// Returns Ok(rows_affected): 0 = not found / not owned.
 pub async fn update_student(
     pool: &Option<PgPool>,
@@ -1008,9 +1021,10 @@ pub async fn update_student(
 
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
-    // Fetch old display_name for audit
-    let old_name: Option<(String,)> = match sqlx::query_as(
-        "SELECT display_name FROM students \
+    // Fetch old display_name/first_name/last_name — for the audit row and to
+    // recompute display_name from the FINAL (new-or-kept) name parts below.
+    let old_row: Option<(String, Option<String>, Option<String>)> = match sqlx::query_as(
+        "SELECT display_name, first_name, last_name FROM students \
          WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(student_id)
@@ -1018,45 +1032,62 @@ pub async fn update_student(
     .fetch_optional(&mut *tx)
     .await
     {
-        Ok(name) => name,
+        Ok(row) => row,
         Err(e) => {
             let _ = tx.rollback().await;
             return Err(e.to_string());
         }
     };
 
-    let old_display_name = match old_name {
-        Some((name,)) => name,
+    let (old_display_name, old_first_name, old_last_name) = match old_row {
+        Some(row) => row,
         None => {
             let _ = tx.rollback().await;
             return Ok(0); // Not found or not owned
         }
     };
 
-    let display_name = if let (Some(f), Some(l)) = (first_name_opt, last_name_opt) {
-        if l.is_empty() {
-            f.trim().to_string()
-        } else {
-            format!("{} {}", f.trim(), l.trim())
-        }
-    } else {
-        display_name_opt.unwrap_or(&old_display_name).to_string()
+    // last_name_opt: None = untouched (keep DB value); Some("") = explicit
+    // clear to NULL; Some(l) = new trimmed value. `last_name_provided` is the
+    // actual SQL gate — independent of first_name_opt.
+    let last_name_provided = last_name_opt.is_some();
+    let final_last: Option<String> = match last_name_opt {
+        Some(l) if l.is_empty() => None,
+        Some(l) => Some(l.trim().to_string()),
+        None => old_last_name.clone(),
     };
 
-    let final_last = last_name_opt.and_then(|l| if l.is_empty() { None } else { Some(l.trim()) });
+    let final_first: Option<String> = first_name_opt
+        .map(|f| f.trim().to_string())
+        .or_else(|| old_first_name.clone());
+
+    let display_name = match display_name_opt {
+        Some(d) => d.to_string(),
+        None => match &final_first {
+            Some(f) => match &final_last {
+                Some(l) if !l.is_empty() => format!("{f} {l}"),
+                _ => f.clone(),
+            },
+            None => old_display_name.clone(),
+        },
+    };
 
     // Update student. birthdate_opt=None means "not provided in this update" —
     // COALESCE keeps the existing value (same pattern as first_name).
+    // last_name is only touched when last_name_provided (i.e. the caller
+    // actually passed last_name_opt), never merely because first_name_opt
+    // was passed.
     let result = match sqlx::query(
         "UPDATE students SET display_name = $1, \
          first_name = COALESCE($2, first_name), \
-         last_name = CASE WHEN $2 IS NOT NULL THEN $3 ELSE last_name END, \
-         birthdate = COALESCE($4, birthdate) \
-         WHERE id = $5 AND ($6::bigint IS NULL OR owner_id = $6)",
+         last_name = CASE WHEN $3 THEN $4 ELSE last_name END, \
+         birthdate = COALESCE($5, birthdate) \
+         WHERE id = $6 AND ($7::bigint IS NULL OR owner_id = $7)",
     )
     .bind(&display_name)
     .bind(first_name_opt)
-    .bind(final_last)
+    .bind(last_name_provided)
+    .bind(&final_last)
     .bind(birthdate_opt)
     .bind(student_id)
     .bind(me)
@@ -1140,15 +1171,18 @@ pub async fn move_student_to_class(
     Ok(())
 }
 
-/// Remove a student from a specific class.
-/// Returns Ok(true) if the student was orphan-deleted, Ok(false) if student still exists.
+/// Remove a student from a specific class (unlinks the `class_students`
+/// junction row only). Migration 022 dropped the orphan-delete trigger, so
+/// this never deletes the student row anymore — a student left without any
+/// class membership simply survives, orphaned, with zero `class_students`
+/// rows. There is nothing left to report back about deletion, hence `Ok(())`.
 /// Permission: `me` must own the target class.
 pub async fn remove_student_from_class(
     pool: &Option<PgPool>,
     student_id: i64,
     class_id: i64,
     me: Option<i64>,
-) -> Result<bool, String> {
+) -> Result<(), String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
@@ -1168,7 +1202,8 @@ pub async fn remove_student_from_class(
         return Err("class not found or not owned".to_string());
     }
 
-    // Delete the junction row (orphan trigger may delete student)
+    // Unlink the junction row. No orphan-delete trigger exists anymore (see
+    // migration 022) — the student row is intentionally left in place.
     sqlx::query("DELETE FROM class_students WHERE student_id = $1 AND class_id = $2")
         .bind(student_id)
         .bind(class_id)
@@ -1176,14 +1211,7 @@ pub async fn remove_student_from_class(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Check if student still exists
-    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM students WHERE id = $1")
-        .bind(student_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(exists.is_none())
+    Ok(())
 }
 
 /// Get all classes for a student, scoped to classes visible to `me`.
