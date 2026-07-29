@@ -78,6 +78,8 @@ export interface SelectedModes {
   teamMode?: boolean
   klassen?: boolean
   endScreen?: EndScreen
+  /** Per-game participant cap. None or 0 = unlimited (up to server ceiling of 200). Validated and clamped server-side. */
+  participantCap?: number
 }
 
 // ---- Class-mode LIVE join types (Wave 1B) ----
