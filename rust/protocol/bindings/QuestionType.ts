@@ -3,4 +3,4 @@
 /**
  * Question type enum
  */
-export type QuestionType = "choice" | "boolean" | "slider" | "poll" | "multiple-select" | "type-answer" | "sentence-builder" | "mathematik" | "wortarten" | "sequencing" | "fill-blank" | "matching" | "drop-pin";
+export type QuestionType = "choice" | "boolean" | "slider" | "poll" | "multiple-select" | "type-answer" | "sentence-builder" | "mathematik" | "wortarten" | "sequencing" | "fill-blank" | "matching" | "drop-pin" | "word-cloud" | "brainstorm" | "confidence" | "micro-lesson";
