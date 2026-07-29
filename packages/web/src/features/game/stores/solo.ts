@@ -76,6 +76,9 @@ export interface SoloQuestionResult {
   answerId?: number
   answerIds?: number[]
   answerText?: string
+  // Unscored poll question: marks answers that do not contribute to score stats.
+  // Used by SoloRecapCard to filter out poll answers from accuracy/streak calculations.
+  poll?: boolean
 }
 
 interface SoloState {
@@ -343,6 +346,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
                 points: result.points,
                 achievements: [],
                 ...payload,
+                poll: true,
               },
             ],
             phase: "result",
