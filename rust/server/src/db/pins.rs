@@ -1,44 +1,5 @@
 use sqlx::{FromRow, PgPool};
 
-/// Get the PIN for a student.
-/// Permission: admin (me is None) OR me is the student's owner_id (direct owner).
-pub async fn get_student_pin(
-    pool: &PgPool,
-    student_id: i64,
-    me: Option<i64>,
-) -> Result<Option<String>, String> {
-    let row = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT pin FROM students WHERE id = $1 AND (owner_id IS NULL OR owner_id = $2)",
-    )
-    .bind(student_id)
-    .bind(me)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Failed to get student PIN: {}", e))?;
-
-    Ok(row.flatten())
-}
-
-/// Set or update a student's PIN.
-/// Permission: admin (me is None) OR me is the student's owner_id (direct owner).
-pub async fn set_student_pin(
-    pool: &PgPool,
-    student_id: i64,
-    pin: &str,
-    me: Option<i64>,
-) -> Result<u64, String> {
-    let result = sqlx::query(
-        "UPDATE students SET pin = $1 WHERE id = $2 AND (owner_id IS NULL OR owner_id = $3)",
-    )
-    .bind(pin)
-    .bind(student_id)
-    .bind(me)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Failed to set student PIN: {}", e))?;
-
-    Ok(result.rows_affected())
-}
 
 /// Create a solo session token for assignment playback.
 pub async fn create_solo_session(
