@@ -26,3 +26,7 @@ pub use labels::*;
 
 #[cfg(test)]
 mod tests_classes_bulk;
+#[cfg(test)]
+mod tests_classes_characterization;
+#[cfg(test)]
+mod tests_students_characterization;
