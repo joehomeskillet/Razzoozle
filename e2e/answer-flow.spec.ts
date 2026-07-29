@@ -207,6 +207,63 @@ async function answerBrainstorm(
   }
 }
 
+/** Fill-blank / matching: native <select> per slot (SlotDropdownBoard) — both
+    question types render the exact same board component and share testids
+    (`slot-select-${i}`, `slot-submit`). Submit stays disabled until every slot
+    has a selection, so callers must pass one index per slot. */
+async function answerSlotBoard(
+  page: Page,
+  selections: number[],
+  opts?: { doubleSubmit?: boolean },
+) {
+  for (let i = 0; i < selections.length; i++) {
+    await page.getByTestId(`slot-select-${i}`).selectOption(String(selections[i]))
+  }
+  const submit = page.getByTestId("slot-submit")
+  await submit.click()
+  if (opts?.doubleSubmit) {
+    await submit.click({ force: true }).catch(() => {})
+  }
+}
+
+/** Drop-pin: click a relative (0–1) point on the hotspot image. HotspotImage
+    measures clicks relative to its own bounding box (same math used here),
+    so any relX/relY in [0,1] lands at the matching spot. */
+async function answerDropPin(
+  page: Page,
+  relX: number,
+  relY: number,
+  opts?: { doubleSubmit?: boolean },
+) {
+  const img = page.getByTestId("hotspot-image")
+  const box = await img.boundingBox()
+  if (!box) {
+    throw new Error("hotspot-image has no bounding box")
+  }
+  await img.click({ position: { x: box.width * relX, y: box.height * relY } })
+  const submit = page.getByTestId("hotspot-submit")
+  await submit.click()
+  if (opts?.doubleSubmit) {
+    await submit.click({ force: true }).catch(() => {})
+  }
+}
+
+/** Word-cloud: submit one free-text word via the input + submit button
+    (WordCloudDisplay's own form — wertungsfrei, same wire shape as
+    brainstorm/type-answer). */
+async function answerWordCloud(
+  page: Page,
+  text: string,
+  opts?: { doubleSubmit?: boolean },
+) {
+  await page.getByTestId("word-cloud-input").fill(text)
+  const submit = page.getByTestId("word-cloud-submit")
+  await submit.click()
+  if (opts?.doubleSubmit) {
+    await submit.click({ force: true }).catch(() => {})
+  }
+}
+
 /** Confidence: pick one of the three fixed self-assessment levels
     (ConfidenceSelector has no `answers` prop — the options are built in). */
 async function answerConfidence(page: Page, level: "high" | "medium" | "low") {
@@ -284,6 +341,27 @@ function player1AnswerPlan(q: Question): {
       return {
         run: (page) => answerMicroLesson(page),
       }
+    case "fill-blank":
+      return {
+        run: (page, opts) =>
+          answerSlotBoard(page, q.slots!.map((s) => s.correctIndex), opts),
+      }
+    case "matching":
+      return {
+        run: (page, opts) =>
+          answerSlotBoard(page, q.leftItems!.map((li) => li.correctIndex), opts),
+      }
+    case "drop-pin": {
+      const h = q.hotspots![0]
+      return {
+        run: (page, opts) =>
+          answerDropPin(page, h.x + h.w / 2, h.y + h.h / 2, opts),
+      }
+    }
+    case "word-cloud":
+      return {
+        run: (page, opts) => answerWordCloud(page, "Teamgeist", opts),
+      }
     default: {
       const _exhaustive: never = q as never
       throw new Error(`Unknown question type: ${JSON.stringify(_exhaustive)}`)
@@ -338,6 +416,29 @@ function player2AnswerPlan(q: Question): {
       return { run: (page) => answerConfidence(page, "low") }
     case "micro-lesson":
       return { run: (page) => answerMicroLesson(page) }
+    case "fill-blank":
+      // Wrong: shift each slot's pick by one option (wraps within bounds).
+      return {
+        run: (page) =>
+          answerSlotBoard(
+            page,
+            q.slots!.map((s) => (s.correctIndex + 1) % s.options.length),
+          ),
+      }
+    case "matching":
+      // Wrong pairing: rotate each item's pick by one.
+      return {
+        run: (page) =>
+          answerSlotBoard(
+            page,
+            q.leftItems!.map((li) => (li.correctIndex + 1) % li.options.length),
+          ),
+      }
+    case "drop-pin":
+      // Wrong spot: far corner, clear of the fixture's single hotspot zone.
+      return { run: (page) => answerDropPin(page, 0.85, 0.85) }
+    case "word-cloud":
+      return { run: (page) => answerWordCloud(page, "Flexibilität") }
     default: {
       const _exhaustive: never = q as never
       throw new Error(`Unknown question type: ${JSON.stringify(_exhaustive)}`)
@@ -439,6 +540,9 @@ async function advanceToNextQuestion(host: Page, player1: Page, nextQType: strin
     : nextQType === "brainstorm" ? "brainstorm-input"
     : nextQType === "confidence" ? "confidence-option-high"
     : nextQType === "micro-lesson" ? "microlesson-next"
+    : nextQType === "fill-blank" || nextQType === "matching" ? "slot-select-0"
+    : nextQType === "drop-pin" ? "hotspot-image"
+    : nextQType === "word-cloud" ? "word-cloud-input"
     : "answer-btn-0"
 
   for (let s = 0; s < maxSteps; s++) {
@@ -514,6 +618,16 @@ async function waitForAnswerControl(page: Page, questionType: string) {
       break
     case "micro-lesson":
       await expect(page.getByTestId("microlesson-next")).toBeVisible({ timeout: 45_000 })
+      break
+    case "fill-blank":
+    case "matching":
+      await expect(page.getByTestId("slot-select-0")).toBeVisible({ timeout: 45_000 })
+      break
+    case "drop-pin":
+      await expect(page.getByTestId("hotspot-image")).toBeVisible({ timeout: 45_000 })
+      break
+    case "word-cloud":
+      await expect(page.getByTestId("word-cloud-input")).toBeVisible({ timeout: 45_000 })
       break
     default:
       throw new Error(`Unknown question type: ${questionType}`)
