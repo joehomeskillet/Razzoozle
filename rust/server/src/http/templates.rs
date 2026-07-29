@@ -483,8 +483,7 @@ mod tests {
     use super::super::AppState;
     use super::{
         handle_create_template, handle_delete_template, handle_update_template, load_template_file,
-        slugify_id, templates_dir, TemplateCreateBody, TemplateFull, TemplateMeta,
-        TemplateWriteBody,
+        slugify_id, templates_dir, TemplateCreateBody, TemplateWriteBody,
     };
     use crate::state::{safe_asset_id, GameRegistry};
     use axum::extract::State;
