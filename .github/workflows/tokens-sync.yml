@@ -17,6 +17,9 @@ on:
       - 'design.tokens.json'
       - 'packages/web/src/**'
 
+permissions:
+  contents: read
+
 jobs:
   tokens-sync:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
       - name: Setup Node.js & pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 9
+          version: 11.5.1
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -41,11 +44,19 @@ jobs:
       - name: Run Workspace Verification (types + lint + tests)
         run: pnpm -r run types && oxlint && pnpm -r --if-present run test
 
-      - name: Commit Auto-Fixed Tokens & Specs if Changed
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Verify No Untracked Generated Changes
         run: |
-          git config user.name "razzoozle-bot[bot]"
-          git config user.email "bot@razzoozle.local"
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "chore(tokens): auto-sync generated CSS, TS types, agent rules, and Living Design System spec"
-          git push origin main
+          if ! git diff-index --quiet HEAD; then
+            echo "ERROR: Generated tokens or specs have untracked changes after build & fix."
+            echo "This indicates the token generation scripts are producing output that differs from the committed state."
+            echo ""
+            echo "Required local fix:"
+            echo "  pnpm tokens:build"
+            echo "  pnpm tokens:gate:fix"
+            echo "  git add -A"
+            echo "  git commit -m 'chore(tokens): sync generated CSS, TS types, and specs'"
+            echo ""
+            echo "Changes detected:"
+            git diff --name-only HEAD
+            exit 1
+          fi
