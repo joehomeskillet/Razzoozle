@@ -6,7 +6,7 @@
 
 - **GitHub Security Advisory:** Use the [Report a vulnerability](https://github.com/joehomeskillet/Razzoozle/security/advisories/new) button on the repository's Security tab (private, coordinated disclosure).
 - **Gitea mirror (internal):** If you have access to the internal Gitea instance (git.joelduss.xyz), you may report privately there.
-- **Upstream fork:** For issues in the upstream [Razzia](https://github.com/Ralex91/Razzia) project, please report to that repository.
+- **Upstream fork:** For issues in the upstream [Rahoot](https://github.com/Ralex91/Rahoot) project, please report to that repository.
 
 ## What to Include
 
