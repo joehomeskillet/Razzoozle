@@ -36,7 +36,8 @@
     "g:question": "node scripts/generate-component.mjs --domain question",
     "g:display": "node scripts/generate-component.mjs --domain display",
     "g:player": "node scripts/generate-component.mjs --domain player",
-    "g:menu": "node scripts/generate-component.mjs --domain menu"
+    "g:menu": "node scripts/generate-component.mjs --domain menu",
+    "check-version": "node scripts/check-version.mjs"
   },
   "devDependencies": {
     "@lingual/i18n-check": "0.9.5",
