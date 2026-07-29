@@ -337,6 +337,22 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
     void submitAnswer(quizzId, { answerText: trimmed })
   }
 
+  // Word cloud: submit one free-text word. Same REST payload shape as
+  // type-answer ({ answerText }) — check-answer has no per-type text
+  // requirement for "word-cloud" (unscored collection format, same as
+  // "brainstorm"). Locks the cloud after the first word (same as type-answer);
+  // multi-word submission would need engine support.
+  const submitWordCloudWord = (text: string) => {
+    if (submitted) return
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    if (timerRef.current) clearInterval(timerRef.current)
+    void submitAnswer(quizzId, { answerText: trimmed })
+  }
+
 
   const submitMathematikAnswer = () => {
     if (submitted || !mathematikAnswer.trim()) return
@@ -534,6 +550,8 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
         ) : isWordCloud ? (
           <WordCloudDisplay
             words={question.answers?.map((text) => ({ text, count: 1 })) ?? []}
+            onSubmitWord={submitWordCloudWord}
+            disabled={submitted}
           />
         ) : isBrainstorm ? (
           <BrainstormBoard

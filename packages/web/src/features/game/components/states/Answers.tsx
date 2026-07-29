@@ -446,6 +446,44 @@ const Answers = ({
     }
   }
 
+  // Word cloud: submit one free-text word. Same wire shape as type-answer
+  // (answerKey: -1 + answerText) — record_answer has no per-type text
+  // requirement for "word-cloud" (unscored collection format, same as
+  // "brainstorm"), so this is accepted like any other free-text answer. The
+  // engine only records one answer per player per question, so — same as
+  // type-answer — this locks the cloud after the first word.
+  const submitWordCloudWord = (text: string) => {
+    if (!player || !gameId || submitted) {
+      return
+    }
+
+    const trimmed = text.trim()
+
+    if (!trimmed) {
+      return
+    }
+
+    const clientMessageId = lowLatency ? uuid() : undefined
+
+    setSubmitted(true)
+    sfxPop()
+    hapticTap()
+    socket.emit(EVENTS.PLAYER.SELECTED_ANSWER, {
+      gameId,
+      data: {
+        answerKey: -1,
+        answerText: trimmed,
+        ...(clientMessageId ? { clientMessageId } : {}),
+        ...(playerToken ? { playerToken } : {}),
+      },
+    })
+    setSubmittedText(trimmed)
+
+    if (lowLatency) {
+      armAckPending(clientMessageId)
+    }
+  }
+
 
   const submitMathematikAnswer = () => {
     if (!player || !gameId || submitted || !mathematikAnswer.trim()) {
@@ -910,6 +948,8 @@ const Answers = ({
       ) : isWordCloud ? (
         <WordCloudDisplay
           words={answers?.map((text) => ({ text, count: 1 })) ?? []}
+          onSubmitWord={submitWordCloudWord}
+          disabled={submitted}
         />
       ) : isBrainstorm ? (
         <BrainstormBoard

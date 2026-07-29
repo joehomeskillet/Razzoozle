@@ -1,4 +1,8 @@
+import Button from "@razzoozle/web/components/Button"
+import Input from "@razzoozle/web/components/Input"
 import clsx from "clsx"
+import { Plus } from "lucide-react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ANSWERS_COLORS } from "@razzoozle/web/features/game/utils/answers"
 
@@ -9,6 +13,8 @@ export interface WordCloudItem {
 
 export interface WordCloudDisplayProps {
   words: WordCloudItem[]
+  onSubmitWord?: (text: string) => void
+  disabled?: boolean
   maxWords?: number
   testIdPrefix?: string
   className?: string
@@ -16,11 +22,21 @@ export interface WordCloudDisplayProps {
 
 export function WordCloudDisplay({
   words,
+  onSubmitWord,
+  disabled = false,
   maxWords = 50,
   testIdPrefix = "",
   className,
 }: WordCloudDisplayProps) {
   const { t } = useTranslation()
+  const [newWord, setNewWord] = useState("")
+
+  const handleWordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newWord.trim() || disabled) return
+    onSubmitWord?.(newWord.trim())
+    setNewWord("")
+  }
 
   const displayedWords = words.slice(0, maxWords)
   const maxCount = Math.max(1, ...words.map((w) => w.count))
@@ -33,6 +49,37 @@ export function WordCloudDisplay({
       )}
       data-testid={`${testIdPrefix}word-cloud-container`}
     >
+      {/* Word submission input form */}
+      {!disabled && onSubmitWord && (
+        <form
+          onSubmit={handleWordSubmit}
+          className="flex w-full items-center gap-3"
+          data-testid={`${testIdPrefix}word-cloud-form`}
+        >
+          <div className="flex-1">
+            <Input
+              type="text"
+              value={newWord}
+              onChange={(e) => setNewWord(e.target.value)}
+              placeholder={t("game:wordCloud.inputPlaceholder", {
+                defaultValue: "Deinen Begriff eingeben...",
+              })}
+              disabled={disabled}
+              data-testid={`${testIdPrefix}word-cloud-input`}
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={disabled || !newWord.trim()}
+            data-testid={`${testIdPrefix}word-cloud-submit`}
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            {t("game:wordCloud.addWord", { defaultValue: "Wort hinzufügen" })}
+          </Button>
+        </form>
+      )}
+
       {displayedWords.length === 0 ? (
         <p
           className="text-center text-sm font-medium text-[var(--ink-muted)]"
