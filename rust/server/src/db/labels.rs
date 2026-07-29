@@ -191,38 +191,6 @@ pub async fn assign_labels(
     Ok(())
 }
 
-/// Fetch label IDs for a single entity (quiz, media, or catalog).
-pub async fn get_label_ids(
-    pool: &Option<PgPool>,
-    entity_type: &str,
-    entity_id: &str,
-) -> Vec<i64> {
-    let pool = match pool {
-        Some(p) => p,
-        None => return vec![],
-    };
-
-    let (table, col) = match entity_type {
-        "quizz" => ("quiz_labels", "quiz_id"),
-        "media" => ("media_labels", "media_id"),
-        "catalog" => ("catalog_labels", "catalog_id"),
-        _ => return vec![],
-    };
-
-    let query = format!("SELECT label_id FROM {} WHERE {} = $1 ORDER BY label_id ASC", table, col);
-
-    match sqlx::query_as::<_, (i64,)>(&query)
-        .bind(entity_id)
-        .fetch_all(pool)
-        .await
-    {
-        Ok(rows) => rows.into_iter().map(|(id,)| id).collect(),
-        Err(e) => {
-            eprintln!("Failed to fetch label_ids: {}", e);
-            vec![]
-        }
-    }
-}
 
 /// Carry labels from one quiz to another (on rename). Moves all labels from old_id to new_id,
 /// but ONLY if old_id is owned by the caller (IDOR hardening).
