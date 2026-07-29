@@ -2,24 +2,16 @@
 
 Razzoozle is a Kahoot-style live quiz game, a branded fork/twin of `rahoot`
 (same upstream, own repo — see `git remote -v`: `rahoot-upstream`). It is a
-pnpm monorepo (`packages/common`, `packages/socket`, `packages/web`,
-`packages/mcp`) **plus** a parallel Rust workspace (`rust/`, its own Cargo
-workspace with `engine`, `protocol`, `server` crates). Both stacks run as
-**two separate backends against ONE shared Postgres** (`razzoozle_postgres`):
-the Node/socket.io server is the default/production path, the Rust server is
-an opt-in preview reachable via a `/_rust/*` proxy route. `packages/mcp` is a
+pnpm monorepo (`packages/common`, `packages/web`, `packages/mcp`) **plus** a
+parallel Rust workspace (`rust/`, its own Cargo workspace with `engine`,
+`protocol`, `server` crates). The Rust server is the primary backend against
+ONE shared Postgres database (`razzoozle_postgres`). `packages/mcp` is a
 host-only dev tool, excluded from the pnpm workspace (see `pnpm-workspace.yaml`).
 
 ## Key Commands (run from `source/`)
 
 ```bash
-pnpm --filter @razzoozle/socket run types   # tsc --noEmit, the fast typecheck loop
-pnpm --filter @razzoozle/socket run test    # vitest run — suite is FULLY GREEN
-                                             # (555 passed / 0 failed / 6 skipped, since 2026-07-07).
-                                             # Any red test is YOUR regression: fix it or revert
-                                             # before merging. Skipped tests are DB-guarded
-                                             # (need DATABASE_URL).
-pnpm verify                                 # repo-wide: types + oxlint + tests (root package.json)
+pnpm verify                                 # repo-wide: tokens:gate + types + oxlint + tests (root package.json)
 pnpm g:console <Name>                       # Scaffold 100% token-compliant Admin Console component + test
 pnpm g:menu <Name>                          # Scaffold 100% token-compliant Admin Menu/Nav component + test
 pnpm g:question <Name>                      # Scaffold 100% token-compliant Quiz/Answer Tile component + test
@@ -45,24 +37,6 @@ docker build -f rust/Dockerfile -t razzoozle-rust:latest .   # MUST run from sou
 
 ## Architecture Map
 
-- **Node socket handlers** — `packages/socket/src/handlers/` (`game.ts`, `quizz.ts`,
-  `display.ts`, `ai.ts`, `media.ts`, `results.ts`, `catalog.ts`, `theme-*.ts`,
-  `submitMedia*.ts`, plus a `manager/` subfolder). This is where socket.io events
-  are wired to services.
-- **Round/game loop** — `packages/socket/src/services/game/round-manager.ts` is a
-  thin barrel; the actual logic lives split under
-  `packages/socket/src/services/game/round-manager/` (`scoring.ts`, `snapshot.ts`,
-  `auto-mode.ts`, `pause-resume.ts`, `round-recap.ts`, `achievement-awards.ts`,
-  `achievement-config.ts`). Same barrel+split pattern for
-  `packages/socket/src/services/config.ts` → `packages/socket/src/services/config/`
-  (`shared`, `game-config`, `achievements`, `quizz`, `theme`, `plugins`, `init`, ...).
-  When splitting a monolith further, follow this exact pattern: barrel file keeps
-  the public import path stable, submodules hold the SRP logic.
-- **Storage** — `packages/socket/src/services/storage/` picks a repository via the
-  `DATABASE_MODE` env var: unset/`file` → `FileSystemRepository` (writes
-  `config/*.json`), `dual` → `DualWriteRepository` (FS + Postgres), `pg`/`pg-only`
-  → `PostgresRepository`. Falls back to `file` with a warning if `DATABASE_URL` is
-  missing for a DB mode.
 - **Rust engine** — socket handlers in `rust/server/src/socket/` (`game.rs`,
   `player.rs`, `display.rs`, `results.rs`, `cooldown.rs`, `lifecycle.rs` for
   connect/disconnect/reconnect, plus a `manager/` subfolder mirroring the admin
@@ -106,13 +80,12 @@ Playwright: `browser_resize` auf jede Auflösung, dann Solo-Flow durchspielen
 - **Client-emitted vs. Rust-handled events must be cross-checked every time.**
   A client `socket.emit(...)` with no matching Rust handler hangs silently (no
   error, spinner never resolves) — this happened for real with `quizz:update`.
-  Before shipping a new client-emitted event, grep both
-  `packages/socket/src/handlers/` and `rust/server/src/socket/` for it.
-- **Container topology differs per backend.** Node runs via `docker compose`
-  (container `razzoozle`, prod port `:3011`). Rust runs as a hand-run container
-  (`docker run ... --restart unless-stopped`, prod port `:3012`), NOT part of
-  `compose.yml`. Caddy proxies `/_rust/*` (`handle_path`, prefix stripped) to
-  the Rust container and everything else to the Node container.
+  Before shipping a new client-emitted event, grep `rust/server/src/socket/` to
+  verify the Rust handler exists.
+- **Container topology.** Razzoozle runs in Kubernetes with a single Rust backend
+  container (`razzoozle-rust`). Caddy proxies WebSocket and REST API traffic to the
+  Rust server on `:3012`. The `docker compose` setup and Node.js backend
+  (`packages/socket`, deleted 2026-07-15) are no longer in use.
 
 ## Worker Rules
 
