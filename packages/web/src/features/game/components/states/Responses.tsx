@@ -17,6 +17,7 @@ import { motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
+import { WordCloudDisplay } from "@razzoozle/web/features/game/components/answers/WordCloudDisplay"
 
 interface Props {
   data: ManagerStatusDataMap["SHOW_RESPONSES"]
@@ -56,6 +57,8 @@ const Responses = ({
   const isFillBlank = type === "fill-blank"
   const isMatching = type === "matching"
   const isDropPin = type === "drop-pin"
+  const isWordCloud = type === "word-cloud"
+  const isBrainstorm = type === "brainstorm"
   const answerList = answers ?? []
   const solutionList = solutions ?? []
   const [percentages, setPercentages] = useState<Record<string, string>>({})
@@ -349,6 +352,43 @@ const Responses = ({
                 </motion.div>
               )}
           </motion.div>
+        ) : isWordCloud ? (
+          <motion.div
+            variants={reveal.container()}
+            initial="hidden"
+            animate="visible"
+          >
+            <WordCloudDisplay
+              words={
+                textResponses && Object.keys(textResponses).length > 0
+                  ? Object.entries(textResponses).map(([text, count]) => ({ text, count }))
+                  : []
+              }
+            />
+          </motion.div>
+        ) : isBrainstorm ? (
+          <motion.div
+            className="flex max-h-[40vh] flex-col gap-2 overflow-y-auto"
+            variants={reveal.container()}
+            initial="hidden"
+            animate="visible"
+          >
+            {Object.entries(textResponses ?? {})
+              .sort(([, a], [, b]) => b - a)
+              .map(([text, count]) => (
+                <motion.div
+                  key={text}
+                  variants={reveal.item()}
+                  transition={reveal.spring}
+                  className="flex items-center justify-between rounded-xl border border-[var(--border-hairline)] bg-white px-5 py-3 text-lg md:px-6 md:py-4 md:text-2xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
+                >
+                  <span className="font-semibold">{text}</span>
+                  <span className="ml-4 flex shrink-0 items-center gap-2 font-bold">
+                    {count}
+                  </span>
+                </motion.div>
+              ))}
+          </motion.div>
         ) : (
           <motion.div
             className={`mt-8 grid h-40 w-full max-w-3xl items-end gap-4 px-2 lg:h-[clamp(16rem,45vh,32rem)]`}
@@ -399,7 +439,9 @@ const Responses = ({
         !isWortarten &&
         !isFillBlank &&
         !isMatching &&
-        !isDropPin && (
+        !isDropPin &&
+        !isWordCloud &&
+        !isBrainstorm && (
           <div>
             <div className="mx-auto mb-4 grid w-full max-w-7xl grid-cols-2 gap-1 rounded-full px-2 text-lg font-bold md:text-xl lg:max-w-[85vw] lg:text-[clamp(1.25rem,3vh,2.5rem)]">
               {answerList.map((answer, key) => (
