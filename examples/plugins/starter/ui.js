@@ -35,7 +35,7 @@
         return p && p.id === PLUGIN_ID
       })
       return (self && self.config) || {}
-    } catch (e) {
+    } catch {
       return {}
     }
   }
@@ -46,7 +46,7 @@
       if (razzoozle.socket && typeof razzoozle.socket.emit === "function") {
         razzoozle.socket.emit(SET_CONFIG_EVENT, { id: PLUGIN_ID, config: patch })
       }
-    } catch (e) {
+    } catch {
       // Swallow: a failed save must not break the console.
     }
   }

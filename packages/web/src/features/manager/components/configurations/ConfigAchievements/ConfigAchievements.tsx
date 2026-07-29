@@ -20,7 +20,7 @@ import { ActionFooter } from "@razzoozle/web/components/ui"
 import Button from "@razzoozle/web/components/Button"
 import { Award, RotateCcw } from "lucide-react"
 import { AnimatePresence, useReducedMotion } from "motion/react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -42,7 +42,7 @@ const ConfigAchievements = () => {
   const reduced = useReducedMotion() ?? false
 
   // Build initial local state from server config or ACHIEVEMENTS_REGISTRY defaults
-  const buildInitial = (): LocalState => {
+  const buildInitial = useCallback((): LocalState => {
     const result = {} as LocalState
     for (const entry of ACHIEVEMENTS_REGISTRY) {
       const served = config.achievements?.find((a) => a.id === entry.id)
@@ -59,7 +59,7 @@ const ConfigAchievements = () => {
       }
     }
     return result
-  }
+  }, [config.achievements])
 
   /** Registry defaults — used by "Auf Standard zurücksetzen" */
   const buildDefaults = (): LocalState => {
@@ -83,13 +83,12 @@ const ConfigAchievements = () => {
   // Re-sync when server emits fresh config (emitConfig round-trip after save)
   useEffect(() => {
     setLocal(buildInitial())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.achievements])
+  }, [buildInitial])
 
   // Calculate isDirty: true if local state differs from server (buildInitial)
   const isDirty = useMemo(
     () => JSON.stringify(local) !== JSON.stringify(buildInitial()),
-    [local, config.achievements]
+    [local, buildInitial]
   )
 
   const handleChange = (id: AchievementId, patch: Partial<RowState>) => {

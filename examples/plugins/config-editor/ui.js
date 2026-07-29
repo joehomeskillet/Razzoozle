@@ -43,7 +43,7 @@
       })
       var value = mine && mine.config && mine.config.welcomeMessage
       return typeof value === "string" ? value : ""
-    } catch (err) {
+    } catch {
       return ""
     }
   }
@@ -119,7 +119,7 @@
           if (api && api.toast && typeof api.toast.success === "function") {
             api.toast.success("Config saved")
           }
-        } catch (err) {
+        } catch {
           var api2 = razzoozle.api
           if (api2 && api2.toast && typeof api2.toast.error === "function") {
             api2.toast.error("Failed to save config")

@@ -284,7 +284,7 @@ export const useSoloStore = create<SoloState>((set, get) => ({
         phase: "name",
         error: null,
       })
-    } catch (err) {
+    } catch {
       set({ phase: "idle", error: "errors:game.networkError" })
     }
   },
