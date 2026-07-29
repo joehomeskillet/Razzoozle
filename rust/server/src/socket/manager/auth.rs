@@ -1,7 +1,6 @@
 //! LOGOUT, RECONNECT — manager session handlers (DB-session-token auth only)
 
 use super::super::HandlerCtx;
-use super::config_helper;
 use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
