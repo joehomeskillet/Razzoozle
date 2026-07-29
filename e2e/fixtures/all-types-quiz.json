@@ -162,6 +162,13 @@
       ],
       "time": 15,
       "cooldown": 5
+    },
+    {
+      "type": "word-cloud",
+      "question": "Nenne ein Wort, das dir zum Sommer einfällt.",
+      "answers": ["Sonne", "Meer"],
+      "time": 20,
+      "cooldown": 5
     }
   ]
 }
