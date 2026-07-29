@@ -286,6 +286,9 @@ pub struct ShowResultData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub scoring_mode: Option<ScoringMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub text_responses: Option<HashMap<String, i32>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -533,6 +536,7 @@ mod tests {
             auto_advance_ms: None,
             round_recap: None,
             scoring_mode: None,
+            text_responses: None,
         }
     }
 

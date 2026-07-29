@@ -3,6 +3,7 @@ import { AnswerRevealPanel } from "@razzoozle/web/features/game/components/stage
 import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleCheck"
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
+import { WordCloudDisplay } from "@razzoozle/web/features/game/components/answers/WordCloudDisplay"
 import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
@@ -67,6 +68,7 @@ const Result = ({
     correctTokenPos,
     playerCount,
     roundRecap,
+    textResponses,
   },
 }: Props) => {
   const player = usePlayerStore()
@@ -482,6 +484,17 @@ const Result = ({
         visible={true}
         bonusPoints={bonusPoints}
       />
+      {textResponses && Object.keys(textResponses).length > 0 && (
+        <div className="mx-auto mt-[var(--game-space-4)] w-full max-w-3xl px-4">
+          <WordCloudDisplay
+            words={Object.entries(textResponses).map(([text, count]) => ({
+              text,
+              count,
+            }))}
+            disabled={true}
+          />
+        </div>
+      )}
       {showRoundRecap && <RoundRecapStrip awards={roundRecap ?? []} />}
     </section>
   )

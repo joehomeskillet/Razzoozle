@@ -734,9 +734,9 @@ impl GameState {
         Ok(ShowLeaderboardData {
             old_leaderboard: self.old_leaderboard.clone(),
             leaderboard,
+            round_recap: None,
             team_standings: None,
             auto_advance_ms: None,
-            round_recap: None,
         })
     }
 

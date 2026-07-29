@@ -42,6 +42,7 @@ impl RoundResult {
             auto_advance_ms: None,
             round_recap: None,
             scoring_mode: None,
+            text_responses: None,
         }
     }
 }
