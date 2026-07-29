@@ -15,7 +15,7 @@ debug = "line-tables-only"
 # opt-level = 3: Aggressive optimizations (O3)
 # lto = "thin": Fast link-time optimization (balances compile time vs size/speed)
 # codegen-units = 1: Better optimization across codegen units (slower compile, better codegen)
-# strip = "symbols": Strip symbol tables for smaller binary size (debuginfo retained in separate object)
+# strip = "symbols": Strip symbol tables for smaller binary size (production backtraces will lack symbols)
 [profile.release]
 opt-level = 3
 lto = "thin"
