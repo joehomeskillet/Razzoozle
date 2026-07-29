@@ -20,7 +20,7 @@
 
 ## What is Razzoozle?
 
-A self-hosted real-time quiz platform for classrooms and events. A host opens a game on screen, players join from phones with a PIN, and faster correct answers score more. It features 10 question types, team & solo modes, a manager cockpit for theming, gamification, class management, and local AI image generation.
+A self-hosted real-time quiz platform for classrooms and events. A host opens a game on screen, players join from phones with a PIN, and faster correct answers score more. It features 17 question types (Choice, Boolean, Slider, Poll, MultipleSelect, TypeAnswer, SentenceBuilder, Mathematik, Wortarten, Sequencing, FillBlank, Matching, DropPin, WordCloud, Brainstorm, Confidence, MicroLesson), team & solo modes, a manager cockpit for theming, gamification, class management, and local AI image generation.
 
 **Features:** [Live demo](https://rust.razzoozle.xyz) · [Full feature list](docs/README.md) · 592+ tests · Docker + Rust server
 
