@@ -54,13 +54,6 @@ pub const TEAMS: [&str; 4] = ["red", "blue", "green", "yellow"];
 // Game eviction: TTL for finished/stale games (milliseconds)
 pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
 
-// logged_clients cap + staleness TTL (same idiom as the RateLimiter maps
-// below: bound unbounded growth from distinct client IDs, pruning only once
-// the cap is exceeded). TTL is deliberately generous — far longer than any
-// realistic manager session — since pruning here (unlike the rate limiter)
-// would wrongly log out a still-active manager, not just reset a counter.
-pub const LOGGED_CLIENTS_MAX_ENTRIES: usize = 10_000;
-pub const LOGGED_CLIENT_STALE_MS: u64 = 6 * 60 * 60 * 1000; // 6 hours
 
 // ── Path-traversal protection ─────────────────────────────────────────────────
 // Validate asset IDs (quiz/result file names) to prevent path-traversal attacks
