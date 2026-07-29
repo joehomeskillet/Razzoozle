@@ -80,7 +80,13 @@ pub(crate) fn is_dev_mode() -> bool {
 }
 
 pub(crate) fn dev_api_key() -> Option<String> {
-    std::env::var("DEV_API_KEY").ok()
+    match crate::config::resolve_secret("DEV_API_KEY") {
+        Ok(val) => val,
+        Err(crate::config::SecretError::Conflict(v)) => {
+            panic!("Configuration error: {} and {}_FILE both set", v, v);
+        }
+        Err(_) => None,
+    }
 }
 
 fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {

@@ -1632,6 +1632,7 @@ dependencies = [
  "socketioxide",
  "sqlx",
  "subtle",
+ "tempfile",
  "tokio",
  "tower-http",
  "tracing",

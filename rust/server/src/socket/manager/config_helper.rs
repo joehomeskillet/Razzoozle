@@ -76,7 +76,13 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         dev_api_key: if dev_mode_on
             && user_opt.as_ref().map(|u| u.role == "admin").unwrap_or(false)
         {
-            std::env::var("DEV_API_KEY").ok()
+            match crate::config::resolve_secret("DEV_API_KEY") {
+                Ok(val) => val,
+                Err(crate::config::SecretError::Conflict(v)) => {
+                    panic!("Configuration error: {} and {}_FILE both set", v, v);
+                }
+                Err(_) => None,
+            }
         } else {
             None
         },
