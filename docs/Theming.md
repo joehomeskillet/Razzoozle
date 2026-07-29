@@ -3,22 +3,25 @@
 Razzoozle ships a manager-driven theming engine. Open `/manager` → the **Design** tab.
 
 ## What you can change
-- **Colours** — primary, secondary, accent, text, and the four answer-tile colours (kept colour-blind-safe).
-- **Backgrounds** — a separate image per view (auth / player / projector).
-- **Logo, app title, corner radius, background scrim.**
-- **Style: Flat ⇄ Glass** — a toggle between the flat baseline and the liquid-glass (frosted, blurred) variant.
+
+- **Colors** — primary, secondary, accent, text, and the four answer-tile colors (kept color-blind-safe). Plus game-specific tokens for teams, tiers, state (correct/wrong), rank (up/down), timer, streak, and footer.
+- **Backgrounds** — a separate image per view (auth / manager game / player game), each with a scrim overlay.
+- **Logo and app title.**
+- **Animated backgrounds** — backdrop type (cream, none), animation speed, intensity, and floating icon count.
+- **Animation timing** — spring stiffness, damping, duration scale, and stagger scale.
+- **Sounds** — custom audio for music tracks and event cues.
 
 Changes preview live and apply via CSS custom properties — the whole UI recolours, no rebuild.
 
-## Presets
-Two presets ship built-in:
-- **Razzoozle Violet** — the violet liquid-glass signature look.
-- **Flat Cream (default)** — the flat baseline.
+## Templates
 
-Save your own presets and restore previous versions from the revision history.
+Save your own theme templates and restore them at any time. Two example templates ship in the config:
 
-## Liquid glass
-The glass variant is opt-in (`style: "glass"`) and scoped so the flat theme renders identically to before. It adds frosted, blurred surfaces with graceful fallbacks for `@supports not (backdrop-filter)`, `prefers-reduced-transparency`, and `prefers-reduced-motion`.
+- **Violet preset** — vibrant purple and cyan.
+- **Südhang** — the flat purple default.
+
+Templates are stored as JSON files and can be imported, exported, and managed through the Design tab's template card.
 
 ## Local AI imagery
+
 With the AI provider set to **local ComfyUI** (Z-Image), generate question and theme imagery on-device — no external service, keys stay server-side. Generated images are stored as WebP under the media volume.
