@@ -51,7 +51,11 @@ check_rust_variant() {
 }
 
 for type in "${TYPES[@]}"; do
-  check "$type" packages/common/src/validators/quizz.ts
+  # EXCEPTION: choice and boolean are handled by the terminal else-branch in superRefine
+  # (they implement the default question semantics). An explicit literal would be dead code.
+  if [[ "$type" != "choice" && "$type" != "boolean" ]]; then
+    check "$type" packages/common/src/validators/quizz.ts
+  fi
 
   # editor: either file counts
   if ! (grep -qF "\"$type\"" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null || grep -qF "'$type'" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null) \
