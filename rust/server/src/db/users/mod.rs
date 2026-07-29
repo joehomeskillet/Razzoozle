@@ -240,6 +240,11 @@ pub async fn delete_session(pool: &PgPool, token: &str) -> Result<(), String> {
 /// the caller isn't logged out by their own request. When None, ALL sessions
 /// for the user are deleted (admin-initiated reset — every existing login
 /// should be forced out).
+// The current delete/deactivate paths inline this exact DELETE pattern
+// directly (see SEC-M1 comment below) instead of calling this wrapper.
+// Kept public+documented as the reusable primitive for future session-
+// revocation call sites — not dead code, only currently unreferenced.
+#[allow(dead_code)]
 pub async fn revoke_user_sessions(
     pool: &PgPool,
     user_id: i64,
@@ -330,6 +335,10 @@ pub async fn set_user_active(pool: &PgPool, user_id: i64, active: bool) -> Resul
 
 /// Count active admins (role='admin' AND active=true). Used by the
 /// last-admin delete guard so the final active admin can never be removed.
+// Only referenced from tests_users_delete.rs today (behind #[cfg(test)], so
+// invisible to the lib-target dead_code check) — the production guard logic
+// re-derives the count inline. Kept public as the canonical helper.
+#[allow(dead_code)]
 pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
     let result = sqlx::query_as::<_, (i64,)>(
         "SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = true",

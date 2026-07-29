@@ -67,18 +67,43 @@ LINES=$(find "$SRC" -name '*.rs' -exec cat {} + | wc -l)
 FLOOR=2400
 [[ "$LINES" -lt "$FLOOR" ]] && { say "NO-GO: total $SRC = $LINES lines (< floor $FLOOR) — mass deletion"; fail=1; } || say "ok: total $SRC = $LINES lines"
 
-# --- 4. advisory (NON-BLOCKING) rustfmt + clippy — report only, never fail -----
-# Informational only: it NEVER touches `fail`, so pre-existing clippy/format noise
-# cannot break CI. Runs only when the tools are present (rust-toolchain.toml adds
-# clippy+rustfmt on CI). Kept last so it can't mask a real gate failure above.
-say "--- advisory (non-blocking): rustfmt + clippy ---"
+# --- 4. rustfmt (BLOCKING) + clippy (BLOCKING via baseline ratchet) ----------
+say "--- formatting + linting ---"
+
+# 4a. rustfmt: any diff means the checked-in code no longer matches `cargo fmt
+# --all` output — block, same severity as a compile error.
 if command -v rustfmt >/dev/null 2>&1; then
-  if cargo fmt --all --check >/dev/null 2>&1; then say "advisory: rustfmt clean"
-  else say "advisory: rustfmt would reformat some files (not blocking)"; fi
+  if cargo fmt --all --check >/dev/null 2>&1; then say "ok: rustfmt clean"
+  else say "NO-GO: cargo fmt --all --check failed — run 'cargo fmt --all' to fix"; fail=1; fi
+else
+  say "warning: rustfmt not found (skip format check)"
 fi
+
+# 4b. clippy: count via PLAIN `cargo clippy --workspace --all-targets` (no
+# `-D warnings`) — measured 2026-07-29: 673 lines match '^warning|^error'.
+# `-D warnings` was considered and rejected: it promotes every lint to a hard
+# compiler error, so cargo aborts the FIRST crate that fails (razzoozle-engine,
+# 2 pre-existing deny-by-default lints) and never even reaches
+# razzoozle-server — the crate with almost all application logic — leaving
+# it completely unchecked (measured: only 2262/5973 output lines, i.e. <40%
+# of the plain run). Plain mode has no such cross-crate abort cascade, so its
+# count is the one with genuine full-workspace coverage; that is what a
+# regression gate needs to watch.
+# CLIPPY_BASELINE freezes today's pre-existing debt (post cargo-fmt run) —
+# the gate blocks on a REGRESSION (new findings) only, not on retroactively
+# cleaning up the whole codebase in one PR.
 if command -v cargo-clippy >/dev/null 2>&1; then
-  CLIPPY_N=$(cargo clippy --workspace --all-targets 2>&1 | grep -cE '^warning|^error')
-  say "advisory: clippy emitted $CLIPPY_N warning/error line(s) (not blocking)"
+  CLIPPY_OUT=$(cargo clippy --workspace --all-targets 2>&1)
+  CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -cE '^warning|^error')
+  CLIPPY_BASELINE=673
+  if [[ "$CLIPPY_N" -gt "$CLIPPY_BASELINE" ]]; then
+    say "NO-GO: clippy findings ($CLIPPY_N) exceed baseline ($CLIPPY_BASELINE) — new lint debt introduced"
+    fail=1
+  else
+    say "ok: clippy findings ($CLIPPY_N) within baseline ($CLIPPY_BASELINE)"
+  fi
+else
+  say "warning: cargo-clippy not found (skip clippy check)"
 fi
 
 # --- 5. locale JSON validity (BLOCKING) — every web locale namespace must parse.

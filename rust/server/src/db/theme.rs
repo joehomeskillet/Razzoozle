@@ -41,6 +41,9 @@ pub async fn get_themes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_jso
 
 /// Fetch the active theme (currently stored in a dedicated table or config).
 /// The 'active' row is never owner-scoped — always returns the global active theme.
+// No call site yet (callers currently go through get_themes()); kept public
+// as the single-theme accessor for an upcoming endpoint, not dead code.
+#[allow(dead_code)]
 pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
