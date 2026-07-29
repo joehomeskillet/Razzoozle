@@ -18,14 +18,12 @@ mod tests {
     use super::super::classes::BULK_MAX_IDS;
     use super::super::*;
     use sqlx::postgres::PgPoolOptions;
-    use std::sync::{Mutex, MutexGuard};
+    use tokio::sync::Mutex;
 
-    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::new(());
+    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::const_new(());
 
-    fn lock_db_isolation() -> MutexGuard<'static, ()> {
-        DB_ISOLATION_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    async fn lock_db_isolation() -> tokio::sync::MutexGuard<'static, ()> {
+        DB_ISOLATION_LOCK.lock().await
     }
 
     async fn get_test_pool() -> Option<sqlx::PgPool> {
@@ -95,7 +93,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_create_class_duplicate_name_scoped_per_owner() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner_a) = ready_or_skip!("test_cc_dupname");
         let owner_b = create_user(&pool, "test_cc_dupname_owner_b", "pass123", "user")
             .await
@@ -123,7 +121,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_get_class_hides_existence_from_non_owner() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_getclass");
         let class_id = create_class(&opt, "test_cc_getclass_class", owner)
             .await
@@ -149,7 +147,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_get_classes_owner_name_only_in_admin_view() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_ownername");
         create_class(&opt, "test_cc_ownername_class", owner)
             .await
@@ -185,7 +183,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_set_class_active_idempotent_and_owner_scoped() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_setactive");
         let class_id = create_class(&opt, "test_cc_setactive_class", owner)
             .await
@@ -222,7 +220,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_bulk_class_ops_empty_and_max_exceeded() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_bulkedge");
         let c1 = create_class(&opt, "test_cc_bulkedge_c1", owner)
             .await
@@ -267,7 +265,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_delete_class_cascades_junction_but_retains_student_row() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_delclass");
         let class_id = create_class(&opt, "test_cc_delclass_class", owner)
             .await
@@ -311,7 +309,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_update_class_duplicate_rejected_and_wrong_owner_noop() {
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
         let (pool, opt, owner) = ready_or_skip!("test_cc_updclass");
         create_class(&opt, "test_cc_updclass_taken", owner)
             .await
