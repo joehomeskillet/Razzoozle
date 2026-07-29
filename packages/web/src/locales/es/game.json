@@ -387,5 +387,17 @@
     "banner": "Práctica — la puntuación no cuenta",
     "finished": "Práctica terminada",
     "notRanked": "Sin ranking — solo práctica"
+  },
+  "wordCloud": {
+    "inputPlaceholder": "Ingresa un término...",
+    "addWord": "Agregar palabra",
+    "emptyHint": "Esperando respuestas de los jugadores...",
+    "wordAria": "{{text}} ({{count}} menciones)"
+  },
+  "brainstorm": {
+    "inputPlaceholder": "Comparte tu idea...",
+    "addIdea": "Agregar idea",
+    "emptyState": "Sin ideas aún. ¡Sé el primero!",
+    "upvoteAria": "Apoya la idea '{{text}}' ({{count}} votos)"
   }
 }

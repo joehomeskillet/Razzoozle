@@ -387,5 +387,17 @@
     "banner": "Practice run — score will not be ranked",
     "finished": "Practice complete",
     "notRanked": "Not ranked — practice only"
+  },
+  "wordCloud": {
+    "inputPlaceholder": "Enter a term...",
+    "addWord": "Add word",
+    "emptyHint": "Waiting for player responses...",
+    "wordAria": "{{text}} ({{count}} mentions)"
+  },
+  "brainstorm": {
+    "inputPlaceholder": "Share your idea...",
+    "addIdea": "Add idea",
+    "emptyState": "No ideas submitted yet. Be the first!",
+    "upvoteAria": "Support idea '{{text}}' ({{count}} votes)"
   }
 }
