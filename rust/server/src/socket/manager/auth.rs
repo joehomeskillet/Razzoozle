@@ -1,6 +1,7 @@
 //! LOGOUT, RECONNECT — manager session handlers (DB-session-token auth only)
 
 use super::super::HandlerCtx;
+use crate::state::socket_role;
 use super::config_helper;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
@@ -59,6 +60,15 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+
+                // Claim Manager role — observe only, don't reject on conflict
+                let socket_id = socket.id.to_string();
+                if let Err(held_role) = socket_role::try_claim(&socket_id, socket_role::VerifiedRole::Manager) {
+                    tracing::warn!(
+                        "manager role conflict: socketId={} held_role={:?} requested=Manager",
+                        socket_id, held_role
+                    );
+                }
 
                 let game_id_opt = payload
                     .get("gameId")
