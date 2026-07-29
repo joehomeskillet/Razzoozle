@@ -7,6 +7,7 @@ mod http;
 mod db;
 mod cli;
 mod config;
+mod migrate;
 
 use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::MatchMode;
@@ -476,8 +477,8 @@ async fn main() {
                 std::process::exit(exit_code);
             }
             cli::Command::Migrate => {
-                eprintln!("migrate: not yet implemented (see DCK-05)");
-                std::process::exit(1);
+                let exit_code = migrate::execute_migrate().await;
+                std::process::exit(exit_code);
             }
         },
         Err(cli::ParseError::UnknownArgument(arg)) => {
