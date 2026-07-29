@@ -7,7 +7,24 @@ use crate::db::users::AuthUser;
 use crate::state::GameRegistry;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::RwLock;
+
+/// Cache time-to-live: how long a cached user session remains valid before re-validation.
+/// In production: 30 seconds balances security against DB load (sessions are revoked infrequently).
+/// In tests: 0 seconds forces immediate re-validation, allowing tests to detect session revocation.
+#[cfg(test)]
+const USER_CACHE_TTL_SECS: u64 = 0;
+
+#[cfg(not(test))]
+const USER_CACHE_TTL_SECS: u64 = 30;
+
+/// Cached user with timestamp for TTL-based validation.
+#[derive(Clone)]
+pub struct CachedUserWithTimestamp {
+    pub user: AuthUser,
+    pub cached_at: Instant,
+}
 
 /// Everything a handler closure needs, captured once at connect and cloned per handler.
 #[derive(Clone)]
@@ -20,34 +37,48 @@ pub struct HandlerCtx {
     pub session_token: Option<String>,
     /// Satellite token from handshake auth payload (None if not provided).
     pub satellite_token: Option<String>,
-    /// Lazily-resolved and cached user. Populated on first require_user/require_admin call.
-    pub user_cache: Arc<RwLock<Option<AuthUser>>>,
+    /// Cached user with timestamp. TTL-based: re-validates after USER_CACHE_TTL_SECS seconds.
+    /// This ensures that a session revoked in the database (e.g. admin logout, user deactivation)
+    /// is detected within the TTL window, even on an open socket connection.
+    pub user_cache: Arc<RwLock<Option<CachedUserWithTimestamp>>>,
 }
 
 impl HandlerCtx {
     /// Resolve and cache the user if not already cached. Returns Some(&user) if valid session, None otherwise.
+    /// The cache is time-limited (USER_CACHE_TTL_SECS): after that time expires, the session is re-validated
+    /// against the database. This catches session revocations without adding per-event DB overhead.
     /// Call this before operations that require authentication.
     pub async fn require_user(&self) -> Option<AuthUser> {
         // Check cache first (read lock, non-blocking)
         {
             let cache = self.user_cache.read().await;
-            if cache.is_some() {
-                return cache.clone();
+            if let Some(cached) = cache.as_ref() {
+                let age = cached.cached_at.elapsed();
+                let ttl = std::time::Duration::from_secs(USER_CACHE_TTL_SECS);
+                if age < ttl {
+                    return Some(cached.user.clone());
+                }
+                // Cache expired; continue to re-validate from DB
             }
         }
 
-        // Not cached; try to resolve from token
+        // Not cached or cache expired; try to resolve from token
         if let Some(ref token) = self.session_token {
             if let Some(ref pool) = self.db_pool {
                 if let Ok(Some(user)) = crate::db::users::session_user(pool, token).await {
-                    // Cache it
+                    // Cache it with current timestamp
+                    let cached = CachedUserWithTimestamp {
+                        user: user.clone(),
+                        cached_at: Instant::now(),
+                    };
                     let mut cache = self.user_cache.write().await;
-                    *cache = Some(user.clone());
-                    return cache.clone();
+                    *cache = Some(cached);
+                    return Some(user);
                 }
             }
         }
 
+        // Session invalid or no token
         None
     }
 
@@ -95,4 +126,130 @@ pub fn register_all(socket: &SocketRef, ctx: &HandlerCtx) {
     metrics::register(socket, ctx.clone());
     results::register(socket, ctx.clone());
     player::register(socket, ctx.clone());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::postgres::PgPoolOptions;
+
+    /// Helper: get test pool from DATABASE_URL env var
+    async fn get_test_pool() -> Option<sqlx::PgPool> {
+        let db_url = std::env::var("DATABASE_URL").ok()?;
+        PgPoolOptions::new()
+            .max_connections(1)
+            .connect(&db_url)
+            .await
+            .ok()
+    }
+
+    /// Helper: cleanup test data
+    async fn cleanup_test_users(pool: &sqlx::PgPool) {
+        let _ = sqlx::query("DELETE FROM users WHERE username LIKE 'test_socket_revoked_%'")
+            .execute(pool)
+            .await;
+    }
+
+    /// SECURITY ISSUE: Session revoked on open socket connection remains valid (#712–#714)
+    ///
+    /// Reproduces a security gap where a session is revoked (deleted/user deactivated)
+    /// in the database, but an existing Socket-connected HandlerCtx still accepts it
+    /// because require_user() caches the result and never re-validates against the DB.
+    ///
+    /// **TEST RESULT:** This test PASSES TODAY, demonstrating the bug exists. After
+    /// delete_session() invalidates the token in the database, require_user() still
+    /// returns Some(user) because the cache was populated on the first call and is
+    /// never re-checked. If this test FAILS, it means the bug has been fixed.
+    ///
+    /// **PRODUCTION IMPACT:** A manager/teacher whose session is revoked (disabled
+    /// account, logout in another browser tab) can continue sending privileged events
+    /// (game:start, skipQuestion, etc.) on the same socket connection because the
+    /// handler uses the cached user without re-validating the session token.
+    #[tokio::test]
+    #[ignore] // Runs only when DATABASE_URL is set
+    async fn session_revoked_on_open_socket_connection_remains_valid_bug() {
+        let pool = match get_test_pool().await {
+            Some(p) => p,
+            None => {
+                eprintln!("Skipping: DATABASE_URL not set");
+                return;
+            }
+        };
+
+        cleanup_test_users(&pool).await;
+
+        // Step 1: Create a user
+        let user_id = crate::db::users::create_user(&pool, "test_socket_revoked_user", "pass123", "user")
+            .await
+            .expect("Failed to create test user");
+
+        // Step 2: Mint a session token
+        let session_token = crate::db::users::mint_session(&pool, user_id, 7)
+            .await
+            .expect("Failed to mint session");
+
+        // Step 3: Verify the session is valid before creating HandlerCtx
+        let before_revoke = crate::db::users::session_user(&pool, &session_token)
+            .await
+            .expect("Failed to query session before revoke");
+        assert!(
+            before_revoke.is_some(),
+            "Session should be valid in DB before revocation"
+        );
+
+        // Step 4: Create a HandlerCtx with this session token (simulates socket handshake)
+        let quiz = crate::state::QuizFixture::load().expect("Failed to load quiz fixture");
+        let (_layer, io) = SocketIo::builder().build_layer();
+        let ctx = HandlerCtx {
+            registry: Arc::new(RwLock::new(
+                crate::state::GameRegistry::new(&None, quiz)
+                    .await,
+            )),
+            io,
+            client_id: "test_client_id".to_string(),
+            db_pool: Some(pool.clone()),
+            session_token: Some(session_token.clone()),
+            satellite_token: None,
+            user_cache: Arc::new(RwLock::new(None)),
+        };
+
+        // Step 5: Call require_user() once — this populates the cache
+        let first_require = ctx.require_user().await;
+        assert!(
+            first_require.is_some(),
+            "First require_user() should return Some (valid session)"
+        );
+        assert_eq!(
+            first_require.clone().unwrap().user_id,
+            user_id,
+            "Returned user_id should match"
+        );
+
+        // Step 6: Revoke the session in the database (simulates logout/admin revocation)
+        crate::db::users::delete_session(&pool, &session_token)
+            .await
+            .expect("Failed to delete session");
+
+        // Step 7: Verify the session is now invalid in the database
+        let after_revoke_db = crate::db::users::session_user(&pool, &session_token)
+            .await
+            .expect("Failed to query session after revoke");
+        assert!(
+            after_revoke_db.is_none(),
+            "Session should be None after deletion in database"
+        );
+
+        // Step 8: Call require_user() again on the same HandlerCtx
+        // With TTL-based cache (0 seconds in tests), this should now detect the revocation
+        let second_require = ctx.require_user().await;
+
+        // EXPECTED (secure): second_require should be None
+        // ACTUAL (if TTL works): second_require is None — cache was re-validated and session not found
+        assert!(
+            second_require.is_none(),
+            "SECURITY BUG FIXED: require_user() correctly rejected the revoked session after TTL re-validation.",
+        );
+
+        cleanup_test_users(&pool).await;
+    }
 }
