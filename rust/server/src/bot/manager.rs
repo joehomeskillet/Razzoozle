@@ -124,34 +124,13 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
             (None, None, Some(pick_slots(question)))
         }
         Some(QuestionType::DropPin) => (None, None, Some(pick_drop_pin(question))),
-        Some(QuestionType::Mathematik) => {
-            warn!("Bot answering unsupported question type: Mathematik");
-            (None, None, None)
-        }
-        Some(QuestionType::Wortarten) => {
-            warn!("Bot answering unsupported question type: Wortarten");
-            (None, None, None)
-        }
-        Some(QuestionType::WordCloud) => {
-            warn!("Bot answering unsupported question type: WordCloud");
-            (None, None, None)
-        }
-        Some(QuestionType::Brainstorm) => {
-            warn!("Bot answering unsupported question type: Brainstorm");
-            (None, None, None)
-        }
-        Some(QuestionType::Confidence) => {
-            warn!("Bot answering unsupported question type: Confidence");
-            (None, None, None)
-        }
-        Some(QuestionType::MicroLesson) => {
-            warn!("Bot answering unsupported question type: MicroLesson");
-            (None, None, None)
-        }
-        None => {
-            warn!("Bot answering question with no type");
-            (None, None, None)
-        }
+        Some(QuestionType::Mathematik) => (None, None, None),
+        Some(QuestionType::Wortarten) => (None, None, None),
+        Some(QuestionType::WordCloud) => (None, None, None),
+        Some(QuestionType::Brainstorm) => (None, None, None),
+        Some(QuestionType::Confidence) => (None, None, None),
+        Some(QuestionType::MicroLesson) => (None, None, None),
+        None => (None, None, None),
     }
 }
 
