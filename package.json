@@ -14,6 +14,7 @@
     "format": "pnpm -r --parallel run format",
     "format:fix": "pnpm -r --parallel run format:fix",
     "e2e": "playwright test --config e2e/playwright.config.ts",
+    "ci:policy": "node scripts/check-ci-policy.mjs",
     "i18n:check": "i18n-check -l packages/web/src/locales -s de -f i18next",
     "i18n:report": "i18n-check -l packages/web/src/locales -s de -f i18next -o unused,undefined -u packages/web/src",
     "tokens:build": "node scripts/build-tokens.mjs",
