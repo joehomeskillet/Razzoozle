@@ -3,7 +3,7 @@
 //! Node actually sends to PLAYERS on FINISHED (game-recap.ts's `perPlayer`),
 //! distinct from the manager's full superlatives list.
 
-use crate::state::{GameState, QuestionStat, RecapStat};
+use crate::state::{GameState, RecapStat};
 use razzoozle_protocol::results_display::{
     HardestQuestion, ManagerRecap, MyRecap, PlayerRecap, RecapHighlight, Superlative,
     SuperlativeKey,

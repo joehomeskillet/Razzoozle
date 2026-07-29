@@ -489,9 +489,7 @@ mod tests {
     use crate::state::{safe_asset_id, GameRegistry};
     use axum::extract::State;
     use axum::http::{HeaderMap, StatusCode};
-    use serde_json::json;
     use socketioxide::SocketIo;
-    use std::fs;
     use std::sync::Arc;
     use tokio::sync::RwLock;
 

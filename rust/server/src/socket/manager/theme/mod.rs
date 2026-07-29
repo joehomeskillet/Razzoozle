@@ -17,7 +17,6 @@ use uploads::{register_upload_background, register_upload_sound};
 
 use super::super::HandlerCtx;
 use super::public;
-use razzoozle_protocol::theme::ThemeRevision;
 use socketioxide::extract::SocketRef;
 
 /// Simple base64 decoder (no external dependency)

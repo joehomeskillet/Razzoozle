@@ -4,7 +4,6 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
-use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const SCOREBOARD_THROTTLE_MS: u64 = 100;

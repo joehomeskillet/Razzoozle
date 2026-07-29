@@ -4,7 +4,6 @@ use super::super::validation;
 use super::super::HandlerCtx;
 use crate::db;
 use crate::http::RATE_LIMITER;
-use crate::state;
 use lazy_static::lazy_static;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::manager::SubmissionCategory;
