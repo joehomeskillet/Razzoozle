@@ -2,6 +2,7 @@
 //! Lists currently running games with summary info (id, pin, quiz subject, player count, phase, etc.)
 
 use super::super::HandlerCtx;
+use super::super::socket_role;
 use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
@@ -53,6 +54,15 @@ fn register_list_games(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
+
+                // Claim Manager role — observe only, don't reject on conflict
+                let socket_id = socket.id.to_string();
+                if let Err(held_role) = socket_role::try_claim(&socket_id, socket_role::VerifiedRole::Manager) {
+                    warn!(
+                        "manager role conflict: socketId={} held_role={:?} requested=Manager",
+                        socket_id, held_role
+                    );
+                }
 
                 // Read the registry and build a list of game summaries
                 let summaries = {
