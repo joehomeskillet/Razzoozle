@@ -37,6 +37,11 @@
     "g:player": "node scripts/generate-component.mjs --domain player",
     "g:menu": "node scripts/generate-component.mjs --domain menu"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.18"
+    }
+  },
   "devDependencies": {
     "@lingual/i18n-check": "0.9.5",
     "@playwright/test": "^1.61.1",
