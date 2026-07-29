@@ -56,7 +56,7 @@ export function WordCloudDisplay({
           className="flex w-full items-center gap-3"
           data-testid={`${testIdPrefix}word-cloud-form`}
         >
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Input
               type="text"
               value={newWord}
