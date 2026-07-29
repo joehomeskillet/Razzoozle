@@ -98,15 +98,30 @@ impl QuestionType {
     /// Returns true if this question type does not award points or affect scores.
     /// Unscored types: Poll, WordCloud, Brainstorm, Confidence, MicroLesson.
     /// All other types are scored and contribute to player rankings.
+    /// 
+    /// EXHAUSTIVE MATCH: Every QuestionType variant is explicitly listed.
+    /// When a new variant is added, the compiler will error until this function
+    /// is updated. This enforces a conscious decision about scoring for new types.
     pub fn is_unscored(&self) -> bool {
-        matches!(
-            self,
-            QuestionType::Poll
-                | QuestionType::WordCloud
-                | QuestionType::Brainstorm
-                | QuestionType::Confidence
-                | QuestionType::MicroLesson
-        )
+        match self {
+            QuestionType::Poll => true,
+            QuestionType::WordCloud => true,
+            QuestionType::Brainstorm => true,
+            QuestionType::Confidence => true,
+            QuestionType::MicroLesson => true,
+            QuestionType::Choice => false,
+            QuestionType::Boolean => false,
+            QuestionType::Slider => false,
+            QuestionType::MultipleSelect => false,
+            QuestionType::TypeAnswer => false,
+            QuestionType::SentenceBuilder => false,
+            QuestionType::Mathematik => false,
+            QuestionType::Wortarten => false,
+            QuestionType::Sequencing => false,
+            QuestionType::FillBlank => false,
+            QuestionType::Matching => false,
+            QuestionType::DropPin => false,
+        }
     }
 }
 

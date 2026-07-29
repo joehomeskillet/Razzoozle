@@ -212,7 +212,6 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     let question = game.engine.current_question();
     let is_slider = matches!(question.r#type.as_ref(), Some(QuestionType::Slider));
     let is_type_answer = matches!(question.r#type.as_ref(), Some(QuestionType::TypeAnswer));
-    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
     let is_practice = question.practice == Some(true);
     let is_sentence_builder = matches!(
         question.r#type.as_ref(),
