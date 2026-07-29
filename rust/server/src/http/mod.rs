@@ -407,3 +407,87 @@ mod tests_health {
         assert_eq!(msg, "ok");
     }
 }
+
+#[cfg(test)]
+mod tests_security_headers {
+    /// Documentation test: Identifies missing security headers on HTML/SPA/static responses.
+    /// This test demonstrates which production functions need security header fixes.
+    #[test]
+    fn test_missing_security_headers_audit() {
+        // ISSUE: #709, #710, #711
+        // Security headers are missing from HTML and static file responses.
+        //
+        // The following handlers deliver HTML or static content but lack security headers:
+        //
+        // 1. handle_root() - serves SPA homepage (/) 
+        //    File: rust/server/src/http/static_files.rs:157
+        //    Calls: serve_static_file() which returns only Content-Type + Content-Length
+        //    Missing: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+        //
+        // 2. handle_spa_fallback() - serves index.html for unknown routes
+        //    File: rust/server/src/http/static_files.rs:170
+        //    Calls: serve_static_file() which returns only Content-Type + Content-Length
+        //    Missing: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+        //
+        // 3. handle_assets() - serves versioned assets (/assets/*)
+        //    File: rust/server/src/http/static_files.rs:198
+        //    Calls: serve_static_file() which returns only Content-Type + Content-Length
+        //    Missing: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+        //
+        // 4. handle_spa_static() - serves /sw.js, /registerSW.js, /manifest.webmanifest
+        //    File: rust/server/src/http/static_files.rs:217
+        //    Calls: serve_static_file() which returns only Content-Type + Content-Length
+        //    Missing: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+        //
+        // 5. handle_media_asset() - serves user-uploaded media (/media/*)
+        //    File: rust/server/src/http/static_files.rs:232
+        //    Calls: serve_static_file() which returns only Content-Type + Content-Length
+        //    Missing: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+        //
+        // ─────────────────────────────────────────────────────────────────
+        // RECOMMENDED SECURITY HEADERS (RFC 9110, OWASP):
+        // ─────────────────────────────────────────────────────────────────
+        //
+        // X-Content-Type-Options: nosniff
+        //   Prevents MIME-type sniffing attacks. Ensures browsers respect the
+        //   Content-Type header and don't guess file types.
+        //   Risk if missing: XSS via polyglot files (e.g., image pretending to be HTML)
+        //
+        // X-Frame-Options: DENY (or SAMEORIGIN if iframe needed)
+        //   Prevents clickjacking attacks by blocking the page from being embedded
+        //   in iframes on other origins.
+        //   Risk if missing: Attacker can overlay UI over the game interface
+        //
+        // Referrer-Policy: strict-origin-when-cross-origin
+        //   Controls when the Referer header is sent to other sites.
+        //   strict-origin-when-cross-origin: Sends only origin on cross-site requests.
+        //   Risk if missing: Referrer URLs leak sensitive query parameters to external sites
+        //
+        // ─────────────────────────────────────────────────────────────────
+        // IMPLEMENTATION STRATEGY:
+        // ─────────────────────────────────────────────────────────────────
+        // Option A (Recommended): Middleware layer in router()
+        //   - Add a tower-http SetResponseHeader middleware
+        //   - Wrap all routes to set headers on every response
+        //   - Cleanest, most maintainable approach
+        //
+        // Option B: Per-handler
+        //   - Modify handle_root(), handle_spa_fallback(), handle_assets(), etc.
+        //   - Each returns response with headers inserted
+        //   - More tedious, but keeps changes localized
+        //
+        // Option C: Modify serve_static_file()
+        //   - Make serve_static_file() public and add headers there
+        //   - All handlers automatically get headers
+        //   - Risk: API change, test visibility
+        //
+        panic!(
+            "TEST ALERT: Missing security headers on HTML/SPA/static responses.\n\
+            Required headers:\n\
+            - X-Content-Type-Options: nosniff\n\
+            - X-Frame-Options: DENY (or SAMEORIGIN)\n\
+            - Referrer-Policy: strict-origin-when-cross-origin\n\
+            See test comments for affected handlers and implementation recommendations."
+        );
+    }
+}
