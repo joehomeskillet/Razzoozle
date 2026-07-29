@@ -79,7 +79,11 @@ const PracticePage = () => {
       )}
       {(phase === "question" || phase === "answering" || phase === "result") &&
         questions[currentIndex] && (
-          <SoloAnswers question={questions[currentIndex]!} quizzId={id} />
+          <SoloAnswers
+            key={currentIndex}
+            question={questions[currentIndex]!}
+            quizzId={id}
+          />
         )}
       {phase === "finished" && (
         <div

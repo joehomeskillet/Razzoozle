@@ -367,7 +367,11 @@ const AssignmentPlayPage = () => {
         )}
 
         {(phase === "answering" || phase === "result") && (
-          <SoloAnswers quizzId={id} question={currentQuestion} />
+          <SoloAnswers
+            key={currentIndex}
+            quizzId={id}
+            question={currentQuestion}
+          />
         )}
 
         {phase === "result" && autoAdvance && <SoloResultAutoAdvance />}

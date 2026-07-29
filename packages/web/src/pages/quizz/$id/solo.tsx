@@ -197,7 +197,11 @@ const SoloPlayPage = () => {
         )}
 
         {(phase === "answering" || phase === "result") && (
-          <SoloAnswers quizzId={id} question={currentQuestion} />
+          <SoloAnswers
+            key={currentIndex}
+            quizzId={id}
+            question={currentQuestion}
+          />
         )}
 
         {/* RESULT auto-advance: mounts only while the player has auto-advance ON,
