@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js & pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 9
+          version: 11.5.1
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -42,7 +42,7 @@ jobs:
         run: pnpm -r run types && oxlint && pnpm -r --if-present run test
 
       - name: Commit Auto-Fixed Tokens & Specs if Changed
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main'
         run: |
           git config user.name "razzoozle-bot[bot]"
           git config user.email "bot@razzoozle.local"
