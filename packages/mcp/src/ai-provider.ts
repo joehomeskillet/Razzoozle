@@ -29,6 +29,16 @@ const SECRET_PATTERNS = [/sk-/iu, /AKIA/u, /BEGIN PRIVATE KEY/iu]
 
 const REQUEST_TIMEOUT_MS = 60_000
 
+// Convert primitive values to strings, fallback for objects/null/undefined.
+// This preserves legitimate primitives (numbers, booleans) from the model,
+// while rejecting objects that would stringify to "[object Object]".
+const toPrimitiveString = (value: unknown, fallback: string): string => {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return fallback
+}
+
 const containsSecret = (s: string): boolean =>
   SECRET_PATTERNS.some((re) => re.test(s))
 
@@ -384,8 +394,8 @@ function mapLlmToQuestion(
     case "sequencing": {
       const items = Array.isArray(parsed.items)
         ? (parsed.items as Array<Record<string, unknown>>).map((it, i) => ({
-            id: typeof it.id === 'string' ? it.id : `item-${i}`,
-            label: typeof it.label === 'string' ? it.label : (typeof it.id === 'string' ? it.id : `Item ${i + 1}`),
+            id: toPrimitiveString(it.id, `item-${i}`),
+            label: toPrimitiveString(it.label, toPrimitiveString(it.id, `Item ${i + 1}`)),
           }))
         : [
             { id: "a", label: "First" },
@@ -403,7 +413,7 @@ function mapLlmToQuestion(
         typeof parsed.decimals === "number" ? parsed.decimals : 2
       break
     case "wortarten":
-      built.sentence = typeof parsed.sentence === 'string' ? parsed.sentence : ''
+      built.sentence = toPrimitiveString(parsed.sentence, '')
       built.tokens = Array.isArray(parsed.tokens)
         ? (parsed.tokens as unknown[]).map(String)
         : []
