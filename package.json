@@ -8,9 +8,9 @@
     "build": "pnpm -r run build",
     "start": "pnpm -r --parallel run start",
     "clean": "pnpm -r exec rm -rf dist node_modules",
-    "lint": "pnpm -r --parallel run types && oxlint",
+    "lint": "pnpm -r --parallel run types && pnpm exec oxlint",
     "test": "pnpm -r --if-present run test",
-    "verify": "pnpm tokens:gate && pnpm -r run types && oxlint && pnpm -r --if-present run test",
+    "verify": "pnpm tokens:gate && pnpm -r run types && pnpm exec oxlint && pnpm -r --if-present run test",
     "format": "pnpm -r --parallel run format",
     "format:fix": "pnpm -r --parallel run format:fix",
     "e2e": "playwright test --config e2e/playwright.config.ts",
@@ -36,11 +36,6 @@
     "g:display": "node scripts/generate-component.mjs --domain display",
     "g:player": "node scripts/generate-component.mjs --domain player",
     "g:menu": "node scripts/generate-component.mjs --domain menu"
-  },
-  "pnpm": {
-    "overrides": {
-      "postcss": ">=8.5.18"
-    }
   },
   "devDependencies": {
     "@lingual/i18n-check": "0.9.5",

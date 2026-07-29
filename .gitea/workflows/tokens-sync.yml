@@ -40,7 +40,7 @@ jobs:
         run: pnpm tokens:gate:fix
 
       - name: Run Workspace Verification (types + lint + tests)
-        run: pnpm -r run types && oxlint && pnpm -r --if-present run test
+        run: pnpm -r run types && pnpm exec oxlint && pnpm -r --if-present run test
 
       - name: Commit Auto-Fixed Tokens & Specs if Changed
         if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main'

@@ -9,9 +9,7 @@ packages:
 # Force postcss (transitive via vite/@tailwindcss/vite) to a patched release.
 # 8.5.16 is vulnerable to GHSA-r28c-9q8g-f8xx; fix is >=8.5.18. vite's own range
 # (^8.5.16) already permits the fix, but pnpm keeps the locked resolution
-# stable across installs — only an explicit override bumps a pure transitive
-# dep. Kept in package.json's pnpm.overrides too for the CI runner (pinned to
-# pnpm 9, which predates workspace-level overrides and only reads package.json).
+# stable across installs — only an explicit override bumps a pure transitive dep.
 overrides:
   postcss: ">=8.5.18"
 

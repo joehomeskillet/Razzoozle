@@ -43,7 +43,7 @@ jobs:
         run: pnpm tokens:gate:fix
 
       - name: Run Workspace Verification (types + lint + tests)
-        run: pnpm -r run types && oxlint && pnpm -r --if-present run test
+        run: pnpm -r run types && pnpm exec oxlint && pnpm -r --if-present run test
 
       - name: Verify No Untracked Generated Changes
         run: |
