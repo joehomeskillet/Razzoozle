@@ -9,7 +9,6 @@ use socketioxide::extract::{Data, SocketRef};
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_logout(socket, ctx.clone());
     register_reconnect(socket, ctx.clone());
-    register_disconnect(socket, ctx.clone());
 }
 
 fn register_logout(socket: &SocketRef, ctx: HandlerCtx) {
@@ -180,17 +179,5 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     .ok();
             });
         }
-    });
-}
-
-fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
-    let socket_id = socket.id.to_string();
-
-    socket.on_disconnect(move |_socket: SocketRef| {
-        let socket_id = socket_id.clone();
-
-        tokio::spawn(async move {
-            socket_role::release(&socket_id);
-        });
     });
 }
