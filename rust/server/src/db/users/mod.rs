@@ -887,17 +887,28 @@ pub async fn bootstrap_admin(pool: &PgPool) {
     match count_users(pool).await {
         Ok(count) => {
             if count == 0 {
-                if let (Ok(username), Ok(password)) = (
-                    std::env::var("BOOTSTRAP_ADMIN_USER"),
-                    std::env::var("BOOTSTRAP_ADMIN_PASSWORD"),
-                ) {
-                    match create_user(pool, &username, &password, "admin").await {
-                        Ok(user_id) => {
-                            info!("Bootstrap admin user created: id={}, username={}", user_id, username);
+                match (std::env::var("BOOTSTRAP_ADMIN_USER"), crate::config::resolve_secret("BOOTSTRAP_ADMIN_PASSWORD")) {
+                    (Ok(username), Ok(Some(password))) => {
+                        match create_user(pool, &username, &password, "admin").await {
+                            Ok(user_id) => {
+                                info!("Bootstrap admin user created: id={}, username={}", user_id, username);
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to create bootstrap admin user: {}", e);
+                            }
                         }
-                        Err(e) => {
-                            eprintln!("Failed to create bootstrap admin user: {}", e);
-                        }
+                    }
+                    (Ok(_), Ok(None)) => {
+                        // BOOTSTRAP_ADMIN_PASSWORD not set, skip bootstrap
+                    }
+                    (Ok(_), Err(crate::config::SecretError::Conflict(v))) => {
+                        panic!("Configuration error: {} and {}_FILE both set", v, v);
+                    }
+                    (Ok(_), Err(e)) => {
+                        eprintln!("Warning resolving BOOTSTRAP_ADMIN_PASSWORD: {}", e);
+                    }
+                    (Err(_), _) => {
+                        // BOOTSTRAP_ADMIN_USER not set, skip bootstrap
                     }
                 }
             }

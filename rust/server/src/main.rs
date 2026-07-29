@@ -6,6 +6,7 @@ mod media_ai;
 mod http;
 mod db;
 mod cli;
+mod config;
 
 use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::MatchMode;

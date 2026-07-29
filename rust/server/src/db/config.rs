@@ -3,11 +3,21 @@ use std::fs;
 use std::path::Path;
 use crate::socket::manager::theme::decode_base64;
 use crate::socket::manager::plugins::is_generic_safe_id;
+use crate::config::resolve_secret;
 
 pub async fn create_pool() -> Option<PgPool> {
-    match std::env::var("DATABASE_URL") {
-        Ok(url) => Some(sqlx::PgPool::connect(&url).await.expect("Failed to connect to DATABASE_URL")),
-        Err(_) => None,
+    match resolve_secret("DATABASE_URL") {
+        Ok(Some(url)) => {
+            Some(sqlx::PgPool::connect(&url).await.expect("Failed to connect to DATABASE_URL"))
+        }
+        Ok(None) => None,
+        Err(crate::config::SecretError::Conflict(v)) => {
+            panic!("Configuration error: {} and {}_FILE both set", v, v);
+        }
+        Err(e) => {
+            eprintln!("Warning resolving DATABASE_URL: {}", e);
+            None
+        }
     }
 }
 
