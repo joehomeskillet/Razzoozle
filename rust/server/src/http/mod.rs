@@ -205,6 +205,15 @@ pub async fn handle_readyz(State(state): State<AppState>) -> Result<Json<Readine
         None
     };
 
+    // DCK-05: Check if all migrations have been applied (if DB is configured).
+    if let Some(ref pool) = state.db_pool {
+        if let Err(e) = crate::migrate::check_migrations_applied(pool).await {
+            tracing::warn!("readyz: migrations not fully applied: {}", e);
+            // Migrations incomplete: return 503 Service Unavailable
+            return Err(StatusCode::SERVICE_UNAVAILABLE);
+        }
+    }
+
     Ok(Json(ReadinessResponse {
         status: "ready".to_string(),
         timestamp,
