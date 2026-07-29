@@ -1,0 +1,56 @@
+{
+  "id": "tpl-deutsch-wortarten",
+  "category": "deutsch",
+  "name": "Wortarten bestimmen",
+  "description": "Identifiziere die Wortarten in Sätzen",
+  "tags": [
+    "grammatik",
+    "deutsch"
+  ],
+  "questions": [
+    {
+      "question": "Bestimme die Wortarten in: 'Der schnelle Hund rennt freudig davon.'",
+      "type": "wortarten",
+      "sentence": "Der schnelle Hund rennt freudig davon.",
+      "tokens": [
+        "Der",
+        "schnelle",
+        "Hund",
+        "rennt",
+        "freudig",
+        "davon"
+      ],
+      "pos_set": [
+        "artikel",
+        "adjektiv",
+        "nomen",
+        "verb",
+        "adverb",
+        "adverb"
+      ],
+      "cooldown": 5,
+      "time": 45
+    },
+    {
+      "question": "Welche Wortarten erkennst du: 'Sie schreiben schnell und sorgfältig.'",
+      "type": "wortarten",
+      "sentence": "Sie schreiben schnell und sorgfältig.",
+      "tokens": [
+        "Sie",
+        "schreiben",
+        "schnell",
+        "und",
+        "sorgfältig"
+      ],
+      "pos_set": [
+        "pronomen",
+        "verb",
+        "adverb",
+        "konjunktion",
+        "adverb"
+      ],
+      "cooldown": 5,
+      "time": 40
+    }
+  ]
+}

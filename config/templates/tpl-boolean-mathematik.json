@@ -1,0 +1,68 @@
+{
+  "id": "tpl-boolean-mathematik",
+  "category": "math",
+  "name": "Wahr-Falsch und Mathematik",
+  "description": "Boolean-Fragen und spezialisierte Mathematik-Aufgaben",
+  "tags": [
+    "mathematik",
+    "logik"
+  ],
+  "questions": [
+    {
+      "question": "Ist 7 + 5 = 12?",
+      "type": "boolean",
+      "answers": [
+        "Wahr",
+        "Falsch"
+      ],
+      "solutions": [
+        1
+      ],
+      "cooldown": 5,
+      "time": 15
+    },
+    {
+      "question": "Alle Quadrate sind Rechtecke — wahr oder falsch?",
+      "type": "boolean",
+      "answers": [
+        "Wahr",
+        "Falsch"
+      ],
+      "solutions": [
+        0
+      ],
+      "cooldown": 5,
+      "time": 20
+    },
+    {
+      "question": "Berechne die Ableitung von f(x) = 3x² + 2x + 1",
+      "type": "mathematik",
+      "answers": [
+        "6x + 2",
+        "6x²",
+        "3x + 2",
+        "x + 2"
+      ],
+      "solutions": [
+        0
+      ],
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "Löse für x: 2x + 8 = 16",
+      "type": "mathematik",
+      "answers": [
+        "x = 4",
+        "x = 8",
+        "x = 12",
+        "x = 2"
+      ],
+      "solutions": [
+        0
+      ],
+      "cooldown": 5,
+      "time": 25
+    }
+  ]
+}

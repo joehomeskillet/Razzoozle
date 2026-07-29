@@ -2,7 +2,7 @@
   "id": "tpl-sprachen-vocab",
   "category": "sprachen",
   "name": "Vokabel-Warmup",
-  "description": "Kurzes DE/EN Matching",
+  "description": "Kurzes DE/EN Matching und Grammatik",
   "tags": [
     "english",
     "vocab"
@@ -33,6 +33,52 @@
       ],
       "cooldown": 5,
       "time": 40
+    },
+    {
+      "question": "Ergänze den Satz: 'The cat _____ on the mat.'",
+      "type": "fill-blank",
+      "segments": [
+        "The cat ",
+        " on the mat."
+      ],
+      "slots": [
+        {
+          "options": [
+            "sits",
+            "sit",
+            "sitting",
+            "is sitting"
+          ],
+          "correctIndex": 0
+        }
+      ],
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "Ordne die Schritte zum Schreiben einer E-Mail in die richtige Reihenfolge",
+      "type": "sequencing",
+      "items": [
+        {
+          "id": "greeting",
+          "label": "Anrede"
+        },
+        {
+          "id": "body",
+          "label": "Inhalt / Nachricht"
+        },
+        {
+          "id": "closing",
+          "label": "Abschließender Gruß"
+        }
+      ],
+      "correctOrder": [
+        "greeting",
+        "body",
+        "closing"
+      ],
+      "cooldown": 5,
+      "time": 35
     }
   ]
 }

@@ -1,0 +1,36 @@
+{
+  "id": "tpl-unscored-mix",
+  "category": "custom",
+  "name": "Kreative und reflektive Fragen",
+  "description": "Word-Cloud, Brainstorming, Selbsteinschätzung, Mikro-Lektionen",
+  "tags": [
+    "kreativ",
+    "reflexion"
+  ],
+  "questions": [
+    {
+      "question": "Nennt Wörter, die euch zu Klimawandel einfallen",
+      "type": "word-cloud",
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "Sammelt Ideen: Wie können wir Plastik in unserer Schule sparen?",
+      "type": "brainstorm",
+      "cooldown": 5,
+      "time": 40
+    },
+    {
+      "question": "Wie gut kennst du die Teilbarkeitsregeln?",
+      "type": "confidence",
+      "cooldown": 5,
+      "time": 25
+    },
+    {
+      "question": "Kurz erklärt: Der Unterschied zwischen Wetter und Klima",
+      "type": "micro-lesson",
+      "cooldown": 5,
+      "time": 35
+    }
+  ]
+}

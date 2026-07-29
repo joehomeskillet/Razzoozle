@@ -34,6 +34,33 @@
       ],
       "cooldown": 5,
       "time": 20
+    },
+    {
+      "question": "Auf welche Genauigkeit schätzt du den x-Wert der Gleichung x²=5 ein?",
+      "type": "slider",
+      "min": 0,
+      "max": 3,
+      "correct": 2.236,
+      "step": 0.01,
+      "unit": "",
+      "cooldown": 5,
+      "time": 30
+    },
+    {
+      "question": "Welche Aussagen über die Diskriminante sind richtig?",
+      "type": "multiple-select",
+      "answers": [
+        "D > 0 bedeutet zwei verschiedene reelle Lösungen",
+        "D = 0 bedeutet keine Lösungen",
+        "D < 0 bedeutet keine reellen Lösungen",
+        "Die Diskriminante hat keine praktische Bedeutung"
+      ],
+      "solutions": [
+        0,
+        2
+      ],
+      "cooldown": 5,
+      "time": 25
     }
   ]
 }
