@@ -30,29 +30,29 @@ walkDir(srcDir, (filePath) => {
   filesChecked++
   const code = fs.readFileSync(filePath, 'utf-8')
 
-  // Check for deprecated imports or unmapped token calls across workspace packages
+  // Check for deprecated token names across workspace packages
   if (code.includes("var(--accent-primary)")) {
     refactorTargetsFound++
     if (isFix) {
       const updatedCode = code.replace(/var\(--accent-primary\)/g, "var(--brand-primary)")
       fs.writeFileSync(filePath, updatedCode, 'utf-8')
       filesRefactored++
-      console.log(`\x1b[32m✔ AMRE Workspace Refactored:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+      console.log(`\x1b[32m✔ Refactored:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     } else {
-      console.log(`\x1b[33m⚠ AMRE Refactor Candidate:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+      console.log(`\x1b[33m⚠ Refactor Target:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     }
   }
 })
 
 const duration = Date.now() - startTime
 
-console.log(`\n⚙ --- Autonomous Monorepo Refactoring Daemon (AMRE) ---`)
+console.log(`\n🔄 --- Token Deprecation Batch Replacer ---`)
 console.log(`Workspace Files Scanned: ${filesChecked}`)
-console.log(`Refactor Targets Found:  ${refactorTargetsFound}`)
+console.log(`Deprecated Tokens Found: ${refactorTargetsFound}`)
 console.log(`Execution Time:          ${duration} ms`)
 
 if (isFix) {
-  console.log(`Files Auto-Refactored:   ${filesRefactored}`)
+  console.log(`Files Updated:           ${filesRefactored}`)
 } else if (refactorTargetsFound === 0) {
-  console.log(`\x1b[32m✔ All workspace packages 100% clean and zero refactor drift detected!\x1b[0m`)
+  console.log(`\x1b[32m✔ All workspace packages clean: no deprecated tokens detected!\x1b[0m`)
 }

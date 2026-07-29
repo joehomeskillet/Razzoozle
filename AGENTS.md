@@ -121,10 +121,10 @@ Playwright: `browser_resize` auf jede Auflösung, dann Solo-Flow durchspielen
 3. **Mandatory CLI Verification Chain**:
    - Before completing any UI task, ALWAYS run:
      - `pnpm tokens:validate`   (Check for unmapped arbitrary token usages)
-     - `pnpm tokens:hex-lint`   (Regex-based hardcoded hex color validator)
+     - `pnpm tokens:hex-lint`   (AST structural linter for hardcoded hex attributes & inline styles)
      - `pnpm tokens:wasm`       (High-speed SWC/AST token codemod transformer)
-     - `pnpm tokens:morph`      (Zero-runtime Tailwind v4 compiler)
-     - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)
-     - `pnpm tokens:ai-audit`   (Dual-Pass AI Design System Governance Audit)
-     - `pnpm tokens:daemon`     (Autonomous monorepo refactoring daemon)
+     - `pnpm tokens:morph`      (AST-Morph zero-runtime Tailwind v4 compiler)
+     - `pnpm tokens:neural`     (Viewport pixel compliance checker (375px/390px/440px))
+     - `pnpm tokens:ai-audit`   (Design governance compliance linter)
+     - `pnpm tokens:daemon`     (Token deprecation batch replacer)
 <!-- END UNIFIED DESIGN GOVERNANCE RULES -->

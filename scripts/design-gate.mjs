@@ -55,7 +55,7 @@ if (isFix) {
   run('AST Token Grep Auto-Fix',      'node scripts/ast-grep-tokens.mjs --fix',    false)
   run('Tailwind Arbitrary Class Fixer', 'node scripts/wasm-token-codemod.mjs --fix',  false)
   run('Inline Style Converter',   'node scripts/ast-morph-tailwind.mjs --fix',  false)
-  run('Monorepo Daemon Auto-Fix',     'node scripts/monorepo-refactor-daemon.mjs --fix', false)
+  run('Token Refactor Auto-Fix',     'node scripts/refactor-tokens.mjs --fix', false)
   console.log('')
 }
 
@@ -65,12 +65,12 @@ run('Token Lint Validator',           'node scripts/lint-design-tokens.mjs')
 run('AST Structural Hex Linter',      'node scripts/ast-grep-tokens.mjs')
 run('Tailwind Arbitrary Class Linter', 'node scripts/wasm-token-codemod.mjs')
 run('Inline Style Converter','node scripts/ast-morph-tailwind.mjs')
-run('Neural Viewport Auditor (375/390/440)', 'node scripts/neural-design-core.mjs')
+run('Viewport Pixel Compliance Checker', 'node scripts/validate-viewport-pixels.mjs')
 
 // --- Phase 3: Governance (BLOCKING) ---
 console.log('\n\x1b[36m▸ Phase 3: AI Governance\x1b[0m')
-run('Dual-Pass AI Design Audit',      'node scripts/ai-governance-audit.mjs',      false)
-run('Monorepo Refactor Daemon',       'node scripts/monorepo-refactor-daemon.mjs')
+run('Design Governance Compliance Linter',      'node scripts/lint-governance-rules.mjs',      false)
+run('Token Refactor Verifier',       'node scripts/refactor-tokens.mjs')
 
 // --- Phase 4: Agent Sync (BLOCKING) ---
 console.log('\n\x1b[36m▸ Phase 4: Agent Rule Sync\x1b[0m')
