@@ -36,13 +36,13 @@ walkDir(srcDir, (filePath) => {
   const matches = code.match(fixedPixelRegex)
   if (matches) {
     responsiveViolations += matches.length
-    console.log(`\x1b[33m⚠ Neural Viewport Warning in:\x1b[0m ${path.relative(process.cwd(), filePath)} (${matches.join(', ')} may cause squish on 375px viewports)`)
+    console.log(`\x1b[33m⚠ Viewport Pixel Warning in:\x1b[0m ${path.relative(process.cwd(), filePath)} (${matches.join(', ')} may cause squish on 375px viewports)`)
   }
 })
 
-console.log(`\n🧠 --- Neural-Design-Core Responsive Viewport & AST Auditor ---`)
+console.log(`\n📱 --- Viewport Pixel Compliance Checker ---`)
 console.log(`Files audited:            ${totalFilesChecked}`)
-console.log(`Viewport Viewport Targets: ${targetViewports.map((v) => `${v.name} (${v.width}px)`).join(', ')}`)
+console.log(`Target Viewports:         ${targetViewports.map((v) => `${v.name} (${v.width}px)`).join(', ')}`)
 console.log(`Fixed Pixel Violations:   ${responsiveViolations}`)
 
 if (responsiveViolations === 0) {

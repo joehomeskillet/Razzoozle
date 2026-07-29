@@ -51,15 +51,15 @@ walkDir(srcDir, (filePath) => {
   }
 })
 
-console.log(`\n🤖 --- Dual-Pass AI Design System Governance Audit ---`)
+console.log(`\n✅ --- Design Governance Compliance Linter ---`)
 console.log(`Files Audited: ${filesAudited}`)
-console.log(`AST Pass 1 Violations: ${auditViolations.length}`)
+console.log(`Violations Found: ${auditViolations.length}`)
 
 if (auditViolations.length > 0) {
-  console.log(`\nTop AST Diagnostics:`)
+  console.log(`\nTop Violations:`)
   auditViolations.slice(0, 5).forEach((v) => {
     console.log(`  \x1b[33m[${v.ruleId}]\x1b[0m ${v.filePath}: ${v.message}`)
   })
 }
 
-console.log(`\n\x1b[32m✔ AI Governance Pass 1 Complete: Structural AST validation verified!\x1b[0m`)
+console.log(`\n\x1b[32m✔ Linting complete: Governance rules validated!\x1b[0m`)
