@@ -6,17 +6,15 @@
 mod tests {
     use super::super::*;
     use sqlx::postgres::PgPoolOptions;
-    use std::sync::{Mutex, MutexGuard};
+    use tokio::sync::Mutex;
 
     /// Serializes tests that mutate the global active-admin set (suspend/restore).
     /// cargo test runs cases on multiple threads; without this, remaining_admins
     /// assertions race with sibling bulk tests.
-    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::new(());
+    static DB_ISOLATION_LOCK: Mutex<()> = Mutex::const_new(());
 
-    fn lock_db_isolation() -> MutexGuard<'static, ()> {
-        DB_ISOLATION_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    async fn lock_db_isolation() -> tokio::sync::MutexGuard<'static, ()> {
+        DB_ISOLATION_LOCK.lock().await
     }
 
     /// Helper to get a database pool from the DATABASE_URL env var.
@@ -96,7 +94,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -165,7 +163,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
@@ -261,7 +259,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -354,7 +352,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -419,7 +417,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -483,7 +481,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
@@ -571,7 +569,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -674,7 +672,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -785,7 +783,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -861,7 +859,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -918,7 +916,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
@@ -967,7 +965,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
@@ -1014,7 +1012,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
@@ -1057,7 +1055,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
@@ -1087,7 +1085,7 @@ mod tests {
             }
         };
 
-        let _lock = lock_db_isolation();
+        let _lock = lock_db_isolation().await;
 
         cleanup_test_users(&pool).await;
 
