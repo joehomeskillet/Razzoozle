@@ -6,7 +6,7 @@ This document describes the operational flow from a commit on `main` to producti
 
 ## Executive Summary
 
-Razzoozle runs two parallel application twins—a Rust backend (`razzoozle-rust`) and a Node.js frontend (`razzoozle`)—both deployed automatically and independently via systemd timers. When a commit reaches `origin/main` (Gitea), two separate pollers detect the change, rebuild the respective container, apply database migrations (Rust only), and deploy with health gates. On health gate failure, the previous image is restored automatically.
+Razzoozle runs a Rust backend (`razzoozle-rust`) deployed automatically via a systemd timer. The Node.js frontend (`razzoozle`) CD system has been disabled; the application is now served entirely by the Rust backend. When a commit reaches `origin/main` (Gitea), the Rust poller detects the change, rebuilds the container, applies database migrations, and deploys with a health gate. On health gate failure, the previous image is restored automatically.
 
 **Automation scope:** Builds, health checks, and rollbacks are fully automated. **Release tagging and version bumping are manual** (see [ADR 005: Version and Tag Schema](../adr/005-version-and-tag-schema.md) for the versioning contract).
 
@@ -22,11 +22,8 @@ Razzoozle runs two parallel application twins—a Rust backend (`razzoozle-rust`
 │  ↓ (pushed commit)                                  │
 ├─────────────────────────────────────────────────────┤
 │                                                      │
-│  razzoozle-cd.timer ──┐                             │
-│  (Node.js poller)     ├─→ Parallel deployment       │
-│  razzoozle-rust-cd    │   (independent)             │
-│  .timer               │                              │
-│  (Rust poller)    ────┘                             │
+│  razzoozle-rust-cd.timer ──→ Rust deployment       │
+│  (Rust poller)                                       │
 │                                                      │
 │  Each poller:                                       │
 │  1. Detects change (SHA mismatch vs. deployed)      │
@@ -34,7 +31,7 @@ Razzoozle runs two parallel application twins—a Rust backend (`razzoozle-rust`
 │  3. Builds Docker image                             │
 │  4. Applies migrations (Rust only)                  │
 │  5. Deploys container                               │
-│  6. Health gate (15 attempts, 3 sec each)           │
+│  6. Health gate (15 attempts, 3 sec each = 45 sec)  │
 │  7. On pass: records deployed SHA                   │
 │  8. On fail: reverts to previous image              │
 │                                                      │
@@ -43,23 +40,22 @@ Razzoozle runs two parallel application twins—a Rust backend (`razzoozle-rust`
 
 ### Clone Topology
 
-Razzoozle maintains **three independent Git clones** to isolate build contexts:
+Razzoozle maintains **two independent Git clones** to isolate build contexts:
 
 | Clone | Path | Purpose | Deployed Image |
 |-------|------|---------|-----------------|
 | `source/` | `/nvmetank1/projects/Razzoozle/source` | Developer working tree | (not deployed) |
-| `cd-src/` | `/nvmetank1/projects/Razzoozle/cd-src` | Node.js build context | `razzoozle:custom` |
 | `cd-src-rust/` | `/nvmetank1/projects/Razzoozle/cd-src-rust` | Rust build context | `razzoozle-rust:db` |
 
-This topology prevents stale dev dependencies or lingering edits from contaminating production builds.
+The Node.js clone (`cd-src/`) exists for historical reference but is no longer used; the Node.js deployment system has been disabled.
 
 ---
 
 ## Deployment Triggers & Timing
 
-### systemd Timers
+### systemd Timer
 
-Both CD pollers are driven by systemd timers running as one-shot services.
+The Rust CD poller is driven by a systemd timer running as a one-shot service.
 
 #### Rust Twin: `razzoozle-rust-cd.timer`
 
@@ -72,7 +68,7 @@ Script: /nvmetank1/projects/Razzoozle/rust-cd-poll.sh
 **Timer Schedule:**
 - **Initial delay:** 3 minutes after boot
 - **Recurring:** Every 5 minutes
-- **Jitter:** ±45 seconds (staggered to avoid simultaneous runs with Node poller)
+- **Jitter:** ±45 seconds (randomized to avoid burst contention)
 
 **Service execution:**
 - **Type:** `oneshot`
@@ -86,20 +82,15 @@ sudo systemctl start razzoozle-rust-cd.service      # Force immediate run
 sudo systemctl enable razzoozle-rust-cd.timer       # Auto-start on boot
 ```
 
-#### Node.js Twin: `razzoozle-cd.timer`
+#### Node.js Twin: `razzoozle-cd.timer` (DISABLED)
 
 ```
 Path: /etc/systemd/system/razzoozle-cd.timer
 Service: /etc/systemd/system/razzoozle-cd.service
-Script: /nvmetank1/projects/Razzoozle/cd-poll.sh
+Status: INACTIVE (disabled)
 ```
 
-**Timer Schedule:**
-- **Initial delay:** Similar (exact timing may differ)
-- **Recurring:** Every 5 minutes
-- **Jitter:** ±45 seconds (opposite phase to Rust)
-
-Both timers are staggered to reduce contention on shared resources (Docker daemon, database connections).
+The Node.js CD system has been disabled. The Rust backend now serves the complete application. The systemd unit files remain in place for historical reference but are not active.
 
 ---
 
@@ -230,71 +221,6 @@ For detailed readiness checks (database connectivity, migrations complete, etc.)
 
 ---
 
-## Node.js Twin Deployment Flow
-
-### 1. Clone & Fetch
-
-Similar to Rust, but the clone is already present (created once).
-
-```bash
-cd "$CD"  # cd-src
-git fetch --quiet --depth 1 origin main
-NEW=$(git rev-parse origin/main)
-CUR=$(cat "$ROOT/.cd-deployed-sha" 2>/dev/null || echo none)
-[ "$NEW" = "$CUR" ] && exit 0
-```
-
-### 2. Image Build
-
-```bash
-# Tag previous as rollback
-PREV=$(docker images -q razzoozle:custom)
-[ -n "$PREV" ] && docker tag razzoozle:custom "razzoozle:cd-rollback"
-
-git reset --hard --quiet origin/main
-docker build --pull -q -t razzoozle:custom "$CD"
-```
-
-**`--pull`:** Always refresh base images (ensures latest `node:25-alpine`, `alpine:3.23`, etc.).
-
-### 3. Compose Up
-
-```bash
-docker compose -f "$ROOT/compose.yml" --project-directory "$ROOT" up \
-  -d --force-recreate --remove-orphans
-```
-
-**Flags:**
-- `--force-recreate`: Discard the old container, even if the image is unchanged.
-- `--remove-orphans`: Clean up containers defined in the old compose file but not in the new one.
-
-### 4. Health Check
-
-The health check is delegated to Docker Compose's built-in HEALTHCHECK directive (defined in the Dockerfile).
-
-```bash
-for i in $(seq 20); do
-  [ "$(docker inspect -f '{{.State.Health.Status}}' razzoozle 2>/dev/null)" = "healthy" ] && { 
-    echo "$NEW" > "$ROOT/.cd-deployed-sha"
-    export_web_dist  # Extract SPA for OG tags
-    docker image prune -f
-    log "DEPLOY OK $NEW"
-    exit 0
-  }
-  sleep 3
-done
-
-# Health gate failed → rollback
-log "HEALTH GATE FAILED — rolling back"
-docker tag "razzoozle:cd-rollback" razzoozle:custom 2>/dev/null || true
-docker compose -f "$ROOT/compose.yml" up -d
-exit 1
-```
-
-**Health status:** Polls Docker's HEALTHCHECK result (60-second total wait, compared to Rust's 45 seconds).
-
----
-
 ## Observing a Deployment
 
 ### Check Timer Status
@@ -303,11 +229,8 @@ exit 1
 # Rust timer
 sudo systemctl status razzoozle-rust-cd.timer
 
-# Node.js timer
-sudo systemctl status razzoozle-cd.timer
-
 # Next scheduled run
-sudo systemctl list-timers razzoozle-rust-cd.timer razzoozle-cd.timer
+sudo systemctl list-timers razzoozle-rust-cd.timer
 ```
 
 ### Force Immediate Deployment
@@ -317,9 +240,6 @@ To trigger a deployment without waiting for the timer:
 ```bash
 # Rust
 sudo systemctl start razzoozle-rust-cd.service
-
-# Node.js
-sudo systemctl start razzoozle-cd.service
 ```
 
 ### View Deployment Logs
@@ -338,26 +258,11 @@ Example output during a successful deployment:
 [razzoozle-rust-cd] DEPLOY OK a1b2c3d4e5f6
 ```
 
-#### Node.js Twin
-
-```bash
-sudo journalctl -u razzoozle-cd.service -f
-```
-
-Example output:
-```
-[razzoozle-cd] new main a1b2c3d4e5f6 (was previous_sha) — deploying
-[razzoozle-cd] DEPLOY OK a1b2c3d4e5f6
-```
-
 ### Verify Container Status
 
 ```bash
 # Rust
 docker ps --filter "name=razzoozle-rust"
-
-# Node.js
-docker ps --filter "name=razzoozle"
 ```
 
 ### Check Deployed SHA
@@ -365,15 +270,11 @@ docker ps --filter "name=razzoozle"
 ```bash
 # Rust
 cat /nvmetank1/projects/Razzoozle/.rust-cd-deployed-sha
-
-# Node.js
-cat /nvmetank1/projects/Razzoozle/.cd-deployed-sha
 ```
 
-Compare these with the current `main`:
+Compare with the current `main`:
 ```bash
 cd /nvmetank1/projects/Razzoozle/cd-src-rust && git rev-parse origin/main
-cd /nvmetank1/projects/Razzoozle/cd-src && git rev-parse origin/main
 ```
 
 ### Test Endpoints
@@ -385,7 +286,7 @@ curl http://127.0.0.1:3012/healthz
 # Rust readiness (full checks)
 curl http://127.0.0.1:3012/readyz
 
-# Node.js (reverse proxy redirects to manager or game)
+# Reverse proxy (serves manager and game)
 curl http://localhost:3000/
 ```
 
@@ -540,71 +441,11 @@ echo "<correct-sha>" > /nvmetank1/projects/Razzoozle/.rust-cd-deployed-sha
 
 ### Docker Image Tagging
 
-Currently, the Rust and Node.js images use:
-- `:db` (Rust) and `:custom` (Node.js) for the current production version.
+Currently, the Rust image uses:
+- `:db` for the current production version.
 - `:cd-rollback` for the previous version (safety copy, discarded on the next deploy).
 
 Future enhancement: Tag images with version numbers (`razzoozle-rust:v3.0.0`) for release artifact tracking.
-
----
-
-## Multi-Deployment Scenarios
-
-### Both Twins Deploy Simultaneously
-
-Deployments are **independent and parallel**. If both twins redeploy at the same time:
-- They use separate clones, separate builds, and separate health gates.
-- Docker daemon is the only shared resource; buildkit and compose operations are serialized by Docker.
-- No coordination is needed; each poller runs autonomously.
-
-### Partial Deployment Failure
-
-If Rust deploys successfully but Node.js fails:
-- Rust is running the new version; Node.js is running the old version.
-- Users may experience inconsistencies (e.g., API changes not yet exposed in the UI).
-
-**Mitigation:** This should be rare. If it happens frequently, investigate the Node.js deployment logs and fix the root cause before pushing new commits.
-
-### Node.js CD Blocking (GitHub Actions)
-
-Razzoozle also has GitHub Actions workflow (`deploy.yml`), which may conflict with the systemd poller. Both share the `.cd-poll.lock` file for mutual exclusion:
-
-```bash
-exec 9>"$ROOT/.cd-poll.lock"
-flock -n 9 || { log "another run in progress — skipping"; exit 0; }
-```
-
-Whichever (poller or action) acquires the lock first gets to deploy. The other waits for the next timer tick.
-
----
-
-## Open Items & Future Work
-
-### Release Automation
-
-**Status:** MANUAL. Tags and releases are created by hand (see [Release Tagging](#release-tagging) above).
-
-**Future:** Adopt conventional commits (`feat:`, `fix:`, `BREAKING CHANGE:`) and configure CI to automatically bump versions and create tags (e.g., via `release-please` or `semantic-release`).
-
-**Blocker:** Project velocity is currently low; automation investment deferred.
-
-### Docker Image Version Tags
-
-**Status:** Images use `:db` and `:custom` (no version numbers).
-
-**Future:** Extend the CD scripts to tag images with `razzoozle:v3.0.0` and push to a registry for artifact tracking.
-
-### Database Backup on Deploy
-
-**Status:** Backups are manual (see `scripts/backup-db.sh` and `scripts/restore-from-backup.sh`).
-
-**Future:** Integrate pre-deploy snapshots into the CD process (e.g., `pg_dump` before migrations run).
-
-### Canary Deployments
-
-**Status:** Not implemented. Every commit to main triggers a full deploy.
-
-**Future:** Consider deploying to a staging environment first, running smoke tests, then promoting to production.
 
 ---
 
@@ -627,11 +468,9 @@ Whichever (poller or action) acquires the lock first gets to deploy. The other w
 | `sudo systemctl start razzoozle-rust-cd.service` | Force immediate Rust deployment |
 | `sudo journalctl -u razzoozle-rust-cd.service -f` | Watch Rust deployment logs |
 | `/nvmetank1/projects/Razzoozle/rust-cd-poll.sh` | Rust CD script (executed by systemd) |
-| `/nvmetank1/projects/Razzoozle/cd-poll.sh` | Node.js CD script (executed by systemd) |
 | `curl http://127.0.0.1:3012/healthz` | Test Rust health endpoint |
 | `curl http://127.0.0.1:3012/readyz` | Test Rust readiness endpoint |
 | `docker logs razzoozle-rust` | View Rust container logs |
-| `docker logs razzoozle` | View Node.js container logs |
 
 ---
 
