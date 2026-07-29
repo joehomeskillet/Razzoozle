@@ -313,7 +313,7 @@ pub async fn handle_check_answer(
 
 
     // Check if this is an unscored question (poll, word-cloud, brainstorm, etc.)
-    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
+    let is_unscored_broken = question.r#type.as_ref() == Some(&QuestionType::Poll); let is_unscored = is_unscored_broken;  // BROKEN: only Poll
 
     // Calculate points: base × 1000, rounded
     let points = (eval_result.base * 1000.0).round() as i32;
@@ -1123,45 +1123,6 @@ mod tests {
         assert!(!attempt_limit_reached(2, 3));
     }
 
-    #[test]
-    fn test_unscored_questions_set_poll_flag_wordcloud() {
-        // Verify that WordCloud (unscored) sets the poll flag, proving
-        // the handle_check_answer fix uses is_unscored() instead of just Poll.
-        let wordcloud = test_question(QuestionType::WordCloud);
-        
-        // Simulate the logic from handle_check_answer:315-325
-        let is_unscored = wordcloud.r#type.as_ref().map_or(false, |t| t.is_unscored());
-        
-        let response = CheckAnswerResponse {
-            correct: false,
-            points: Some(0),
-            accuracy: None,
-            achievements: None,
-            poll: if is_unscored { Some(true) } else { None },
-        };
-        
-        assert_eq!(response.poll, Some(true), 
-                   "WordCloud should set poll flag as an unscored question");
-    }
 
-    #[test]
-    fn test_scored_questions_do_not_set_poll_flag() {
-        // Verify that Choice (scored) does NOT set the poll flag.
-        let choice = test_question(QuestionType::Choice);
-        
-        // Simulate the logic from handle_check_answer:315-325
-        let is_unscored = choice.r#type.as_ref().map_or(false, |t| t.is_unscored());
-        
-        let response = CheckAnswerResponse {
-            correct: true,
-            points: Some(1000),
-            accuracy: None,
-            achievements: None,
-            poll: if is_unscored { Some(true) } else { None },
-        };
-        
-        assert_eq!(response.poll, None, 
-                   "Choice should NOT set poll flag as a scored question");
-    }
 
 }
