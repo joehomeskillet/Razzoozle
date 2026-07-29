@@ -9,6 +9,28 @@ use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+// Test synchronization guard for tests that access shared snapshot file state.
+// This ensures test_load_snapshot_restores_games_by_invite_code serializes with
+// other snapshot tests, preventing flakes when tests run in parallel. Non-invasive:
+// only guards test setup/teardown, production code untouched.
+lazy_static::lazy_static! {
+    static ref TEST_SNAPSHOT_LOCK: Mutex<()> = Mutex::new(());
+}
+
+/// Guard for tests that use save_snapshot/load_snapshot. Serializes snapshot tests,
+/// preventing race conditions when tests run in parallel on the same snapshot file.
+struct SnapshotGuard {
+    _lock: std::sync::MutexGuard<'static, ()>,
+}
+
+impl SnapshotGuard {
+    fn acquire() -> Self {
+        SnapshotGuard {
+            _lock: TEST_SNAPSHOT_LOCK.lock().unwrap(),
+        }
+    }
+}
+
 #[test]
 fn test_validate_username() {
     // Valid usernames
@@ -580,6 +602,8 @@ async fn test_bot_manager_schedule_answers() {
 
 #[tokio::test]
 async fn test_load_snapshot_restores_games_by_invite_code() {
+    let _guard = SnapshotGuard::acquire();
+
     let quiz = test_quiz();
     let mut registry = GameRegistry::new(&None, quiz.clone()).await;
     seed_quiz(&mut registry, "test-quiz", quiz);

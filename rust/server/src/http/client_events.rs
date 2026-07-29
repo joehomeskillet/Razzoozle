@@ -296,6 +296,28 @@ pub async fn handle_client_events(
 mod tests {
     use super::*;
 
+    // Test synchronization guard for tests that mutate global state (RATE_LIMITER_STATE).
+    // This ensures test_within_rate and test_lru_eviction_order serialize relative to
+    // each other, preventing flakes when tests run in parallel. Non-invasive: only guards
+    // test setup/teardown, production code untouched.
+    lazy_static::lazy_static! {
+        static ref TEST_GLOBAL_STATE_LOCK: Mutex<()> = Mutex::new(());
+    }
+
+    /// Guard for tests that clear/modify RATE_LIMITER_STATE. Serializes tests that
+    /// mutate the global rate limiter, preventing race conditions during parallel test runs.
+    struct GlobalStateGuard {
+        _lock: std::sync::MutexGuard<'static, ()>,
+    }
+
+    impl GlobalStateGuard {
+        fn acquire() -> Self {
+            GlobalStateGuard {
+                _lock: TEST_GLOBAL_STATE_LOCK.lock().unwrap(),
+            }
+        }
+    }
+
     #[test]
     fn test_sample_hash_deterministic() {
         let hash1 = sample_hash("client-a:answer-latency");
@@ -305,6 +327,8 @@ mod tests {
 
     #[test]
     fn test_within_rate() {
+        let _guard = GlobalStateGuard::acquire();
+
         // Clear state
         let mut state = RATE_LIMITER_STATE.lock().unwrap();
         state.buckets.clear();
@@ -388,6 +412,8 @@ mod tests {
 
     #[test]
     fn test_lru_eviction_order() {
+        let _guard = GlobalStateGuard::acquire();
+
         // Clear state
         let mut state = RATE_LIMITER_STATE.lock().unwrap();
         state.buckets.clear();
