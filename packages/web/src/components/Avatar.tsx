@@ -3,7 +3,7 @@ import {
   type AvatarStyle,
 } from "@razzoozle/web/features/game/utils/dicebear"
 import clsx from "clsx"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { twMerge } from "tailwind-merge"
 
 interface Props {
@@ -56,7 +56,10 @@ const getInitials = (value: string): string => {
 const Avatar = ({ src, name, size = 40, className }: Props) => {
   const [errored, setErrored] = useState(false)
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(undefined)
-  const isIdentity = typeof src === "string" && src.startsWith(DICEBEAR_PREFIX)
+  const isIdentity = useMemo(
+    () => typeof src === "string" && src.startsWith(DICEBEAR_PREFIX),
+    [src],
+  )
 
   useEffect(() => {
     setErrored(false)
@@ -65,7 +68,7 @@ const Avatar = ({ src, name, size = 40, className }: Props) => {
   useEffect(() => {
     setResolvedSrc(undefined)
 
-    if (!isIdentity) {
+    if (!isIdentity || typeof src !== "string") {
       return
     }
 
@@ -88,7 +91,7 @@ const Avatar = ({ src, name, size = 40, className }: Props) => {
     return () => {
       active = false
     }
-  }, [src])
+  }, [src, isIdentity])
 
   const imageSrc = isIdentity ? resolvedSrc : src
   const showImage = Boolean(imageSrc) && !errored

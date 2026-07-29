@@ -111,7 +111,7 @@ const ConfigResults = () => {
         setTypeConfirmValue("")
         setBulkProcessing(false)
       },
-      [t],
+      [t, selection],
     ),
   )
 
