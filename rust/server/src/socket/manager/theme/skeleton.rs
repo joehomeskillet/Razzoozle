@@ -83,7 +83,7 @@ fn set_skeleton_asset(
 
 /// Reset skeleton to defaults, restoring DEFAULT_THEME
 fn reset_skeleton(
-    current_theme: &serde_json::Value,
+    _current_theme: &serde_json::Value,
 ) -> Result<(serde_json::Value, Option<serde_json::Value>), String> {
     let skeleton_dir = Path::new("config/theme");
     let _ = fs::remove_file(skeleton_dir.join("skeleton.css"));

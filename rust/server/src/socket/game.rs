@@ -57,7 +57,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let owner_user_id = Some(user.user_id);
 
                 // Read global config for availability gates
-                let (team_mode_avail, low_latency_enabled, _, randomize_answers, scoring_mode_avail,
+                let (team_mode_avail, low_latency_enabled, _, randomize_answers, _,
                      low_latency_config, klassen_enabled, end_screen_modes) =
                     crate::db::get_game_config(&ctx.db_pool).await;
 
