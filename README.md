@@ -39,7 +39,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:5173` (web client). The server runs on separate ports (hot reload enabled).
+Open `http://localhost:3000` (web client). The server runs on separate ports (hot reload enabled).
 
 ### Option 2: Docker (recommended for production)
 
