@@ -195,7 +195,7 @@ fn broadcast_status(
     io: socketioxide::SocketIo,
     registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
     game_id: String,
-    db_pool: Option<sqlx::PgPool>,
+    _db_pool: Option<sqlx::PgPool>,
 ) {
     tokio::spawn(async move {
         let game_opt = {
@@ -210,7 +210,7 @@ fn broadcast_status(
             };
 
             let displays = {
-                let mut pairing = PAIRING_REGISTRY.lock().unwrap();
+                let pairing = PAIRING_REGISTRY.lock().unwrap();
                 pairing.get_displays_by_game(&game_id)
             };
 

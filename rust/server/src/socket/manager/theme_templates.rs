@@ -316,7 +316,7 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" {
+                let _me = if user.role == "admin" {
                     None
                 } else {
                     Some(user.user_id)

@@ -141,7 +141,7 @@ pub async fn assign_labels(
         _ => return Err("invalid entity_type".to_string()),
     };
 
-    let (id_col, entity_col) = (
+    let (_, entity_col) = (
         match entity_type {
             "quizz" => ("quiz_id", "quiz_id"),
             "media" => ("media_id", "media_id"),
