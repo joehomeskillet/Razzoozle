@@ -30,7 +30,9 @@ check() {
     missing=$((missing+1))
     return
   fi
-  if ! grep -Fq -- "$type" "$file"; then
+  # Search for the type as a string literal (in double or single quotes),
+  # not as a substring. This avoids false positives like "choice" matching "a choice" in comments.
+  if ! (grep -qF "\"$type\"" "$file" || grep -qF "'$type'" "$file"); then
     echo "MISSING $type $file"
     missing=$((missing+1))
   fi
@@ -52,8 +54,8 @@ for type in "${TYPES[@]}"; do
   check "$type" packages/common/src/validators/quizz.ts
 
   # editor: either file counts
-  if ! grep -Fq -- "$type" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null \
-     && ! grep -Fq -- "$type" packages/web/src/features/quizz/components/QuestionEditor/QuestionEditorType.tsx 2>/dev/null; then
+  if ! (grep -qF "\"$type\"" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null || grep -qF "'$type'" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null) \
+     && ! (grep -qF "\"$type\"" packages/web/src/features/quizz/components/QuestionEditor/QuestionEditorType.tsx 2>/dev/null || grep -qF "'$type'" packages/web/src/features/quizz/components/QuestionEditor/QuestionEditorType.tsx 2>/dev/null); then
     echo "MISSING $type packages/web/src/features/quizz/components/QuestionEditor"
     missing=$((missing+1))
   fi
