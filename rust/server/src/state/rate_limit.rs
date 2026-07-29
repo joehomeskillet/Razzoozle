@@ -110,15 +110,6 @@ impl RateLimiter {
         }
     }
 
-    /// Deprecated: for backwards compatibility, delegate to per-key version with empty key
-    pub fn check_global_solo_rate(&self) -> bool {
-        self.check_solo_rate("global")
-    }
-
-    /// Deprecated: for backwards compatibility, delegate to per-key version with empty key
-    pub fn record_auth_failure_and_check_throttle_global(&self) -> bool {
-        self.record_auth_failure_and_check_throttle("global")
-    }
 
     // ── APPENDED for rust-auth-parity (manager:auth throttle fix) ────────────
     // Node's submissionRateLimit.ts keeps isAuthThrottled() (pure read) and
