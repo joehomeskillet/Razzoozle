@@ -26,13 +26,24 @@ Fail-Closed: Ungültiges/fehlendes Token → None
 - `auth::ensure_admin(headers, db_pool) -> bool`: Wrapper über `ensure_manager_user`, zusätzlich `role == "admin"`
 - `auth::ensure_admin_user(headers, db_pool) -> Option<AuthUser>`: Gibt AuthUser zurück für Logging von abgelehnten Rollen
 
-### Dev-Routen
+### Dev-Routen — Metriken & Observability
 
-Endpunkte wie GET `/api/v1/observability/logs` (logs.rs Zeile 265–300):
-- Nutzen `authorize_dev_request(headers, _registry) -> bool`
+Endpunkte wie GET `/api/v1/observability/events` und GET `/metrics` (http/mod.rs Zeilen 344–363):
+- Nutzen `authorize_dev_request(headers, _registry) -> bool` (http/mod.rs Zeile 140–167)
 - Prüfen `Authorization: Bearer` oder `X-Manager-Token` gegen `DEV_API_KEY` (Umgebungsvariable)
-- Timing-sichere Vergleich: `constant_time_eq`
+- Timing-sichere Vergleich: `constant_time_eq` (XOR-Variante auf http/mod.rs Zeile 107)
 - Fail-Closed: Wenn `DEV_API_KEY` nicht konfiguriert, werden alle Dev-Anfragen abgelehnt
+
+### Dev-Routen — Log-Downloads
+
+Endpunkte für Log-Archive (http/mod.rs Zeilen 352–357):
+- GET `/api/v1/observability/logs/server` → `logs::handle_logs_server` — Server-seitige tracing-Logs (RingLayer)
+- GET `/api/v1/observability/logs/client` → `logs::handle_logs_client` — Client-gefertigte Events (POST /api/v1/client-events)
+- Beide nutzen `authorize_log_download(headers, query_token) -> Result<(), Error>` (logs.rs Zeile 217–267)
+- Authentifizierung wie `authorize_dev_request` (Bearer oder X-Manager-Token oder query-param `?token=`)
+- Constant-time Vergleich: einfache Loop-Variante auf logs.rs Zeile 200–209
+- Download-Format: text/plain (NDJSON, max 1000 Zeilen pro Ring)
+- Redaction: REDACT_KEYS (logs.rs Zeile 82–97), rekursiv über JSON-Tiefe
 
 ## Socket-Authentifizierung
 
@@ -161,7 +172,7 @@ Drei-Ebenen-Ownership-Check:
 
 ### Redaction-Regel (http/logs.rs Zeilen 82–97)
 
-DEV-gated Endpunkt GET `/api/v1/observability/logs/server` (dev-gated via `authorize_dev_request`):
+DEV-gated Endpunkte GET `/api/v1/observability/logs/server` und `/api/v1/observability/logs/client` (dev-gated via `authorize_log_download`):
 
 ```rust
 const REDACT_KEYS: &[&str] = &[
@@ -307,7 +318,8 @@ WebSocket-Connect
 - `rust/server/src/http/login.rs`: Login-Handler mit Throttle (111–122)
 - `rust/server/src/state/rate_limit.rs`: Rate-Limiter-Implementierung (92–135)
 - `rust/server/src/http/security_headers.rs`: Security-Header-Middleware
-- `rust/server/src/http/logs.rs`: Logging & Redaction (82–97)
+- `rust/server/src/http/logs.rs`: Logging & Redaction (82–97, 217–267)
+- `rust/server/src/http/mod.rs`: Dev-route auth `authorize_dev_request` (140–167) für /metrics & events
 - `rust/server/src/http/assignments.rs`: Assignment-Endpunkte (keine Auth auf GET /api/v1/assignments/{id})
 - ADR-009: `docs/adr/009-centralized-auth-session-management.md`
 - Issues: #552 (Baseline), #705/#706 (Login Throttle), #815 (Assignment Capability-URLs)
