@@ -11,7 +11,7 @@
 /// The embedded migrator creates and uses the _sqlx_migrations table (SQLx standard).
 /// Existing production databases have already applied 22 migrations via the separate
 /// bash-based apply-script (scripts/migrate-apply.sh), but have NO SQLx ledger table.
-/// This is a "pre-sqlx" state that is NOT an error — the database is fully migriated,
+/// This is a "pre-sqlx" state that is NOT an error — the database is fully migrated,
 /// only the ledger is missing.
 ///
 /// Baseline Decision (open for user approval):
@@ -22,7 +22,7 @@
 /// IF NOT EXISTS) from failing. This is a manual, gated decision in DCK-07/09.
 
 use sqlx::PgPool;
-use tracing::{info, warn};
+use tracing::warn;
 
 /// Migration status for readiness checks (three-phase semantics).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,6 +36,13 @@ pub enum MigrationStatus {
     Incomplete { applied: i64, expected: i64 },
     /// Ledger table exists and all migrations are applied.
     Complete,
+}
+
+/// Get the expected migration count from the embedded migrator.
+/// This count is sourced from the actual compiled migrations at build time,
+/// so it is automatically correct when new migrations are added.
+fn get_expected_migration_count() -> i64 {
+    sqlx::migrate!("../../db/migrations/").migrations.len() as i64
 }
 
 /// Execute pending database migrations.
@@ -66,15 +73,12 @@ pub async fn execute_migrate() -> i32 {
 
     // Run migrations embedded via sqlx::migrate!()
     // This macro collects all .sql files from db/migrations/ at compile time.
-    if let Err(e) = sqlx::migrate!("../../db/migrations/")
-        .run(&pool)
-        .await
-    {
+    if let Err(e) = sqlx::migrate!("../../db/migrations/").run(&pool).await {
         eprintln!("migrate: migration failed: {}", e);
         return 1;
     }
 
-    info!("migrate: all migrations applied successfully");
+    eprintln!("migrate: all migrations applied successfully");
     0
 }
 
@@ -86,11 +90,9 @@ pub async fn execute_migrate() -> i32 {
 /// - `Complete`: All migrations applied (readiness OK, 200)
 async fn get_migration_status(pool: &PgPool) -> Result<MigrationStatus, String> {
     // Count applied migrations from the SQLx ledger.
-    // Expected count: 22 (001..022 in db/migrations/).
-    // NOTE: Once migration 023+ are added, this count will need updating.
-    // Ideally sourced from the embedded migrator metadata at compile time,
-    // but for now we use the documented count.
-    const EXPECTED_MIGRATION_COUNT: i64 = 22;
+    // Expected count is sourced from the embedded migrator at compile time,
+    // so it is automatically correct when new migrations are added.
+    let expected_count = get_expected_migration_count();
 
     let count: i64 = match sqlx::query_scalar(
         "SELECT COUNT(*) FROM _sqlx_migrations WHERE success = true"
@@ -113,12 +115,12 @@ async fn get_migration_status(pool: &PgPool) -> Result<MigrationStatus, String> 
         }
     };
 
-    if count == EXPECTED_MIGRATION_COUNT {
+    if count == expected_count {
         Ok(MigrationStatus::Complete)
     } else {
         Ok(MigrationStatus::Incomplete {
             applied: count,
-            expected: EXPECTED_MIGRATION_COUNT,
+            expected: expected_count,
         })
     }
 }
@@ -132,7 +134,7 @@ pub async fn check_migrations_applied(pool: &PgPool) -> Result<(), String> {
     match get_migration_status(pool).await? {
         MigrationStatus::PreSqlx => {
             // Pre-sqlx database (e.g., Prod with bash-applied migrations, no ledger).
-            // This is not a readiness failure — the database is fully migriated.
+            // This is not a readiness failure — the database is fully migrated.
             // The baseline decision (when to initialize the ledger) is open and requires
             // manual approval for existing environments (see module docs, WP-DCK-05).
             // Log a warning so operators know the state, but don't block readiness.
@@ -168,7 +170,7 @@ mod tests {
         let _pre = MigrationStatus::PreSqlx;
         let _incomplete = MigrationStatus::Incomplete {
             applied: 10,
-            expected: 22,
+            expected: get_expected_migration_count(),
         };
         let _complete = MigrationStatus::Complete;
     }
@@ -177,7 +179,7 @@ mod tests {
     // require a live PostgreSQL database (including both pre-sqlx and post-migrate states).
     // These are covered by the manual test scenarios in the WP-DCK-05 report:
     // - Fresh DB with no ledger table (pre-sqlx)
-    // - Ledger with all 22 migrations applied
+    // - Ledger with all N migrations applied (N sourced from embedded migrator at compile time)
     // - Ledger with partial migrations (for 503 verification)
     // No empty tests — readiness is verified by the three scenarios in the gate.
 }
