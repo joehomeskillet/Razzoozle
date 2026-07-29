@@ -12,16 +12,14 @@ import type { TierColors } from "./TierColors";
  * The complete theme configuration for the application.
  * Persisted as config/theme.json and sent on manager:theme and game:status updates.
  * A single source of truth is the zod validator; a parsed/persisted theme IS a Theme.
+ * The deprecated "glass" visual style is no longer supported; old persisted themes
+ * with style:"glass" are accepted by the validator but the field is removed.
  *
  * Sent/received in: manager:theme, manager:setTheme, manager:setThemeSuccess,
  * themeTemplate:data (via ThemeTemplate), themeRevision:data (via ThemeRevision),
  * themeRevision:restoreSuccess
  */
 export type Theme = { 
-/**
- * Visual style: "flat" or "glass"
- */
-style: string, 
 /**
  * Primary brand color (hex)
  */

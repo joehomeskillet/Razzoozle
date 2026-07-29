@@ -41,7 +41,9 @@ pub fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
 
     let obj = payload.as_object().unwrap();
 
-    // Validate style: must be "flat" or "glass" (optional, defaults to "flat")
+    // Validate style: accept "flat" or deprecated "glass" (but "glass" will be
+    // stripped by the TypeScript validator on wire serialization).
+    // Legacy themes with style:"glass" are gracefully accepted for back-compat.
     if let Some(style) = obj.get("style") {
         if let Some(s) = style.as_str() {
             if s != "flat" && s != "glass" {
