@@ -1,6 +1,7 @@
 import Button from "@razzoozle/web/components/Button"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
+import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import OverflowMenu from "@razzoozle/web/components/manager/OverflowMenu"
 import Input from "@razzoozle/web/components/Input"
@@ -45,6 +46,8 @@ const TemplatePickerDialog = ({
   const [selectedCategory, setSelectedCategory] = useState("Alle")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<TemplateMeta | null>(null)
 
   // Load templates on dialog open
   useEffect(() => {
@@ -106,22 +109,27 @@ const TemplatePickerDialog = ({
     [navigate, onOpenChange, t],
   )
 
-  // Delete template (admin only)
-  const handleDeleteTemplate = useCallback(
-    async (template: TemplateMeta) => {
-      if (!confirm(t("manager:templates.deleteConfirm.body"))) {
-        return
-      }
+  // Confirm delete template
+  const handleConfirmDelete = useCallback(async () => {
+    if (!templateToDelete) return
 
-      try {
-        await deleteTemplate(template.id)
-        setTemplates((prev) => prev.filter((t) => t.id !== template.id))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("manager:templates.deleteError"))
-      }
-    },
-    [t],
-  )
+    try {
+      await deleteTemplate(templateToDelete.id)
+      setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id))
+      setDeleteConfirmOpen(false)
+      setTemplateToDelete(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("manager:templates.deleteError"))
+      setDeleteConfirmOpen(false)
+      setTemplateToDelete(null)
+    }
+  }, [templateToDelete, t])
+
+  // Request delete template (admin only)
+  const handleDeleteTemplate = useCallback((template: TemplateMeta) => {
+    setTemplateToDelete(template)
+    setDeleteConfirmOpen(true)
+  }, [])
 
   // Retry loading
   const handleRetry = useCallback(() => {
@@ -197,144 +205,157 @@ const TemplatePickerDialog = ({
   const emptyState = renderEmptyState()
 
   return (
-    <DialogPanel
-      open={open}
-      onOpenChange={onOpenChange}
-      titleId="template-picker-title"
-      title={t("manager:templates.dialogTitle")}
-      maxWidth="lg"
-    >
-      <div className="mt-6 space-y-4" data-testid="template-picker">
-        {/* Search input */}
-        {!isLoading && !error && templates.length > 0 && (
-          <>
-            <Input
-              type="text"
-              placeholder={t("manager:templates.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              data-testid="template-search"
-            />
+    <>
+      <DialogPanel
+        open={open}
+        onOpenChange={onOpenChange}
+        titleId="template-picker-title"
+        title={t("manager:templates.dialogTitle")}
+        maxWidth="lg"
+      >
+        <div className="mt-6 space-y-4" data-testid="template-picker">
+          {/* Search input */}
+          {!isLoading && !error && templates.length > 0 && (
+            <>
+              <Input
+                type="text"
+                placeholder={t("manager:templates.searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="template-search"
+              />
 
-            {/* Category filter pills */}
-            <div className="flex flex-wrap gap-2">
-              <FilterPill
-                active={selectedCategory === "Alle"}
-                onClick={() => setSelectedCategory("Alle")}
-              >
-                {t("manager:templates.allCategories")}
-              </FilterPill>
-              {categories.map((category) => (
-                <Fragment key={category}>
-                  <FilterPill
-                    active={selectedCategory === category}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </FilterPill>
-                </Fragment>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Empty state */}
-        {emptyState}
-
-        {/* Templates list */}
-        {!emptyState && (
-          <motion.ul
-            className="console-scroll max-h-[50vh] space-y-2 overflow-y-auto"
-            {...listContainerMotion(false)}
-          >
-            {filteredTemplates.map((template, index) => {
-              const adminActions: ListRowAction[] = []
-
-              if (role === "admin") {
-                adminActions.push(
-                  {
-                    key: `template-edit-${template.id}`,
-                    icon: Edit,
-                    label: t("manager:templates.edit"),
-                    onClick: () => {
-                      onOpenChange(false)
-                      navigate({ to: `/manager/template/${template.id}` })
-                    },
-                  },
-                  {
-                    key: `template-rename-${template.id}`,
-                    icon: Edit,
-                    label: "Umbenennen",
-                    onClick: () => onRename(template),
-                  },
-                  {
-                    key: `template-delete-${template.id}`,
-                    icon: Trash2,
-                    label: t("manager:templates.delete"),
-                    onClick: () => handleDeleteTemplate(template),
-                    destructive: true,
-                  },
-                )
-              }
-
-              return (
-                <motion.li
-                  key={template.id}
-                  data-testid={`template-row-${template.id}`}
-                  {...listItemMotion(index, false)}
+              {/* Category filter pills */}
+              <div className="flex flex-wrap gap-2">
+                <FilterPill
+                  active={selectedCategory === "Alle"}
+                  onClick={() => setSelectedCategory("Alle")}
                 >
-                  <ListRow
-                    title={template.name}
-                    meta={`${template.category} · ${t("manager:templates.questionCount", {
-                      count: template.questionCount,
-                    })}`}
-                    density="compact"
-                    actions={[
-                      {
-                        key: `template-use-${template.id}`,
-                        icon: LayoutTemplate,
-                        label: t("manager:templates.use"),
-                        onClick: () => handleUseTemplate(template.id),
-                      },
-                    ]}
-                    overflow={role === "admin" ? <OverflowMenu actions={adminActions} /> : undefined}
-                    footer={
-                      template.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {template.tags.slice(0, 3).map((tag) => (
-                            <Fragment key={tag}>
-                              <Badge tone="neutral">
-                                {tag}
-                              </Badge>
-                            </Fragment>
-                          ))}
-                          {template.tags.length > 3 && (
-                            <Badge tone="neutral">+{template.tags.length - 3}</Badge>
-                          )}
-                        </div>
-                      ) : undefined
-                    }
-                  />
-                </motion.li>
-              )
-            })}
-          </motion.ul>
-        )}
+                  {t("manager:templates.allCategories")}
+                </FilterPill>
+                {categories.map((category) => (
+                  <Fragment key={category}>
+                    <FilterPill
+                      active={selectedCategory === category}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {category}
+                    </FilterPill>
+                  </Fragment>
+                ))}
+              </div>
+            </>
+          )}
 
-        {/* Admin footer */}
-        {role === "admin" && !isLoading && !error && templates.length > 0 && (
-          <div className="mt-6 flex justify-end border-t border-[var(--line)] pt-4">
-            <Button
-              variant="primary"
-              onClick={onCreate}
-              data-testid="template-create-btn"
+          {/* Empty state */}
+          {emptyState}
+
+          {/* Templates list */}
+          {!emptyState && (
+            <motion.ul
+              className="console-scroll max-h-[50vh] space-y-2 overflow-y-auto"
+              {...listContainerMotion(false)}
             >
-              + {t("manager:templates.create")}
-            </Button>
-          </div>
-        )}
-      </div>
-    </DialogPanel>
+              {filteredTemplates.map((template, index) => {
+                const adminActions: ListRowAction[] = []
+
+                if (role === "admin") {
+                  adminActions.push(
+                    {
+                      key: `template-edit-${template.id}`,
+                      icon: Edit,
+                      label: t("manager:templates.edit"),
+                      onClick: () => {
+                        onOpenChange(false)
+                        navigate({ to: `/manager/template/${template.id}` })
+                      },
+                    },
+                    {
+                      key: `template-rename-${template.id}`,
+                      icon: Edit,
+                      label: "Umbenennen",
+                      onClick: () => onRename(template),
+                    },
+                    {
+                      key: `template-delete-${template.id}`,
+                      icon: Trash2,
+                      label: t("manager:templates.delete"),
+                      onClick: () => handleDeleteTemplate(template),
+                      destructive: true,
+                    },
+                  )
+                }
+
+                return (
+                  <motion.li
+                    key={template.id}
+                    data-testid={`template-row-${template.id}`}
+                    {...listItemMotion(index, false)}
+                  >
+                    <ListRow
+                      title={template.name}
+                      meta={`${template.category} · ${t("manager:templates.questionCount", {
+                        count: template.questionCount,
+                      })}`}
+                      density="compact"
+                      actions={[
+                        {
+                          key: `template-use-${template.id}`,
+                          icon: LayoutTemplate,
+                          label: t("manager:templates.use"),
+                          onClick: () => handleUseTemplate(template.id),
+                        },
+                      ]}
+                      overflow={role === "admin" ? <OverflowMenu actions={adminActions} /> : undefined}
+                      footer={
+                        template.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {template.tags.slice(0, 3).map((tag) => (
+                              <Fragment key={tag}>
+                                <Badge tone="neutral">
+                                  {tag}
+                                </Badge>
+                              </Fragment>
+                            ))}
+                            {template.tags.length > 3 && (
+                              <Badge tone="neutral">+{template.tags.length - 3}</Badge>
+                            )}
+                          </div>
+                        ) : undefined
+                      }
+                    />
+                  </motion.li>
+                )
+              })}
+            </motion.ul>
+          )}
+
+          {/* Admin footer */}
+          {role === "admin" && !isLoading && !error && templates.length > 0 && (
+            <div className="mt-6 flex justify-end border-t border-[var(--line)] pt-4">
+              <Button
+                variant="primary"
+                onClick={onCreate}
+                data-testid="template-create-btn"
+              >
+                + {t("manager:templates.create")}
+              </Button>
+            </div>
+          )}
+        </div>
+      </DialogPanel>
+
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title={t("manager:templates.deleteConfirm.title", {
+          defaultValue: "Template löschen",
+        })}
+        description={t("manager:templates.deleteConfirm.body")}
+        confirmLabel={t("common:delete", { defaultValue: "Löschen" })}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   )
 }
 

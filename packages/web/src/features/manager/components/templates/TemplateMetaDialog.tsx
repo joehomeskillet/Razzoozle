@@ -4,13 +4,13 @@ import Button from "../../../../components/Button"
 import DialogPanel from "../../../../components/manager/DialogPanel"
 import Input from "../../../../components/Input"
 import Select from "../../../../components/Select"
-import { createTemplate, updateTemplate, type TemplateFull } from "../../../../lib/templatesApi"
+import { createTemplate, updateTemplate, getTemplate, type TemplateMeta } from "../../../../lib/templatesApi"
 
 export interface TemplateMetaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** If set, this is an edit dialog; if undefined, this is a create dialog */
-  template?: TemplateFull
+  template?: TemplateMeta | undefined
   onSaved: () => void
 }
 
@@ -75,7 +75,7 @@ const TemplateMetaDialog = ({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setServerError("")
 
@@ -97,12 +97,14 @@ const TemplateMetaDialog = ({
 
       if (isEditMode && template) {
         // Edit mode: update existing template
+        // Fetch full template to get questions
+        const fullTemplate = await getTemplate(template.id)
         await updateTemplate(template.id, {
           name: form.name.trim(),
           category: form.category,
           description: form.description,
           tags,
-          questions: template.questions, // Pass through unchanged
+          questions: fullTemplate.questions, // Pass through unchanged
         })
       } else {
         // Create mode: create new template

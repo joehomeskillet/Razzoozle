@@ -152,7 +152,7 @@ const QuestionEditorAIAssist = () => {
     const safeType = (QUESTION_TYPES as readonly string[]).includes(
       currentQuestion.type ?? "",
     )
-      ? (currentQuestion.type as (typeof QUESTION_TYPES)[number])
+      ? (currentQuestion.type! as (typeof QUESTION_TYPES)[number])
       : "choice"
 
     setPendingResult(null)
