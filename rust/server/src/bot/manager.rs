@@ -112,6 +112,8 @@ impl BotManager {
 
 fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<String>) {
     match question.r#type.as_ref() {
+        Some(QuestionType::Choice) => (Some(pick_choice(question)), None, None),
+        Some(QuestionType::Boolean) => (Some(pick_choice(question)), None, None),
         Some(QuestionType::Slider) => (Some(pick_slider(question)), None, None),
         Some(QuestionType::Poll) => (Some(pick_poll(question)), None, None),
         Some(QuestionType::MultipleSelect) => (None, Some(pick_multiple_select(question)), None),
@@ -122,7 +124,34 @@ fn pick_answer(question: &Question) -> (Option<i32>, Option<Vec<i32>>, Option<St
             (None, None, Some(pick_slots(question)))
         }
         Some(QuestionType::DropPin) => (None, None, Some(pick_drop_pin(question))),
-        _ => (Some(pick_choice(question)), None, None),
+        Some(QuestionType::Mathematik) => {
+            warn!("Bot answering unsupported question type: Mathematik");
+            (None, None, None)
+        }
+        Some(QuestionType::Wortarten) => {
+            warn!("Bot answering unsupported question type: Wortarten");
+            (None, None, None)
+        }
+        Some(QuestionType::WordCloud) => {
+            warn!("Bot answering unsupported question type: WordCloud");
+            (None, None, None)
+        }
+        Some(QuestionType::Brainstorm) => {
+            warn!("Bot answering unsupported question type: Brainstorm");
+            (None, None, None)
+        }
+        Some(QuestionType::Confidence) => {
+            warn!("Bot answering unsupported question type: Confidence");
+            (None, None, None)
+        }
+        Some(QuestionType::MicroLesson) => {
+            warn!("Bot answering unsupported question type: MicroLesson");
+            (None, None, None)
+        }
+        None => {
+            warn!("Bot answering question with no type");
+            (None, None, None)
+        }
     }
 }
 
@@ -463,5 +492,18 @@ mod tests {
         assert!(answer_keys.is_none());
         assert!((0.0..=1.0).contains(&x));
         assert!((0.0..=1.0).contains(&y));
+    }
+
+    #[test]
+    fn pick_answer_returns_none_for_unhandled_types() {
+        let question = test_question(QuestionType::WordCloud);
+
+        let (answer_key, answer_keys, answer_text) = pick_answer(&question);
+
+        // Unhandled question types should not provide an answer
+        // to avoid incorrect data in records and statistics
+        assert!(answer_key.is_none(), "WordCloud should not provide answer_key");
+        assert!(answer_keys.is_none(), "WordCloud should not provide answer_keys");
+        assert!(answer_text.is_none(), "WordCloud should not provide answer_text");
     }
 }
