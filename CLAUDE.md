@@ -54,6 +54,7 @@ the Rust gate (`bash rust/gate.sh`), and the Docker build.
 
 
 
+<!-- UNIFIED DESIGN SYSTEM GOVERNANCE RULES (AUTO-SYNCED) -->
 # MANDATORY UI & DESIGN SYSTEM GOVERNANCE RULES FOR ALL AI AGENTS
 
 1. **NEVER Hand-Write UI Components From Scratch**:
@@ -78,3 +79,4 @@ the Rust gate (`bash rust/gate.sh`), and the Docker build.
      - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)
      - `pnpm tokens:ai-audit`   (AI Design System Governance Audit)
      - `pnpm tokens:daemon`     (Monorepo refactoring daemon)
+<!-- END UNIFIED DESIGN GOVERNANCE RULES -->
