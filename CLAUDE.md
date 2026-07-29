@@ -39,13 +39,13 @@ pnpm g:display <Name>                        # Display Stage component + test
 pnpm g:player <Name>                         # Mobile Phone Client component + test
 pnpm tokens:build                            # Build W3C tokens -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
 pnpm tokens:doc                              # Generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
-pnpm tokens:validate                         # Lint codebase for unmapped arbitrary tokens
-pnpm tokens:ast                              # AST structural linter for hardcoded hex attributes & inline styles
-pnpm tokens:wasm                             # High-speed SWC/AST token codemod transformer (sub-20ms)
-pnpm tokens:morph                            # AST-Morph zero-runtime Tailwind v4 compiler
-pnpm tokens:neural                           # Neural-Design-Core viewport auditor (375px/390px/440px)
-pnpm tokens:ai-audit                         # Dual-Pass AI Design System Governance Audit
-pnpm tokens:daemon                           # Autonomous Monorepo Refactoring Daemon
+pnpm tokens:validate                         # Regex linter for unmapped arbitrary tokens
+pnpm tokens:hex-lint                         # Regex-based hardcoded hex color validator
+pnpm tokens:wasm                             # Regex-based hex token replacer
+pnpm tokens:morph                            # Regex-based inline style replacer
+pnpm tokens:neural                           # Viewport auditor (375px/390px/440px)
+pnpm tokens:ai-audit                         # AI Design System Governance Audit
+pnpm tokens:daemon                           # Monorepo Refactoring Daemon
 pnpm tokens:fix                              # Auto-rewrite arbitrary var() syntax to Tailwind v4 tokens
 ```
 
@@ -73,7 +73,7 @@ the Rust gate (`bash rust/gate.sh`), and the Docker build.
 3. **Mandatory CLI Verification Chain**:
    - Before completing any UI task, ALWAYS run:
      - `pnpm tokens:validate`   (Check for unmapped arbitrary token usages)
-     - `pnpm tokens:ast`        (AST structural linter for hardcoded hex & inline styles)
+     - `pnpm tokens:hex-lint`   (Regex-based hardcoded hex color validator)
      - `pnpm tokens:wasm`       (High-speed SWC/AST token codemod transformer)
      - `pnpm tokens:morph`      (Zero-runtime Tailwind v4 compiler)
      - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)

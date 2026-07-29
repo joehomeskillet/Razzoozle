@@ -1215,7 +1215,7 @@ Focused gates come from the child SDD. Relevant project gates remain:
 ```bash
 pnpm verify
 pnpm tokens:validate
-pnpm tokens:ast
+pnpm tokens:hex-lint
 pnpm tokens:wasm
 pnpm tokens:morph
 pnpm tokens:neural

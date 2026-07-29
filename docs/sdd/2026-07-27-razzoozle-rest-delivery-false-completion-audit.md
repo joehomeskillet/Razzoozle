@@ -261,7 +261,7 @@ Kritischer Pfad für „alle 16 Gap-Issues mindestens contract-vollständig": W0
 
 ## 19. Validation Plan
 
-- **Pro WP:** `pnpm --filter web run types`, betroffene Vitest-Suite, `pnpm tokens:validate && pnpm tokens:ast` bei jeder UI-Änderung (UI-Governance-Vertrag, §ui-governance), `bash rust/gate.sh` bei jeder Rust-Änderung.
+- **Pro WP:** `pnpm --filter web run types`, betroffene Vitest-Suite, `pnpm tokens:validate && pnpm tokens:hex-lint` bei jeder UI-Änderung (UI-Governance-Vertrag, §ui-governance), `bash rust/gate.sh` bei jeder Rust-Änderung.
 - **#499 vor Merge (nicht in dieser Session ausgeführt, Pflicht vor Merge-Freigabe):** vollständiger `pnpm verify`, `pnpm --filter web run test` (Soll laut WP-Berichten: 394 grün), alle 5 Token-Gates, `pnpm i18n:check`, `pnpm --filter web run build`, sowie ein Live-Lauf von `e2e/stagehand/admin-self-delete-guard.spec.ts` gegen `int/499-configusers` — dieser Test wurde in dieser Session **nicht** ausgeführt und sollte der erste Schritt vor jedem Merge-Versuch sein, da er direkt die drei sicherheitsrelevanten Regressionen (Testids, Selbstkopie-Guard, Kaskaden-Warnung) abdeckt.
 - **#281-Fix:** Unit-Tests für Rollen-Exklusivität pro Socket, plus ein e2e-Test für Same-Tab-Rollenwechsel (Multi-Kontext, siehe `iframe_single_clientid_limit`-Memory — same-origin-iframes teilen eine `client_id`, daher Stagehand-Multi-Kontext statt iframe-Trick verwenden).
 - **#504-Fix:** Exhaustiveness-Test für `evaluate_answer` gegen alle `QuestionType`-Varianten (§10, Punkt 3) — verhindert Wiederholung strukturell, nicht nur für diese vier Typen.

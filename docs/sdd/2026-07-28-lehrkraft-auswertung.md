@@ -730,7 +730,7 @@ abgebrochene Läufe hinterlassen keine Zeile (8.10).
 
 **Werkzeuge und Pflichten:** Rust-Gate `bash rust/gate.sh` je Server-WP (Worktree braucht
 den config-Symlink); UI-WPs fahren die Pflicht-Verifikationskette
-(`pnpm tokens:validate · tokens:ast · tokens:neural · tokens:ai-audit`) mit
+(`pnpm tokens:validate · tokens:hex-lint · tokens:neural · tokens:ai-audit`) mit
 Verbatim-Ausgabe im Report. e2e via Stagehand-Lane (`source/e2e/`, ausserhalb des
 pnpm-Workspace, Install `--ignore-workspace`); Multi-Kind-Szenarien über getrennte
 Browser-Kontexte, nie same-origin-iframes; `/manager/config/assignments?view=tasks`
