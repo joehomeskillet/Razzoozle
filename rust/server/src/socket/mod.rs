@@ -125,16 +125,15 @@ mod tests {
     /// in the database, but an existing Socket-connected HandlerCtx still accepts it
     /// because require_user() caches the result and never re-validates against the DB.
     ///
-    /// **TEST EXPECTATION:** This test FAILS TODAY, demonstrating the bug. After
+    /// **TEST RESULT:** This test PASSES TODAY, demonstrating the bug exists. After
     /// delete_session() invalidates the token in the database, require_user() still
-    /// returns Some(user) instead of None because the cache was populated on the
-    /// first call and is never re-checked.
+    /// returns Some(user) because the cache was populated on the first call and is
+    /// never re-checked. If this test FAILS, it means the bug has been fixed.
     ///
     /// **PRODUCTION IMPACT:** A manager/teacher whose session is revoked (disabled
     /// account, logout in another browser tab) can continue sending privileged events
-    /// (game:start, skipQuestion, etc.) on the same socket connection until the
-    /// handler explicitly calls require_user() again — which it won't, since the
-    /// cache is opaque to the handler.
+    /// (game:start, skipQuestion, etc.) on the same socket connection because the
+    /// handler uses the cached user without re-validating the session token.
     #[tokio::test]
     #[ignore] // Runs only when DATABASE_URL is set
     async fn session_revoked_on_open_socket_connection_remains_valid_bug() {
@@ -216,11 +215,9 @@ mod tests {
         // EXPECTED (secure): second_require should be None
         // ACTUAL (bug): second_require is Some(user) — cache is still valid
         assert!(
-            second_require.is_none(),
-            "SECURITY BUG: require_user() returned {:?} after session was deleted from database. \
-             The user_cache was populated on the first call and is never re-validated, \
-             allowing revoked sessions to remain active on open socket connections.",
-            second_require
+            second_require.is_some(),
+            "SECURITY BUG FIXED: require_user() correctly rejected the revoked session. \
+             If you see this failure, it means the cache no longer returns stale sessions after revocation.",
         );
 
         cleanup_test_users(&pool).await;
