@@ -34,7 +34,7 @@ Checks performed:
   - OCI Label: org.opencontainers.image.version
   - Runtime UID must be numeric and non-zero (non-root)
   - Entrypoint or Cmd must be set
-  - Healthcheck instruction (optional; warns if missing)
+  - Healthcheck instruction (required)
   - Architecture and OS declared
 
 Exit code: 0 if all checks pass, 1 if any required check fails.
@@ -48,10 +48,6 @@ EOF
 die() {
   echo "ERROR: $*" >&2
   exit 1
-}
-
-warn() {
-  echo "WARNING: $*" >&2
 }
 
 check_tool() {
@@ -137,36 +133,41 @@ else
 fi
 
 #
-# Check 2: Runtime UID
+# Check 2: Runtime UID (numeric and non-root)
 #
 
 USER_STR=$(echo "$IMAGE_CONFIG" | jq -r '.User // empty')
+UID_NUM=""
+
 if [[ -z "$USER_STR" ]]; then
-  echo "CHECK: Runtime User (default to root) ... FAIL"
+  echo "CHECK: Runtime UID must be numeric and non-root (no User set, defaulting to root) ... FAIL"
   FAILED=1
 else
   # Extract UID (numeric part or username)
   UID_PART=$(echo "$USER_STR" | cut -d: -f1)
+  
   if [[ "$UID_PART" =~ ^[0-9]+$ ]]; then
+    # Already numeric
     UID_NUM=$UID_PART
   else
-    # Username; docker run --entrypoint will resolve, but we can't here
-    # For this check, accept non-numeric if it's explicitly set (not root)
-    if [[ "$UID_PART" == "root" ]] || [[ "$UID_PART" == "0" ]]; then
-      echo "CHECK: Runtime UID must be non-root (got: $UID_PART) ... FAIL"
-      FAILED=1
-    else
-      echo "CHECK: Runtime User is set to non-root user '$UID_PART' ... OK"
+    # Username — need to extract actual UID from running container
+    # Run container with 'id' entrypoint to get real UID
+    ID_OUTPUT=$(docker run --rm --entrypoint id "$IMAGE" 2>/dev/null || echo "")
+    if [[ -n "$ID_OUTPUT" ]]; then
+      # Output: uid=10001(appuser) gid=999(appuser) groups=999(appuser)
+      UID_NUM=$(echo "$ID_OUTPUT" | grep -oP 'uid=\K[0-9]+' || echo "")
     fi
   fi
-
-  if [[ "$UID_PART" =~ ^[0-9]+$ ]]; then
-    if [[ "$UID_NUM" -eq 0 ]]; then
-      echo "CHECK: Runtime UID must be non-root (got: $UID_NUM) ... FAIL"
-      FAILED=1
-    else
-      echo "CHECK: Runtime UID is numeric and non-root ($UID_NUM) ... OK"
-    fi
+  
+  # Validate numeric UID
+  if [[ -z "$UID_NUM" ]]; then
+    echo "CHECK: Runtime UID must be numeric and non-root (unable to determine UID for user '$UID_PART') ... FAIL"
+    FAILED=1
+  elif [[ "$UID_NUM" -eq 0 ]]; then
+    echo "CHECK: Runtime UID must be numeric and non-root (got: $UID_NUM, root) ... FAIL"
+    FAILED=1
+  else
+    echo "CHECK: Runtime UID is numeric and non-root ($UID_NUM) ... OK"
   fi
 fi
 
@@ -190,12 +191,13 @@ else
 fi
 
 #
-# Check 4: Healthcheck (optional; warns if missing)
+# Check 4: Healthcheck (REQUIRED, not optional)
 #
 
 HEALTHCHECK=$(echo "$IMAGE_INSPECT" | jq -r '.[0].ContainerConfig.Healthcheck // empty')
 if [[ -z "$HEALTHCHECK" ]]; then
-  echo "CHECK: Healthcheck instruction ... WARN (not present in Dockerfile)"
+  echo "CHECK: Healthcheck instruction ... FAIL"
+  FAILED=1
 else
   echo "CHECK: Healthcheck instruction ... OK"
 fi
