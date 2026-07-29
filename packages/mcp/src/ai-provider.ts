@@ -384,8 +384,8 @@ function mapLlmToQuestion(
     case "sequencing": {
       const items = Array.isArray(parsed.items)
         ? (parsed.items as Array<Record<string, unknown>>).map((it, i) => ({
-            id: String(it.id ?? `item-${i}`),
-            label: String(it.label ?? it.id ?? `Item ${i + 1}`),
+            id: typeof it.id === 'string' ? it.id : `item-${i}`,
+            label: typeof it.label === 'string' ? it.label : (typeof it.id === 'string' ? it.id : `Item ${i + 1}`),
           }))
         : [
             { id: "a", label: "First" },
@@ -403,7 +403,7 @@ function mapLlmToQuestion(
         typeof parsed.decimals === "number" ? parsed.decimals : 2
       break
     case "wortarten":
-      built.sentence = String(parsed.sentence ?? "")
+      built.sentence = typeof parsed.sentence === 'string' ? parsed.sentence : ''
       built.tokens = Array.isArray(parsed.tokens)
         ? (parsed.tokens as unknown[]).map(String)
         : []
