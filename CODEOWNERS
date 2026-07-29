@@ -11,3 +11,32 @@ packages/web/src/locales/** @agent-claude @joehomeskillet
 .gitea/workflows/i18n-check.yml @agent-claude @joehomeskillet
 scripts/check-locales.sh @agent-claude @joehomeskillet
 scripts/locale-sync.mjs @agent-claude @joehomeskillet
+
+# --- CRITICAL PATHS (GOV-004) ---
+
+# Authentication & Authorization (Security & Protocol Stability)
+# HTTP handler: request parsing, CORS, media serving
+rust/server/src/http/** @agent-claude @joehomeskillet
+
+# Socket.io protocol: real-time multiplayer synchronization, game state
+rust/server/src/socket/** @agent-claude @joehomeskillet
+
+# Authentication system: session tokens, permissions, role checks
+rust/server/src/auth/** @agent-claude @joehomeskillet
+
+# Database migrations: data structure changes, irreversible schema updates
+db/migrations/** @agent-claude @joehomeskillet
+
+# CI/CD Automation (Execution Context)
+# Gitea automation: deployment, build triggers
+.gitea/workflows/** @agent-claude @joehomeskillet
+
+# GitHub automation: release, build triggers (mirror)
+.github/workflows/** @agent-claude @joehomeskillet
+
+# Container & Infrastructure (Deployment)
+# Rust server container image definition
+rust/Dockerfile @agent-claude @joehomeskillet
+
+# Docker composition: service definitions, networking
+docker-compose*.yml @agent-claude @joehomeskillet
