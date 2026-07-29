@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on Gitea, and Design Tokens Automated Sync & Governance on both platforms. GitHub's tokens-sync workflow was fixed 2026-07-29 16:15:48 to prevent unauthorized pushes to main; Gitea's workflow continues to auto-push token artifacts to its own origin as designed.
+Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on Gitea, and Design Tokens Automated Sync & Governance on both platforms. The CI pipeline's Rust job is currently DORMANT (skipped via `if: ${{ false }}`); the local pre-merge gate `bash rust/gate.sh` remains the active enforcement point. GitHub's tokens-sync workflow was fixed 2026-07-29 16:15:48 to prevent unauthorized pushes to main; Gitea's workflow continues to auto-push token artifacts to its own origin as designed.
 
 ---
 
@@ -14,7 +14,7 @@ Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on
 
 ### 1. CI (`ci.yml`)
 
-**Status:** Active  
+**Status:** Active (lint+typecheck only; rust gate skipped)  
 **Path:** `.gitea/workflows/ci.yml`  
 **Created/Updated:** 2026-07-29 19:21:48 UTC+2  
 **Triggers:**
@@ -24,28 +24,29 @@ Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on
 
 **Permissions:** `contents: read`
 
-**Stages:**
-1. **lint + typecheck:** pnpm workspace, types check, manager token gates (blocking D1/D2/D10)
-2. **rust gate:** cargo test, security checks (xss_via_regex, sql_injection patterns)
-3. **build:** Docker image build (main-push only; no deploy; CD is manual host-gated)
+**Pipeline Stages:**
 
-**Recent Runs** (top 10 from Gitea API):
-| Run # | Status | Result | Head SHA | Commit Title |
-|-------|--------|--------|----------|--------------|
-| 1693 | completed | success | 683e52c | Login-Throttle wirkt pro Client statt global (#705, #706) |
-| 1692 | completed | success | - | (prev) |
-| 1691 | completed | cancelled | - | (prev) |
-| 1689 | completed | success | - | (prev) |
-| 1688 | completed | success | - | (prev) |
-| 1686 | completed | success | - | (prev) |
-| 1685 | completed | success | - | (prev) |
-| 1684 | completed | success | - | (prev) |
-| 1683 | completed | success | - | (prev) |
-| 1682 | completed | success | - | (prev) |
+1. **lint + typecheck (ALWAYS RUNS):** pnpm workspace, types check, manager token gates (blocking D1/D2/D10)
 
-**Notes:**
-- Cancelled run #1691 is normal (concurrency: cancel-in-progress enforced).
-- Majority success rate; stable pipe.
+2. **rust gate (CURRENTLY DORMANT — SKIPPED):**
+   - **Condition:** `.gitea/workflows/ci.yml` line 64: `if: ${{ false }}`
+   - **Root Cause:** `rust-ci` self-hosted runner label not provisioned. Runner ubusrv01 exists but has no `rust-ci` label and no `/ci-cache` volume required by sccache/Cargo cache strategy.
+   - **Consequence:** Job skips cleanly (reports `skipped` status) instead of queueing indefinitely or failing.
+   - **Actual enforcement:** `bash rust/gate.sh` (local pre-merge check, developer runs before push to main)
+   - **What rust gate does:** Cargo build, compile tests (--no-run), anti-regression feature markers
+   - **Smoke suite status:** Full game-play suite (`scripts/rust-ci-test.sh`) exists but NOT wired into CI pipeline (out of scope for phase 1 redesign).
+
+3. **build (BLOCKS ON RUST JOB STATUS):**
+   - **Condition:** `.gitea/workflows/ci.yml` line 131: `if: gitea.event_name == 'push' && gitea.ref == 'refs/heads/main'`
+   - **Dependency:** `needs: [rust]` (line 132) — waits for rust job even though it's skipped
+   - **Result:** Since rust job skips, build does NOT currently run on any branch
+   - **Docker BuildKit:** Required for rust/Dockerfile `--mount=type=cache` layers
+   - **When it will run:** Once rust-ci runner is provisioned
+
+**Job Dependency Chain (Current State):**
+```
+lint-typecheck (always runs) → rust [SKIPPED via if: false] → build [BLOCKED, does not run]
+```
 
 ---
 
@@ -129,7 +130,8 @@ Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on
 
 | Workflow | Platform | Permissions | Write Capability |
 |----------|----------|-------------|-------------------|
-| CI | Gitea | contents: read | No (read-only) |
+| CI (lint-typecheck) | Gitea | contents: read | No (read-only) |
+| CI (rust, build) | Gitea | contents: read | No — currently dormant/skipped |
 | tokens-sync | Gitea | (implicit write for git push) | **Yes — auto-commits & pushes to origin** |
 | tokens-sync | GitHub | contents: read | No (read-only, verified) |
 
@@ -137,7 +139,33 @@ Razzoozle runs two active Action workflows: CI (linting, type-check, testing) on
 
 ## Known Issues & Resolutions
 
-### GitHub tokens-sync Push Authorization (Fixed)
+### Rust Job Dormant (IN PROGRESS)
+
+**Issue:** CI pipeline's rust job (`rust:` in ci.yml) is currently skipped via `if: ${{ false }}`.
+
+**Root Cause:** `rust-ci` self-hosted runner label was not available on provisioned host ubusrv01. The job would queue forever waiting for a runner with that label (Gitea does not auto-skip missing runner labels; a job whose label matches NO runner queues indefinitely). The conditional `if: false` forces the job to skip cleanly instead.
+
+**Current Mitigation:** Local developer gate `bash rust/gate.sh` performs the actual Rust checks before pushing to main. This pre-merge enforcement remains the canonical gating point.
+
+**Resolution Path:** Once rust-ci runner is provisioned with proper labels and `/ci-cache` volume, the `if: false` can be removed and the job re-enabled.
+
+**Evidence:**
+```yaml
+# .gitea/workflows/ci.yml (lines 60–80)
+rust:
+  # DORMANT until a rust-ci runner is provisioned: runner ubusrv01 has no
+  # `rust-ci` label and /ci-cache does not exist — the job would queue forever.
+  # The rust gate remains the local pre-merge `rust/gate.sh`.
+  if: ${{ false }}
+  name: rust gate
+  needs: lint-typecheck
+  ...
+  runs-on: ubuntu-latest  # fallback label to allow job to skip instead of queue
+```
+
+---
+
+### GitHub tokens-sync Push Authorization (FIXED)
 
 **Issue:** GitHub's tokens-sync.yml workflow previously attempted `git push origin main`, which failed due to read-only permissions and lack of write credentials in the GitHub runner environment.
 
@@ -171,12 +199,15 @@ Date:   Wed Jul 29 16:15:48 2026 +0200
 - **Gitea Runner:** Runs on host-gated Actions infrastructure; has no Docker/systemctl access (CD remains manual).
 - **GitHub Mirror:** Stripped by `_ghmirror` filter (removes .gitea/workflows/); token paths excluded from sync.
 - **Concurrency:** CI enforces `cancel-in-progress: true` to prevent redundant runs on rapid pushes.
+- **lint-typecheck job:** Always runs; blocks nothing. Stable enforcement point.
+- **rust job:** Currently skipped by conditional; does not block build (since it skips, build also does not run).
+- **build job:** Will run on main-push once rust-ci runner is provisioned.
 
 ---
 
 ## Report Status
 
 - **Generated:** 2026-07-29
-- **Source:** Gitea API (Workflows, Runs), GitHub API (Workflows, Runs), Workflow YAML files
-- **Verification:** All run counts and commit SHAs confirmed via API/CLI
-- **Next Steps:** Use this baseline to audit workflow health in continuous integration; monitor failure rates and escalate long-running regressions.
+- **Source:** Gitea CI workflow YAML (git.joelduss.xyz), GitHub mirror YAML (github.com), local .gitea/workflows/ci.yml inspection
+- **Verification:** Rust job dormancy confirmed via `.gitea/workflows/ci.yml:64 if: ${{ false }}` and comment block (lines 61–63)
+- **Next Steps:** Use this baseline to audit workflow health. When rust-ci runner becomes available, test removing `if: false` conditional and re-enabling the rust job.
