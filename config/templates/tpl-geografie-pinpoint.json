@@ -1,0 +1,48 @@
+{
+  "id": "tpl-geografie-pinpoint",
+  "category": "geografie",
+  "name": "Pins auf Karte setzen",
+  "description": "Markiere die richtige Stelle auf einer Karte",
+  "tags": [
+    "geografie",
+    "karte"
+  ],
+  "questions": [
+    {
+      "question": "Markiere die Hauptstadt Deutschland auf der Europakarte",
+      "type": "drop-pin",
+      "media": {
+        "type": "image",
+        "url": "/media/europe-map.webp"
+      },
+      "hotspots": [
+        {
+          "x": 0.35,
+          "y": 0.35,
+          "w": 0.1,
+          "h": 0.1
+        }
+      ],
+      "cooldown": 5,
+      "time": 40
+    },
+    {
+      "question": "Klicke auf die Position von Paris auf der Europakarte",
+      "type": "drop-pin",
+      "media": {
+        "type": "image",
+        "url": "/media/europe-map.webp"
+      },
+      "hotspots": [
+        {
+          "x": 0.25,
+          "y": 0.4,
+          "w": 0.08,
+          "h": 0.08
+        }
+      ],
+      "cooldown": 5,
+      "time": 35
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "tpl-english-sentence",
+  "category": "english",
+  "name": "Satzbausteine",
+  "description": "Ordne Wörter zu sinnvollen Sätzen",
+  "tags": [
+    "english",
+    "sentence"
+  ],
+  "questions": [
+    {
+      "question": "Ordne die Wörter zu einem korrekten Satz: 'Zeichne einen Satz mit: I, like, pizza, very, much'",
+      "type": "sentence-builder",
+      "chunks": [
+        "I",
+        "like",
+        "pizza",
+        "very",
+        "much"
+      ],
+      "cooldown": 5,
+      "time": 40
+    },
+    {
+      "question": "Baue einen Satz mit: 'The, quick, brown, fox, jumps, over, the, lazy, dog'",
+      "type": "sentence-builder",
+      "chunks": [
+        "The",
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "over",
+        "the",
+        "lazy",
+        "dog"
+      ],
+      "cooldown": 5,
+      "time": 45
+    }
+  ]
+}
