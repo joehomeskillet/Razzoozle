@@ -70,9 +70,9 @@ Jeder neue Fragetyp muss an den folgenden 13 Orten vollständig implementiert we
 
 | # | Ebene | Dateien | Rolle | Grep-Prüfung |
 |---|---|---|---|---|
-| **T1** | Validator-Tests | `packages/common/src/validators/__tests__/quizz.test.ts` | Zod-Validierung testen (Valid + Invalid Cases) | `grep -n "describe.*slider" packages/common/src/validators/__tests__/quizz.test.ts` |
-| **T2** | E2E-Tests | `packages/web/e2e/answer-flow.spec.ts` (oder Typ-spezifisch) | Browser-Test: Frage stellen → Spieler antwortet → Reveal prüfen | `grep -n "test.*sentence-builder" packages/web/e2e/` |
-| **T3** | Solo-Tests | `packages/web/e2e/answer-flow.spec.ts` | Solo-Modus: Frage → Antwort → Feedback | `grep -n "solo.*slider" packages/web/e2e/` |
+| **T1** | Validator-Tests | `packages/common/src/validators/quizz.new-types.test.ts` | Zod-Validierung testen (Valid + Invalid Cases) | `grep -n "describe.*slider" packages/common/src/validators/quizz.new-types.test.ts` |
+| **T2** | E2E-Tests | `e2e/answer-flow.spec.ts` (oder Typ-spezifisch) | Browser-Test: Frage stellen → Spieler antwortet → Reveal prüfen | `grep -n "test.*sentence-builder" e2e/` |
+| **T3** | Solo-Tests | `e2e/answer-flow.spec.ts` | Solo-Modus: Frage → Antwort → Feedback | `grep -n "solo.*slider" e2e/` |
 
 ---
 

@@ -8,12 +8,9 @@
 // (W0a upsert-quiz.mjs). data-testid contract from W0_SPEC / W0b-1.
 //
 // WP-504-E2E: covers 3 of the 4 unscored question types (brainstorm, confidence,
-// micro-lesson) end to end. `word-cloud` is deliberately NOT exercised here —
-// WordCloudDisplay (packages/web/.../answers/WordCloudDisplay.tsx) is a
-// read-only display component with no input/submit affordance in either the
-// multiplayer (Answers.tsx) or solo (SoloAnswers.tsx) answer screen, so a
-// player cannot answer a word-cloud question through the game UI at all. That
-// is a real product gap (not this file's job to fix) — see the WP report.
+// micro-lesson) end to end. `word-cloud` is NOT exercised in this baseline suite
+// (historical: #533 behoben, input-affordance seit 2026-07-29 verfügbar). Suite-
+// Erweiterung für word-cloud offen; siehe #546 für Scope.
 import { test, expect, type Page, type BrowserContext } from "@playwright/test"
 // Path locked per W0_SPEC (W0a owns content; mirrored here for import/parse).
 import quizFixture from "./fixtures/all-types-quiz.json" with { type: "json" }
