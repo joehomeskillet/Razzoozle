@@ -7,7 +7,6 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use tracing::{info, warn};
 
 use super::{json_error_response, AppState};
