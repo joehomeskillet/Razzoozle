@@ -20,23 +20,50 @@ interface FinishedScreenProps {
   answers?: SoloQuestionResult[]
 }
 
+// ---------------------------------------------------------------------------
+// Recap statistics calculation: excludes unscored (poll) answers from counts.
+// Exported for testing and reuse.
+// ---------------------------------------------------------------------------
+
+export interface RecapStats {
+  correct: number
+  wrong: number
+  accuracyPct: number
+  peakStreak: number
+}
+
+export function calculateSoloRecapStats(
+  answers: SoloQuestionResult[]
+): RecapStats {
+  // Filter out unscored (poll) answers from scoring base
+  const scoredAnswers = answers.filter((a) => !a.poll)
+
+  const correct = scoredAnswers.filter((a) => a.correct).length
+  const wrong = scoredAnswers.filter((a) => !a.correct).length
+  const accuracyPct =
+    scoredAnswers.length > 0
+      ? Math.round((correct / scoredAnswers.length) * 100)
+      : 0
+
+  // Calculate peak streak without breaking on unscored answers
+  let peakStreak = 0
+  let streak = 0
+  for (const a of answers) {
+    if (a.poll) continue
+    streak = a.correct ? streak + 1 : 0
+    peakStreak = Math.max(peakStreak, streak)
+  }
+
+  return { correct, wrong, accuracyPct, peakStreak }
+}
+
 // Personal recap for a solo round, parity with PlayerFinished's MyRecapCard
 // minus the `fastest` stat — solo tracks no per-answer timing, so there is
 // nothing to report there (not a gap, just no such measurement in solo).
 const SoloRecapCard = ({ answers }: { answers: SoloQuestionResult[] }) => {
   const { t } = useTranslation()
-
-  const correct = answers.filter((a) => a.correct).length
-  const wrong = answers.length - correct
-  const accuracyPct =
-    answers.length > 0 ? Math.round((correct / answers.length) * 100) : 0
-
-  let peakStreak = 0
-  let streak = 0
-  for (const a of answers) {
-    streak = a.correct ? streak + 1 : 0
-    peakStreak = Math.max(peakStreak, streak)
-  }
+  const { correct, wrong, accuracyPct, peakStreak } =
+    calculateSoloRecapStats(answers)
 
   const stats: { label: string; value: string }[] = [
     { label: t("game:recap.myCard.accuracy"), value: `${accuracyPct}%` },
