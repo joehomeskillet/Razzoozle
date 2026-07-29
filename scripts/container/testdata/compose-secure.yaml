@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  app:
+    image: razzoozle:1.0.0
+    container_name: razzoozle-secure
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "3020:3020"
+    environment:
+      PORT: "3020"
+      CONFIG_PATH: "/config"
+      DATABASE_URL: "postgresql://razzoozle:password@db:5432/razzoozle"
+    volumes:
+      - /tmp/razzoozle-config:/config:rw
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:16.3-alpine
+    container_name: postgres-secure
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_USER: razzoozle
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: razzoozle
+    # SECURE: Port is NOT published to host
+    volumes:
+      - /tmp/razzoozle-pgdata:/var/lib/postgresql/data:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U razzoozle -d razzoozle"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.driver.mtu: 1500
