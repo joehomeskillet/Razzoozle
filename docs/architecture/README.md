@@ -25,13 +25,13 @@ Razzoozle is a single-process, Rust-based backend serving a React SPA frontend. 
 ┌────────────────────────────────────────────────────────┐
 │ RUST SERVER — razzoozle-server (single process)        │
 │                                                        │
-│  /socket ─────► socket handlers (114 socket.on regs)  │
+│  /socket ─────► socket handlers (113 socket.on registrations)  │
 │  │               - lifecycle/mod.rs  (phase FSM)     │
 │  │               - player/*.rs       (join/answer)  │
 │  │               - manager/*.rs      (host control)│
 │  │               - display.rs        (kiosk output)  │
 │  │                                                   │
-│  /http ────────► REST routes (30 endpoints)         │
+│  /http ────────► REST routes (51 endpoints)         │
 │  │               - login, auth, solo play          │
 │  │               - assignments, results            │
 │  │               - quizzes, media, themes          │
@@ -84,9 +84,9 @@ Razzoozle is a single-process, Rust-based backend serving a React SPA frontend. 
 ```
 rust/
 ├── server/        razzoozle-server (main binary, ~800 LOC main.rs)
-│   ├── socket/    ~2000 LOC: event handlers, lifecycles
-│   ├── http/      ~1500 LOC: REST routes, auth logic
-│   ├── db/        ~2500 LOC: SQL queries
+87	│   ├── socket/    ~19k LOC: event handlers, lifecycles
+88	│   ├── http/      ~7.7k LOC: REST routes, auth logic
+89	│   ├── db/        ~8.6k LOC: SQL queries
 │   ├── state/     ~1000 LOC: in-memory game registry
 │   ├── auth/      ~500 LOC: JWT, token validation
 │   ├── config/    ~300 LOC: YAML parsing, env resolution
@@ -217,7 +217,7 @@ emit 'game:playerAnswer' received
 ### Startup Sequence (main.rs)
 
 ```rust
-1. Parse CLI args (--port, --config-path, --db-url)
+1. Parse CLI command (serve, healthcheck, migrate); optional flags (--version, --help)
 2. Initialize logging (tracing + ring buffer for GET /api/v1/observability/logs)
 3. Create DB pool (if DATABASE_URL env is set; optional for dev)
 4. Hydrate media from Postgres to disk (E4 feature)
@@ -226,8 +226,8 @@ emit 'game:playerAnswer' received
 7. Initialize GameRegistry (in-memory state)
 8. Load crash-recovery snapshot (if exists)
 9. Start periodic snapshot saver (5s interval)
-10. Create Socket.IO instance (114 handlers registered)
-11. Create HTTP router (30 REST routes registered)
+10. Create Socket.IO instance (113 handlers registered)
+11. Create HTTP router (51 REST routes registered)
 12. Listen on :3020 (or $PORT env)
 13. Install signal handlers (SIGINT/SIGTERM → graceful shutdown → save snapshot)
 ```
