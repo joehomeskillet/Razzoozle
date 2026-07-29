@@ -42,6 +42,3 @@ tower-http = { version = "0.6", features = ["cors", "fs", "set-header"] }
 # dev-only addition that never ships in a release binary.
 [dev-dependencies]
 tokio = { version = "1", features = ["test-util"] }
-
-[profile.release]
-opt-level = 3

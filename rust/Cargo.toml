@@ -10,3 +10,14 @@ edition = "2021"
 # cutting debug compile + link time and target/ size. No behavior change.
 [profile.dev]
 debug = "line-tables-only"
+
+# Release profile: Full optimization for production binaries.
+# opt-level = 3: Aggressive optimizations (O3)
+# lto = "thin": Fast link-time optimization (balances compile time vs size/speed)
+# codegen-units = 1: Better optimization across codegen units (slower compile, better codegen)
+# strip = "symbols": Strip symbol tables for smaller binary size (debuginfo retained in separate object)
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
