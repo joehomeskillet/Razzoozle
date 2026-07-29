@@ -179,9 +179,10 @@ mod tests {
         cleanup_test_users(&pool).await;
 
         // Step 1: Create a user
-        let user_id = crate::db::users::create_user(&pool, "test_socket_revoked_user", "pass123", "user")
-            .await
-            .expect("Failed to create test user");
+        let user_id =
+            crate::db::users::create_user(&pool, "test_socket_revoked_user", "pass123", "user")
+                .await
+                .expect("Failed to create test user");
 
         // Step 2: Mint a session token
         let session_token = crate::db::users::mint_session(&pool, user_id, 7)
@@ -202,8 +203,7 @@ mod tests {
         let (_layer, io) = SocketIo::builder().build_layer();
         let ctx = HandlerCtx {
             registry: Arc::new(RwLock::new(
-                crate::state::GameRegistry::new(&None, quiz)
-                    .await,
+                crate::state::GameRegistry::new(&None, quiz).await,
             )),
             io,
             client_id: "test_client_id".to_string(),

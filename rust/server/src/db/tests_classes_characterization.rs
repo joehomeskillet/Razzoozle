@@ -170,7 +170,10 @@ mod tests {
             .iter()
             .find(|c| c["name"] == "test_cc_ownername_class")
             .expect("class must be visible to admin");
-        assert_eq!(admin_row["ownerName"], serde_json::json!("test_cc_ownername_owner"));
+        assert_eq!(
+            admin_row["ownerName"],
+            serde_json::json!("test_cc_ownername_owner")
+        );
 
         cleanup(&pool, "test_cc_ownername").await;
     }
@@ -189,18 +192,24 @@ mod tests {
             .expect("create_class");
 
         assert_eq!(
-            set_class_active(&opt, class_id, false, Some(owner)).await.unwrap(),
+            set_class_active(&opt, class_id, false, Some(owner))
+                .await
+                .unwrap(),
             1
         );
         assert_eq!(
-            set_class_active(&opt, class_id, false, Some(owner)).await.unwrap(),
+            set_class_active(&opt, class_id, false, Some(owner))
+                .await
+                .unwrap(),
             1,
             "re-applying the same value is still reported as a hit"
         );
 
         let wrong_owner = owner + 999_000;
         assert_eq!(
-            set_class_active(&opt, class_id, true, Some(wrong_owner)).await.unwrap(),
+            set_class_active(&opt, class_id, true, Some(wrong_owner))
+                .await
+                .unwrap(),
             0,
             "non-owner call must be a silent no-op, not an Err"
         );
@@ -215,8 +224,12 @@ mod tests {
     async fn test_bulk_class_ops_empty_and_max_exceeded() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_bulkedge");
-        let c1 = create_class(&opt, "test_cc_bulkedge_c1", owner).await.unwrap();
-        let c2 = create_class(&opt, "test_cc_bulkedge_c2", owner).await.unwrap();
+        let c1 = create_class(&opt, "test_cc_bulkedge_c1", owner)
+            .await
+            .unwrap();
+        let c2 = create_class(&opt, "test_cc_bulkedge_c2", owner)
+            .await
+            .unwrap();
 
         let empty_active = bulk_set_class_active(&opt, vec![], false, Some(owner), BULK_MAX_IDS)
             .await
@@ -232,8 +245,14 @@ mod tests {
             .await
             .expect_err("more ids than max must Err");
         assert!(over_max.contains("too many ids"));
-        assert!(get_class(&opt, c1, Some(owner)).await.is_ok(), "c1 must survive rejected bulk");
-        assert!(get_class(&opt, c2, Some(owner)).await.is_ok(), "c2 must survive rejected bulk");
+        assert!(
+            get_class(&opt, c1, Some(owner)).await.is_ok(),
+            "c1 must survive rejected bulk"
+        );
+        assert!(
+            get_class(&opt, c2, Some(owner)).await.is_ok(),
+            "c2 must survive rejected bulk"
+        );
 
         cleanup(&pool, "test_cc_bulkedge").await;
     }
@@ -262,20 +281,27 @@ mod tests {
         assert_eq!(delete_class(&opt, class_id, Some(owner)).await.unwrap(), 1);
 
         assert_eq!(count_membership(&pool, student_id, class_id).await, 0);
-        let survives: i64 = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
-            .bind(student_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap()
-            .0;
-        assert_eq!(survives, 1, "student row must survive class deletion (no trigger anymore)");
+        let survives: i64 =
+            sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
+                .bind(student_id)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+                .0;
+        assert_eq!(
+            survives, 1,
+            "student row must survive class deletion (no trigger anymore)"
+        );
         let legacy_class_id: (Option<i64>,) =
             sqlx::query_as("SELECT class_id FROM students WHERE id = $1")
                 .bind(student_id)
                 .fetch_one(&pool)
                 .await
                 .unwrap();
-        assert_eq!(legacy_class_id.0, None, "legacy class_id column must be SET NULL by FK");
+        assert_eq!(
+            legacy_class_id.0, None,
+            "legacy class_id column must be SET NULL by FK"
+        );
 
         cleanup(&pool, "test_cc_delclass").await;
     }
@@ -287,19 +313,28 @@ mod tests {
     async fn test_update_class_duplicate_rejected_and_wrong_owner_noop() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_updclass");
-        create_class(&opt, "test_cc_updclass_taken", owner).await.unwrap();
-        let mine = create_class(&opt, "test_cc_updclass_mine", owner).await.unwrap();
+        create_class(&opt, "test_cc_updclass_taken", owner)
+            .await
+            .unwrap();
+        let mine = create_class(&opt, "test_cc_updclass_mine", owner)
+            .await
+            .unwrap();
 
         let err = update_class(&opt, mine, "test_cc_updclass_taken", Some(owner))
             .await
             .expect_err("renaming onto an existing name must conflict");
         assert_eq!(err, "name_exists");
         let unchanged = get_class(&opt, mine, Some(owner)).await.unwrap();
-        assert_eq!(unchanged["name"], serde_json::json!("test_cc_updclass_mine"));
+        assert_eq!(
+            unchanged["name"],
+            serde_json::json!("test_cc_updclass_mine")
+        );
 
         let wrong_owner = owner + 999_000;
         assert_eq!(
-            update_class(&opt, mine, "test_cc_updclass_renamed", Some(wrong_owner)).await.unwrap(),
+            update_class(&opt, mine, "test_cc_updclass_renamed", Some(wrong_owner))
+                .await
+                .unwrap(),
             0,
             "non-owner rename is a silent no-op"
         );

@@ -1320,6 +1320,9 @@ pub async fn list_all_students(
 /// Check if `me` can manage a specific student.
 /// Returns true if `me` is admin (None) or owns at least one class containing the student.
 /// Public wrapper that accepts Option<PgPool>.
+// Not yet called from any handler — kept as the intended authorization
+// entrypoint for a pending per-student manage-check; not dead code to remove.
+#[allow(dead_code)]
 pub async fn can_manage_student(
     pool: &Option<PgPool>,
     student_id: i64,
