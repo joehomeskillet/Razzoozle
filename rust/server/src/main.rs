@@ -193,6 +193,28 @@ mod host_token_tests {
     }
 }
 
+/// Signal handler for graceful shutdown: waits for SIGINT/SIGTERM, then saves final snapshot.
+/// Returns normally (async) when a signal is received, allowing axum to drain in-flight requests.
+async fn shutdown_signal(registry: Arc<RwLock<GameRegistry>>) {
+    let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+        .expect("Failed to install SIGINT handler");
+    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        .expect("Failed to install SIGTERM handler");
+
+    tokio::select! {
+        _ = sigint.recv() => {
+            info!("SIGINT received, initiating graceful shutdown");
+        }
+        _ = sigterm.recv() => {
+            info!("SIGTERM received, initiating graceful shutdown");
+        }
+    }
+
+    // Save final snapshot before returning (this allows axum to drain in-flight requests).
+    registry.read().await.save_snapshot().await;
+    info!("Final snapshot saved, waiting for in-flight requests to complete");
+}
+
 /// Start the server with the given configuration.
 async fn start_server() {
     // fmt layer (stdout, unchanged behaviour) + ADDITIVE ring layer: every
@@ -415,33 +437,21 @@ async fn start_server() {
 
     info!("Server listening on http://{}", addr);
 
-
-    // Graceful shutdown: save snapshot on SIGINT/SIGTERM before exiting.
-    // Mirrors Node's signal handlers (packages/socket/src/index.ts:204-214).
-    let registry_sig = Arc::clone(&registry);
-    tokio::spawn(async move {
-        let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-            .expect("Failed to install SIGINT handler");
-        let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .expect("Failed to install SIGTERM handler");
-
-        tokio::select! {
-            _ = sigint.recv() => {
-                info!("SIGINT received, saving snapshot and shutting down");
-                registry_sig.read().await.save_snapshot().await;
-                std::process::exit(0);
-            }
-            _ = sigterm.recv() => {
-                info!("SIGTERM received, saving snapshot and shutting down");
-                registry_sig.read().await.save_snapshot().await;
-                std::process::exit(0);
-            }
-        }
-    });
-
+    // Graceful shutdown (DCK-04): use axum's with_graceful_shutdown instead of
+    // spawning a separate signal handler with std::process::exit.
+    // This allows in-flight requests to complete while saving the final snapshot.
+    let registry_shutdown = Arc::clone(&registry);
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
+        .with_graceful_shutdown(shutdown_signal(registry_shutdown))
         .await
         .expect("Failed to start server");
+
+    // After axum::serve returns (graceful shutdown completed), the periodic
+    // snapshot task and background reapers are still running in the background.
+    // They will naturally exit when their spawn handles are dropped at the end
+    // of start_server.
+    // The DB pool (if configured) is automatically closed here via drop().
+    info!("Server shutdown complete");
 }
 
 #[tokio::main]
@@ -462,8 +472,8 @@ async fn main() {
                 start_server().await;
             }
             cli::Command::Healthcheck => {
-                eprintln!("healthcheck: not yet implemented (see DCK-04)");
-                std::process::exit(1);
+                let exit_code = cli::execute_healthcheck().await;
+                std::process::exit(exit_code);
             }
             cli::Command::Migrate => {
                 eprintln!("migrate: not yet implemented (see DCK-05)");

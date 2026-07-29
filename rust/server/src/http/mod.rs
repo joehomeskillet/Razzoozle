@@ -17,7 +17,7 @@ mod submit;
 mod users;
 
 use axum::{
-    extract::Path,
+    extract::{State, Path},
     http::{HeaderMap, StatusCode},
     routing::{delete, get, post, put},
     Json, Router,
@@ -64,6 +64,20 @@ impl axum::extract::FromRef<AppState> for Option<sqlx::PgPool> {
 struct HealthResponse {
     status: String,
     ts: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct LivenessResponse {
+    status: String,
+    timestamp: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct ReadinessResponse {
+    status: String,
+    timestamp: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    db: Option<String>,
 }
 
 // ── HTTP helpers (auth, error formatting, dev-gating) ──────────────────────
@@ -161,7 +175,50 @@ lazy_static! {
 
 }
 
+/// Liveness probe: process is running and HTTP is serving.
+/// No dependency checks (DB not required).
+/// Returns 200 on success, 5xx only for internal process problems.
+pub async fn handle_livez() -> Json<LivenessResponse> {
+    Json(LivenessResponse {
+        status: "alive".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+    })
+}
 
+/// Readiness probe: process is alive AND ready to handle requests.
+/// Checks DB connectivity if configured.
+/// Returns 200 if ready, 503 Service Unavailable if not ready (e.g., DB unreachable).
+pub async fn handle_readyz(State(state): State<AppState>) -> Result<Json<ReadinessResponse>, StatusCode> {
+    let timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+
+    // If DB pool exists, perform a simple connectivity check.
+    let db_status = if let Some(ref pool) = state.db_pool {
+        match sqlx::query_scalar::<_, i64>("SELECT 1::bigint").fetch_one(pool).await {
+            Ok(_) => Some("connected".to_string()),
+            Err(_) => {
+                // DB not reachable: return 503 Service Unavailable
+                return Err(StatusCode::SERVICE_UNAVAILABLE);
+            }
+        }
+    } else {
+        // No DB configured; readiness is OK (file-mode or standalone).
+        None
+    };
+
+    Ok(Json(ReadinessResponse {
+        status: "ready".to_string(),
+        timestamp,
+        db: db_status,
+    }))
+}
+
+/// Health endpoint (legacy, used by CD gate rust-cd-poll.sh).
+/// Routes: /health, /healthz, /api/v1/health
+/// ALIAS DECISION (DCK-04): These aliases use liveness logic, NOT readiness,
+/// because rust-cd-poll.sh::78 requires /healthz == 200 immediately after deploy.
+/// If /healthz were readiness-strict (503 if DB down), the CD gate would roll back
+/// on any DB transient, breaking every deploy. Liveness ensures the server can serve
+/// before DB dependencies are guaranteed ready (migrations run separately, DCK-05).
 pub async fn handle_health() -> Json<HealthResponse> {
     Json(HealthResponse {
         status: "ok".to_string(),
@@ -197,6 +254,8 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(handle_health))
         .route("/healthz", get(handle_healthz))
         .route("/api/v1/health", get(handle_health))
+        .route("/livez", get(handle_livez))
+        .route("/readyz", get(handle_readyz))
         .route("/api/login", post(login::handle_login))
         .route("/api/users", get(users::list).post(users::create))
         .route("/api/users/bulk-activate", post(users::bulk_activate))
@@ -260,4 +319,31 @@ pub fn router(state: AppState) -> Router {
         // SPA fallback for unknown routes
         .fallback(static_files::handle_spa_fallback)
         .with_state(state)
+}
+
+
+#[cfg(test)]
+mod tests_health {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_handle_livez() {
+        let response = handle_livez().await;
+        assert_eq!(response.status, "alive");
+        assert!(!response.timestamp.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_handle_health() {
+        let response = handle_health().await;
+        assert_eq!(response.status, "ok");
+        assert!(!response.ts.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_handle_healthz() {
+        let (status, msg) = handle_healthz().await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(msg, "ok");
+    }
 }
