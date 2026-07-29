@@ -47,6 +47,7 @@ jobs:
 
       - name: Verify No Untracked Generated Changes
         run: |
+          git update-index -q --refresh
           if ! git diff-index --quiet HEAD; then
             echo "ERROR: Generated tokens or specs have untracked changes after build & fix."
             echo "This indicates the token generation scripts are producing output that differs from the committed state."
