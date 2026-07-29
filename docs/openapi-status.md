@@ -51,7 +51,7 @@ Per ADR-007, the following should be removed:
 
 - **ADR-007**: `docs/adr/007-http-api-documentation-strategy.md`
 - **Dead generator**: `packages/common/src/openapi/doc.ts`
-- **Dead route client call**: `packages/web/.../ConfigDev/ApiExplorerCard.tsx:55` (calls `/api/openapi.json`)
+- **Comment on unimplemented endpoint**: `packages/web/src/features/manager/components/configurations/ConfigDev/useDevTelemetry.ts:37` (documents that `/api/openapi.json` was never implemented)
 - **Stale validators**: `packages/common/src/validators/solo.ts`, `packages/common/src/validators/assignment.ts`
 - **Documentation to correct**: 
   - `docs/sdd/game-solo-multiplayer-refactor/phase0-gaps-and-duplication.md` (G17)
