@@ -1,6 +1,6 @@
 # Rezept: einen neuen Fragetyp hinzufügen
 
-Stand: 2026-07-28, `main` auf `2f795ff0b`. Ergänzt
+Stand: 2026-07-29, `main` auf `129017f14`. Ergänzt
 [`docs/design/question-type-contract.md`](design/question-type-contract.md): das
 Contract-Dokument sagt *wo* die Pflichtplätze liegen, dieses Rezept sagt *in
 welcher Reihenfolge*, *was schiefgeht wenn man einen vergisst* und *woran man
@@ -175,7 +175,7 @@ sofort. Das falsche `rename` fängt niemand.
 |---|---|:---:|---|
 | `server/src/main.rs:21` | Arm in `question_type_wire` | **ja** | Bricht `cargo build -p razzoozle-server` mit *non-exhaustive patterns*. Die früheste und lauteste Rückmeldung im ganzen Rollout — sofern jemand baut (§ 1). |
 | `server/src/socket/validation.rs:94` | Eigener `match`-Arm | nein | Fällt in `_ =>` (Zeile 269): Speichern wird mit `errors:quizz.tooFewAnswers` abgelehnt. Betrifft Editor-Save, Fixture-Upsert **und** Katalog-Import. Genau die Sequencing-Regression, die der Kommentar bei Zeile 188 dokumentiert. |
-| `server/src/socket/reveal_helpers.rs:26` | Wertungsfreie Typen vom Reveal ausnehmen | nein | `is_poll` ist der einzige Diskriminator. Der Default-Arm (Zeile 100) mappt `solutions` auf `answers` und zeigt eine *richtige Antwort*, die es nicht gibt. **Heute offen (#532).** |
+| `server/src/socket/reveal_helpers.rs:26` | Wertungsfreie Typen vom Reveal ausnehmen | nein | Nutzt `t.is_unscored()` statt `matches!(…,Poll)` (behoben in #532, Zeile 26/438). Der Default-Arm (Zeile 100) mappt Restkonfigurationen; alle wertungsfreien Typen explizit gelistet. |
 | `server/src/socket/reveal_helpers.rs:32` | Formatierung der Lösungsanzeige | nein | `_ => None` bei einem Typ ohne `answers` → Reveal-Panel ohne Lösung, ohne Fehler. |
 | `.../reveal_helpers.rs:120/138/156/173` | `correctOptions` / `correctMatches` / `correctHotspotIndex` / `correctTokenPos` | nein | Jeweils `_ => None`: das Feld fehlt im Payload, der Client rendert leere Lösungs-Chips bzw. neutrale Tokens. |
 | `server/src/socket/reveal_helpers.rs:213` | Fünf bool-Flags in `build_manager_show_responses` | nein | Präsentator-Antwortübersicht bleibt leer: `acceptedAnswers`/`matchMode`/`chunks`/`correctOrder`/`items` auf `None`, Freitext wird nicht gezählt. Kein Fehler, nur ein leeres Panel. |
@@ -192,7 +192,7 @@ sofort. Das falsche `rename` fängt niemand.
 | `server/src/http/solo.rs:329` | Genauigkeit/Achievement, harter Slider-Vergleich | nein | Neuer Schätz-Typ liefert `accuracy: None` und vergibt nie *sharpshooter*. |
 | `server/src/http/solo.rs:547` | `theoretical_max` schließt nur Poll aus | nein | Punkte-Deckel zu hoch: der Score-Cap greift nicht mehr (Anti-Cheat-Guard weicher) und die Prozentanzeige ist dauerhaft zu niedrig. |
 | `server/src/http/solo.rs:129` | `SoloScoreSubmitAnswer` für den Endabgleich | nein | Zweite Wire-Struct im Solo-Pfad. Fehlt das Transportfeld, re-evaluiert `/solo-score` mit leerem Input: `verified_score` fällt auf 0 und überschreibt die live berechneten Punkte. |
-| `server/src/bot/manager.rs:114` | Arm in `pick_answer` + eigene `pick_*`-Funktion | nein | `_ => (Some(pick_choice(question)), None, None)` (Zeile 125, verifiziert). Bots schicken einen Choice-Index. Bei einem Typ ohne `answers` liefert `pick_choice` 0 → alle Bots antworten identisch und ungültig, `record_answer` nimmt es an, Statistik und Reveal sind Müll. Kein Log, kein Fehler. **Heute offen.** |
+| `server/src/bot/manager.rs:114` | Arm in `pick_answer` + eigene `pick_*`-Funktion | nein | Vollständige explizite Arme für ALLE 17 Typen (Zeilen 115–134, behoben in #543). Keine `_ =>`-Fallgrube mehr; Bot-Antworten haben korrekte Form pro Typ. |
 | `server/src/socket/ai_validate.rs:246` | Slug in `ALLOWED_TYPES` | nein | **Heute schon unvollständig:** 13 Slugs, es fehlen `word-cloud`, `brainstorm`, `confidence`, `micro-lesson`. Manager-UI bietet den Typ an, der Server antwortet *type must be one of: …*. |
 | `server/src/socket/ai_provider.rs:127` + `:197` | Shape-Hinweis und LLM-Mapping | nein | Der Default-Arm (Zeile 365) setzt aktiv `built["type"] = "choice"` und erfindet `["A","B","C","D"]`. Der Nutzer bestellt den neuen Typ und bekommt still eine Dummy-Choice-Frage. Kein Log. |
 
@@ -384,9 +384,9 @@ nicht-index-basierten Typ dauerhaft `false`.
 
 | Werkzeug | Verdrahtet? | Taugt |
 |---|---|---|
-| `rust/engine/src/eval.rs:1177` (Guard-`match` ohne `_`) | nur `rust/gate.sh`, **CI dormant** | Die eine echte Tripwire. Erzwingt aber nur die Listung, nicht den Zweig. |
-| `rust/server/src/main.rs:21` (`question_type_wire`) | nur `rust/gate.sh`, **CI dormant** | Bricht `cargo build` sofort. Lauteste Rückmeldung — wenn jemand baut. |
-| `scripts/check-question-types.sh` | **nirgends** | Existiert, deckt 5 Berührungspunkte ab, ist heute **rot** (`FAIL 6`, verifiziert). Läuft nur, wenn jemand daran denkt. |
+| `rust/engine/src/eval.rs:1177` (Guard-`match` ohne `_`) | `rust/gate.sh` (Tests ausführen, #542) | Die eine echte Tripwire. Erzwingt aber nur die Listung, nicht den Zweig. |
+| `rust/server/src/main.rs:21` (`question_type_wire`) | `rust/gate.sh` (aktiv, #542) | Bricht `cargo build` sofort. Lauteste Rückmeldung — wenn jemand baut. |
+| `scripts/check-question-types.sh` | `rust/gate.sh` + CI (#540) | Verdrahtet, deckt 5 Berührungspunkte ab, Gates Bindings-Frische. Läuft in der lokalen Gate-Kette. |
 | `scripts/check-locales.sh` | `rust/gate.sh:79` (also auch dormant in CI) | Prüft nur JSON-Parsebarkeit. Fehlende Übersetzungen sind grün. |
 | `scripts/locale-sync.mjs check` | über `check-locales.sh` | Reiner Warn-Report, Exit 0. Blockt nichts. |
 | `scripts/check-key-refs.sh` | nirgends | Prüft nur den `manager:`-Namespace. Für Fragetypen (`quizz:`, `game:`) existiert kein Key-Referenz-Gate. |
