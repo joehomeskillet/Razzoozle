@@ -94,6 +94,37 @@ pub enum QuestionType {
     MicroLesson,
 }
 
+impl QuestionType {
+    /// Returns true if this question type does not award points or affect scores.
+    /// Unscored types: Poll, WordCloud, Brainstorm, Confidence, MicroLesson.
+    /// All other types are scored and contribute to player rankings.
+    /// 
+    /// EXHAUSTIVE MATCH: Every QuestionType variant is explicitly listed.
+    /// When a new variant is added, the compiler will error until this function
+    /// is updated. This enforces a conscious decision about scoring for new types.
+    pub fn is_unscored(&self) -> bool {
+        match self {
+            QuestionType::Poll => true,
+            QuestionType::WordCloud => true,
+            QuestionType::Brainstorm => true,
+            QuestionType::Confidence => true,
+            QuestionType::MicroLesson => true,
+            QuestionType::Choice => false,
+            QuestionType::Boolean => false,
+            QuestionType::Slider => false,
+            QuestionType::MultipleSelect => false,
+            QuestionType::TypeAnswer => false,
+            QuestionType::SentenceBuilder => false,
+            QuestionType::Mathematik => false,
+            QuestionType::Wortarten => false,
+            QuestionType::Sequencing => false,
+            QuestionType::FillBlank => false,
+            QuestionType::Matching => false,
+            QuestionType::DropPin => false,
+        }
+    }
+}
+
 /// A single question in a quiz
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -380,5 +411,29 @@ mod tests {
         let serialized = serde_json::to_string(&payload).unwrap();
         let deserialized: QuizzSetArchivedPayload = serde_json::from_str(&serialized).unwrap();
         assert_eq!(payload, deserialized);
+    }
+
+    #[test]
+    fn test_question_type_is_unscored() {
+        // Unscored types
+        assert!(QuestionType::Poll.is_unscored());
+        assert!(QuestionType::WordCloud.is_unscored());
+        assert!(QuestionType::Brainstorm.is_unscored());
+        assert!(QuestionType::Confidence.is_unscored());
+        assert!(QuestionType::MicroLesson.is_unscored());
+
+        // Scored types
+        assert!(!QuestionType::Choice.is_unscored());
+        assert!(!QuestionType::Boolean.is_unscored());
+        assert!(!QuestionType::Slider.is_unscored());
+        assert!(!QuestionType::MultipleSelect.is_unscored());
+        assert!(!QuestionType::TypeAnswer.is_unscored());
+        assert!(!QuestionType::SentenceBuilder.is_unscored());
+        assert!(!QuestionType::Mathematik.is_unscored());
+        assert!(!QuestionType::Wortarten.is_unscored());
+        assert!(!QuestionType::Sequencing.is_unscored());
+        assert!(!QuestionType::FillBlank.is_unscored());
+        assert!(!QuestionType::Matching.is_unscored());
+        assert!(!QuestionType::DropPin.is_unscored());
     }
 }
