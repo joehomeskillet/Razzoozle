@@ -368,6 +368,7 @@
   "ignorePatterns": [
     "spikes/**",
     "rust/**",
-    "e2e/**"
+    "e2e/**",
+    "packages/mcp/**"
   ]
 }
