@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    image: razzoozle:latest
+    container_name: razzoozle-insecure
+    ports:
+      - "3020:3020"
+    environment:
+      PORT: "3020"
+      CONFIG_PATH: "/config"
+      DATABASE_URL: "postgresql://razzoozle:password@db:5432/razzoozle"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:latest
+    container_name: postgres-insecure
+    environment:
+      POSTGRES_USER: razzoozle
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: razzoozle
+    # INSECURE: Port is published to host
+    ports:
+      - "5432:5432"
+    # INSECURE: No cap_drop
+    # INSECURE: No security_opt for no-new-privileges
+    # INSECURE: No read_only
+    restart: unless-stopped
