@@ -6,9 +6,9 @@ WP PRE-005 · Status: Baseline Audit
 
 ## Executive Summary
 
-Razzoozle's codebase spans **141 Rust files** across 4 crates and **482 TypeScript/JavaScript files** across 3 Node packages. The inventory reveals **5 critical security-related duplications** (constant-time comparison, path validation), **3 data-handling duplications** (ID normalization, slug generation, filename normalization), and **11+ utility duplications** in TypeScript.
+Razzoozle's codebase spans **141 Rust files** across 4 crates and **482 TypeScript/JavaScript files** across 3 Node packages. The inventory reveals **4 critical security-related duplications** (constant-time comparison × 4, path validation × 2), **3 data-handling duplications** (ID normalization, slug generation, filename normalization), and **11+ utility duplications** in TypeScript.
 
-The most urgent risk is **4 different implementations of constant-time equality** (5 if counting tests), where 2 are incorrect or suboptimal — this is used in authentication, logging, and observability contexts and **must be consolidated immediately**.
+The most urgent risk is **4 different implementations of constant-time equality**, where 2 are incorrect or suboptimal — this is used in authentication, logging, and observability contexts and **must be consolidated immediately**.
 
 ---
 
@@ -160,12 +160,12 @@ razzoozle-server
 
 ## Critical Security Duplications (RISK: HIGH)
 
-### 1. `constant_time_eq()` — Timing Attack Prevention (5 implementations)
+### 1. `constant_time_eq()` — Timing Attack Prevention (4 implementations)
 
 **Locations:**
 ```
-rust/server/src/http/logs.rs:200        (INCORRECT: simple boolean loop)
-rust/server/src/http/mod.rs:107         (PROBLEMATIC: custom XOR loop, non-standard)
+rust/server/src/http/logs.rs:200        (INCORRECT: simple loop with early return)
+rust/server/src/http/mod.rs:107         (PROBLEMATIC: custom XOR, non-standard)
 rust/server/src/http/observability.rs:477  (CORRECT: uses .ct_eq())
 rust/server/src/socket/auth.rs:23       (CORRECT: uses .ct_eq())
 ```
@@ -174,8 +174,8 @@ rust/server/src/socket/auth.rs:23       (CORRECT: uses .ct_eq())
 
 | Location | Implementation | Risk | Notes |
 |----------|-----------------|------|-------|
-| `http/logs.rs` | Simple loop: `if a.len() != b.len() { return false; } let mut equal = true; for (x, y) in a.iter().zip(b.iter()) { if x != y { equal = false; } }` | **CRITICAL** | Returns early on length mismatch; timing leak possible on different-length secrets. Used in dev-key authentication (`authorizeDevRequest` parity comment). |
-| `http/mod.rs` | Custom XOR: `let mut diff = 0u8; for (x, y) in a.iter().zip(b.iter()) { diff \|= x ^ y; }` | **HIGH** | Zip silently truncates on length mismatch; non-standard algorithm. Likely safe against timing, but not canonical. |
+| `http/logs.rs` | Simple loop: `if a.len() != b.len() { return false; } let mut equal = true; for (x, y) in a.iter().zip(b.iter()) { if x != y { equal = false; } }` | **CRITICAL** | Returns early on length mismatch; timing leak possible on different-length secrets. Used in dev-key authentication (logs.rs line 217). |
+| `http/mod.rs` | Custom XOR: `let mut diff = 0u8; for (x, y) in a.iter().zip(b.iter()) { diff \|= x ^ y; }` | **HIGH** | Zip silently truncates on length mismatch; non-standard algorithm. Likely safe against timing, but not canonical. Used in metrics/observability dev-gating (mod.rs line 140). |
 | `http/observability.rs` | `bool::from(left.ct_eq(right))` (uses `ct_eq` from `digest` crate) | **CORRECT** ✓ | Uses crypto library constant-time. |
 | `socket/auth.rs` | `bool::from(left.ct_eq(right))` (uses `ct_eq` from `digest` crate) | **CORRECT** ✓ | Uses crypto library constant-time. |
 
@@ -246,7 +246,7 @@ rust/server/src/socket/manager/theme_templates.rs:27    (Theme creation)
 
 **Implementation:** Both **identical** — lowercase, replace space with hyphen, remove non-alphanumerics, append 8-char random suffix.
 
-**Comments in code state:** "Matches Node's normalizeFilename behavior" — there's a reference implementation in `packages/socket/src/utils/game.ts:43-56` (verify in `packages/common/` or `packages/web/`).
+**Comments in code state:** "Matches Node's normalizeFilename behavior" — there's a reference implementation in `packages/common/src/utils/` (verify in live codebase).
 
 **Risk:** Naming inconsistency between quizzes and themes if either diverges.
 
@@ -398,7 +398,7 @@ git rev-list --count --since="6 months ago" HEAD -- <file>
 
 ### Concerns
 
-- **Security functions scattered:** `constant_time_eq` in 4 places (+ 1 test) is a maintenance burden and audit risk.
+- **Security functions scattered:** `constant_time_eq` in 4 places (no tests) is a maintenance burden and audit risk.
 - **"Lightly referenced" ADR-011 candidates:** `Answers.tsx` (996 LOC) and `classes.rs` (1657 LOC) are on the roadmap but not yet extracted.
 - **Generated files in VCS:** `route.gen.ts` is checked in but auto-regenerated. Verify build does not diverge.
 - **Monolithic socket event schema:** `socket.ts` (774 LOC) mixes 4 event domains; ADR-011 recommends namespace consolidation instead of file split.
@@ -416,11 +416,11 @@ git rev-list --count --since="6 months ago" HEAD -- <file>
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Total Rust files | 141 | Across 4 crates |
+| Total Rust files (git tracked) | 141 | Across 4 crates |
 | Total Rust LOC | ~53,777 | Across all .rs files |
-| Total TS/JS files | 482 | Across 3 Node packages |
+| Total TS/JS files (git tracked) | 482 | Across 3 Node packages |
 | Total TS/JS LOC | ~77,473 | Across all .ts/.tsx/.js files |
-| Critical duplications | 2 (constant_time_eq × 5, safe_path_component × 2) | Security-sensitive |
+| Critical duplications | 2 (constant_time_eq × 4, safe_path_component × 2) | Security-sensitive |
 | Data-handling duplications | 3 (slug_id, normalize_filename, normalize_bulk_ids) | Medium risk |
 | Utility duplications | 11+ (formatDate, etc.) | Low risk |
 | Largest Rust file | `state/tests.rs` (1666 LOC, test code) | Non-production |
@@ -428,6 +428,19 @@ git rev-list --count --since="6 months ago" HEAD -- <file>
 | Largest TS/JS file | `Answers.tsx` (996 LOC, ADR-011 Tier 1 candidate) | |
 | Handler registration functions | 26 instances | All follow same pattern |
 | Module boundary violations (circular imports) | 0 | Rust compiler verified |
+
+---
+
+## Counting Methodology
+
+**Files counted:** Git-tracked files only (via `git ls-files`). This excludes:
+- Gitignored directories (node_modules, build/, target/, dist/)
+- Untracked files (temporary, generated at runtime)
+- Symlinks (counted as files, not directories)
+
+**Line counts:** Via `wc -l` on each tracked file; totals include blank lines and comments. For security functions, exact grep-based verification was done against the live codebase.
+
+**Why tracked-only:** Gitignored content (build artifacts, dependencies) would inflate counts and obscure actual maintenance burden (only code in the repository matters for audit).
 
 ---
 
@@ -439,11 +452,12 @@ git rev-list --count --since="6 months ago" HEAD -- <file>
 - **Security review:** Constant-time comparison audit required before deploy
 - **Source inventory command:**
   ```bash
-  find rust -name "*.rs" | xargs wc -l | sort -rn | head -20
-  find packages -name "*.ts" -o -name "*.tsx" | xargs wc -l | sort -rn | head -20
+  git ls-files 'rust/**/*.rs' | wc -l         # Tracked Rust files
+  git ls-files 'packages/**/*.ts' | wc -l     # Tracked TypeScript files
+  git ls-files 'rust/**/*.rs' | xargs wc -l   # Total Rust LOC
   grep -rn "fn constant_time_eq" rust/ --include="*.rs"
   ```
 
 ---
 
-**Inventory compiled:** 2026-07-29 · **Verified:** All counts via live `git ls-files`, `wc -l`, `grep` in `/nvmetank1/projects/Razzoozle/source/.claude/worktrees/pre-module`.
+**Inventory compiled:** 2026-07-29 · **Verified:** All counts via live git inspection and grep in `/nvmetank1/projects/Razzoozle/source/.claude/worktrees/pre-module`.
