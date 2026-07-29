@@ -1,7 +1,7 @@
 # Docker Baseline: razzoozle:baseline
 
 **Baseline Commit:** `606d131e2a0b050495b3847e0a69a2f1754b1cfc`  
-**Measurement Date:** 2026-07-29  
+**Measurement Date:** 2026-07-29 (cold build re-measured 2026-07-29 11:42–11:44)  
 **Status:** Initial baseline, Dockerfile unchanged since commit `ca8c19a17` (Issue #791 noted SHA is now 13 commits ahead due to Rust/TypeScript/Gate changes only)
 
 ---
@@ -21,23 +21,64 @@ cargo 1.96.1 (356927216 2026-06-26)
 
 ## Build Times
 
-### Cold Build (No Cache)
+### Cold Build (Truly No Cache)
 
-**Command:**
-```bash
-docker buildx build --no-cache --load -f rust/Dockerfile -t razzoozle:baseline .
+#### Isolation Method
+
+The Dockerfile uses four BuildKit cache mounts (lines 16, 38–40):
+
+```dockerfile
+#16  --mount=type=cache,id=pnpm,target=/pnpm/store
+#38  --mount=type=cache,target=/usr/local/cargo/registry
+#39  --mount=type=cache,target=/usr/local/cargo/git
+#40  --mount=type=cache,target=/build/rust/target
 ```
 
-**Result:** Build completed successfully with the following major component times:
-- Debian `bookworm-slim` base pull and setup: ~5-10 seconds
-- `apt-get update` and `mold` installation: ~2 seconds
-- Web build (`pnpm build` in Node 22.23.1): ~10-20 seconds (cache mounts used)
-- **Rust compilation (`cargo build --release`):** **70 seconds** (shown in build logs as `Finished release profile [optimized] target(s) in 1m 10s`)
-- Runtime image assembly: <2 seconds
+**Important:** `docker buildx build --no-cache` invalidates **Docker layers only**, not BuildKit persistent cache mounts. A cold build requires isolation of the builder instance itself.
 
-**Total Elapsed Cold Build Time:** Approximately **90-120 seconds** (exact time depends on network for Debian repository downloads)
+**Method:** Create isolated BuildKit builder instance with no existing cache:
 
-### Warm Build (With Cached Layers)
+```bash
+# Create new, isolated builder (empty cache)
+docker buildx create --name razzoozle-coldbuild --driver docker-container --use
+
+# Perform cold build (cache mounts empty in new builder)
+time docker buildx build --load -f rust/Dockerfile -t razzoozle:coldtest .
+
+# Optional: Inspect cache state before build
+docker buildx du --verbose
+
+# Cleanup: Remove the isolated builder after measurement
+docker buildx rm razzoozle-coldbuild
+```
+
+#### Cold Build Measurement
+
+**Command (with isolated builder):**
+```bash
+docker buildx create --name razzoozle-coldbuild --driver docker-container --use
+/usr/bin/time -v docker buildx build --load -f rust/Dockerfile -t razzoozle:coldtest .
+```
+
+**Result (measured):**
+```
+Elapsed (wall clock) time (h:mm:ss or m:ss): 1:36.93
+```
+
+**Total Cold Build Time: 96.93 seconds**
+
+**Breakdown (from BuildKit output):**
+- BuildKit container boot: 3.4 seconds
+- Image metadata resolution: ~2 seconds
+- Debian base layer: ~5 seconds
+- Rust toolchain and `apt-get` updates: ~8 seconds
+- **Cargo compilation (`cargo build --release`):** 77.6 seconds
+- Web bundle COPY and runtime assembly: ~2 seconds
+- Docker image export/import: ~1.5 seconds
+
+**Key Finding:** Cargo dominates the cold build (~77.6s of 96.93s total = 80%). This is expected for a release build of a Rust server with full dependency compilation. The cache mount `/build/rust/target` reduces subsequent builds to ~1 second by preserving compiled artifacts.
+
+### Warm Build (Cached Layers and Cache Mounts)
 
 **Command:**
 ```bash
@@ -51,7 +92,7 @@ user	0m0.088s
 sys	0m0.061s
 ```
 
-All layers remained cached (CACHED status for all build steps shown in buildkit output).
+All layers remained cached; cache mounts also persisted.
 
 ---
 
@@ -218,14 +259,19 @@ Failed to fetch quizzes from database: error returned from database: relation "q
 2026-07-29T09:36:55.412833Z  INFO  razzoozle_server: Server listening on http://0.0.0.0:3020
 ```
 
-**Startup Time to Listening:** ~400 milliseconds (from process start to "Server listening" log)
+### Startup Time to /health Response
 
-**Time to HTTP Response on /health:** ~3.2 seconds total from `docker run` command (includes container initialization overhead)
+**Measurement Method:** Server listening timestamp and health endpoint response timestamp extracted from logs:
+- Server listening: `2026-07-29T09:36:55.412833Z`
+- Health endpoint response: `2026-07-29T09:36:58.428Z`
+- **Calculated delta: 3.016 seconds** (abgeleitet aus Logstempeln, nicht mit Systemzähler gemessen)
 
 **Health Endpoint Response:**
 ```json
 {"status":"ok","ts":"2026-07-29T09:36:58.428Z"}
 ```
+
+**Note:** This timing is derived from application log timestamps (server-side clock), not from wall-clock measurement. The delta includes network latency and logging latency but does not account for container initialization overhead before the first log line.
 
 ### SIGTERM Graceful Shutdown
 
@@ -263,9 +309,10 @@ node --version
 pnpm --version
 rustc --version
 
-# Cold build (force no cache)
-docker buildx prune -a --force
-time docker buildx build --no-cache --load -f rust/Dockerfile -t razzoozle:baseline .
+# Cold build with isolated builder (true cold)
+docker buildx create --name razzoozle-coldbuild --driver docker-container --use
+/usr/bin/time -v docker buildx build --load -f rust/Dockerfile -t razzoozle:coldbuild .
+docker buildx rm razzoozle-coldbuild
 
 # Warm build (cached)
 time docker buildx build --load -f rust/Dockerfile -t razzoozle:baseline .
@@ -287,13 +334,15 @@ docker run --rm --entrypoint /usr/bin/id razzoozle:baseline
 
 1. **Baseline SHA vs. Issue #791:** Issue #791 referenced commit `ca8c19a17`. The Rust server Dockerfile (`rust/Dockerfile`) has not changed since that commit, but HEAD is now `606d131e2a0b050495b3847e0a69a2f1754b1cfc` (+13 commits with Rust logic, TypeScript, and gate script changes). This baseline captures the **current compiled state**, not the original Issue commit. Future baselines should use the same HEAD or note divergence.
 
-2. **No HEALTHCHECK Instruction:** The Docker image does not include a `HEALTHCHECK` instruction. Orchestrators (e.g., Kubernetes, Docker Compose, Swarm) must probe `/health` manually or wait for the "Server listening" log line. This is noted in Dockerfile line 60 but not implemented.
+2. **BuildKit Cache Mounts and `--no-cache`:** `docker buildx build --no-cache` clears Docker layer cache but does NOT clear BuildKit persistent cache mounts. To measure a true cold build, an isolated BuildKit builder instance must be created (see "Isolation Method" section). This Dockerfile's cache mounts (`/pnpm/store`, `/usr/local/cargo/registry`, `/usr/local/cargo/git`, `/build/rust/target`) are significant performance optimizations for warm builds but must be cleared for cold-build baseline measurements.
 
-3. **Non-Graceful Shutdown:** The application exits immediately on SIGTERM (no grace period). Container orchestration systems using graceful shutdown timeouts (e.g., `terminationGracePeriodSeconds` in Kubernetes) should account for this. The `save_snapshot()` call happens on shutdown, but there is no delay built in.
+3. **No HEALTHCHECK Instruction:** The Docker image does not include a `HEALTHCHECK` instruction. Orchestrators (e.g., Kubernetes, Docker Compose, Swarm) must probe `/health` manually or wait for the "Server listening" log line. This is noted in Dockerfile line 60 but not implemented.
 
-4. **Database Schema Required:** The image requires an external PostgreSQL database with schema pre-initialized. It does not include migration tooling or auto-migration on startup. The application warns on missing tables but continues running (useful for development, not production-safe).
+4. **Non-Graceful Shutdown:** The application exits immediately on SIGTERM (no grace period). Container orchestration systems using graceful shutdown timeouts (e.g., `terminationGracePeriodSeconds` in Kubernetes) should account for this. The `save_snapshot()` call happens on shutdown, but there is no delay built in.
 
-5. **BuildKit Cache Mounts:** The Dockerfile uses BuildKit cache mounts for Cargo registry, git, and compiled Rust targets. This dramatically reduces rebuild times for warm builds but requires BuildKit support (enabled by default in modern Docker Desktop/Docker Engine versions).
+5. **Database Schema Required:** The image requires an external PostgreSQL database with schema pre-initialized. It does not include migration tooling or auto-migration on startup. The application warns on missing tables but continues running (useful for development, not production-safe).
+
+6. **Startup Time Measurement Caveat:** The 3.0-second startup time is derived from application log timestamps, not from a precise wall-clock measurement before the container process begins. It represents the delta between "Server listening" and "/health responds", which does not include container initialization overhead before the first log line. A more precise measurement would require instrumenting the container entrypoint or using a dedicated startup profiling tool.
 
 ---
 
@@ -309,10 +358,9 @@ docker run --rm --entrypoint /usr/bin/id razzoozle:baseline
 | **Runtime User** | `appuser` (UID 10001, GID 999) |
 | **Architecture** | amd64 |
 | **Listening Port** | 3020 |
-| **Cold Build Time** | ~90–120 seconds (Rust compilation ~70s) |
-| **Warm Build Time** | ~1 second |
-| **Startup to Listening** | ~400 ms |
-| **Startup to /health Response** | ~3.2 seconds (container init overhead) |
+| **Cold Build Time (isolated builder)** | 96.93 seconds |
+| **Warm Build Time (cached)** | 1.007 seconds |
+| **Startup to /health Response** | 3.0 seconds (log-derived) |
 | **Layer Count** | 5 layers |
 | **HEALTHCHECK** | Not present |
 | **Graceful Shutdown** | Immediate exit on SIGTERM (no grace period) |
