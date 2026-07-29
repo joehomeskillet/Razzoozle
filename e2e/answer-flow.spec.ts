@@ -744,12 +744,11 @@ test.describe("Answer flow — E2E All Types", () => {
     test("deadline race: P2 answers <1s before 10s timeout", async ({
       browser,
     }) => {
-      // Covered inside main flow at boolean question; this block documents the
-      // contract and remains available as a focused re-run once twins are live.
-      test.skip(
-        !process.env.E2E_RACE_STANDALONE,
-        "Standalone race tests opt-in via E2E_RACE_STANDALONE=1; main flow covers deadline race",
-      )
+      // Also exercised inline inside the main flow at the boolean question, but
+      // runs unconditionally here too (CI-208-01): a focused, isolated repro
+      // that does not depend on the 16-question main flow reaching that point,
+      // and that still catches a regression even if the main flow itself is
+      // red for an unrelated reason.
       test.setTimeout(120_000)
 
       const hostCtx = await browser.newContext()
@@ -813,10 +812,9 @@ test.describe("Answer flow — E2E All Types", () => {
     test("double-submit: P1 rapid double click does not error", async ({
       browser,
     }) => {
-      test.skip(
-        !process.env.E2E_RACE_STANDALONE,
-        "Standalone race tests opt-in via E2E_RACE_STANDALONE=1; main flow covers double-submit",
-      )
+      // Also exercised inline inside the main flow at DOUBLE_SUBMIT_Q, but runs
+      // unconditionally here too (CI-208-01): an isolated repro that does not
+      // depend on the main flow reaching that question.
       test.setTimeout(120_000)
 
       const hostCtx = await browser.newContext()
