@@ -53,6 +53,10 @@ postgres-data/
 *.tsbuildinfo
 scratchpad/
 /build/
+.turbo/
+.next/
+coverage/
+dist/
 
 # design-sync (staged scripts + build output + machine state)
 .ds-sync/
@@ -62,3 +66,6 @@ ds-bundle/
 # local tooling + CI mirror, not part of the published repo (2026-07-17)
 .stagehand-cache/
 .vscode/
+
+# pnpm store — Runner installs locally, never commit (2026-07-29)
+.pnpm-store/
