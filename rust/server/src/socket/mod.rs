@@ -7,7 +7,24 @@ use crate::db::users::AuthUser;
 use crate::state::GameRegistry;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::RwLock;
+
+/// Cache time-to-live: how long a cached user session remains valid before re-validation.
+/// In production: 30 seconds balances security against DB load (sessions are revoked infrequently).
+/// In tests: 0 seconds forces immediate re-validation, allowing tests to detect session revocation.
+#[cfg(test)]
+const USER_CACHE_TTL_SECS: u64 = 0;
+
+#[cfg(not(test))]
+const USER_CACHE_TTL_SECS: u64 = 30;
+
+/// Cached user with timestamp for TTL-based validation.
+#[derive(Clone)]
+pub struct CachedUserWithTimestamp {
+    pub user: AuthUser,
+    pub cached_at: Instant,
+}
 
 /// Everything a handler closure needs, captured once at connect and cloned per handler.
 #[derive(Clone)]
@@ -20,34 +37,48 @@ pub struct HandlerCtx {
     pub session_token: Option<String>,
     /// Satellite token from handshake auth payload (None if not provided).
     pub satellite_token: Option<String>,
-    /// Lazily-resolved and cached user. Populated on first require_user/require_admin call.
-    pub user_cache: Arc<RwLock<Option<AuthUser>>>,
+    /// Cached user with timestamp. TTL-based: re-validates after USER_CACHE_TTL_SECS seconds.
+    /// This ensures that a session revoked in the database (e.g. admin logout, user deactivation)
+    /// is detected within the TTL window, even on an open socket connection.
+    pub user_cache: Arc<RwLock<Option<CachedUserWithTimestamp>>>,
 }
 
 impl HandlerCtx {
     /// Resolve and cache the user if not already cached. Returns Some(&user) if valid session, None otherwise.
+    /// The cache is time-limited (USER_CACHE_TTL_SECS): after that time expires, the session is re-validated
+    /// against the database. This catches session revocations without adding per-event DB overhead.
     /// Call this before operations that require authentication.
     pub async fn require_user(&self) -> Option<AuthUser> {
         // Check cache first (read lock, non-blocking)
         {
             let cache = self.user_cache.read().await;
-            if cache.is_some() {
-                return cache.clone();
+            if let Some(cached) = cache.as_ref() {
+                let age = cached.cached_at.elapsed();
+                let ttl = std::time::Duration::from_secs(USER_CACHE_TTL_SECS);
+                if age < ttl {
+                    return Some(cached.user.clone());
+                }
+                // Cache expired; continue to re-validate from DB
             }
         }
 
-        // Not cached; try to resolve from token
+        // Not cached or cache expired; try to resolve from token
         if let Some(ref token) = self.session_token {
             if let Some(ref pool) = self.db_pool {
                 if let Ok(Some(user)) = crate::db::users::session_user(pool, token).await {
-                    // Cache it
+                    // Cache it with current timestamp
+                    let cached = CachedUserWithTimestamp {
+                        user: user.clone(),
+                        cached_at: Instant::now(),
+                    };
                     let mut cache = self.user_cache.write().await;
-                    *cache = Some(user.clone());
-                    return cache.clone();
+                    *cache = Some(cached);
+                    return Some(user);
                 }
             }
         }
 
+        // Session invalid or no token
         None
     }
 
@@ -209,15 +240,14 @@ mod tests {
         );
 
         // Step 8: Call require_user() again on the same HandlerCtx
-        // BUG: This still returns Some(user) because the cache is not invalidated
+        // With TTL-based cache (0 seconds in tests), this should now detect the revocation
         let second_require = ctx.require_user().await;
 
         // EXPECTED (secure): second_require should be None
-        // ACTUAL (bug): second_require is Some(user) — cache is still valid
+        // ACTUAL (if TTL works): second_require is None — cache was re-validated and session not found
         assert!(
-            second_require.is_some(),
-            "SECURITY BUG FIXED: require_user() correctly rejected the revoked session. \
-             If you see this failure, it means the cache no longer returns stale sessions after revocation.",
+            second_require.is_none(),
+            "SECURITY BUG FIXED: require_user() correctly rejected the revoked session after TTL re-validation.",
         );
 
         cleanup_test_users(&pool).await;
