@@ -55,25 +55,25 @@ walkDir(srcDir, (filePath) => {
     if (isFix && modifiedCode !== code) {
       fs.writeFileSync(filePath, modifiedCode, 'utf-8')
       totalFilesFixed++
-      console.log(`\x1b[32m✔ AST-Morph Engine Morphed:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} inline styles -> zero-runtime Tailwind v4 classes)`)
+      console.log(`\x1b[32m✔ Inline Style Converter Fixed:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} inline styles → Tailwind classes)`)
     } else if (!isFix) {
-      console.log(`\x1b[33m⚠ AST-Morph Candidate:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} inline styles)`)
+      console.log(`\x1b[33m⚠ Inline Style Violation:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} inline styles)`)
     }
   }
 })
 
 const duration = Date.now() - startTime
 
-console.log(`\n⚡ --- AST-Morph Zero-Runtime Tailwind v4 Compiler Summary ---`)
+console.log(`\n⚡ --- Regex-Based Inline Style to Tailwind Converter Summary ---`)
 console.log(`Files scanned:       ${totalFilesChecked}`)
-console.log(`Styles Morphed:      ${totalMorphedStyles}`)
-console.log(`Execution Time:      ${duration} ms (0kb Browser Runtime Overhead)`)
+console.log(`Inline styles found: ${totalMorphedStyles}`)
+console.log(`Execution Time:      ${duration} ms`)
 
 if (isFix) {
   console.log(`Files auto-fixed:    ${totalFilesFixed}`)
 } else if (totalMorphedStyles > 0) {
-  console.log(`\x1b[33mRun 'pnpm tokens:morph --fix' to convert inline style objects to zero-runtime Tailwind v4 classes.\x1b[0m`)
+  console.log(`\x1b[33mRun 'pnpm tokens:morph --fix' to convert inline style objects to Tailwind v4 classes.\x1b[0m`)
   process.exit(1)
 } else {
-  console.log(`\x1b[32m✔ All component inline styles clean and 100% zero-runtime Tailwind v4 compliant!\x1b[0m`)
+  console.log(`\x1b[32m✔ All components use Tailwind classes (100% compliant).\x1b[0m`)
 }

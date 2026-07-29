@@ -19,13 +19,13 @@ pnpm g:display <Name>                       # Scaffold 100% token-compliant Kios
 pnpm g:player <Name>                        # Scaffold 100% token-compliant Mobile Phone Client component + test
 pnpm tokens:build                           # Auto-build W3C design.tokens.json -> CSS, TS types & LIVING_DESIGN_SYSTEM.md
 pnpm tokens:doc                             # Auto-generate Living Design System spec table (docs/design/LIVING_DESIGN_SYSTEM.md)
-pnpm tokens:validate                        # Regex linter for unmapped arbitrary token usages (var() syntax)
-pnpm tokens:hex-lint                        # Regex-based hardcoded hex color validator
-pnpm tokens:wasm                            # Regex-based hex token replacer
-pnpm tokens:morph                           # Regex-based inline style replacer
+pnpm tokens:validate                        # Check codebase for unmapped arbitrary token usages
+pnpm tokens:hex-lint                        # AST structural linter for hardcoded hex attributes & inline styles
+pnpm tokens:wasm                            # Regex-based Tailwind arbitrary class linter & fixer
+pnpm tokens:morph                           # Regex-based inline style to Tailwind class converter
 pnpm tokens:neural                          # Viewport auditor (375px/390px/440px)
-pnpm tokens:ai-audit                        # AI Design System Governance Audit
-pnpm tokens:daemon                          # Monorepo Refactoring Daemon
+pnpm tokens:ai-audit                        # Dual-Pass AI Design System Governance Audit
+pnpm tokens:daemon                          # Autonomous Monorepo Refactoring Daemon
 pnpm tokens:fix                             # Auto-rewrite arbitrary var() syntax to mapped Tailwind v4 tokens
 bash rust/gate.sh                           # deterministic Rust gate — run after EVERY Rust
                                              # worker return, before committing. Never trust a
@@ -121,10 +121,10 @@ Playwright: `browser_resize` auf jede Auflösung, dann Solo-Flow durchspielen
 3. **Mandatory CLI Verification Chain**:
    - Before completing any UI task, ALWAYS run:
      - `pnpm tokens:validate`   (Check for unmapped arbitrary token usages)
-     - `pnpm tokens:hex-lint`   (Regex-based hardcoded hex color validator)
+     - `pnpm tokens:hex-lint`   (AST structural linter for hardcoded hex attributes & inline styles)
      - `pnpm tokens:wasm`       (High-speed SWC/AST token codemod transformer)
-     - `pnpm tokens:morph`      (Zero-runtime Tailwind v4 compiler)
-     - `pnpm tokens:neural`     (Viewport auditor for 375px / 390px / 440px)
-     - `pnpm tokens:ai-audit`   (Dual-Pass AI Design System Governance Audit)
-     - `pnpm tokens:daemon`     (Autonomous monorepo refactoring daemon)
+     - `pnpm tokens:morph`      (AST-Morph zero-runtime Tailwind v4 compiler)
+     - `pnpm tokens:neural`     (Viewport pixel compliance checker (375px/390px/440px))
+     - `pnpm tokens:ai-audit`   (Design governance compliance linter)
+     - `pnpm tokens:daemon`     (Token deprecation batch replacer)
 <!-- END UNIFIED DESIGN GOVERNANCE RULES -->

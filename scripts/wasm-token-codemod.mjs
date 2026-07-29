@@ -45,7 +45,7 @@ walkDir(srcDir, (filePath) => {
   let modifiedCode = code
   let fileIssues = 0
 
-  // Count TSX AST top-level constructs (imports, interfaces, components)
+  // Count TSX top-level constructs (imports, interfaces, components)
   const topConstructs = (code.match(/(import|export|interface|function|const|class)\b/g) || []).length
   totalASTNodesParsed += topConstructs
 
@@ -66,26 +66,26 @@ walkDir(srcDir, (filePath) => {
     if (isFix && modifiedCode !== code) {
       fs.writeFileSync(filePath, modifiedCode, 'utf-8')
       totalFilesFixed++
-      console.log(`\x1b[32m✔ High-Speed AST Token Codemod Fixed:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
+      console.log(`\x1b[32m✔ Token Linter Fixed:\x1b[0m ${path.relative(process.cwd(), filePath)}`)
     } else if (!isFix) {
-      console.log(`\x1b[33m⚠ AST Token Violation:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} instances)`)
+      console.log(`\x1b[33m⚠ Token Linter Violation:\x1b[0m ${path.relative(process.cwd(), filePath)} (${fileIssues} instances)`)
     }
   }
 })
 
 const duration = Date.now() - startTime
 
-console.log(`\n⚡ --- High-Speed SWC/AST Token Engine Summary ---`)
+console.log(`\n⚡ --- Regex-Based Tailwind Arbitrary Class Linter Summary ---`)
 console.log(`Files scanned:      ${totalFilesChecked}`)
-console.log(`AST Constructs:     ${totalASTNodesParsed}`)
-console.log(`AST Violations:     ${totalViolationsFound}`)
+console.log(`Constructs counted: ${totalASTNodesParsed}`)
+console.log(`Violations found:   ${totalViolationsFound}`)
 console.log(`Execution Time:     ${duration} ms`)
 
 if (isFix) {
   console.log(`Files auto-fixed:   ${totalFilesFixed}`)
 } else if (totalViolationsFound > 0) {
-  console.log(`\x1b[33mRun 'pnpm tokens:wasm --fix' to perform high-speed AST token transformations.\x1b[0m`)
+  console.log(`\x1b[33mRun 'pnpm tokens:wasm --fix' to rewrite arbitrary Tailwind hex classes to design tokens.\x1b[0m`)
   process.exit(1)
 } else {
-  console.log(`\x1b[32m✔ All component AST structures clean and 100% token-compliant!\x1b[0m`)
+  console.log(`\x1b[32m✔ All components use mapped design token classes (100% compliant).\x1b[0m`)
 }
