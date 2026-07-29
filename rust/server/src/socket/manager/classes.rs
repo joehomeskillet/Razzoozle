@@ -902,14 +902,19 @@ fn register_remove_from_class(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 match db::remove_student_from_class(&ctx.db_pool, student_id, class_id, me).await {
-                    Ok(student_deleted) => {
+                    Ok(()) => {
                         socket
                             .emit(
                                 constants::class::REMOVED_FROM_CLASS,
                                 &serde_json::json!({
                                     "studentId": student_id,
                                     "classId": class_id,
-                                    "studentDeleted": student_deleted,
+                                    // Migration 022 removed the orphan-delete trigger: a
+                                    // student is never deleted here, only unlinked from
+                                    // this class. Kept as `false` (not deleted, ever) for
+                                    // backward-compat with the client's existing payload
+                                    // shape/branch — the student always survives.
+                                    "studentDeleted": false,
                                 }),
                             )
                             .ok();

@@ -176,15 +176,16 @@ mod tests {
 
     // ── update_student ───────────────────────────────────────────────────────
 
-    /// FRAGWÜRDIG: passing only `first_name` (no `last_name`) silently WIPES
-    /// the student's existing `last_name` to NULL (the SQL's CASE branches on
-    /// whether first_name was provided, not whether last_name was), while
-    /// `display_name` falls back to the OLD full name because it only gets
-    /// recombined when BOTH first and last are Some. The two columns end up
-    /// inconsistent: display_name still says "First Last", last_name is NULL.
+    /// FIXED (#818, was FRAGWÜRDIG): passing only `first_name` (no `last_name`)
+    /// used to silently WIPE the student's existing `last_name` to NULL,
+    /// because the SQL's CASE branched on whether `first_name_opt` was
+    /// provided instead of whether `last_name_opt` was. Now the CASE gates on
+    /// `last_name_opt` itself, so an update that never mentions `last_name`
+    /// leaves it untouched — and `display_name` is recomputed from the FINAL
+    /// first+last pair (not left stale), so the two columns can't drift apart.
     #[tokio::test]
     #[ignore]
-    async fn test_update_student_first_name_only_wipes_last_name() {
+    async fn test_update_student_first_name_only_preserves_last_name() {
         let _lock = lock_db_isolation();
         let (pool, opt, owner) = ready_or_skip!("test_cc_updstudent");
         let student_id = create_student(
@@ -213,10 +214,14 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(row.1.as_deref(), Some("Newfirst"), "first_name updates as requested");
-        assert_eq!(row.2, None, "last_name is silently nulled even though caller never mentioned it");
         assert_eq!(
-            row.0, "test_cc_updstudent_First Last",
-            "display_name keeps the STALE full name (only recomputed when both names are Some)"
+            row.2.as_deref(),
+            Some("Last"),
+            "last_name survives untouched — the caller never passed last_name_opt"
+        );
+        assert_eq!(
+            row.0, "Newfirst Last",
+            "display_name is recomputed from the FINAL first+last name, not left stale"
         );
 
         cleanup(&pool, "test_cc_updstudent").await;
@@ -316,12 +321,14 @@ mod tests {
         cleanup(&pool, "test_cc_movestudent").await;
     }
 
-    /// FRAGWÜRDIG: since migration 022 dropped the orphan-cleanup trigger,
-    /// removing a student's LAST class membership no longer deletes the
-    /// student row. `remove_student_from_class` still checks for that and
-    /// its doc comment still promises `Ok(true)` on orphan-delete, but the
-    /// function now ALWAYS returns `Ok(false)` — the row is simply left
-    /// orphaned (0 class memberships, still present in the DB).
+    /// FIXED (#819, was FRAGWÜRDIG): since migration 022 dropped the
+    /// orphan-cleanup trigger, removing a student's LAST class membership no
+    /// longer deletes the student row. `remove_student_from_class` used to
+    /// still promise `Ok(true)` on orphan-delete in its doc comment while
+    /// ALWAYS returning `Ok(false)` in practice — a bool that can never
+    /// become true. It now returns `Ok(())`: there is nothing left to report.
+    /// The explicit `: ()` annotation below is the actual regression check —
+    /// it fails to COMPILE against the old `Result<bool, String>` signature.
     #[tokio::test]
     #[ignore]
     async fn test_remove_student_from_class_no_longer_orphan_deletes() {
@@ -342,13 +349,10 @@ mod tests {
         .unwrap();
         assert_eq!(count_membership(&pool, student_id, class_id).await, 1);
 
-        let result = remove_student_from_class(&opt, student_id, class_id, Some(owner))
+        let result: () = remove_student_from_class(&opt, student_id, class_id, Some(owner))
             .await
-            .unwrap();
-        assert!(
-            !result,
-            "orphan-delete no longer happens: this must be false even for the last membership"
-        );
+            .expect("removal must succeed even for the student's last class");
+        let _ = result;
         assert_eq!(count_membership(&pool, student_id, class_id).await, 0);
         let survives: i64 = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")
             .bind(student_id)
