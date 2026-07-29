@@ -2,7 +2,7 @@
  * e2e/stagehand/ai-rate-limit.spec.ts — W6-9 / R14 (P3)
  *
  * Flood AI text-gen UI if present; assert rate-limit or graceful disable.
- * Soft-pass when AI tab/keys are not configured on prod.
+ * HARD FAIL if AI tab/keys are not configured on prod (no silent skip).
  *
  * Run: E2E_PW=… npx tsx e2e/stagehand/ai-rate-limit.spec.ts
  */
@@ -63,9 +63,10 @@ async function run() {
     await page.waitForTimeout(300);
     const aiNav = await clickByText(page, 'AI', 'KI', 'Ai', 'ai');
     if (!aiNav) {
-      console.log('W6-9 SKIP: no AI/KI nav tab — rate-limit UI not exposed');
-      console.log('W6-9 ai-rate-limit PASSED (soft skip)');
-      return;
+      throw new Error(
+        'W6-9 FAIL: AI/KI nav tab not found — rate-limit UI not exposed. ' +
+        'AI feature must be configured in manager for this test to run.'
+      );
     }
     console.log(`Opened AI nav: ${aiNav}`);
     await page.waitForTimeout(800);
@@ -100,9 +101,10 @@ async function run() {
       const clicked = await clickGen();
       if (!clicked) {
         if (i === 0) {
-          console.log('W6-9 SKIP: AI tab open but no generate/test control found');
-          console.log('W6-9 ai-rate-limit PASSED (soft skip)');
-          return;
+          throw new Error(
+            'W6-9 FAIL: AI tab open but no generate/test control found. ' +
+            'Generate buttons must be available in the AI tab for this test to run.'
+          );
         }
         break;
       }

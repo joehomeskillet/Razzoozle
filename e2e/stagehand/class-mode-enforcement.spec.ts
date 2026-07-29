@@ -3,6 +3,7 @@
  *
  * Create klassen game via manager socket (authoritative selectedModes),
  * then assert player join shows roster/PIN UI (not free-text).
+ * Soft-skip on game creation failure converted to hard fail.
  *
  * Run: E2E_PW=… npx tsx e2e/stagehand/class-mode-enforcement.spec.ts
  */
@@ -127,9 +128,11 @@ async function run() {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/rate|busy|timeout/i.test(msg)) {
-      console.log(`W6-6 SKIP: ${msg}`);
-      console.log('W6-6 class-mode-enforcement PASSED (soft skip — create failed)');
-      return;
+      throw new Error(
+        `W6-6 FAIL: game:create failed with rate/busy/timeout: ${msg}. ` +
+        'Game creation rate limit (10/h) may be exhausted. ' +
+        'Wait 1 hour or run in isolation.'
+      );
     }
     throw e;
   }

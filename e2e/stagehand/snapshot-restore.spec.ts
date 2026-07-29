@@ -3,6 +3,7 @@
  *
  * Player answers Q1 → kill browser → rejoin with playerToken → score persists
  * on leaderboard → Q2 loads.
+ * All soft-skips converted to hard fails for visibility in CI.
  *
  * Run: E2E_PW=… npx tsx e2e/stagehand/snapshot-restore.spec.ts
  */
@@ -131,9 +132,11 @@ async function runSnapshotRestore() {
         body.includes('beschäft') ||
         body.includes('serverbusy')
       ) {
-        console.log('W6-1 SKIP: game-create rate limited (10/h) — prior suite exhausted quota');
-        console.log('W6-1 snapshot-restore PASSED (soft skip — rate limited)');
-        return;
+        throw new Error(
+          'W6-1 FAIL: game-create rate limited (10/h limit). ' +
+          'Prior test suite may have exhausted quota. ' +
+          'Wait 1 hour or run in isolation.'
+        );
       }
       if (await isTestIdVisible(managerPage, 'quizz-start-btn')) {
         await managerPage.locator(testIdSel('quizz-start-btn')).click().catch(() => {});
@@ -142,9 +145,11 @@ async function runSnapshotRestore() {
     }
     const pin = pinText.replace(/\D/g, '');
     if (!/^\d{6}$/.test(pin)) {
-      console.log('W6-1 SKIP: game-pin never appeared (likely create rate-limit/error)');
-      console.log('W6-1 snapshot-restore PASSED (soft skip — no pin)');
-      return;
+      throw new Error(
+        'W6-1 FAIL: game-pin never appeared. ' +
+        `Expected PIN format \\d{6}, got "${pinText}". ` +
+        'Game creation likely failed due to server error or rate limit.'
+      );
     }
 
     await joinPlayer(playerPage, pin);
@@ -228,6 +233,8 @@ async function runSnapshotRestore() {
     if (!rejoined) {
       // Dense serial suites sometimes exhaust reconnect paths; if the host still
       // has a positive leaderboard score for this player, answer persistence is proven.
+      // This is a fallback check, not the primary test path.
+      console.warn('WARNING: rejoin UI shell did not appear — checking leaderboard fallback');
       await advanceToLeaderboard(managerPage);
       const rowVisible = await isTestIdVisible(managerPage, `leaderboard-row-${PLAYER_NAME}`);
       if (rowVisible) {
@@ -236,13 +243,17 @@ async function runSnapshotRestore() {
         const score = nums ? Number(nums.at(-1)) : 0;
         if (score > 0) {
           console.log(
-            `W6-1 SOFT: rejoin UI flake but Q1 score ${score} persisted on leaderboard`,
+            `W6-1 PARTIAL: rejoin UI did not appear but Q1 score ${score} persisted on leaderboard. ` +
+            'Core answer persistence verified via leaderboard fallback, but rejoin path NOT tested.',
           );
-          console.log(`W6-1 passed: ${PLAYER_NAME} score persisted (${score}).`);
+          console.log(`W6-1 passed with reservation: ${PLAYER_NAME} score persisted (${score}).`);
           return;
         }
       }
-      throw new Error('Rejoin did not show mid-game player UI (result/question/answers/wait)');
+      throw new Error(
+        'W6-1 FAIL: Rejoin did not show mid-game player UI (result/question/answers/wait) ' +
+        'and leaderboard fallback did not confirm score persistence.'
+      );
     }
     console.log('Player rejoin mid-game shell OK');
 
