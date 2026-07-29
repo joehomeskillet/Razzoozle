@@ -2,13 +2,11 @@ use axum::{
     extract::Path,
     http::{HeaderMap, StatusCode, Uri},
     response::IntoResponse,
-    routing::get,
 };
 use std::fs;
-use std::path::{Path as StdPath, PathBuf};
+use std::path::Path as StdPath;
 
 use super::get_config_path;
-use crate::state::safe_asset_id;
 
 /// Validate a file path component to prevent traversal attacks.
 fn safe_path_component(component: &str) -> Result<(), String> {

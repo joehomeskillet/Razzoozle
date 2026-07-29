@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{
-    get_now_ms, Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN,
+    Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN,
     USERNAME_MIN_LEN,
 };
 

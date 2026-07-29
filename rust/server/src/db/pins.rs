@@ -1,4 +1,4 @@
-use sqlx::{FromRow, PgPool};
+use sqlx::PgPool;
 
 /// Create a solo session token for assignment playback.
 pub async fn create_solo_session(

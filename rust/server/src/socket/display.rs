@@ -8,7 +8,7 @@ use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::warn;
 
 const CODE_CHARS: &str = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH: usize = 6;
