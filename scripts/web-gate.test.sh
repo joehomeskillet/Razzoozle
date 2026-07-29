@@ -29,12 +29,18 @@ if [[ ! -x "$GATE" ]]; then
 fi
 
 # --- 2. every `pnpm <name>` call must resolve to a real package.json script ---
-mapfile -t PNPM_CALLS < <(grep -oE 'pnpm (run )?[a-zA-Z0-9:_-]+' "$GATE" 2>/dev/null \
-  | sed -E 's/^pnpm (run )?//' | sort -u)
+# Extract script names from:
+#   - pnpm [flags] run <name>   (handles -r, --if-present, etc.)
+#   - pnpm exec <name>           (direct command via exec)
+mapfile -t PNPM_CALLS < <(
+  # Match: pnpm -r ... run <name> OR pnpm run <name>
+  grep -oE 'pnpm (-r|--[^ ]+)* run [a-zA-Z0-9:_-]+' "$GATE" 2>/dev/null | sed -E 's/^.*run //' | sort -u
+  # Match: pnpm exec <name>
+  grep -oE 'pnpm exec [a-zA-Z0-9:_-]+' "$GATE" 2>/dev/null | sed -E 's/^.*exec //' | sort -u
+)
 for name in "${PNPM_CALLS[@]}"; do
-  [[ "$name" == "-r" || "$name" == "exec" || "$name" == "install" ]] && continue
   if ! node -e "process.exit(require('./package.json').scripts['$name'] ? 0 : 1)" 2>/dev/null; then
-    say "FAIL: $GATE calls 'pnpm $name' but package.json has no such script"
+    say "FAIL: $GATE calls 'pnpm ... $name' but package.json has no such script"
     fail=1
   fi
 done
@@ -63,6 +69,41 @@ if [[ -f "$GATE" && -x "$GATE" ]]; then
     say "ok: $GATE clean-tree run is GO"
   fi
 fi
+
+# --- 5. PRÜFUNG: Ungültiges pnpm-Script wird erkannt ---------------------------
+# Temporär eine ungültige pnpm-Zeile in web-gate.sh einfügen und prüfen,
+# dass der Test fehlschlägt. Dann Test-State zurücksetzen.
+#
+# Diese Prüfung stellt sicher, dass das Test-Script wirklich die Script-Namen
+# extrahiert und nicht nur "alles okay" sagt.
+
+say ""
+say "--- INTEGRITY CHECK: Can test detect a missing pnpm script? ---"
+
+# Backup original
+cp "$GATE" "${GATE}.bak"
+
+# Inject bad pnpm call (this script does NOT exist in package.json)
+sed -i "1a pnpm nonexistent-fake-script" "$GATE"
+
+# Run test on the corrupted gate (should FAIL)
+if ! bash scripts/web-gate.test.sh >/dev/null 2>&1; then
+  say "ok: test correctly REJECTED corrupted gate (injected 'nonexistent-fake-script')"
+else
+  say "FAIL: test did NOT catch the missing script 'nonexistent-fake-script'"
+  say "The test's pnpm extraction is broken."
+  cp "${GATE}.bak" "$GATE"
+  rm "${GATE}.bak"
+  fail=1
+  exit 1
+fi
+
+# Restore original
+cp "${GATE}.bak" "$GATE"
+rm "${GATE}.bak"
+
+say "ok: gate integrity check passed (bad script detection works)"
+say ""
 
 if [[ "$fail" -eq 0 ]]; then say "PASS: web-gate.test.sh"; exit 0
 else say "FAIL: web-gate.test.sh (see above)"; exit 1; fi
