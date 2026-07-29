@@ -366,7 +366,7 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         .and_then(|syms| join_emoji_pin(syms));
 
                                     // Format check without leaking pin contents.
-                                    let pin_format_ok = joined_pin
+                                    let _pin_format_ok = joined_pin
                                         .as_ref()
                                         .map(|p| crate::http::emoji_pin::is_valid_pin(p))
                                         .unwrap_or(false);
