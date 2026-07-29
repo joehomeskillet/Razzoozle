@@ -4,143 +4,81 @@
 
 # Razzoozle
 
-### Self-hosted, open-source live quiz platform — a Kahoot-style presenter + phone game with a clean cream design.
+### Self-hosted, open-source live quiz platform — a Kahoot-style presenter + phone game.
 
 🌐 **English** · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6.svg)](LICENSE)
-![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-CE422B?logo=rust&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-592+-3DBFA0)
 
-**[▶ Live demo](https://rust.razzoozle.xyz)** · **[🌐 Showcase](https://joehomeskillet.github.io/Razzoozle/)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
+**[▶ Live demo](https://rust.razzoozle.xyz)** · **[📚 Docs](docs/)** · **[Report an issue](https://github.com/joehomeskillet/Razzoozle/issues)** · *forked from [Ralex91/Razzia](https://github.com/Ralex91/Razzia)*
 
 </div>
 
 ---
 
-## What is it?
+## What is Razzoozle?
 
-Razzoozle is a self-hosted, real-time **quiz game** for classrooms, events and game nights. A host opens a game on the big screen, players join from their phones with a PIN, and faster correct answers score more. It's a friendly fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) with a manager-driven theme cockpit, gamification, team & solo play, and local AI images — keeping the classic colored-tile presenter + phone experience.
+A self-hosted real-time quiz platform for classrooms and events. A host opens a game on screen, players join from phones with a PIN, and faster correct answers score more. It features 10 question types, team & solo modes, a manager cockpit for theming, gamification, class management, and local AI image generation.
 
-> Independent open-source project. Not affiliated with, endorsed by, or connected to Kahoot!® or any other commercial quiz platform.
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-
-| Presenter / host | Desktop game client |
-| :---: | :---: |
-| <img src="docs/screenshots/presenter.webp" width="420" alt="Presenter screen" /> | <img src="docs/screenshots/desktop.webp" width="420" alt="Desktop game client" /> |
-
-| Player phone | Avatar selection |
-| :---: | :---: |
-| <img src="docs/screenshots/phone.webp" width="240" alt="Player phone" /> | <img src="docs/screenshots/avatar.webp" width="240" alt="Avatar selection" /> |
-
-<img src="docs/screenshots/admin.webp" width="680" alt="Manager theme cockpit" />
-
-<img src="docs/screenshots/start.webp" width="680" alt="Host start screen with the Game PIN" />
-
-</div>
+**Features:** [Live demo](https://rust.razzoozle.xyz) · [Full feature list](docs/README.md) · 592+ tests · Docker + Rust server
 
 ---
 
-## Quickstart
+## Quick Start
+
+### Option 1: Local development
+
+Requires Node 22+ and pnpm 11+.
 
 ```bash
 git clone https://github.com/joehomeskillet/Razzoozle.git
 cd Razzoozle
-
-# Build the Docker image (includes web SPA + Rust server)
-DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile -t razzoozle:latest .
-
-# Run with Postgres (requires DATABASE_URL environment variable)
-# Example: set a default admin password for the manager
-docker run -d \
-  -p 3020:3020 \
-  -e DATABASE_URL='postgresql://razzoozle:password@postgres:5432/razzoozle' \
-  -e BOOTSTRAP_ADMIN_PASSWORD='your-secure-password' \
-  -v razzoozle-config:/config \
-  razzoozle:latest
-
-# Start Postgres separately or add to docker-compose
-# See docs/Self-Hosting.md for full deployment instructions
+pnpm install
+pnpm dev
 ```
 
-The server runs on port `3020` and requires a PostgreSQL database. Open the app, go to `/manager`, and **change the default manager password**. Put a reverse proxy (Caddy/Traefik/nginx) in front for TLS and a public hostname. See **[Self-Hosting](docs/Self-Hosting.md)** for detailed setup.
+Open `http://localhost:5173` (web client). The server runs on separate ports (hot reload enabled).
+
+### Option 2: Docker (recommended for production)
+
+```bash
+git clone https://github.com/joehomeskillet/Razzoozle.git
+cd Razzoozle
+DOCKER_BUILDKIT=1 docker build -f rust/Dockerfile -t razzoozle:latest .
+docker run -d -p 3020:3020 \
+  -e DATABASE_URL='postgresql://razzoozle:password@postgres:5432/razzoozle' \
+  -e BOOTSTRAP_ADMIN_PASSWORD='change-me' \
+  -v razzoozle-config:/config \
+  razzoozle:latest
+```
+
+The app serves on `http://localhost:3020`. See **[Self-Hosting](docs/Self-Hosting.md)** for reverse proxy + TLS setup.
 
 ---
 
-## ✦ What Razzoozle adds over Razzia
+## Next Steps
 
-| | Feature |
-| --- | --- |
-| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a flat **cream** default + an optional violet **liquid-glass** preset) and contrast-aware colour pickers. |
-| ☕ | **Flat cream design** — a warm flat cream interface with a living animated backdrop (drifting blobs + floating school/knowledge icons), a flat wordmark/logo, and ink-on-cream answer tiles. |
-| 🧊 | **Liquid-glass UI** — an optional, legacy glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
-| 🎯 | **Kahoot-faithful game screens** — answer tiles with the classic shape icons (triangle / diamond / circle / square), a circular countdown timer, an answers-received counter, and an animated podium. |
-| 🧑‍🎨 | **Player avatars** — each player gets a generated DiceBear avatar (pick a style + reroll, or upload your own); avatars float around the lobby and appear on leaderboards, the podium and the awards. |
-| 🏆 | **Gamification** — 15 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |
-| 🥇 | **End-game awards recap** — an animated superlatives sequence (fastest finger, biggest climber, longest streak, comeback kid…) showing each winner's avatar + name, auto-paced in autoplay. |
-| 👥 | **Team mode** — red / blue / green / yellow teams with a live team leaderboard. |
-| 📱 | **Solo play** — practise any quiz alone via a share link, with its own score history. |
-| 🏫 | **Class mode for schools** — an optional teacher mode: create classes, manage a student roster (add students, move them between classes, remove), give each student their own PIN, and assign a quiz to a whole class with a deadline, an attempt limit and privacy-first pseudonymous result tracking. |
-| ✍️ | **Ten question types** — single choice, true/false, poll, slider, multiple-select, type-the-answer, sentence-builder, math input, word-types (Wortarten), and sequencing, on top of the classic colored-tile answers. |
-| 📳 | **Mobile haptics** — optional vibration feedback on player phones (countdown, answers), reduced-motion aware. |
-| 🔗 | **Shareable results** — rich per-result link previews (Open Graph unfurl), a result page with "play it yourself / host your own" calls-to-action, and downloadable winner stickers. |
-| 🤝 | **Community questions** — a public submission page with a manager moderation queue, plus a reusable question catalog and a quiz archive. |
-| 🖼️ | **Local AI images** — generate question/theme imagery on-device via ComfyUI (Z-Image), or plug in cloud providers — keys stay server-side. |
-| 🌍 | **6 languages + PWA** — English, German, French, Spanish, Italian, Chinese; installable, offline-aware. |
-| 📺 | **Beamer kiosk + reliability** — a `/display` projector view, low-latency mode, crash-recovery, reconnect, and an MCP server for AI-tool control. |
-| 🎛️ | **Unified manager console** — a redesigned manager UI with a row-based system, multi-select actions, bulk operations, and consistent controls across all management tabs. |
-
-Backed by **592+ automated tests**, a path-traversal + `ws`-CVE security pass, a hardened unauthenticated surface (per-game resource caps + game eviction, per-IP rate-limits, manager-auth brute-force throttling, server-minted host-token auth closing IDOR), and a health-gated Docker deploy. Load-tested to **600 concurrent players**.
-
----
-
-## Rust server
-
-Razzoozle's backend is a **Rust server** (`axum` + `socketioxide`, memory-safe and low-footprint) covering all gameplay, manager, player and display flows and speaking socket.io to the unchanged React client. State is persisted entirely in **PostgreSQL**; there is no file-based persistence.
-
-**→ Rust internals, build & tests: [`rust/README.md`](rust/README.md)**
-
----
-
-## Agentically developed
-
-Razzoozle is developed almost entirely by AI coding agents, orchestrated by human oversight. A diverse team of specialized models and tools works together to build features, test, review and deploy.
-
-| Agent | Role |
-| --- | --- |
-| Claude | Orchestration & review |
-| Codex (GPT-5.6) | Full-stack implementation |
-| Cursor (GPT-5.6) | Code refinement & fix |
-| Grok (xAI) | Rust backend implementation |
-| Gemini (Google) | Long-context review & judging |
-| Open models | Qwen, DeepSeek, Nemotron |
-| Local inference | OpenVINO on Intel Arc |
-| Browser QA (Playwright) | End-to-end game testing |
-
-Humans review and merge every commit. AI augments speed and quality, not replaces judgment.
-
----
-
-## Configuration & docs
-
-Runtime data lives in the `config` volume, seeded on first boot. Game settings are in `config/game.json`; quizzes are authored in the manager editor or as `config/quizz/*.json`. See **[docs/](docs/)**: [Self-Hosting](docs/Self-Hosting.md) · [Configuration](docs/Configuration.md) · [Theming](docs/Theming.md) · [Low-latency mode](docs/LOW-LATENCY-MODE.md).
+- **Manager setup:** Open `/manager`, log in with the bootstrap password, and **change it immediately**.
+- **Deploy to production:** [Self-Hosting guide](docs/Self-Hosting.md)
+- **Customize appearance:** [Theming](docs/Theming.md)
+- **Configure gameplay:** [Configuration](docs/Configuration.md)
+- **Rust internals:** [rust/README.md](rust/README.md)
 
 ---
 
 ## Contributing
 
-Issues and pull requests are welcome. Run `pnpm verify` (typecheck + lint + tests) before opening a PR; for Rust changes, run `bash rust/gate.sh`.
+Issues and pull requests are welcome. Before opening a PR:
+
+```bash
+pnpm verify          # typecheck + lint + tests
+bash rust/gate.sh    # Rust backend tests (if changed)
+```
 
 ---
 
-## Credits & license
+## License & Credits
 
-A fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia) — thanks to the upstream authors. Released under the **[MIT License](LICENSE)** (© 2024 Ralex, © 2026 Razzoozle contributors).
+MIT License (© 2024 Ralex, © 2026 Razzoozle contributors). A fork of [**Ralex91/Razzia**](https://github.com/Ralex91/Razzia).
