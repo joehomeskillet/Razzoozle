@@ -15,6 +15,7 @@ set -uo pipefail
 cd "$(dirname "$0")" || exit 2  # -> rust/
 SRC="server/src"     # whole server crate — markers may live in main.rs OR any src/socket/*.rs
 STATE="server/src/state"
+REPO_ROOT="$PWD/.."  # Navigate to repo root from rust/
 fail=0
 say() { printf '%s\n' "$*"; }
 
@@ -24,14 +25,14 @@ BUILD_ERR=$(cargo build -p razzoozle-server 2>&1 | grep -cE '^error(\[|:)')
 
 # Whole-workspace tests. Prefer cargo-nextest (faster, clearer output) when it is
 # installed — same coverage, and it actually RUNS the suite now that the engine
-# golden-frames fixture exists. Fall back to the original compile-only check
-# (`cargo test --no-run`) where nextest is absent (e.g. an old local shell).
+# golden-frames fixture exists. Fall back to `cargo test` (without --no-run) where
+# nextest is absent, which will actually execute the full test suite.
 if command -v cargo-nextest >/dev/null 2>&1; then
   if cargo nextest run --workspace --no-fail-fast; then say "ok: cargo nextest run (workspace) green"
   else say "NO-GO: cargo nextest run reported failing or uncompilable tests"; fail=1; fi
 else
-  TEST_ERR=$(cargo test --no-run 2>&1 | grep -cE '^error(\[|:)')
-  [[ "$TEST_ERR" -ne 0 ]] && { say "NO-GO: cargo test build has $TEST_ERR error(s)"; fail=1; }
+  if cargo test --workspace; then say "ok: cargo test (workspace) green"
+  else say "NO-GO: cargo test reported failing or uncompilable tests"; fail=1; fi
 fi
 
 # --- 2. anti-regression feature markers (each shipped batch leaves a fingerprint)
@@ -76,15 +77,26 @@ fi
 # Added 2026-07-14 after a worker committed invalid zh/game.json and a textual
 # auto-merge mangled fr/it (see scripts/check-locales.sh header). Cheap (~1s),
 # python3-only, works in bare worktrees without node_modules.
-if [[ -x "$(dirname "$0")/../scripts/check-locales.sh" ]] || [[ -f "$(dirname "$0")/../scripts/check-locales.sh" ]]; then
-  if bash "$(dirname "$0")/../scripts/check-locales.sh" | tail -5; then say "ok: locale JSONs valid"
+LOCALE_CHECK="$REPO_ROOT/scripts/check-locales.sh"
+if [[ -x "$LOCALE_CHECK" ]] || [[ -f "$LOCALE_CHECK" ]]; then
+  if bash "$LOCALE_CHECK" | tail -5; then say "ok: locale JSONs valid"
   else say "NO-GO: invalid locale JSON (see above)"; fail=1; fi
 fi
 
-# --- 6. Unified Design System Gate (BLOCKING) --------------------------------
+# --- 6. question type consistency (BLOCKING) — QUESTION_TYPES must be present at
+# all five touchpoints (constants, validators, editor, answers, rust engine).
+# Anti-wildwuchs gate ensuring bindings stay fresh and no types slip through the cracks
+# (see scripts/check-question-types.sh header).
+QTYPE_CHECK="$REPO_ROOT/scripts/check-question-types.sh"
+if [[ -x "$QTYPE_CHECK" ]] || [[ -f "$QTYPE_CHECK" ]]; then
+  if bash "$QTYPE_CHECK" | tail -10; then say "ok: question types valid"
+  else say "NO-GO: question type consistency failed (see above)"; fail=1; fi
+fi
+
+# --- 7. Unified Design System Gate (BLOCKING) --------------------------------
 # Runs the FULL token verification chain: lint, AST, WASM, morph, neural,
 # AI-audit, daemon, and agent rule sync — in one deterministic pipeline.
-GATE_SCRIPT="$(dirname "$0")/../scripts/design-gate.mjs"
+GATE_SCRIPT="$REPO_ROOT/scripts/design-gate.mjs"
 if [[ -f "$GATE_SCRIPT" ]]; then
   if node "$GATE_SCRIPT" >/dev/null 2>&1; then
     say "ok: unified design system gate passed"
@@ -94,5 +106,5 @@ if [[ -f "$GATE_SCRIPT" ]]; then
 fi
 
 # --- verdict ------------------------------------------------------------------
-if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests compile, all batch markers intact)"; exit 0
+if [[ "$fail" -eq 0 ]]; then say "GO ✅ (build+tests run, all batch markers intact)"; exit 0
 else say "GATE FAILED ❌ — DISCARD worker output (drop the worktree, or git checkout HEAD -- rust/server/src)"; exit 1; fi
