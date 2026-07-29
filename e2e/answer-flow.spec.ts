@@ -637,7 +637,7 @@ async function waitForAnswerControl(page: Page, questionType: string) {
 // ── Main suite ────────────────────────────────────────────────────────────────
 
 test.describe("Answer flow — E2E All Types", () => {
-  test("host + 2 players: all 10 types incl. sequencing, P1 correct > P2", async ({
+  test("host + 2 players: all question types incl. sequencing, P1 correct > P2", async ({
     browser,
   }) => {
     test.setTimeout(480_000)

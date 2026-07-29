@@ -34,7 +34,7 @@ BUILD_ERR=$(cargo build -p razzoozle-server 2>&1 | grep -cE '^error(\[|:)')
 # test_load_snapshot_restores_games_by_invite_code) all pass individually and
 # collectively when run single-threaded. Serial execution (--test-threads=1) is
 # not a fix for test isolation — it's a gate-health measure to keep the check
-# usable until module isolation is improved. Laufzeit: ~0.08s.
+# usable until module isolation is improved.
 if command -v cargo-nextest >/dev/null 2>&1; then
   if cargo nextest run --workspace --no-fail-fast; then say "ok: cargo nextest run (workspace) green"
   else say "NO-GO: cargo nextest run reported failing or uncompilable tests"; fail=1; fi
