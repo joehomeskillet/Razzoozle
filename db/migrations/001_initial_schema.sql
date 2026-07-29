@@ -7,8 +7,13 @@
 -- ============================================================================
 
 -- safe_id: Alphanumeric, underscore, hyphen only (for quizzes, themes, etc.)
-CREATE DOMAIN safe_id AS VARCHAR(100)
-  CHECK (VALUE ~ '^[A-Za-z0-9_-]+$');
+DO $$
+BEGIN
+  CREATE DOMAIN safe_id AS VARCHAR(100)
+    CHECK (VALUE ~ '^[A-Za-z0-9_-]+$');
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END $$;
 
 -- ============================================================================
 -- TABLES

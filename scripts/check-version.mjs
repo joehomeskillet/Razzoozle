@@ -136,12 +136,14 @@ log('info', 'Checking latest git tag...');
 const latestTag = getLatestTag();
 if (!latestTag) {
   log('warn', 'No git tags found (OK for initial release)');
+  hasWarnings = true;
 } else {
   log('ok', `Latest tag: ${latestTag}`);
 
   const tagVersion = versionFromTag(latestTag);
   if (!tagVersion || !/^\d+\.\d+\.\d+$/.test(tagVersion)) {
     log('warn', `Latest tag has unusual format: ${latestTag} (parsed: ${tagVersion})`);
+    hasWarnings = true;
   } else {
     const cmp = compareVersions(tagVersion, workspaceVersion);
     if (cmp > 0) {

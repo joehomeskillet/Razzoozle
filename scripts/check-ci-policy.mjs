@@ -75,7 +75,7 @@ export function checkPnpmDrift(root = DEFAULT_REPO_ROOT) {
       if (!/uses:\s*pnpm\/action-setup@/.test(lines[i])) continue;
       // The version lives a few lines below, under a `with:` block.
       for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
-        const versionMatch = /version:\s*["']?([\w.\-]+)["']?/.exec(lines[j]);
+        const versionMatch = /version:\s*["']?([\w.-]+)["']?/.exec(lines[j]);
         if (versionMatch) {
           const found = versionMatch[1];
           if (found !== expected) {
