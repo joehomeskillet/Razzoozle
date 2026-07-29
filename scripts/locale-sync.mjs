@@ -205,7 +205,7 @@ function computeCheck() {
 
   const report = {};
   let invalid = false;
-  for (const ns of [...namespacesUnion].sort()) {
+  for (const ns of [...namespacesUnion].sort((a, b) => a.localeCompare(b))) {
     const flatByLocale = {};
     for (const locale of locales) {
       const filePath = nsFilePath(locale, ns);
@@ -223,7 +223,7 @@ function computeCheck() {
     const nsReport = {};
     for (const locale of locales) {
       const flat = flatByLocale[locale] ?? {};
-      const missing = [...allKeys].filter((k) => !(k in flat)).sort();
+      const missing = [...allKeys].filter((k) => !(k in flat)).sort((a, b) => a.localeCompare(b));
       if (missing.length > 0) nsReport[locale] = missing;
     }
     if (Object.keys(nsReport).length > 0) report[ns] = nsReport;

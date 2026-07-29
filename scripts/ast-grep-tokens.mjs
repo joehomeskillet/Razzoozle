@@ -3,10 +3,9 @@ import path from 'path'
 
 const isFix = process.argv.includes('--fix')
 const srcDir = path.resolve('packages/web/src')
-const tokensPath = path.resolve('design.tokens.json')
 
 // Read design tokens schema for OKLCH perceptual distance matching
-let tokenColorMap = [
+const tokenColorMap = [
   { name: 'bg-brand-primary', hex: '#7c3aed', rgb: [124, 58, 237] },
   { name: 'bg-state-correct', hex: '#22c55e', rgb: [34, 197, 94] },
   { name: 'bg-state-wrong', hex: '#ef4444', rgb: [239, 68, 68] },
@@ -76,7 +75,7 @@ let totalFilesFixed = 0
 walkDir(srcDir, (filePath) => {
   totalFilesChecked++
   let content = fs.readFileSync(filePath, 'utf-8')
-  let original = content
+  const original = content
   let fileIssues = 0
 
   // 1. AST Traversal for inline hex codes in className="bg-[#...]"

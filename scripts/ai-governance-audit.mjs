@@ -5,7 +5,7 @@ const srcDir = path.resolve('packages/web/src')
 const tokensPath = path.resolve('design.tokens.json')
 
 const rawTokens = fs.readFileSync(tokensPath, 'utf-8')
-const dtcgTokens = JSON.parse(rawTokens)
+const _dtcgTokens = JSON.parse(rawTokens)
 
 function walkDir(dir, callback) {
   const files = fs.readdirSync(dir)

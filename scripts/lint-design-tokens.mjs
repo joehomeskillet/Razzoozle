@@ -45,7 +45,7 @@ let totalFilesFixed = 0
 walkDir(srcDir, (filePath) => {
   totalFilesChecked++
   let content = fs.readFileSync(filePath, 'utf-8')
-  let original = content
+  const original = content
   let fileIssues = 0
 
   for (const { from, to } of tokenReplacements) {

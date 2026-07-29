@@ -6,7 +6,7 @@ const srcDir = path.resolve('packages/web/src')
 const tokensPath = path.resolve('design.tokens.json')
 
 const rawTokens = fs.readFileSync(tokensPath, 'utf-8')
-const tokensData = JSON.parse(rawTokens)
+const _tokensData = JSON.parse(rawTokens)
 
 const tokenMap = new Map([
   ['#7c3aed', 'bg-brand-primary'],
