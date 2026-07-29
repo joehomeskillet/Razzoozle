@@ -4,4 +4,9 @@ import type { EndScreen } from "./EndScreen";
 /**
  * Per-game mode selection snapshot (host's choices at game creation)
  */
-export type SelectedModes = { scoringMode?: string, teamMode?: boolean, klassen?: boolean, endScreen?: EndScreen, };
+export type SelectedModes = { scoringMode?: string, teamMode?: boolean, klassen?: boolean, endScreen?: EndScreen, 
+/**
+ * Per-game participant cap. None or 0 = unlimited (up to server ceiling of 200).
+ * Validated and clamped server-side via resolve_player_cap().
+ */
+participantCap?: bigint, };
