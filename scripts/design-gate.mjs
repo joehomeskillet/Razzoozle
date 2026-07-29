@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * scripts/design-gate.mjs — Unified Design System Gate
- * 
+ *
  * Single deterministic pipeline that runs ALL token verification checks in
  * strict sequence. Exit code 0 = all clear, exit code 1 = violations found.
  *
@@ -53,8 +53,8 @@ if (isFix) {
   console.log('\x1b[36m▸ Phase 1: Auto-Fix\x1b[0m')
   run('Token Lint Auto-Fix',          'node scripts/lint-design-tokens.mjs --fix',  false)
   run('AST Token Grep Auto-Fix',      'node scripts/ast-grep-tokens.mjs --fix',    false)
-  run('WASM Codemod Auto-Fix',        'node scripts/wasm-token-codemod.mjs --fix',  false)
-  run('AST-Morph Inline Style Fix',   'node scripts/ast-morph-tailwind.mjs --fix',  false)
+  run('Tailwind Arbitrary Class Fixer', 'node scripts/wasm-token-codemod.mjs --fix',  false)
+  run('Inline Style Converter',   'node scripts/ast-morph-tailwind.mjs --fix',  false)
   run('Monorepo Daemon Auto-Fix',     'node scripts/monorepo-refactor-daemon.mjs --fix', false)
   console.log('')
 }
@@ -63,8 +63,8 @@ if (isFix) {
 console.log('\x1b[36m▸ Phase 2: Validate (blocking)\x1b[0m')
 run('Token Lint Validator',           'node scripts/lint-design-tokens.mjs')
 run('AST Structural Hex Linter',      'node scripts/ast-grep-tokens.mjs')
-run('WASM SWC/AST Token Engine',      'node scripts/wasm-token-codemod.mjs')
-run('AST-Morph Zero-Runtime Compiler','node scripts/ast-morph-tailwind.mjs')
+run('Tailwind Arbitrary Class Linter', 'node scripts/wasm-token-codemod.mjs')
+run('Inline Style Converter','node scripts/ast-morph-tailwind.mjs')
 run('Neural Viewport Auditor (375/390/440)', 'node scripts/neural-design-core.mjs')
 
 // --- Phase 3: Governance (BLOCKING) ---
