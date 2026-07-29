@@ -217,11 +217,13 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         question.r#type.as_ref(),
         Some(QuestionType::SentenceBuilder)
     );
+    let is_word_cloud = matches!(question.r#type.as_ref(), Some(QuestionType::WordCloud));
+    let is_brainstorm = matches!(question.r#type.as_ref(), Some(QuestionType::Brainstorm));
     let is_sequencing = matches!(
         question.r#type.as_ref(),
         Some(QuestionType::Sequencing)
     );
-    let collects_text = is_type_answer || is_sentence_builder;
+    let collects_text = is_type_answer || is_sentence_builder || is_word_cloud || is_brainstorm;
     let mut responses = HashMap::new();
     let mut slider_values = Vec::new();
     let mut text_responses = HashMap::new();
@@ -883,5 +885,95 @@ mod tests {
             None,
             "word-cloud is unscored and must not display correct_answer"
         );
+    }
+
+    /// Word-cloud SHOW_RESPONSES aggregates free-text answers with normalize_text
+    /// (case-fold so "happy"/"HAPPY" collapse into one bucket).
+    #[test]
+    fn word_cloud_aggregates_text_responses_with_normalization() {
+        let mut game = game_with_quiz(
+            r#"{"subject":"S","questions":[{"question":"What words come to mind?","type":"word-cloud","cooldown":5,"time":20}]}"#,
+        );
+        game.add_player(
+            "player-socket-2".to_string(),
+            "client-2".to_string(),
+            "Bob".to_string(),
+            None,
+        )
+        .unwrap();
+        game.add_player(
+            "player-socket-3".to_string(),
+            "client-3".to_string(),
+            "Carol".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.show_question(0).unwrap();
+        game.engine.open_answers().unwrap();
+        game.engine
+            .record_answer("client-1", None, None, Some("happy".to_string()))
+            .unwrap();
+        game.engine
+            .record_answer("client-2", None, None, Some("HAPPY".to_string()))
+            .unwrap();
+        game.engine
+            .record_answer("client-3", None, None, Some("sad".to_string()))
+            .unwrap();
+        game.engine.reveal(ScoringMode::Speed).unwrap();
+
+        let status = build_manager_show_responses(&game);
+        let GameStatus::ShowResponses(data) = status else {
+            panic!("expected ShowResponses");
+        };
+        let text_responses = data
+            .text_responses
+            .expect("word-cloud must collect text_responses");
+        assert_eq!(
+            text_responses.get("happy"),
+            Some(&2),
+            "happy + HAPPY normalize to one bucket of 2"
+        );
+        assert_eq!(text_responses.get("sad"), Some(&1));
+        assert_eq!(text_responses.len(), 2);
+    }
+
+    /// Brainstorm SHOW_RESPONSES aggregates free-text answers with normalize_text.
+    #[test]
+    fn brainstorm_aggregates_text_responses_with_normalization() {
+        let mut game = game_with_quiz(
+            r#"{"subject":"S","questions":[{"question":"Share an idea","type":"brainstorm","cooldown":5,"time":20}]}"#,
+        );
+        game.add_player(
+            "player-socket-2".to_string(),
+            "client-2".to_string(),
+            "Bob".to_string(),
+            None,
+        )
+        .unwrap();
+        game.engine.start().unwrap();
+        game.engine.show_question(0).unwrap();
+        game.engine.open_answers().unwrap();
+        game.engine
+            .record_answer("client-1", None, None, Some("idea".to_string()))
+            .unwrap();
+        game.engine
+            .record_answer("client-2", None, None, Some("IDEA".to_string()))
+            .unwrap();
+        game.engine.reveal(ScoringMode::Speed).unwrap();
+
+        let status = build_manager_show_responses(&game);
+        let GameStatus::ShowResponses(data) = status else {
+            panic!("expected ShowResponses");
+        };
+        let text_responses = data
+            .text_responses
+            .expect("brainstorm must collect text_responses");
+        assert_eq!(
+            text_responses.get("idea"),
+            Some(&2),
+            "idea + IDEA normalize to one bucket of 2"
+        );
+        assert_eq!(text_responses.len(), 1);
     }
 }
