@@ -219,6 +219,8 @@ pub struct SoundsConfig {
 /// The complete theme configuration for the application.
 /// Persisted as config/theme.json and sent on manager:theme and game:status updates.
 /// A single source of truth is the zod validator; a parsed/persisted theme IS a Theme.
+/// The deprecated "glass" visual style is no longer supported; old persisted themes
+/// with style:"glass" are accepted by the validator but the field is removed.
 ///
 /// Sent/received in: manager:theme, manager:setTheme, manager:setThemeSuccess,
 /// themeTemplate:data (via ThemeTemplate), themeRevision:data (via ThemeRevision),
@@ -227,8 +229,6 @@ pub struct SoundsConfig {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct Theme {
-    /// Visual style: "flat" or "glass"
-    pub style: String,
     /// Primary brand color (hex)
     pub color_primary: String,
     /// Secondary brand color (hex)
@@ -436,7 +436,6 @@ mod tests {
     #[test]
     fn test_theme_roundtrip() {
         let theme = Theme {
-            style: "flat".to_string(),
             color_primary: "#7c3aed".to_string(),
             color_secondary: "#2e1065".to_string(),
             color_text: "#ffffff".to_string(),
@@ -538,7 +537,6 @@ mod tests {
         let json = serde_json::to_string(&theme).unwrap();
         let deserialized: Theme = serde_json::from_str(&json).unwrap();
         assert_eq!(theme, deserialized);
-        assert_eq!(theme.style, "flat");
         assert_eq!(theme.color_primary, "#7c3aed");
         assert_eq!(theme.radius, 16);
     }
@@ -549,7 +547,6 @@ mod tests {
             id: "classic-blue".to_string(),
             name: "Classic Blue".to_string(),
             theme: Theme {
-                style: "flat".to_string(),
                 color_primary: "#7c3aed".to_string(),
                 color_secondary: "#2e1065".to_string(),
                 color_text: "#ffffff".to_string(),
@@ -662,7 +659,6 @@ mod tests {
             id: "rev-1719946800000".to_string(),
             created_at: "2024-07-05T10:00:00Z".to_string(),
             theme: Theme {
-                style: "flat".to_string(),
                 color_primary: "#7c3aed".to_string(),
                 color_secondary: "#2e1065".to_string(),
                 color_text: "#ffffff".to_string(),
