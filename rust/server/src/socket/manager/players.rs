@@ -212,7 +212,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                             .map(|p| p.username.clone())
                             .collect();
 
-                        for i in 0..actual_count {
+                        for _ in 0..actual_count {
                             // Find next available name from pool, or use numeric suffix
                             let bot_name = {
                                 let mut found = None;

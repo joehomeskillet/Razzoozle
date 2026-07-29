@@ -18,14 +18,13 @@ mod templates;
 mod users;
 
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::{HeaderMap, StatusCode},
-    routing::{delete, get, post, put},
+    routing::{delete, get, post},
     Json, Router,
 };
 use lazy_static::lazy_static;
 use serde_json::json;
-use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -175,7 +174,7 @@ lazy_static! {
 /// Liveness probe: process is running and HTTP is serving.
 /// No dependency checks (DB not required).
 /// Returns 200 on success, 5xx only for internal process problems.
-pub async fn handle_livez() -> Json<LivenessResponse> {
+pub(crate) async fn handle_livez() -> Json<LivenessResponse> {
     Json(LivenessResponse {
         status: "alive".to_string(),
         timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
@@ -185,7 +184,7 @@ pub async fn handle_livez() -> Json<LivenessResponse> {
 /// Readiness probe: process is alive AND ready to handle requests.
 /// Checks DB connectivity if configured.
 /// Returns 200 if ready, 503 Service Unavailable if not ready (e.g., DB unreachable).
-pub async fn handle_readyz(
+pub(crate) async fn handle_readyz(
     State(state): State<AppState>,
 ) -> Result<Json<ReadinessResponse>, StatusCode> {
     let timestamp = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
@@ -230,7 +229,7 @@ pub async fn handle_readyz(
 /// If /healthz were readiness-strict (503 if DB down), the CD gate would roll back
 /// on any DB transient, breaking every deploy. Liveness ensures the server can serve
 /// before DB dependencies are guaranteed ready (migrations run separately, DCK-05).
-pub async fn handle_health() -> Json<HealthResponse> {
+pub(crate) async fn handle_health() -> Json<HealthResponse> {
     Json(HealthResponse {
         status: "ok".to_string(),
         ts: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),

@@ -166,7 +166,7 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::LEAVE, {
         let ctx = ctx.clone();
 
-        move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
+        move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {

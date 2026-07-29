@@ -302,21 +302,8 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_plugin_set_config(socket, ctx.clone());
 }
 
-/// Auth-gate shared by all three handlers (Node manager.withAuth →
-/// UNAUTHORIZED to the sender, then stop).
-async fn ensure_logged(socket: &SocketRef, ctx: &HandlerCtx) -> bool {
-    match ctx.require_user().await {
-        Some(_user) => true,
-        None => {
-            socket
-                .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                .ok();
-            false
-        }
-    }
-}
-
 /// Admin-gate for plugin install/remove/setConfig (instance-global state mutations).
+/// Real auth path for all three handlers: ensure_admin → ctx.require_admin().
 async fn ensure_admin(socket: &SocketRef, ctx: &HandlerCtx) -> bool {
     match ctx.require_admin().await {
         Some(_user) => true,

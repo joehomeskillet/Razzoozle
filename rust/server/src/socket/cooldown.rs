@@ -60,7 +60,7 @@ pub async fn run_cooldown<F: FnMut(i32)>(
 /// The `get_remaining_secs` closure is called each tick to get the current remaining seconds.
 /// This allows adjustTimer to shift the deadline mid-countdown.
 pub async fn run_cooldown_with_deadline<F, G>(
-    seconds: i32,
+    _seconds: i32,
     abort: Arc<Notify>,
     mut on_tick: F,
     get_remaining_secs: G,
