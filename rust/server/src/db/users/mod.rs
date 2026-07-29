@@ -1,8 +1,8 @@
 //! User account and session management — W0-A1 auth foundation primitive.
 //! Additive: coexists with existing manager-password auth without modification.
 
+use argon2::password_hash::{PasswordHash, SaltString};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
-use argon2::password_hash::{SaltString, PasswordHash};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use rand::Rng;
 use sha2::{Digest, Sha256};
@@ -60,7 +60,7 @@ pub async fn create_user(
     let result = sqlx::query_as::<_, (i64,)>(
         "INSERT INTO users (username, password_hash, role, active, created_at, submit_token) \
          VALUES ($1, $2, $3, true, now(), $4) \
-         RETURNING id"
+         RETURNING id",
     )
     .bind(username)
     .bind(&password_hash)
@@ -97,10 +97,7 @@ pub async fn owner_by_submit_token(
 
 /// Get the submit_token for a given user id.
 /// Returns None if the user is not found, inactive, or has no token.
-pub async fn get_submit_token(
-    pool: &Option<PgPool>,
-    user_id: i64,
-) -> Option<String> {
+pub async fn get_submit_token(pool: &Option<PgPool>, user_id: i64) -> Option<String> {
     let pool = match pool {
         Some(p) => p,
         None => return None,
@@ -124,7 +121,7 @@ pub async fn find_user_for_login(
     username: &str,
 ) -> Result<Option<(i64, String, String, bool)>, String> {
     let result = sqlx::query_as::<_, (i64, String, String, bool)>(
-        "SELECT id, password_hash, role, active FROM users WHERE username = $1"
+        "SELECT id, password_hash, role, active FROM users WHERE username = $1",
     )
     .bind(username)
     .fetch_optional(pool)
@@ -153,11 +150,7 @@ pub fn verify_password(hash: &str, plain: &str) -> bool {
 /// concurrent sessions per user are intentional — a prior login is never revoked),
 /// storing only the SHA-256 hash of the token, then caps the user's session count
 /// at MAX_SESSIONS_PER_USER by dropping the oldest rows beyond that limit.
-pub async fn mint_session(
-    pool: &PgPool,
-    user_id: i64,
-    ttl_days: i64,
-) -> Result<String, String> {
+pub async fn mint_session(pool: &PgPool, user_id: i64, ttl_days: i64) -> Result<String, String> {
     // Generate 256-bit (32 bytes) random token — scoped so the ThreadRng (!Send)
     // is dropped BEFORE the await below, keeping the handler future Send.
     let token = {
@@ -174,7 +167,7 @@ pub async fn mint_session(
     // Insert into sessions table (never the raw token — only its hash).
     sqlx::query(
         "INSERT INTO sessions (token_hash, user_id, created_at, last_seen, expires_at) \
-         VALUES ($1, $2, now(), now(), $3)"
+         VALUES ($1, $2, now(), now(), $3)",
     )
     .bind(&token_hash)
     .bind(user_id)
@@ -188,7 +181,7 @@ pub async fn mint_session(
     sqlx::query(
         "DELETE FROM sessions WHERE user_id = $1 AND id NOT IN ( \
            SELECT id FROM sessions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 \
-         )"
+         )",
     )
     .bind(user_id)
     .bind(MAX_SESSIONS_PER_USER)
@@ -203,15 +196,12 @@ pub async fn mint_session(
 /// Looks up by the SHA-256 hash of the supplied token — the raw token is never
 /// compared or stored. Called on every authenticated socket/HTTP request, so this
 /// intentionally does NOT write to last_seen (no DB write in a hot path).
-pub async fn session_user(
-    pool: &PgPool,
-    token: &str,
-) -> Result<Option<AuthUser>, String> {
+pub async fn session_user(pool: &PgPool, token: &str) -> Result<Option<AuthUser>, String> {
     let token_hash = hash_token(token);
     let result = sqlx::query_as::<_, (i64, String)>(
         "SELECT u.id, u.role FROM sessions s \
          JOIN users u ON s.user_id = u.id \
-         WHERE s.token_hash = $1 AND s.expires_at > now() AND u.active = true"
+         WHERE s.token_hash = $1 AND s.expires_at > now() AND u.active = true",
     )
     .bind(&token_hash)
     .fetch_optional(pool)
@@ -287,7 +277,6 @@ pub async fn count_users(pool: &PgPool) -> Result<i64, String> {
     Ok(result.0)
 }
 
-
 #[derive(Debug, serde::Serialize)]
 pub struct UserDetail {
     pub id: i64,
@@ -299,8 +288,17 @@ pub struct UserDetail {
 
 /// List all users with their details.
 pub async fn list_users(pool: &PgPool) -> Result<Vec<UserDetail>, String> {
-    let result = sqlx::query_as::<_, (i64, String, String, bool, sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>)>(
-        "SELECT id, username, role, active, created_at FROM users ORDER BY created_at DESC"
+    let result = sqlx::query_as::<
+        _,
+        (
+            i64,
+            String,
+            String,
+            bool,
+            sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>,
+        ),
+    >(
+        "SELECT id, username, role, active, created_at FROM users ORDER BY created_at DESC",
     )
     .fetch_all(pool)
     .await
@@ -334,7 +332,7 @@ pub async fn set_user_active(pool: &PgPool, user_id: i64, active: bool) -> Resul
 /// last-admin delete guard so the final active admin can never be removed.
 pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
     let result = sqlx::query_as::<_, (i64,)>(
-        "SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = true"
+        "SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = true",
     )
     .fetch_one(pool)
     .await?;
@@ -343,13 +341,15 @@ pub async fn count_active_admins(pool: &PgPool) -> Result<i64, sqlx::Error> {
 }
 
 /// Get (role, active) for a user id. None if the user does not exist.
-pub async fn get_user_role_active(pool: &PgPool, user_id: i64) -> Result<Option<(String, bool)>, sqlx::Error> {
-    let result = sqlx::query_as::<_, (String, bool)>(
-        "SELECT role, active FROM users WHERE id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?;
+pub async fn get_user_role_active(
+    pool: &PgPool,
+    user_id: i64,
+) -> Result<Option<(String, bool)>, sqlx::Error> {
+    let result =
+        sqlx::query_as::<_, (String, bool)>("SELECT role, active FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     Ok(result)
 }
@@ -420,12 +420,11 @@ pub async fn deactivate_user_guarded(
 ) -> Result<DeactivateUserOutcome, sqlx::Error> {
     let mut tx = pool.begin().await?;
 
-    let target = sqlx::query_as::<_, (String, bool)>(
-        "SELECT role, active FROM users WHERE id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(&mut *tx)
-    .await?;
+    let target =
+        sqlx::query_as::<_, (String, bool)>("SELECT role, active FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&mut *tx)
+            .await?;
 
     let (role, active) = match target {
         Some(v) => v,
@@ -443,7 +442,7 @@ pub async fn deactivate_user_guarded(
 
     if role == "admin" {
         let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE",
         )
         .fetch_all(&mut *tx)
         .await?;
@@ -486,12 +485,11 @@ pub async fn bulk_activate(pool: &PgPool, ids: Vec<i64>) -> Result<BulkOpResult,
     let mut tx = pool.begin().await?;
 
     // Lock matching rows deterministically, then mark active.
-    let existing: Vec<(i64,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
-    )
-    .bind(&ids)
-    .fetch_all(&mut *tx)
-    .await?;
+    let existing: Vec<(i64,)> =
+        sqlx::query_as("SELECT id FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE")
+            .bind(&ids)
+            .fetch_all(&mut *tx)
+            .await?;
 
     let existing_set: std::collections::HashSet<i64> =
         existing.into_iter().map(|(id,)| id).collect();
@@ -559,7 +557,7 @@ pub async fn bulk_deactivate(
 
     // Lock the active-admin set first (same order as the single-user guarded fns), then the target rows — consistent lock order prevents deadlocks.
     let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE",
     )
     .fetch_all(&mut *tx)
     .await?;
@@ -569,7 +567,7 @@ pub async fn bulk_deactivate(
         locked_admin_ids.into_iter().map(|(id,)| id).collect();
 
     let existing: Vec<(i64, String, bool)> = sqlx::query_as(
-        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
+        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE",
     )
     .bind(&work)
     .fetch_all(&mut *tx)
@@ -652,7 +650,7 @@ pub async fn bulk_delete(
 
     // Lock ALL active admins deterministically (same pattern as delete_user_guarded).
     let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+        "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE",
     )
     .fetch_all(&mut *tx)
     .await?;
@@ -662,7 +660,7 @@ pub async fn bulk_delete(
         locked_admin_ids.into_iter().map(|(id,)| id).collect();
 
     let existing: Vec<(i64, String, bool)> = sqlx::query_as(
-        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE"
+        "SELECT id, role, active FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE",
     )
     .bind(&work)
     .fetch_all(&mut *tx)
@@ -735,17 +733,19 @@ pub enum DeleteUserOutcome {
 /// transaction to acquire the lock re-reads a set that already reflects the
 /// first transaction's outcome (post-commit) or waits (pre-commit) — either
 /// way the count it sees is correct at decision time.
-pub async fn delete_user_guarded(pool: &PgPool, user_id: i64) -> Result<DeleteUserOutcome, sqlx::Error> {
+pub async fn delete_user_guarded(
+    pool: &PgPool,
+    user_id: i64,
+) -> Result<DeleteUserOutcome, sqlx::Error> {
     let mut tx = pool.begin().await?;
 
     // Read target WITHOUT a row lock — only used to decide whether the
     // last-admin check below even applies to this user.
-    let target = sqlx::query_as::<_, (String, bool)>(
-        "SELECT role, active FROM users WHERE id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(&mut *tx)
-    .await?;
+    let target =
+        sqlx::query_as::<_, (String, bool)>("SELECT role, active FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&mut *tx)
+            .await?;
 
     let (role, active) = match target {
         Some(v) => v,
@@ -757,7 +757,7 @@ pub async fn delete_user_guarded(pool: &PgPool, user_id: i64) -> Result<DeleteUs
 
     if role == "admin" && active {
         let locked_admin_ids: Vec<(i64,)> = sqlx::query_as(
-            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE"
+            "SELECT id FROM users WHERE role = 'admin' AND active = true ORDER BY id FOR UPDATE",
         )
         .fetch_all(&mut *tx)
         .await?;
@@ -841,7 +841,8 @@ pub async fn set_password_and_revoke(
         .to_string();
 
     // Begin transaction
-    let mut tx = pool.begin()
+    let mut tx = pool
+        .begin()
         .await
         .map_err(|e| format!("Failed to begin transaction: {}", e))?;
 
@@ -887,11 +888,17 @@ pub async fn bootstrap_admin(pool: &PgPool) {
     match count_users(pool).await {
         Ok(count) => {
             if count == 0 {
-                match (std::env::var("BOOTSTRAP_ADMIN_USER"), crate::config::resolve_secret("BOOTSTRAP_ADMIN_PASSWORD")) {
+                match (
+                    std::env::var("BOOTSTRAP_ADMIN_USER"),
+                    crate::config::resolve_secret("BOOTSTRAP_ADMIN_PASSWORD"),
+                ) {
                     (Ok(username), Ok(Some(password))) => {
                         match create_user(pool, &username, &password, "admin").await {
                             Ok(user_id) => {
-                                info!("Bootstrap admin user created: id={}, username={}", user_id, username);
+                                info!(
+                                    "Bootstrap admin user created: id={}, username={}",
+                                    user_id, username
+                                );
                             }
                             Err(e) => {
                                 eprintln!("Failed to create bootstrap admin user: {}", e);
@@ -928,7 +935,10 @@ mod tests {
         let a = hash_token("device-a-token");
         let b = hash_token("device-a-token");
         assert_eq!(a, b, "same input must hash to the same digest");
-        assert_ne!(a, "device-a-token", "the digest must never equal the raw token");
+        assert_ne!(
+            a, "device-a-token",
+            "the digest must never equal the raw token"
+        );
         assert_eq!(a.len(), 64, "SHA-256 hex digest is 64 chars");
     }
 
@@ -936,7 +946,10 @@ mod tests {
     fn hash_token_differs_per_input() {
         let a = hash_token("device-a-token");
         let b = hash_token("device-b-token");
-        assert_ne!(a, b, "different tokens (e.g. two devices) must hash differently");
+        assert_ne!(
+            a, b,
+            "different tokens (e.g. two devices) must hash differently"
+        );
     }
 
     /// Cross-check against migration 020's backfill: `encode(digest(token,
@@ -970,5 +983,5 @@ mod tests {
     // filter) for user B removed hash-b1 and left user A's hash-a1 untouched.
 }
 
-mod tests_users_delete;
 mod tests_users_bulk;
+mod tests_users_delete;

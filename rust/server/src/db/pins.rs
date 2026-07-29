@@ -1,6 +1,5 @@
 use sqlx::{FromRow, PgPool};
 
-
 /// Create a solo session token for assignment playback.
 pub async fn create_solo_session(
     pool: &PgPool,
@@ -34,21 +33,19 @@ pub async fn validate_student_pin(
     student_id: i64,
     pin: &str,
 ) -> Result<bool, String> {
-    let row: Option<(Option<String>, bool)> = sqlx::query_as(
-        "SELECT pin, active FROM students WHERE id = $1",
-    )
-    .bind(student_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|_| "validation_failed".to_string())?;
+    let row: Option<(Option<String>, bool)> =
+        sqlx::query_as("SELECT pin, active FROM students WHERE id = $1")
+            .bind(student_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|_| "validation_failed".to_string())?;
 
-    let assignment_exists = sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM assignments WHERE id = $1)",
-    )
-    .bind(assignment_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|_| "validation_failed".to_string())?;
+    let assignment_exists =
+        sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM assignments WHERE id = $1)")
+            .bind(assignment_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|_| "validation_failed".to_string())?;
 
     match (row, assignment_exists) {
         (Some((Some(stored), true)), true) => Ok(stored == pin),
@@ -58,7 +55,6 @@ pub async fn validate_student_pin(
         _ => Err("validation_failed".to_string()),
     }
 }
-
 
 /// Wave-1 §B: Fetch students in a class WITH stored PINs for klassen login validation.
 /// Returns (id, display_name, stored_pin, active) tuples. PINs are required for credential checking.

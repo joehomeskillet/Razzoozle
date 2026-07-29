@@ -33,7 +33,11 @@ async fn resolve_provider_key(
     }
 
     // Fall back to admin global key
-    ai_secrets::get_key(active_id).ok().flatten().map(Ok).transpose()
+    ai_secrets::get_key(active_id)
+        .ok()
+        .flatten()
+        .map(Ok)
+        .transpose()
 }
 
 /// Generate text via the active provider. Returns the raw model string (secret-scanned).
@@ -99,10 +103,7 @@ pub async fn generate_text(opts: GenerateTextOptions) -> Result<String, String> 
         }
 
         let msg_content = if opts.json {
-            format!(
-                "{}\n\nRespond ONLY with valid JSON.",
-                opts.prompt
-            )
+            format!("{}\n\nRespond ONLY with valid JSON.", opts.prompt)
         } else {
             opts.prompt.clone()
         };
@@ -256,7 +257,9 @@ pub(crate) fn map_llm_to_question(q_type: &str, parsed: &Value, language: &str) 
                                 .get("label")
                                 .and_then(|v| v.as_str())
                                 .map(|s| s.to_string())
-                                .or_else(|| it.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+                                .or_else(|| {
+                                    it.get("id").and_then(|v| v.as_str()).map(|s| s.to_string())
+                                })
                                 .unwrap_or_else(|| format!("Item {}", i + 1));
                             json!({ "id": id, "label": label })
                         })
@@ -276,11 +279,15 @@ pub(crate) fn map_llm_to_question(q_type: &str, parsed: &Value, language: &str) 
             built["correctOrder"] = Value::Array(order);
         }
         "mathematik" => {
-            built["correct"] = json!(parsed.get("correct").and_then(|v| v.as_f64()).unwrap_or(0.0));
-            built["tolerance"] =
-                json!(parsed.get("tolerance").and_then(|v| v.as_f64()).unwrap_or(0.1));
-            built["decimals"] =
-                json!(parsed.get("decimals").and_then(|v| v.as_u64()).unwrap_or(2));
+            built["correct"] = json!(parsed
+                .get("correct")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0));
+            built["tolerance"] = json!(parsed
+                .get("tolerance")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.1));
+            built["decimals"] = json!(parsed.get("decimals").and_then(|v| v.as_u64()).unwrap_or(2));
         }
         "wortarten" => {
             built["sentence"] = json!(parsed
@@ -349,8 +356,10 @@ pub(crate) fn map_llm_to_question(q_type: &str, parsed: &Value, language: &str) 
         "slider" => {
             built["min"] = json!(parsed.get("min").and_then(|v| v.as_f64()).unwrap_or(0.0));
             built["max"] = json!(parsed.get("max").and_then(|v| v.as_f64()).unwrap_or(100.0));
-            built["correct"] =
-                json!(parsed.get("correct").and_then(|v| v.as_f64()).unwrap_or(50.0));
+            built["correct"] = json!(parsed
+                .get("correct")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(50.0));
             if let Some(unit) = parsed.get("unit").and_then(|v| v.as_str()) {
                 built["unit"] = json!(unit);
             }
@@ -442,9 +451,7 @@ pub async fn generate_distractors(
         .map(|arr| {
             arr.iter()
                 .filter_map(|v| v.as_str())
-                .filter(|d| {
-                    !d.is_empty() && d.to_lowercase().trim() != correct_lower.trim()
-                })
+                .filter(|d| !d.is_empty() && d.to_lowercase().trim() != correct_lower.trim())
                 .take(3)
                 .map(|s| s.to_string())
                 .collect()
@@ -504,10 +511,7 @@ pub async fn generate_quiz(
                         .collect()
                 })
                 .unwrap_or_default();
-            let idx = q
-                .get("correctIndex")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0) as usize;
+            let idx = q.get("correctIndex").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
 
             json!({
                 "question": q.get("question").and_then(|v| v.as_str()).unwrap_or(""),

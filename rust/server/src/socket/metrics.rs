@@ -6,7 +6,7 @@
 
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::player::{MetricsHealthSnapshot, MetricPercentiles};
+use razzoozle_protocol::player::{MetricPercentiles, MetricsHealthSnapshot};
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -282,9 +282,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Emit snapshot to the requesting (manager) socket.
-                socket
-                    .emit(constants::metrics::HEALTH, &snapshot)
-                    .ok();
+                socket.emit(constants::metrics::HEALTH, &snapshot).ok();
             });
         }
     });

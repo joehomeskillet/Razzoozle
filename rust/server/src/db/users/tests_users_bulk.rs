@@ -100,12 +100,22 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_deactivate_g2_self_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1 (requester)");
-        let id2 = create_user(&pool, "test_bulk_deactivate_g2_self_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_self_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_self_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
 
         let result = bulk_deactivate(&pool, id1, vec![id1, id2])
             .await
@@ -137,10 +147,7 @@ mod tests {
 
         let (_, active1) = fetch_id_active(&pool, id1).await;
         let (_, active2) = fetch_id_active(&pool, id2).await;
-        assert!(
-            active1,
-            "requester id1 must remain active after self skip"
-        );
+        assert!(active1, "requester id1 must remain active after self skip");
         assert!(!active2, "id2 should be inactive after bulk deactivate");
 
         cleanup_test_users(&pool).await;
@@ -165,18 +172,38 @@ mod tests {
 
         // Exactly three active admins in the system (after suspend). Requester is a
         // non-admin so self-skip does not apply and remaining_admins starts at 3.
-        let id1 = create_user(&pool, "test_bulk_deactivate_g2_last_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1");
-        let id2 = create_user(&pool, "test_bulk_deactivate_g2_last_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
-        let id3 = create_user(&pool, "test_bulk_deactivate_g2_last_isolate_a3", "pass123", "admin")
-            .await
-            .expect("Failed to create admin3");
-        let id4 = create_user(&pool, "test_bulk_deactivate_g2_last_isolate_req", "pass123", "user")
-            .await
-            .expect("Failed to create requester (regular user)");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_last_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_last_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
+        let id3 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_last_isolate_a3",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin3");
+        let id4 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_last_isolate_req",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create requester (regular user)");
 
         let result = bulk_deactivate(&pool, id4, vec![id1, id2, id3])
             .await
@@ -194,7 +221,10 @@ mod tests {
             "expected one last_admin skip, got {:?}",
             result.skipped
         );
-        assert_eq!(result.skipped[0].id, id3, "last admin id3 should be skipped");
+        assert_eq!(
+            result.skipped[0].id, id3,
+            "last admin id3 should be skipped"
+        );
         assert_eq!(
             result.skipped[0].reason, "last_admin",
             "skip reason should be last_admin, got {}",
@@ -235,18 +265,38 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_deactivate_g2_mix_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1 (requester)");
-        let id2 = create_user(&pool, "test_bulk_deactivate_g2_mix_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
-        let id3 = create_user(&pool, "test_bulk_deactivate_g2_mix_isolate_u3", "pass123", "user")
-            .await
-            .expect("Failed to create regular user");
-        let id4 = create_user(&pool, "test_bulk_deactivate_g2_mix_isolate_u4", "pass123", "user")
-            .await
-            .expect("Failed to create inactive user");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_mix_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_mix_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
+        let id3 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_mix_isolate_u3",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create regular user");
+        let id4 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_mix_isolate_u4",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create inactive user");
         set_user_active(&pool, id4, false)
             .await
             .expect("Failed to pre-deactivate id4");
@@ -308,12 +358,22 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_deactivate_g2_dedup_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1 (requester)");
-        let id2 = create_user(&pool, "test_bulk_deactivate_g2_dedup_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_dedup_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_dedup_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
 
         let result = bulk_deactivate(&pool, id1, vec![id2, id2, id2])
             .await
@@ -363,9 +423,14 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_deactivate_g2_nf_isolate_admin", "pass123", "admin")
-            .await
-            .expect("Failed to create admin (requester)");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_deactivate_g2_nf_isolate_admin",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin (requester)");
 
         let result = bulk_deactivate(&pool, id1, vec![888888, 999999])
             .await
@@ -423,12 +488,22 @@ mod tests {
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_delete_g3_self_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1 (requester)");
-        let id2 = create_user(&pool, "test_bulk_delete_g3_self_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_delete_g3_self_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_delete_g3_self_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
 
         // Sole active admin must be id2 so last_admin fires on the work list.
         set_user_active(&pool, id1, false)
@@ -500,18 +575,38 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_delete_g3_reg_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin1 (requester)");
-        let id2 = create_user(&pool, "test_bulk_delete_g3_reg_isolate_a2", "pass123", "admin")
-            .await
-            .expect("Failed to create admin2");
-        let id3 = create_user(&pool, "test_bulk_delete_g3_reg_isolate_a3", "pass123", "admin")
-            .await
-            .expect("Failed to create admin3");
-        let id4 = create_user(&pool, "test_bulk_delete_g3_reg_isolate_u4", "pass123", "user")
-            .await
-            .expect("Failed to create regular user");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_delete_g3_reg_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin1 (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_delete_g3_reg_isolate_a2",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin2");
+        let id3 = create_user(
+            &pool,
+            "test_bulk_delete_g3_reg_isolate_a3",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin3");
+        let id4 = create_user(
+            &pool,
+            "test_bulk_delete_g3_reg_isolate_u4",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create regular user");
 
         let result = bulk_delete(&pool, id1, vec![id4])
             .await
@@ -583,12 +678,22 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_delete_g3_sess_isolate_a1", "pass123", "admin")
-            .await
-            .expect("Failed to create admin (requester)");
-        let id2 = create_user(&pool, "test_bulk_delete_g3_sess_isolate_u2", "pass123", "user")
-            .await
-            .expect("Failed to create regular user");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_delete_g3_sess_isolate_a1",
+            "pass123",
+            "admin",
+        )
+        .await
+        .expect("Failed to create admin (requester)");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_delete_g3_sess_isolate_u2",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create regular user");
 
         sqlx::query(
             "INSERT INTO sessions (user_id, token_hash, created_at, expires_at) \
@@ -610,15 +715,17 @@ mod tests {
         .await
         .expect("Failed to insert session 2");
 
-        let sessions_before = sqlx::query_as::<_, (i64,)>(
-            "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
-        )
-        .bind(id2)
-        .fetch_one(&pool)
-        .await
-        .expect("count sessions before")
-        .0;
-        assert_eq!(sessions_before, 2, "expected 2 sessions for id2 before delete");
+        let sessions_before =
+            sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+                .bind(id2)
+                .fetch_one(&pool)
+                .await
+                .expect("count sessions before")
+                .0;
+        assert_eq!(
+            sessions_before, 2,
+            "expected 2 sessions for id2 before delete"
+        );
 
         let result = bulk_delete(&pool, id1, vec![id2])
             .await
@@ -649,14 +756,13 @@ mod tests {
             .0;
         assert_eq!(user_count, 0, "id2 should be deleted");
 
-        let sessions_after = sqlx::query_as::<_, (i64,)>(
-            "SELECT COUNT(*) FROM sessions WHERE user_id = $1",
-        )
-        .bind(id2)
-        .fetch_one(&pool)
-        .await
-        .expect("count sessions after")
-        .0;
+        let sessions_after =
+            sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM sessions WHERE user_id = $1")
+                .bind(id2)
+                .fetch_one(&pool)
+                .await
+                .expect("count sessions after")
+                .0;
         assert_eq!(
             sessions_after, 0,
             "sessions for id2 should cascade-delete (FK ON DELETE CASCADE)"
@@ -683,15 +789,30 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_activate_g4_idem_isolate_u1", "pass123", "user")
-            .await
-            .expect("Failed to create user1");
-        let id2 = create_user(&pool, "test_bulk_activate_g4_idem_isolate_u2", "pass123", "user")
-            .await
-            .expect("Failed to create user2");
-        let id3 = create_user(&pool, "test_bulk_activate_g4_idem_isolate_u3", "pass123", "user")
-            .await
-            .expect("Failed to create user3");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_activate_g4_idem_isolate_u1",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create user1");
+        let id2 = create_user(
+            &pool,
+            "test_bulk_activate_g4_idem_isolate_u2",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create user2");
+        let id3 = create_user(
+            &pool,
+            "test_bulk_activate_g4_idem_isolate_u3",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create user3");
 
         set_user_active(&pool, id3, false)
             .await
@@ -744,9 +865,14 @@ mod tests {
 
         cleanup_test_users(&pool).await;
 
-        let id1 = create_user(&pool, "test_bulk_activate_g4_nf_isolate_u1", "pass123", "user")
-            .await
-            .expect("Failed to create user1");
+        let id1 = create_user(
+            &pool,
+            "test_bulk_activate_g4_nf_isolate_u1",
+            "pass123",
+            "user",
+        )
+        .await
+        .expect("Failed to create user1");
 
         let result = bulk_activate(&pool, vec![id1, 999999])
             .await
@@ -797,22 +923,12 @@ mod tests {
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
 
-        let id1 = create_user(
-            &pool,
-            "test_deactivate_g_spec_last_a1",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create admin1");
-        let id2 = create_user(
-            &pool,
-            "test_deactivate_g_spec_last_a2",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create admin2");
+        let id1 = create_user(&pool, "test_deactivate_g_spec_last_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1");
+        let id2 = create_user(&pool, "test_deactivate_g_spec_last_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
 
         let outcome1 = deactivate_user_guarded(&pool, id1)
             .await
@@ -856,30 +972,15 @@ mod tests {
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
 
-        let id1 = create_user(
-            &pool,
-            "test_deactivate_g_spec_multi_a1",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create admin1");
-        let id2 = create_user(
-            &pool,
-            "test_deactivate_g_spec_multi_a2",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create admin2");
-        let id3 = create_user(
-            &pool,
-            "test_deactivate_g_spec_multi_a3",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create admin3");
+        let id1 = create_user(&pool, "test_deactivate_g_spec_multi_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create admin1");
+        let id2 = create_user(&pool, "test_deactivate_g_spec_multi_a2", "pass123", "admin")
+            .await
+            .expect("Failed to create admin2");
+        let id3 = create_user(&pool, "test_deactivate_g_spec_multi_a3", "pass123", "admin")
+            .await
+            .expect("Failed to create admin3");
 
         let outcome = deactivate_user_guarded(&pool, id1)
             .await
@@ -918,22 +1019,12 @@ mod tests {
         cleanup_test_users(&pool).await;
         let suspended = suspend_non_test_active_admins(&pool).await;
 
-        let _id1 = create_user(
-            &pool,
-            "test_deactivate_g_spec_idem_a1",
-            "pass123",
-            "admin",
-        )
-        .await
-        .expect("Failed to create active admin");
-        let id2 = create_user(
-            &pool,
-            "test_deactivate_g_spec_idem_u2",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create user");
+        let _id1 = create_user(&pool, "test_deactivate_g_spec_idem_a1", "pass123", "admin")
+            .await
+            .expect("Failed to create active admin");
+        let id2 = create_user(&pool, "test_deactivate_g_spec_idem_u2", "pass123", "user")
+            .await
+            .expect("Failed to create user");
         set_user_active(&pool, id2, false)
             .await
             .expect("Failed to pre-deactivate id2");
@@ -1029,15 +1120,18 @@ mod tests {
         .await
         .expect("Failed to insert quiz owned by id2");
 
-        let owner_before = sqlx::query_as::<_, (Option<i64>,)>(
-            "SELECT owner_id FROM quizzes WHERE id = $1",
-        )
-        .bind(&quiz_id)
-        .fetch_one(&pool)
-        .await
-        .expect("fetch quiz owner before")
-        .0;
-        assert_eq!(owner_before, Some(id2), "quiz should be owned by id2 before delete");
+        let owner_before =
+            sqlx::query_as::<_, (Option<i64>,)>("SELECT owner_id FROM quizzes WHERE id = $1")
+                .bind(&quiz_id)
+                .fetch_one(&pool)
+                .await
+                .expect("fetch quiz owner before")
+                .0;
+        assert_eq!(
+            owner_before,
+            Some(id2),
+            "quiz should be owned by id2 before delete"
+        );
 
         let result = bulk_delete(&pool, id1, vec![id2])
             .await

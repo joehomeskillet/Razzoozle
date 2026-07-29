@@ -43,9 +43,11 @@ async fn resolve_session_user(
         return None;
     }
     let pool = db_pool.as_ref()?;
-    crate::db::users::session_user(pool, token).await.ok().flatten()
+    crate::db::users::session_user(pool, token)
+        .await
+        .ok()
+        .flatten()
 }
-
 
 /// Admin-only check. Ported verbatim from the former
 /// `http::authorize_admin_request` (http/mod.rs:124), which was already

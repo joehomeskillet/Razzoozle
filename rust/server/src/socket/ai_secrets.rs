@@ -26,7 +26,11 @@ fn get_secrets_path() -> PathBuf {
 /// Mirrors Node's assertSafeId (config/shared.ts).
 pub fn assert_safe_id(id: &str) -> Result<(), String> {
     // Regex: [A-Za-z0-9_-]+
-    if id.is_empty() || !id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+    if id.is_empty()
+        || !id
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
         return Err("Invalid id".to_string());
     }
 

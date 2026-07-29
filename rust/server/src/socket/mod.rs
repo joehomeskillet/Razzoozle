@@ -3,8 +3,8 @@
 //! another). Each handler file exposes `pub fn register(socket: &SocketRef, ctx: HandlerCtx)`
 //! and registers its own `socket.on(...)`. main.rs stays thin and calls `register_all`.
 
-use crate::state::GameRegistry;
 use crate::db::users::AuthUser;
+use crate::state::GameRegistry;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -53,24 +53,20 @@ impl HandlerCtx {
 
     /// Require admin role: return Some(user) if logged in AND role=="admin", None otherwise.
     pub async fn require_admin(&self) -> Option<AuthUser> {
-        self.require_user().await.and_then(|u| {
-            if u.role == "admin" {
-                Some(u)
-            } else {
-                None
-            }
-        })
+        self.require_user()
+            .await
+            .and_then(|u| if u.role == "admin" { Some(u) } else { None })
     }
 }
 
 // AI submodules (used by ai handler)
-pub mod ai_provider;
 pub mod ai_config;
-pub mod ai_validate;
 pub mod ai_http;
-pub mod ai_utils;
+pub mod ai_provider;
 pub mod ai_ratelimit;
 pub mod ai_secrets;
+pub mod ai_utils;
+pub mod ai_validate;
 
 pub mod auth;
 
@@ -82,8 +78,8 @@ pub mod game;
 pub mod lifecycle;
 pub mod manager;
 pub mod metrics;
-pub mod results;
 pub mod player;
+pub mod results;
 pub mod reveal_helpers;
 pub mod status_emit;
 pub mod validation;

@@ -23,13 +23,21 @@ impl std::fmt::Display for SecretError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SecretError::Conflict(var) => {
-                write!(f, "Configuration error: both {} and {}_FILE are set", var, var)
+                write!(
+                    f,
+                    "Configuration error: both {} and {}_FILE are set",
+                    var, var
+                )
             }
             SecretError::FileNotFound(var, _path) => {
                 write!(f, "Secret file not found for variable {}", var)
             }
             SecretError::FileTooLarge(var, _size_info) => {
-                write!(f, "Secret file for {} exceeds maximum size of {} bytes", var, MAX_SECRET_FILE_SIZE)
+                write!(
+                    f,
+                    "Secret file for {} exceeds maximum size of {} bytes",
+                    var, MAX_SECRET_FILE_SIZE
+                )
             }
             SecretError::FileReadError(var, _path, _err) => {
                 write!(f, "Failed to read secret file for variable {}", var)
@@ -87,9 +95,8 @@ pub fn resolve_secret(var_name: &str) -> Result<Option<String>, SecretError> {
 /// Read a secret from a file, removing exactly one trailing newline if present.
 fn read_secret_file(path: &str, var_name: &str) -> Result<Option<String>, SecretError> {
     // Check file exists and get metadata
-    let metadata = fs::metadata(path).map_err(|_| {
-        SecretError::FileNotFound(var_name.to_string(), path.to_string())
-    })?;
+    let metadata = fs::metadata(path)
+        .map_err(|_| SecretError::FileNotFound(var_name.to_string(), path.to_string()))?;
 
     // Check file is regular file
     if !metadata.is_file() {
@@ -110,11 +117,7 @@ fn read_secret_file(path: &str, var_name: &str) -> Result<Option<String>, Secret
 
     // Read file content
     let content = fs::read_to_string(path).map_err(|e| {
-        SecretError::FileReadError(
-            var_name.to_string(),
-            path.to_string(),
-            e.to_string(),
-        )
+        SecretError::FileReadError(var_name.to_string(), path.to_string(), e.to_string())
     })?;
 
     // Remove exactly one trailing newline if present
@@ -251,7 +254,10 @@ mod tests {
     #[test]
     fn test_file_not_found() {
         let var_name = test_var("file_not_found");
-        std::env::set_var(&format!("{}_FILE", var_name), "/nonexistent/path/secret.txt");
+        std::env::set_var(
+            &format!("{}_FILE", var_name),
+            "/nonexistent/path/secret.txt",
+        );
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);

@@ -39,7 +39,11 @@ pub(crate) fn config_root() -> std::path::PathBuf {
     } else {
         std::env::current_dir()
             .ok()
-            .and_then(|cwd| cwd.parent().and_then(|p| p.parent()).map(|p| p.join("config")))
+            .and_then(|cwd| {
+                cwd.parent()
+                    .and_then(|p| p.parent())
+                    .map(|p| p.join("config"))
+            })
             .unwrap_or_else(|| std::path::PathBuf::from("config"))
     }
 }

@@ -1,18 +1,18 @@
 use crate::bot::BotManager;
+use rand::Rng;
 use razzoozle_engine::state::{GamePhase, GameState};
+use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
 use razzoozle_protocol::status::{GameStatus, RoundRecapAward, ShowResultData, Status};
-use razzoozle_protocol::game::SelectedModes;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::task::JoinHandle;
-use uuid::Uuid;
-use rand::Rng;
 use tracing::warn;
+use uuid::Uuid;
 
-use super::{GAME_EVICTION_TTL_MS, get_now_ms};
+use super::{get_now_ms, GAME_EVICTION_TTL_MS};
 
 /// In-memory game state, wrapping the engine's GameState.
 #[derive(Debug)]
@@ -333,7 +333,8 @@ impl Game {
     /// set (already clamped to MAX_PLAYERS_PER_GAME by resolve_player_cap),
     /// otherwise the hard ceiling.
     pub fn effective_player_cap(&self) -> usize {
-        self.player_cap.unwrap_or(crate::state::MAX_PLAYERS_PER_GAME)
+        self.player_cap
+            .unwrap_or(crate::state::MAX_PLAYERS_PER_GAME)
     }
 
     /// #477: true once the game has reached its (configured or hard)
@@ -395,7 +396,9 @@ impl Game {
 
         let mut rng = rand::thread_rng();
         const URLSAFE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-        let player_token_str: String = (0..43).map(|_| URLSAFE[rng.gen_range(0..URLSAFE.len())] as char).collect();
+        let player_token_str: String = (0..43)
+            .map(|_| URLSAFE[rng.gen_range(0..URLSAFE.len())] as char)
+            .collect();
 
         let player = Player {
             id: socket_id,

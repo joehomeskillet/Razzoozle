@@ -1,9 +1,9 @@
 //! Helper functions for the reveal/auto-advance flow — factored to eliminate duplication
 //! between manager:REVEAL_ANSWER handler and player auto-advance on all-answered
 
-use crate::state::Game;
-use crate::socket::status_emit::send_status_to_manager;
 use crate::socket::status_emit::emit_plugin_lifecycle;
+use crate::socket::status_emit::send_status_to_manager;
+use crate::state::Game;
 use crate::{match_mode_from_str, question_type_wire};
 use razzoozle_engine::eval::normalize_text;
 use razzoozle_engine::round_recap::{compute_round_recap, RoundRecapRow};
@@ -18,7 +18,6 @@ use tracing::info;
 /// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
 const AUTO_RESULT_MS: i32 = 6000;
 
-
 /// Format the correct answer for a question, handling type-specific formatting
 /// (decimals for mathematik, unit concatenation for slider/mathematik, etc.).
 /// Returns None for unscored questions; used by both player SHOW_RESULT and manager SHOW_RESPONSES.
@@ -30,32 +29,26 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
     }
 
     match question.r#type.as_ref() {
-        Some(QuestionType::Slider) => {
-            question.correct.map(|c| match &question.unit {
-                Some(u) => format!("{} {}", c, u),
-                None => format!("{}", c),
-            })
-        }
-        Some(QuestionType::TypeAnswer) => {
-            question.accepted_answers.as_ref().and_then(|a| a.first().cloned())
-        }
-        Some(QuestionType::Mathematik) => {
-            question.correct.map(|c| {
-                let decimals = question.decimals.unwrap_or(2) as usize;
-                let formatted = format!("{:.prec$}", c, prec = decimals);
-                match &question.unit {
-                    Some(u) => format!("{} {}", formatted, u),
-                    None => formatted,
-                }
-            })
-        }
+        Some(QuestionType::Slider) => question.correct.map(|c| match &question.unit {
+            Some(u) => format!("{} {}", c, u),
+            None => format!("{}", c),
+        }),
+        Some(QuestionType::TypeAnswer) => question
+            .accepted_answers
+            .as_ref()
+            .and_then(|a| a.first().cloned()),
+        Some(QuestionType::Mathematik) => question.correct.map(|c| {
+            let decimals = question.decimals.unwrap_or(2) as usize;
+            let formatted = format!("{:.prec$}", c, prec = decimals);
+            match &question.unit {
+                Some(u) => format!("{} {}", formatted, u),
+                None => formatted,
+            }
+        }),
         Some(QuestionType::Wortarten) => {
             // Return comma-separated POS tags from correct_chunks. Disabled token
             // positions are excluded from the join (they carry no POS tag).
-            let disabled: &[i32] = question
-                .disabled_tokens
-                .as_deref()
-                .unwrap_or(&[]);
+            let disabled: &[i32] = question.disabled_tokens.as_deref().unwrap_or(&[]);
             question.solutions.as_ref().and_then(|sols| {
                 question.pos_set.as_ref().map(|pos_set| {
                     sols.iter()
@@ -81,7 +74,11 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
         }),
         Some(QuestionType::DropPin) => {
             let n = question.hotspots.as_ref().map(|h| h.len()).unwrap_or(0);
-            if n == 0 { None } else { Some(format!("{n} zone(s)")) }
+            if n == 0 {
+                None
+            } else {
+                Some(format!("{n} zone(s)"))
+            }
         }
         Some(QuestionType::Matching) => question.left_items.as_ref().map(|items| {
             items
@@ -105,12 +102,17 @@ pub fn format_correct_answer(question: &Question) -> Option<String> {
                 .unwrap_or(&[])
                 .iter()
                 .filter_map(|&i| {
-                    question.answers.as_ref().and_then(|a| {
-                        a.get(i as usize).cloned()
-                    })
+                    question
+                        .answers
+                        .as_ref()
+                        .and_then(|a| a.get(i as usize).cloned())
                 })
                 .collect();
-            if texts.is_empty() { None } else { Some(texts.join(", ")) }
+            if texts.is_empty() {
+                None
+            } else {
+                Some(texts.join(", "))
+            }
         }
     }
 }
@@ -172,10 +174,7 @@ pub fn format_correct_hotspot_index(question: &Question) -> Option<i32> {
 pub fn format_correct_token_pos(question: &Question) -> Option<Vec<TokenPos>> {
     match question.r#type.as_ref() {
         Some(QuestionType::Wortarten) => {
-            let disabled: &[i32] = question
-                .disabled_tokens
-                .as_deref()
-                .unwrap_or(&[]);
+            let disabled: &[i32] = question.disabled_tokens.as_deref().unwrap_or(&[]);
             let tokens = question.tokens.as_ref()?;
             let solutions = question.solutions.as_ref()?;
             let pos_set = question.pos_set.as_ref()?;
@@ -219,10 +218,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
     );
     let is_word_cloud = matches!(question.r#type.as_ref(), Some(QuestionType::WordCloud));
     let is_brainstorm = matches!(question.r#type.as_ref(), Some(QuestionType::Brainstorm));
-    let is_sequencing = matches!(
-        question.r#type.as_ref(),
-        Some(QuestionType::Sequencing)
-    );
+    let is_sequencing = matches!(question.r#type.as_ref(), Some(QuestionType::Sequencing));
     let collects_text = is_type_answer || is_sentence_builder || is_word_cloud || is_brainstorm;
     let mut responses = HashMap::new();
     let mut slider_values = Vec::new();
@@ -361,10 +357,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
             None
         },
         match_mode: if is_type_answer {
-            question
-                .match_mode
-                .as_deref()
-                .and_then(match_mode_from_str)
+            question.match_mode.as_deref().and_then(match_mode_from_str)
         } else {
             None
         },
@@ -451,10 +444,7 @@ pub async fn perform_reveal_and_broadcast(
                 // Wortarten: map solutions (indices) to pos_set strings for per-token
                 // reveal coloring. Disabled token positions render as "" (reveal
                 // sentinel) so the client shows them neutral instead of green/red.
-                let disabled: &[i32] = question
-                    .disabled_tokens
-                    .as_deref()
-                    .unwrap_or(&[]);
+                let disabled: &[i32] = question.disabled_tokens.as_deref().unwrap_or(&[]);
                 question.solutions.as_ref().and_then(|sols| {
                     question.pos_set.as_ref().map(|pos_set| {
                         sols.iter()
@@ -479,24 +469,20 @@ pub async fn perform_reveal_and_broadcast(
             };
             let correct_answer = format_correct_answer(&question);
             let correct_token_pos = format_correct_token_pos(&question);
-            
+
             // Sequencing: reveal the authored item order and items (mirrors SentenceBuilder chunks)
-            let correct_order: Option<Vec<String>> = if matches!(
-                question.r#type.as_ref(),
-                Some(QuestionType::Sequencing)
-            ) {
-                question.correct_order.clone()
-            } else {
-                None
-            };
-            let items: Option<Vec<SequencingItem>> = if matches!(
-                question.r#type.as_ref(),
-                Some(QuestionType::Sequencing)
-            ) {
-                question.items.clone()
-            } else {
-                None
-            };
+            let correct_order: Option<Vec<String>> =
+                if matches!(question.r#type.as_ref(), Some(QuestionType::Sequencing)) {
+                    question.correct_order.clone()
+                } else {
+                    None
+                };
+            let items: Option<Vec<SequencingItem>> =
+                if matches!(question.r#type.as_ref(), Some(QuestionType::Sequencing)) {
+                    question.items.clone()
+                } else {
+                    None
+                };
 
             // Get sorted leaderboard for ranking
             let sorted_players: Vec<(String, i32)> = game
@@ -523,7 +509,9 @@ pub async fn perform_reveal_and_broadcast(
                 .collect();
 
             // STEP 2: Build RoundRecapRow for all players (for round recap awards)
-            let recap_rows: Vec<RoundRecapRow> = game.engine.players
+            let recap_rows: Vec<RoundRecapRow> = game
+                .engine
+                .players
                 .iter()
                 .filter_map(|player| {
                     let result = results_map.get(&player.client_id)?;
@@ -546,7 +534,9 @@ pub async fn perform_reveal_and_broadcast(
                 .collect();
 
             // Find first_correct player
-            let first_correct_id = game.engine.last_round_results
+            let first_correct_id = game
+                .engine
+                .last_round_results
                 .iter()
                 .find(|r| r.first_correct)
                 .map(|r| r.client_id.as_str());
@@ -567,7 +557,11 @@ pub async fn perform_reveal_and_broadcast(
                     has_prior_round,
                 )
             };
-            let round_recap_opt = if round_recap.is_empty() { None } else { Some(round_recap.clone()) };
+            let round_recap_opt = if round_recap.is_empty() {
+                None
+            } else {
+                Some(round_recap.clone())
+            };
 
             game.last_show_result_data.clear();
 
@@ -598,7 +592,8 @@ pub async fn perform_reveal_and_broadcast(
                         "game:correct"
                     } else {
                         "game:wrong"
-                    }).to_string();
+                    })
+                    .to_string();
 
                     // FIX 9: When auto-mode is active at reveal time, carry autoAdvanceMs so the
                     // client can render a local countdown for the result screen (mirrors Node logic).
@@ -608,13 +603,16 @@ pub async fn perform_reveal_and_broadcast(
 
                     // ahead_of_me: rank-1 player from sorted_by_points
                     show_result_data.ahead_of_me = if rank > 1 {
-                        sorted_by_points.get((rank as usize) - 2).map(|(cid, _)| {
-                            game.engine
-                                .players
-                                .iter()
-                                .find(|p| p.client_id == *cid)
-                                .map(|p| p.username.clone())
-                        }).flatten()
+                        sorted_by_points
+                            .get((rank as usize) - 2)
+                            .map(|(cid, _)| {
+                                game.engine
+                                    .players
+                                    .iter()
+                                    .find(|p| p.client_id == *cid)
+                                    .map(|p| p.username.clone())
+                            })
+                            .flatten()
                     } else {
                         None
                     };
@@ -642,7 +640,10 @@ pub async fn perform_reveal_and_broadcast(
 
         let manager_responses = {
             let game = game_ref.lock().unwrap();
-            (game.manager_socket_id.clone(), build_manager_show_responses(&game))
+            (
+                game.manager_socket_id.clone(),
+                build_manager_show_responses(&game),
+            )
         };
 
         let (manager_socket_id, manager_status) = manager_responses;
@@ -699,7 +700,10 @@ mod tests {
         let GameStatus::ShowResponses(data) = status else {
             panic!("expected ShowResponses");
         };
-        assert_eq!(data.cooldown, 7, "cooldown must always ride along (Node parity)");
+        assert_eq!(
+            data.cooldown, 7,
+            "cooldown must always ride along (Node parity)"
+        );
         assert_eq!(data.time, 22, "time must always ride along (Node parity)");
         assert_eq!(data.min, Some(0), "slider min must be present");
         assert_eq!(data.max, Some(10), "slider max must be present");
@@ -731,7 +735,11 @@ mod tests {
             .expect("SHOW_RESULT cached for player");
         assert_eq!(
             show_result.correct_chunks,
-            Some(vec!["the".to_string(), "quick".to_string(), "fox".to_string()]),
+            Some(vec![
+                "the".to_string(),
+                "quick".to_string(),
+                "fox".to_string()
+            ]),
             "sentence-builder SHOW_RESULT must reveal the authored chunk order"
         );
     }
@@ -747,7 +755,11 @@ mod tests {
         )
         .expect("question json");
         let result = format_correct_answer(&q);
-        assert_eq!(result, Some("3.14 cm".to_string()), "mathematik with decimals and unit");
+        assert_eq!(
+            result,
+            Some("3.14 cm".to_string()),
+            "mathematik with decimals and unit"
+        );
 
         // Slider with unit
         q.r#type = Some(QuestionType::Slider);
@@ -825,10 +837,19 @@ mod tests {
         .expect("question json");
         let result = format_correct_token_pos(&q);
         let expected = Some(vec![
-            TokenPos { token: "Der".to_string(), pos: "Artikel".to_string() },
-            TokenPos { token: "schläft".to_string(), pos: "Verb".to_string() },
+            TokenPos {
+                token: "Der".to_string(),
+                pos: "Artikel".to_string(),
+            },
+            TokenPos {
+                token: "schläft".to_string(),
+                pos: "Verb".to_string(),
+            },
         ]);
-        assert_eq!(result, expected, "wortarten must exclude disabled token (Hund)");
+        assert_eq!(
+            result, expected,
+            "wortarten must exclude disabled token (Hund)"
+        );
     }
 
     /// WP-4b: format_correct_token_pos for non-wortarten returns None
@@ -864,25 +885,23 @@ mod tests {
             .last_show_result_data
             .get("player-socket")
             .expect("SHOW_RESULT cached for player");
-        
+
         // word-cloud is unscored, so poll flag must be true (historically named flag)
         assert_eq!(
             show_result.poll,
             Some(true),
             "word-cloud is unscored and must set poll flag"
         );
-        
+
         // word-cloud reveal should show pollThanks (neutral feedback), not correct/wrong
         assert_eq!(
-            show_result.message,
-            "game:pollThanks",
+            show_result.message, "game:pollThanks",
             "word-cloud reveal must show neutral pollThanks message (no judgment)"
         );
-        
+
         // word-cloud should have no correct_answer (unscored types don't display answers)
         assert_eq!(
-            show_result.correct_answer,
-            None,
+            show_result.correct_answer, None,
             "word-cloud is unscored and must not display correct_answer"
         );
     }

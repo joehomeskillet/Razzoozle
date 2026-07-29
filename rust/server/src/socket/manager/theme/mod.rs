@@ -57,4 +57,3 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_upload_background(socket, ctx.clone());
     register_upload_sound(socket, ctx.clone());
 }
-

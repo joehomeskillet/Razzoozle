@@ -10,9 +10,9 @@ use std::net::SocketAddr;
 use tokio::sync::RwLock;
 use tracing::warn;
 
-use crate::state::{GameRegistry, RateLimiter, safe_asset_id, SOLO_RESULTS_MAX_ENTRIES};
-use crate::question_type_wire;
 use super::AppState;
+use crate::question_type_wire;
+use crate::state::{safe_asset_id, GameRegistry, RateLimiter, SOLO_RESULTS_MAX_ENTRIES};
 
 // ── Solo play types ─────────────────────────────────────────────────────────
 
@@ -176,13 +176,15 @@ pub async fn handle_get_quiz_solo(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> Result<Json<SoloResponse>, (StatusCode, String)> {
     // Path-traversal protection
-    safe_asset_id(&quiz_id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     // Rate limiting (per client IP)
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
-        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            "Rate limit exceeded".to_string(),
+        ));
     }
 
     let registry = state.registry.read().await;
@@ -195,24 +197,28 @@ pub async fn handle_get_quiz_solo(
         .iter()
         .map(|q| {
             // Shuffle chunks for sentence-builder questions
-            let shuffled_chunks = if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sentence-builder") {
-                q.chunks.as_ref().map(|chunks| shuffle_chunks_with_guard(chunks.clone()))
-            } else {
-                None
-            };
+            let shuffled_chunks =
+                if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sentence-builder") {
+                    q.chunks
+                        .as_ref()
+                        .map(|chunks| shuffle_chunks_with_guard(chunks.clone()))
+                } else {
+                    None
+                };
 
             // Shuffle items for sequencing questions
-            let (items, shuffled_items) = if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
-                if let Some(items) = &q.items {
-                    let item_ids: Vec<String> = items.iter().map(|it| it.id.clone()).collect();
-                    let shuffled_ids = shuffle_chunks_with_guard(item_ids);
-                    (q.items.clone(), Some(shuffled_ids))
+            let (items, shuffled_items) =
+                if q.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
+                    if let Some(items) = &q.items {
+                        let item_ids: Vec<String> = items.iter().map(|it| it.id.clone()).collect();
+                        let shuffled_ids = shuffle_chunks_with_guard(item_ids);
+                        (q.items.clone(), Some(shuffled_ids))
+                    } else {
+                        (None, None)
+                    }
                 } else {
                     (None, None)
-                }
-            } else {
-                (None, None)
-            };
+                };
 
             SoloQuestion {
                 question: q.question.clone(),
@@ -280,13 +286,15 @@ pub async fn handle_check_answer(
     Json(payload): Json<CheckAnswerRequest>,
 ) -> Result<Json<CheckAnswerResponse>, (StatusCode, String)> {
     // Path-traversal protection
-    safe_asset_id(&quiz_id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     // Rate limiting (per client IP)
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
-        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            "Rate limit exceeded".to_string(),
+        ));
     }
 
     let registry = state.registry.read().await;
@@ -310,7 +318,6 @@ pub async fn handle_check_answer(
     };
 
     let eval_result = evaluate_answer(question, &answer_input);
-
 
     // Check if this is an unscored question (poll, word-cloud, brainstorm, etc.)
     let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
@@ -379,16 +386,14 @@ fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -
     score
 }
 
-
-
 /// Count the number of scored (non-unscored) questions in a quiz.
 /// Used to calculate theoretical_max for score capping.
 pub fn count_scored_questions(quiz: &Quizz) -> i32 {
-    quiz.questions.iter()
+    quiz.questions
+        .iter()
         .filter(|q| !q.r#type.as_ref().map_or(false, |t| t.is_unscored()))
         .count() as i32
 }
-
 
 /// Study mode: return quiz questions WITH solutions for free-paced review.
 pub async fn handle_get_quiz_study(
@@ -399,7 +404,10 @@ pub async fn handle_get_quiz_study(
     safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
-        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            "Rate limit exceeded".to_string(),
+        ));
     }
     let registry = state.registry.read().await;
     let quiz = registry
@@ -423,7 +431,10 @@ pub async fn handle_practice_score(
     safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
-        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            "Rate limit exceeded".to_string(),
+        ));
     }
     Ok(Json(serde_json::json!({
         "leaderboard": [],
@@ -459,15 +470,17 @@ pub async fn handle_solo_score(
     Json(payload): Json<SoloScoreRequest>,
 ) -> Result<Json<SoloScoreResponse>, (StatusCode, String)> {
     // Path-traversal protection
-    safe_asset_id(&quiz_id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     // Rate limiting (per client IP) — check BEFORE structure validation to avoid
     // using attacker-controlled data before vetting.
     let client_ip = addr.ip().to_string();
     if !super::RATE_LIMITER.check_solo_rate(&client_ip) {
         warn!("solo_score: rate limit exceeded for IP {}", client_ip);
-        return Err((StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded".to_string()));
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            "Rate limit exceeded".to_string(),
+        ));
     }
 
     // ── STRUCTURE VALIDATION (SEC-05 DoS guards) ───────────────────────────────
@@ -509,9 +522,12 @@ pub async fn handle_solo_score(
 
     // Load quiz to verify it exists and validate answer array structure
     let registry = state.registry.read().await;
-    let quiz = registry
-        .get_quiz_by_id(&quiz_id)
-        .ok_or_else(|| (StatusCode::NOT_FOUND, format!("Quizz \"{}\" not found", quiz_id)))?;
+    let quiz = registry.get_quiz_by_id(&quiz_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            format!("Quizz \"{}\" not found", quiz_id),
+        )
+    })?;
 
     // Validate answers array structure: can't have more answers than questions
     if let Some(ref answers) = payload.answers {
@@ -545,7 +561,8 @@ pub async fn handle_solo_score(
                         StatusCode::BAD_REQUEST,
                         format!(
                             "Answer text at index {} exceeds maximum length of {}",
-                            idx, crate::state::SOLO_SCORE_ANSWER_TEXT_MAX
+                            idx,
+                            crate::state::SOLO_SCORE_ANSWER_TEXT_MAX
                         ),
                     ));
                 }
@@ -572,7 +589,12 @@ pub async fn handle_solo_score(
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err((StatusCode::INTERNAL_SERVER_ERROR, "database not configured".to_string())),
+        None => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database not configured".to_string(),
+            ))
+        }
     };
 
     // #471: server-side deadline + attempt-limit enforcement for assignment
@@ -584,37 +606,55 @@ pub async fn handle_solo_score(
     // assignmentId at all (fail-open) — this handler has never validated
     // assignment existence and adding that check is out of scope here.
     if let Some(ref assignment_id) = payload.assignment_id {
-        let metadata: Option<serde_json::Value> = sqlx::query_scalar(
-            "SELECT metadata FROM assignments WHERE id = $1"
-        )
-        .bind(assignment_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load assignment: {}", e)))?;
+        let metadata: Option<serde_json::Value> =
+            sqlx::query_scalar("SELECT metadata FROM assignments WHERE id = $1")
+                .bind(assignment_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to load assignment: {}", e),
+                    )
+                })?;
 
         if let Some(metadata) = metadata {
             if let Some(deadline) = metadata.get("deadline").and_then(|v| v.as_i64()) {
                 if deadline_passed(deadline, now.timestamp_millis()) {
-                    warn!("solo_score: submission after deadline for assignment {}", assignment_id);
-                    return Err((StatusCode::FORBIDDEN, "Assignment deadline has passed".to_string()));
+                    warn!(
+                        "solo_score: submission after deadline for assignment {}",
+                        assignment_id
+                    );
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        "Assignment deadline has passed".to_string(),
+                    ));
                 }
             }
 
             if let Some(max_attempts) = metadata.get("maxAttempts").and_then(|v| v.as_i64()) {
                 let attempt_count: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM solo_results WHERE assignment_id = $1"
+                    "SELECT COUNT(*) FROM solo_results WHERE assignment_id = $1",
                 )
                 .bind(assignment_id)
                 .fetch_one(pool)
                 .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to count attempts: {}", e)))?;
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to count attempts: {}", e),
+                    )
+                })?;
 
                 if attempt_limit_reached(attempt_count, max_attempts) {
                     warn!(
                         "solo_score: attempt limit reached for assignment {} ({} >= {})",
                         assignment_id, attempt_count, max_attempts
                     );
-                    return Err((StatusCode::FORBIDDEN, "Maximum number of attempts reached".to_string()));
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        "Maximum number of attempts reached".to_string(),
+                    ));
                 }
             }
         }
@@ -627,7 +667,7 @@ pub async fn handle_solo_score(
     // INSERT into solo_results
     sqlx::query(
         "INSERT INTO solo_results (id, quiz_id, player_name, score, answered_at, assignment_id) \
-         VALUES ($1, $2, $3, $4, $5, $6)"
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(&result_id)
     .bind(&quiz_id)
@@ -637,7 +677,12 @@ pub async fn handle_solo_score(
     .bind(&payload.assignment_id)
     .execute(pool)
     .await
-    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to insert result: {}", e)))?;
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to insert result: {}", e),
+        )
+    })?;
 
     // SELECT leaderboard: ORDER BY score DESC LIMIT 1000
     let leaderboard: Vec<(String, i32, chrono::DateTime<chrono::Utc>, Option<String>)> = sqlx::query_as(
@@ -650,19 +695,18 @@ pub async fn handle_solo_score(
 
     let leaderboard = leaderboard
         .into_iter()
-        .map(|(player_name, score, answered_at, assignment_id)| {
-            SoloResultEntry {
+        .map(
+            |(player_name, score, answered_at, assignment_id)| SoloResultEntry {
                 player_name,
                 score,
                 answered_at: answered_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                 assignment_id,
-            }
-        })
+            },
+        )
         .collect();
 
     Ok(Json(SoloScoreResponse { leaderboard }))
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -681,8 +725,18 @@ mod tests {
             unit: None,
             decimals: None,
             sentence: Some("Das ist ein Test".to_string()),
-            tokens: Some(vec!["Das".to_string(), "ist".to_string(), "ein".to_string(), "Test".to_string()]),
-            posSet: Some(vec!["ART".to_string(), "V".to_string(), "ART".to_string(), "N".to_string()]),
+            tokens: Some(vec![
+                "Das".to_string(),
+                "ist".to_string(),
+                "ein".to_string(),
+                "Test".to_string(),
+            ]),
+            posSet: Some(vec![
+                "ART".to_string(),
+                "V".to_string(),
+                "ART".to_string(),
+                "N".to_string(),
+            ]),
             disabledTokens: None,
             shuffledChunks: None,
             items: None,
@@ -703,7 +757,12 @@ mod tests {
 
     #[test]
     fn test_solo_question_sentence_builder_shuffled() {
-        let chunks = vec!["Das".to_string(), "ist".to_string(), "ein".to_string(), "Test".to_string()];
+        let chunks = vec![
+            "Das".to_string(),
+            "ist".to_string(),
+            "ein".to_string(),
+            "Test".to_string(),
+        ];
         let shuffled = shuffle_chunks_with_guard(chunks.clone());
 
         // Verify shuffled is different from original (with high probability after 10 attempts)
@@ -719,10 +778,22 @@ mod tests {
         use razzoozle_protocol::quizz::SequencingItem;
 
         let items = vec![
-            SequencingItem { id: "item-1".to_string(), label: "First".to_string() },
-            SequencingItem { id: "item-2".to_string(), label: "Second".to_string() },
-            SequencingItem { id: "item-3".to_string(), label: "Third".to_string() },
-            SequencingItem { id: "item-4".to_string(), label: "Fourth".to_string() },
+            SequencingItem {
+                id: "item-1".to_string(),
+                label: "First".to_string(),
+            },
+            SequencingItem {
+                id: "item-2".to_string(),
+                label: "Second".to_string(),
+            },
+            SequencingItem {
+                id: "item-3".to_string(),
+                label: "Third".to_string(),
+            },
+            SequencingItem {
+                id: "item-4".to_string(),
+                label: "Fourth".to_string(),
+            },
         ];
         let question = SoloQuestion {
             question: "Arrange in order".to_string(),
@@ -740,7 +811,12 @@ mod tests {
             disabledTokens: None,
             shuffledChunks: None,
             items: Some(items.clone()),
-            shuffledItems: Some(vec!["item-1".to_string(), "item-2".to_string(), "item-3".to_string(), "item-4".to_string()]),
+            shuffledItems: Some(vec![
+                "item-1".to_string(),
+                "item-2".to_string(),
+                "item-3".to_string(),
+                "item-4".to_string(),
+            ]),
             segments: None,
             slots: None,
             leftItems: None,
@@ -964,7 +1040,7 @@ mod tests {
 
         // Assert against literal: new logic = 2 (only scored questions)
         assert_eq!(count_scored_questions(&quiz), 2);
-        
+
         // This proves the behavior changed: old logic would have given 3.
     }
 
@@ -1036,7 +1112,9 @@ mod tests {
             answered_at: "2026-07-15T12:00:00.000Z".to_string(),
             assignment_id: None,
         };
-        let response = SoloScoreResponse { leaderboard: vec![entry] };
+        let response = SoloScoreResponse {
+            leaderboard: vec![entry],
+        };
         let json = serde_json::to_value(&response).unwrap();
         let entry_json = &json["leaderboard"][0];
         assert_eq!(entry_json["playerName"], "Alex");
@@ -1051,21 +1129,36 @@ mod tests {
         // This unit test verifies the constant is reasonable (not 0, not absurdly small).
         let max_len = crate::state::SOLO_SCORE_PLAYER_NAME_MAX;
         assert!(max_len >= 100, "playerName cap should be reasonable (≥100)");
-        assert!(max_len <= 1000, "playerName cap should not be excessive (≤1000)");
+        assert!(
+            max_len <= 1000,
+            "playerName cap should not be excessive (≤1000)"
+        );
     }
 
     #[test]
     fn solo_score_payload_answer_text_length_cap() {
         let max_len = crate::state::SOLO_SCORE_ANSWER_TEXT_MAX;
-        assert!(max_len >= 1000, "answer_text cap should be reasonable (≥1000)");
-        assert!(max_len <= 100_000, "answer_text cap should not be excessive (≤100k)");
+        assert!(
+            max_len >= 1000,
+            "answer_text cap should be reasonable (≥1000)"
+        );
+        assert!(
+            max_len <= 100_000,
+            "answer_text cap should not be excessive (≤100k)"
+        );
     }
 
     #[test]
     fn solo_score_payload_assignment_id_length_cap() {
         let max_len = crate::state::SOLO_SCORE_ASSIGNMENT_ID_MAX;
-        assert!(max_len >= 100, "assignmentId cap should be reasonable (≥100)");
-        assert!(max_len <= 1000, "assignmentId cap should not be excessive (≤1000)");
+        assert!(
+            max_len >= 100,
+            "assignmentId cap should be reasonable (≥100)"
+        );
+        assert!(
+            max_len <= 1000,
+            "assignmentId cap should not be excessive (≤1000)"
+        );
     }
 
     #[test]
@@ -1133,7 +1226,4 @@ mod tests {
         // allowed attempt, must still pass.
         assert!(!attempt_limit_reached(2, 3));
     }
-
-
-
 }

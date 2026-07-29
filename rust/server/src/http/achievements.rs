@@ -38,23 +38,79 @@ const fn t(default: f64, min: f64, max: f64) -> Option<ThresholdDef> {
 
 static ACHIEVEMENTS_REGISTRY: &[RegistryEntry] = &[
     // Bronze
-    RegistryEntry { id: "first_correct", tier: "bronze", threshold: None },
-    RegistryEntry { id: "participation", tier: "bronze", threshold: None },
-    RegistryEntry { id: "lucky_guess", tier: "bronze", threshold: t(5.0, 1.0, 50.0) },
+    RegistryEntry {
+        id: "first_correct",
+        tier: "bronze",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "participation",
+        tier: "bronze",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "lucky_guess",
+        tier: "bronze",
+        threshold: t(5.0, 1.0, 50.0),
+    },
     // Silver
-    RegistryEntry { id: "speed_demon", tier: "silver", threshold: t(1000.0, 200.0, 5000.0) },
-    RegistryEntry { id: "streak_3", tier: "silver", threshold: t(3.0, 2.0, 20.0) },
-    RegistryEntry { id: "sharpshooter", tier: "silver", threshold: t(95.0, 50.0, 100.0) },
-    RegistryEntry { id: "climber", tier: "silver", threshold: t(3.0, 1.0, 20.0) },
+    RegistryEntry {
+        id: "speed_demon",
+        tier: "silver",
+        threshold: t(1000.0, 200.0, 5000.0),
+    },
+    RegistryEntry {
+        id: "streak_3",
+        tier: "silver",
+        threshold: t(3.0, 2.0, 20.0),
+    },
+    RegistryEntry {
+        id: "sharpshooter",
+        tier: "silver",
+        threshold: t(95.0, 50.0, 100.0),
+    },
+    RegistryEntry {
+        id: "climber",
+        tier: "silver",
+        threshold: t(3.0, 1.0, 20.0),
+    },
     // Gold
-    RegistryEntry { id: "first_responder", tier: "gold", threshold: None },
-    RegistryEntry { id: "streak_5", tier: "gold", threshold: t(5.0, 2.0, 30.0) },
-    RegistryEntry { id: "underdog", tier: "gold", threshold: t(2000.0, 100.0, 100000.0) },
-    RegistryEntry { id: "perfect_round", tier: "gold", threshold: t(5.0, 2.0, 30.0) },
+    RegistryEntry {
+        id: "first_responder",
+        tier: "gold",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "streak_5",
+        tier: "gold",
+        threshold: t(5.0, 2.0, 30.0),
+    },
+    RegistryEntry {
+        id: "underdog",
+        tier: "gold",
+        threshold: t(2000.0, 100.0, 100000.0),
+    },
+    RegistryEntry {
+        id: "perfect_round",
+        tier: "gold",
+        threshold: t(5.0, 2.0, 30.0),
+    },
     // Diamant
-    RegistryEntry { id: "streak_10", tier: "diamant", threshold: t(10.0, 2.0, 50.0) },
-    RegistryEntry { id: "speedy_gonzales", tier: "diamant", threshold: t(400.0, 100.0, 2000.0) },
-    RegistryEntry { id: "perfect_game", tier: "diamant", threshold: None },
+    RegistryEntry {
+        id: "streak_10",
+        tier: "diamant",
+        threshold: t(10.0, 2.0, 50.0),
+    },
+    RegistryEntry {
+        id: "speedy_gonzales",
+        tier: "diamant",
+        threshold: t(400.0, 100.0, 2000.0),
+    },
+    RegistryEntry {
+        id: "perfect_game",
+        tier: "diamant",
+        threshold: None,
+    },
 ];
 
 /// Upper clamp for the per-badge bonus points (common/achievements.ts BONUS_MAX).
@@ -134,7 +190,10 @@ fn validate_config(map: &serde_json::Map<String, Value>) -> bool {
         obj.iter().all(|(k, v)| match k.as_str() {
             "enabled" => v.is_boolean(),
             "name" => v.as_str().map(|s| s.chars().count() <= 60).unwrap_or(false),
-            "description" => v.as_str().map(|s| s.chars().count() <= 200).unwrap_or(false),
+            "description" => v
+                .as_str()
+                .map(|s| s.chars().count() <= 200)
+                .unwrap_or(false),
             "threshold" => v.is_number(),
             "bonus" => v
                 .as_f64()

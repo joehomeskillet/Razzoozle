@@ -1,7 +1,7 @@
 use super::broadcast_player_update;
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::player::{PlayerSuccessReconnect, PlayerReconnectInfo, GameUpdateQuestion};
+use razzoozle_protocol::player::{GameUpdateQuestion, PlayerReconnectInfo, PlayerSuccessReconnect};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -28,7 +28,14 @@ pub(super) fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     registry.mark_player_disconnected(&socket_id, true)
                 };
 
-                if let Some((game_id, manager_socket_id, removed_player_socket_id, total_players, removed)) = result {
+                if let Some((
+                    game_id,
+                    manager_socket_id,
+                    removed_player_socket_id,
+                    total_players,
+                    removed,
+                )) = result
+                {
                     // Node's setPlayerDisconnected/removePlayer both always
                     // broadcast TOTAL_PLAYERS regardless of phase.
                     io_handle
@@ -43,7 +50,11 @@ pub(super) fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                     if removed {
                         if let Ok(sid) = manager_socket_id.parse() {
                             if let Some(mgr) = io_handle.get_socket(sid) {
-                                mgr.emit(constants::manager::REMOVE_PLAYER, &removed_player_socket_id).ok();
+                                mgr.emit(
+                                    constants::manager::REMOVE_PLAYER,
+                                    &removed_player_socket_id,
+                                )
+                                .ok();
                             }
                         }
                     }
@@ -61,7 +72,10 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
         let socket_id = socket.id.to_string();
 
         move |_socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let team_id_opt = payload.get("teamId").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let team_id_opt = payload
+                .get("teamId")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let registry = registry.clone();
             let io_handle = io_handle.clone();
             let db_pool = db_pool.clone();
@@ -88,7 +102,12 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
                     // returns ALL games when the socket isn't mapped (fail-open); fail
                     // closed when ambiguous so team-select can't read a random game's gate.
                     if candidates.len() == 1 {
-                        candidates[0].lock().unwrap().selected_modes.team_mode.unwrap_or(false)
+                        candidates[0]
+                            .lock()
+                            .unwrap()
+                            .selected_modes
+                            .team_mode
+                            .unwrap_or(false)
                     } else {
                         false
                     }
@@ -98,8 +117,16 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 let registry = registry.read().await;
-                if let Some((player, game_id, manager_socket_id)) = registry.set_player_team(&socket_id, team_id) {
-                    broadcast_player_update(&registry, &io_handle, &game_id, &manager_socket_id, player);
+                if let Some((player, game_id, manager_socket_id)) =
+                    registry.set_player_team(&socket_id, team_id)
+                {
+                    broadcast_player_update(
+                        &registry,
+                        &io_handle,
+                        &game_id,
+                        &manager_socket_id,
+                        player,
+                    );
                 }
             });
         }
@@ -113,7 +140,8 @@ pub(super) fn register_set_avatar(socket: &SocketRef, ctx: HandlerCtx) {
         let socket_id = socket.id.to_string();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let avatar_opt = payload.get("avatar")
+            let avatar_opt = payload
+                .get("avatar")
                 .or_else(|| payload.get("data").and_then(|v| v.get("avatar")))
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
@@ -130,14 +158,18 @@ pub(super) fn register_set_avatar(socket: &SocketRef, ctx: HandlerCtx) {
                 // only) — mirrors Node's resolveAvatar (game/index.ts:490-549):
                 // an unrecognized prefix is a real rejection, not a silent drop.
                 if !avatar.starts_with("dicebear:") && !avatar.starts_with("data:") {
-                    socket.emit(constants::game::ERROR_MESSAGE, "errors:avatar.invalid").ok();
+                    socket
+                        .emit(constants::game::ERROR_MESSAGE, "errors:avatar.invalid")
+                        .ok();
                     return;
                 }
 
                 // Additional validation for dicebear (Node: length<=200 check
                 // in resolveAvatar's dicebear branch, else avatar.invalid)
                 if avatar.starts_with("dicebear:") && avatar.len() > 200 {
-                    socket.emit(constants::game::ERROR_MESSAGE, "errors:avatar.invalid").ok();
+                    socket
+                        .emit(constants::game::ERROR_MESSAGE, "errors:avatar.invalid")
+                        .ok();
                     return;
                 }
 
@@ -147,13 +179,23 @@ pub(super) fn register_set_avatar(socket: &SocketRef, ctx: HandlerCtx) {
                 if avatar.starts_with("data:image/svg+xml")
                     && avatar.len() > crate::state::AVATAR_SVG_MAX_CHARS
                 {
-                    socket.emit(constants::game::ERROR_MESSAGE, "errors:avatar.tooLarge").ok();
+                    socket
+                        .emit(constants::game::ERROR_MESSAGE, "errors:avatar.tooLarge")
+                        .ok();
                     return;
                 }
 
                 let registry = registry.read().await;
-                if let Some((player, game_id, manager_socket_id)) = registry.set_player_avatar(&socket_id, avatar) {
-                    broadcast_player_update(&registry, &io_handle, &game_id, &manager_socket_id, player);
+                if let Some((player, game_id, manager_socket_id)) =
+                    registry.set_player_avatar(&socket_id, avatar)
+                {
+                    broadcast_player_update(
+                        &registry,
+                        &io_handle,
+                        &game_id,
+                        &manager_socket_id,
+                        player,
+                    );
                 }
             });
         }
@@ -196,7 +238,9 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             // #4: Anti-spoof: check if player_token was minted for this clientId
                             let mut pos_opt = if let Some(token) = player_token_opt {
                                 // Token-based lookup (secure): require exact token match
-                                game.players.iter().position(|p| p.player_token.as_deref() == Some(token))
+                                game.players
+                                    .iter()
+                                    .position(|p| p.player_token.as_deref() == Some(token))
                             } else {
                                 // Fallback to clientId (backward-compat), but only if no token was required
                                 game.players.iter().position(|p| p.client_id == client_id)
@@ -210,7 +254,9 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             // -> reject. Without this an omitted/wrong token could still
                             // hijack the clientId-fallback lookup for a player who
                             // already holds a real token.
-                            if let Some(matched) = game.players.iter().find(|p| p.client_id == client_id) {
+                            if let Some(matched) =
+                                game.players.iter().find(|p| p.client_id == client_id)
+                            {
                                 if matched.player_token.is_some()
                                     && matched.player_token.as_deref() != player_token_opt
                                 {
@@ -228,53 +274,94 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                 game.players[pos].connected = true;
 
                                 // Update engine players
-                                if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                if let Some(engine_pos) = game
+                                    .engine
+                                    .players
+                                    .iter()
+                                    .position(|p| p.client_id == game.players[pos].client_id)
+                                {
                                     game.engine.players[engine_pos].id = socket_id.clone();
                                     game.engine.players[engine_pos].connected = true;
                                 }
 
                                 // Read points from engine.players (where scoring happens)
-                                let username = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                let username = if let Some(engine_pos) = game
+                                    .engine
+                                    .players
+                                    .iter()
+                                    .position(|p| p.client_id == game.players[pos].client_id)
+                                {
                                     game.engine.players[engine_pos].username.clone()
                                 } else {
                                     game.players[pos].username.clone()
                                 };
-                                let points = if let Some(engine_pos) = game.engine.players.iter().position(|p| p.client_id == game.players[pos].client_id) {
+                                let points = if let Some(engine_pos) = game
+                                    .engine
+                                    .players
+                                    .iter()
+                                    .position(|p| p.client_id == game.players[pos].client_id)
+                                {
                                     game.engine.players[engine_pos].points
                                 } else {
                                     game.players[pos].points
                                 };
 
                                 // Build currentQuestion (mirrors Node's round.getReconnectInfo())
-                                let current_question_index = game.engine.current_question_index as i32;
+                                let current_question_index =
+                                    game.engine.current_question_index as i32;
                                 let total_questions = game.engine.quiz.questions.len() as i32;
 
                                 // Get the game status (mirrors Node's playerStatus.get or lastBroadcastStatus)
                                 let (status_name, status_data) = game.manager_reconnect_status();
-                                let status = serde_json::json!({ "name": status_name, "data": status_data });
+                                let status =
+                                    serde_json::json!({ "name": status_name, "data": status_data });
 
                                 // Check if player already answered current question (low-latency mode)
                                 let already_answered = if game.low_latency {
-                                    Some(game.engine.current_answers.contains_key(&player_client_id))
+                                    Some(
+                                        game.engine.current_answers.contains_key(&player_client_id),
+                                    )
                                 } else {
                                     None
                                 };
 
                                 let total_players = game.players.len() as i32;
 
-                                (game_id_ret, old_socket_id, manager_socket_id, username, points,
-                                 current_question_index, total_questions, status, already_answered, total_players)
+                                (
+                                    game_id_ret,
+                                    old_socket_id,
+                                    manager_socket_id,
+                                    username,
+                                    points,
+                                    current_question_index,
+                                    total_questions,
+                                    status,
+                                    already_answered,
+                                    total_players,
+                                )
                             })
                         };
 
-                        if let Some((game_id_ret, old_socket_id, manager_socket_id, username, points,
-                                    current_question_index, total_questions, status, already_answered, total_players)) = update_result {
+                        if let Some((
+                            game_id_ret,
+                            old_socket_id,
+                            manager_socket_id,
+                            username,
+                            points,
+                            current_question_index,
+                            total_questions,
+                            status,
+                            already_answered,
+                            total_players,
+                        )) = update_result
+                        {
                             // Keep the O(1) socket_id -> game_id index (state.rs)
                             // current: this player's socket_id just changed.
                             {
                                 let mut registry = registry.write().await;
                                 registry.deindex_player_socket(&old_socket_id);
-                                registry.index_player_socket(socket_id.clone(), game_id_ret.clone());
+                                registry
+                                    .index_player_socket(socket_id.clone(), game_id_ret.clone());
                             }
 
                             // Join the room
@@ -284,39 +371,48 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             let reconnect_payload = PlayerSuccessReconnect {
                                 game_id: game_id_ret.clone(),
                                 status,
-                                player: PlayerReconnectInfo {
-                                    username,
-                                    points,
-                                },
+                                player: PlayerReconnectInfo { username, points },
                                 current_question: GameUpdateQuestion {
                                     current: current_question_index + 1,
                                     total: total_questions,
                                 },
                                 already_answered,
                             };
-                            socket.emit(constants::player::SUCCESS_RECONNECT, &reconnect_payload).ok();
+                            socket
+                                .emit(constants::player::SUCCESS_RECONNECT, &reconnect_payload)
+                                .ok();
 
                             // Notify manager of player reconnect (Node game-reconnect.ts:134)
                             if let Ok(sid) = manager_socket_id.parse() {
                                 if let Some(mgr) = io_handle.get_socket(sid) {
-                                    mgr.emit(constants::manager::PLAYER_RECONNECTED, &serde_json::json!({
-                                        "id": socket_id,
-                                        "oldId": old_socket_id,
-                                        "username": reconnect_payload.player.username,
-                                    })).ok();
+                                    mgr.emit(
+                                        constants::manager::PLAYER_RECONNECTED,
+                                        &serde_json::json!({
+                                            "id": socket_id,
+                                            "oldId": old_socket_id,
+                                            "username": reconnect_payload.player.username,
+                                        }),
+                                    )
+                                    .ok();
                                 }
                             }
 
                             // Send total players to reconnecting socket only (Node game-reconnect.ts:138)
-                            socket.emit(constants::game::TOTAL_PLAYERS, &total_players).ok();
+                            socket
+                                .emit(constants::game::TOTAL_PLAYERS, &total_players)
+                                .ok();
                         } else {
                             // #5: Emit GAME.RESET on reconnect failure (not ERROR_MESSAGE)
                             // This ensures the client navigates home instead of showing an error toast
-                            socket.emit(constants::game::RESET, "errors:game.playerNotFound").ok();
+                            socket
+                                .emit(constants::game::RESET, "errors:game.playerNotFound")
+                                .ok();
                         }
                     } else {
                         // #5: Emit GAME.RESET on game not found
-                        socket.emit(constants::game::RESET, "errors:game.notFound").ok();
+                        socket
+                            .emit(constants::game::RESET, "errors:game.notFound")
+                            .ok();
                     }
                 }
             });

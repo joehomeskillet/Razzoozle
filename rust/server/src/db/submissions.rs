@@ -13,22 +13,29 @@ pub async fn get_submissions_full(
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
-        match sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
+    let rows: Vec<(
+        String,
+        Option<String>,
+        String,
+        serde_json::Value,
+        chrono::DateTime<chrono::Utc>,
+        Option<String>,
+        Option<String>,
+    )> = match sqlx::query_as(
+        "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
              FROM submissions WHERE ($1::bigint IS NULL OR owner_id = $1) \
              ORDER BY submitted_at DESC",
-        )
-        .bind(me)
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch submissions (full): {}", e);
-                return Vec::new();
-            }
-        };
+    )
+    .bind(me)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch submissions (full): {}", e);
+            return Vec::new();
+        }
+    };
 
     rows.into_iter()
         .map(|(id, submitted_by, status, question, submitted_at, rejection_reason, category)| {
@@ -60,22 +67,27 @@ pub async fn get_submissions(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serd
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>)> =
-        match sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at \
+    let rows: Vec<(
+        String,
+        Option<String>,
+        String,
+        serde_json::Value,
+        chrono::DateTime<chrono::Utc>,
+    )> = match sqlx::query_as(
+        "SELECT id, submitted_by, status, question, submitted_at \
              FROM submissions WHERE ($1::bigint IS NULL OR owner_id = $1) \
-             ORDER BY submitted_at DESC"
-        )
-        .bind(me)
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch submissions from database: {}", e);
-                return Vec::new();
-            }
-        };
+             ORDER BY submitted_at DESC",
+    )
+    .bind(me)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch submissions from database: {}", e);
+            return Vec::new();
+        }
+    };
 
     let mut result = Vec::new();
     for (id, submitted_by, status, question, submitted_at) in rows {
@@ -261,32 +273,41 @@ pub async fn get_submission_by_id(
         None => return None,
     };
 
-    let row: Option<(String, Option<String>, String, serde_json::Value, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> =
-        sqlx::query_as(
-            "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
-             FROM submissions WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
-        )
-        .bind(id)
-        .bind(me)
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten();
+    let row: Option<(
+        String,
+        Option<String>,
+        String,
+        serde_json::Value,
+        chrono::DateTime<chrono::Utc>,
+        Option<String>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT id, submitted_by, status, question, submitted_at, rejection_reason, category \
+             FROM submissions WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
+    )
+    .bind(id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
 
-    row.map(|(id, submitted_by, status, question, submitted_at, rejection_reason, category)| {
-        let mut obj = serde_json::json!({
-            "id": id,
-            "submittedBy": submitted_by,
-            "submittedAt": submitted_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
-            "status": status,
-            "question": question,
-        });
-        if let Some(rr) = rejection_reason {
-            obj["rejectionReason"] = serde_json::json!(rr);
-        }
-        if let Some(cat) = category {
-            obj["category"] = serde_json::json!(cat);
-        }
-        obj
-    })
+    row.map(
+        |(id, submitted_by, status, question, submitted_at, rejection_reason, category)| {
+            let mut obj = serde_json::json!({
+                "id": id,
+                "submittedBy": submitted_by,
+                "submittedAt": submitted_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                "status": status,
+                "question": question,
+            });
+            if let Some(rr) = rejection_reason {
+                obj["rejectionReason"] = serde_json::json!(rr);
+            }
+            if let Some(cat) = category {
+                obj["category"] = serde_json::json!(cat);
+            }
+            obj
+        },
+    )
 }

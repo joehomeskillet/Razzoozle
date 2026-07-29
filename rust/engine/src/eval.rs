@@ -9,8 +9,8 @@ pub const SLIDER_TOLERANCE_FRACTION: f64 = 0.05;
 /// Answer submission from client (can be multiple types)
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnswerInput {
-    pub answer_key: Option<i32>,           // for choice, boolean, slider (as i32)
-    pub answer_keys: Option<Vec<i32>>,     // for multiple-select
+    pub answer_key: Option<i32>,       // for choice, boolean, slider (as i32)
+    pub answer_keys: Option<Vec<i32>>, // for multiple-select
     // type-answer, sentence-builder, wortarten, sequencing,
     // fill-blank/matching (JSON selectedIndices), drop-pin (JSON {x,y})
     pub answer_text: Option<String>,
@@ -57,10 +57,7 @@ fn levenshtein(a: &str, b: &str) -> usize {
         curr[0] = i + 1;
         for (j, b_char) in b.chars().enumerate() {
             let cost = if a_char == b_char { 0 } else { 1 };
-            curr[j + 1] = std::cmp::min(
-                std::cmp::min(prev[j] + 1, curr[j] + 1),
-                prev[j] + cost,
-            );
+            curr[j + 1] = std::cmp::min(std::cmp::min(prev[j] + 1, curr[j] + 1), prev[j] + cost);
         }
         std::mem::swap(&mut prev, &mut curr);
     }
@@ -74,11 +71,7 @@ fn fuzzy_threshold(s: &str) -> usize {
 }
 
 /// Match submitted text against accepted answers
-fn match_answer(
-    submitted: &str,
-    accepted_answers: &[String],
-    match_mode: &str,
-) -> bool {
+fn match_answer(submitted: &str, accepted_answers: &[String], match_mode: &str) -> bool {
     let norm = normalize_text(submitted);
 
     for accepted in accepted_answers {
@@ -231,8 +224,7 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
             if let Some(chunks) = &question.chunks {
                 if !chunks.is_empty() {
                     let correct_sentence = chunks.join(" ");
-                    let correct =
-                        normalize_text(text) == normalize_text(&correct_sentence);
+                    let correct = normalize_text(text) == normalize_text(&correct_sentence);
                     return EvalResult {
                         correct,
                         base: if correct { 1.0 } else { 0.0 },
@@ -248,11 +240,9 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
 
     // Mathematik: numeric answer with tolerance scoring (binary base)
     if q_type == &Some(QuestionType::Mathematik) {
-        if let (Some(text), Some(correct_val), Some(tolerance)) = (
-            &answer.answer_text,
-            question.correct,
-            question.tolerance,
-        ) {
+        if let (Some(text), Some(correct_val), Some(tolerance)) =
+            (&answer.answer_text, question.correct, question.tolerance)
+        {
             // Parse the submitted text as f64, accepting both ',' and '.' as decimal separators
             let normalized = text.replace(',', ".");
             if let Ok(answer_val) = normalized.parse::<f64>() {
@@ -311,10 +301,7 @@ pub fn evaluate_answer(question: &Question, answer: &AnswerInput) -> EvalResult 
                         // denominator (they were never presented to the player). Length
                         // guards above stay on the FULL length; only the score sum skips
                         // disabled positions.
-                        let disabled: &[i32] = question
-                            .disabled_tokens
-                            .as_deref()
-                            .unwrap_or(&[]);
+                        let disabled: &[i32] = question.disabled_tokens.as_deref().unwrap_or(&[]);
 
                         // Count correct tokens among active (non-disabled) positions only
                         let (correct_count, active_count) = submitted_pos
@@ -456,33 +443,50 @@ fn eval_slot_answer(question: &Question, answer: &AnswerInput) -> EvalResult {
     }
 }
 
-
 /// Point-in-rectangle check for drop-pin. Rect is [x, y, x+w, y+h] in unit square.
 fn eval_drop_pin(question: &Question, answer: &AnswerInput) -> EvalResult {
     let Some(hotspots) = question.hotspots.as_ref() else {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     };
     if hotspots.is_empty() {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     }
     let Some(answer_text) = &answer.answer_text else {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     };
     let Ok(v) = serde_json::from_str::<serde_json::Value>(answer_text) else {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     };
     let (Some(x), Some(y)) = (
         v.get("x").and_then(|n| n.as_f64()),
         v.get("y").and_then(|n| n.as_f64()),
     ) else {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     };
     if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
-        return EvalResult { correct: false, base: 0.0 };
+        return EvalResult {
+            correct: false,
+            base: 0.0,
+        };
     }
-    let hit = hotspots.iter().any(|h| {
-        x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h
-    });
+    let hit = hotspots
+        .iter()
+        .any(|h| x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
     EvalResult {
         correct: hit,
         base: if hit { 1.0 } else { 0.0 },
@@ -514,14 +518,14 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
-        tolerance: None,
-        decimals: None,
-        sentence: None,
-        tokens: None,
-        pos_set: None,
-        disabled_tokens: None,
-        items: None,
-        correct_order: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+            items: None,
+            correct_order: None,
             segments: None,
             slots: None,
             left_items: None,
@@ -728,7 +732,11 @@ mod tests {
     #[test]
     fn sentence_builder_correct() {
         let mut q = test_question(QuestionType::SentenceBuilder);
-        q.chunks = Some(vec!["The".to_string(), "quick".to_string(), "fox".to_string()]);
+        q.chunks = Some(vec![
+            "The".to_string(),
+            "quick".to_string(),
+            "fox".to_string(),
+        ]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -911,7 +919,11 @@ mod tests {
     #[test]
     fn sequencing_correct() {
         let mut q = test_question(QuestionType::Sequencing);
-        q.correct_order = Some(vec!["item-a".to_string(), "item-b".to_string(), "item-c".to_string()]);
+        q.correct_order = Some(vec![
+            "item-a".to_string(),
+            "item-b".to_string(),
+            "item-c".to_string(),
+        ]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -925,7 +937,11 @@ mod tests {
     #[test]
     fn sequencing_wrong_order() {
         let mut q = test_question(QuestionType::Sequencing);
-        q.correct_order = Some(vec!["item-a".to_string(), "item-b".to_string(), "item-c".to_string()]);
+        q.correct_order = Some(vec![
+            "item-a".to_string(),
+            "item-b".to_string(),
+            "item-c".to_string(),
+        ]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -958,7 +974,7 @@ mod tests {
         assert_eq!(normalize_text("LONDON"), "london");
         assert_eq!(normalize_text("LONDON "), "london");
         assert_eq!(normalize_text("  london  "), "london");
-        assert_eq!(normalize_text("Lóndon"), "london");  // with accent
+        assert_eq!(normalize_text("Lóndon"), "london"); // with accent
 
         // Empty/whitespace-only strings should become empty
         assert_eq!(normalize_text("   "), "");
@@ -1090,7 +1106,12 @@ mod tests {
     #[test]
     fn drop_pin_hit_interior() {
         let mut q = test_question(QuestionType::DropPin);
-        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        q.hotspots = Some(vec![Hotspot {
+            x: 0.2,
+            y: 0.2,
+            w: 0.3,
+            h: 0.3,
+        }]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -1104,7 +1125,12 @@ mod tests {
     #[test]
     fn drop_pin_miss_outside() {
         let mut q = test_question(QuestionType::DropPin);
-        q.hotspots = Some(vec![Hotspot { x: 0.2, y: 0.2, w: 0.3, h: 0.3 }]);
+        q.hotspots = Some(vec![Hotspot {
+            x: 0.2,
+            y: 0.2,
+            w: 0.3,
+            h: 0.3,
+        }]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -1118,7 +1144,12 @@ mod tests {
     #[test]
     fn drop_pin_corner_inclusive() {
         let mut q = test_question(QuestionType::DropPin);
-        q.hotspots = Some(vec![Hotspot { x: 0.1, y: 0.1, w: 0.2, h: 0.2 }]);
+        q.hotspots = Some(vec![Hotspot {
+            x: 0.1,
+            y: 0.1,
+            w: 0.2,
+            h: 0.2,
+        }]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,
@@ -1131,7 +1162,12 @@ mod tests {
     #[test]
     fn drop_pin_invalid_json() {
         let mut q = test_question(QuestionType::DropPin);
-        q.hotspots = Some(vec![Hotspot { x: 0.0, y: 0.0, w: 1.0, h: 1.0 }]);
+        q.hotspots = Some(vec![Hotspot {
+            x: 0.0,
+            y: 0.0,
+            w: 1.0,
+            h: 1.0,
+        }]);
         let ans = AnswerInput {
             answer_key: None,
             answer_keys: None,

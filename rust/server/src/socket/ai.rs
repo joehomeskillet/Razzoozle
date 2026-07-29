@@ -19,15 +19,16 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
 
                 socket
-                    .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
+                    .emit(
+                        constants::ai::SETTINGS,
+                        &super::ai_config::get_public_ai_settings(),
+                    )
                     .ok();
             });
         }
@@ -42,9 +43,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -59,7 +58,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     Ok(_) => {
                         socket.emit(constants::ai::SET_SETTINGS_SUCCESS, &"").ok();
                         socket
-                            .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
+                            .emit(
+                                constants::ai::SETTINGS,
+                                &super::ai_config::get_public_ai_settings(),
+                            )
                             .ok();
                     }
                     Err(e) => {
@@ -79,9 +81,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let _user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -98,7 +98,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 match super::ai_secrets::set_key(&provider_id, key) {
                     Ok(()) => {
                         socket
-                            .emit(constants::ai::SETTINGS, &super::ai_config::get_public_ai_settings())
+                            .emit(
+                                constants::ai::SETTINGS,
+                                &super::ai_config::get_public_ai_settings(),
+                            )
                             .ok();
                     }
                     Err(e) => {
@@ -118,9 +121,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -202,9 +203,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -214,20 +213,31 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     constants::AI::TEXT_GEN_COOLDOWN_MS,
                     constants::AI::TEXT_GEN_MAX_PER_SOCKET,
                 ) {
-                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    socket
+                        .emit(constants::ai::ERROR, &"errors:ai.rateLimited")
+                        .ok();
                     return;
                 }
 
                 // Validate and extract payload
-                let (topic, q_type, language) = match super::ai_validate::validate_generate_question(&payload) {
-                    Ok(result) => result,
-                    Err(err) => {
-                        socket.emit(constants::ai::ERROR, &err).ok();
-                        return;
-                    }
-                };
+                let (topic, q_type, language) =
+                    match super::ai_validate::validate_generate_question(&payload) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            socket.emit(constants::ai::ERROR, &err).ok();
+                            return;
+                        }
+                    };
 
-                match super::ai_provider::generate_question(&topic, &q_type, &language, Some(user.user_id), ctx.db_pool.clone()).await {
+                match super::ai_provider::generate_question(
+                    &topic,
+                    &q_type,
+                    &language,
+                    Some(user.user_id),
+                    ctx.db_pool.clone(),
+                )
+                .await
+                {
                     Ok(question) => {
                         socket
                             .emit(
@@ -253,9 +263,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -265,21 +273,31 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     constants::AI::TEXT_GEN_COOLDOWN_MS,
                     constants::AI::TEXT_GEN_MAX_PER_SOCKET,
                 ) {
-                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    socket
+                        .emit(constants::ai::ERROR, &"errors:ai.rateLimited")
+                        .ok();
                     return;
                 }
 
                 // Validate and extract payload
-                let (question, correct, count, language) = match super::ai_validate::validate_generate_distractors(&payload) {
-                    Ok(result) => result,
-                    Err(err) => {
-                        socket.emit(constants::ai::ERROR, &err).ok();
-                        return;
-                    }
-                };
+                let (question, correct, count, language) =
+                    match super::ai_validate::validate_generate_distractors(&payload) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            socket.emit(constants::ai::ERROR, &err).ok();
+                            return;
+                        }
+                    };
 
-                match super::ai_provider::generate_distractors(&question, &correct, count, &language, Some(user.user_id), ctx.db_pool.clone())
-                    .await
+                match super::ai_provider::generate_distractors(
+                    &question,
+                    &correct,
+                    count,
+                    &language,
+                    Some(user.user_id),
+                    ctx.db_pool.clone(),
+                )
+                .await
                 {
                     Ok(distractors) => {
                         socket
@@ -306,9 +324,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -318,20 +334,31 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     constants::AI::TEXT_GEN_COOLDOWN_MS,
                     constants::AI::TEXT_GEN_MAX_PER_SOCKET,
                 ) {
-                    socket.emit(constants::ai::ERROR, &"errors:ai.rateLimited").ok();
+                    socket
+                        .emit(constants::ai::ERROR, &"errors:ai.rateLimited")
+                        .ok();
                     return;
                 }
 
                 // Validate and extract payload
-                let (topic, count, language) = match super::ai_validate::validate_generate_quiz(&payload) {
-                    Ok(result) => result,
-                    Err(err) => {
-                        socket.emit(constants::ai::ERROR, &err).ok();
-                        return;
-                    }
-                };
+                let (topic, count, language) =
+                    match super::ai_validate::validate_generate_quiz(&payload) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            socket.emit(constants::ai::ERROR, &err).ok();
+                            return;
+                        }
+                    };
 
-                match super::ai_provider::generate_quiz(&topic, count, &language, Some(user.user_id), ctx.db_pool.clone()).await {
+                match super::ai_provider::generate_quiz(
+                    &topic,
+                    count,
+                    &language,
+                    Some(user.user_id),
+                    ctx.db_pool.clone(),
+                )
+                .await
+                {
                     Ok(quizz) => {
                         socket
                             .emit(

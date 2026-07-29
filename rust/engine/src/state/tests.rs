@@ -36,9 +36,13 @@ mod tests {
     ) {
         state.open_answers().unwrap();
         state.set_clock_ms(p1_time_ms);
-        state.record_answer("player1", Some(p1_key), None, None).unwrap();
+        state
+            .record_answer("player1", Some(p1_key), None, None)
+            .unwrap();
         state.set_clock_ms(p2_time_ms);
-        state.record_answer("player2", Some(p2_key), None, None).unwrap();
+        state
+            .record_answer("player2", Some(p2_key), None, None)
+            .unwrap();
         state.reveal(ScoringMode::Speed).unwrap();
         state.leaderboard_view().unwrap();
     }
@@ -48,7 +52,10 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         assert_eq!(state.phase, GamePhase::ShowRoom);
@@ -80,7 +87,10 @@ mod tests {
         let phase = state.next_or_finish().unwrap();
         assert_eq!(phase, GamePhase::ShowQuestion);
         assert_eq!(state.current_question_index, 1);
-        assert_eq!(state.current_question().question, "What is the capital of France?");
+        assert_eq!(
+            state.current_question().question,
+            "What is the capital of France?"
+        );
 
         advance_round(&mut state, 2, 1, 100, 200);
 
@@ -168,7 +178,9 @@ mod tests {
     #[test]
     fn record_answer_accepts_multi_select_with_array() {
         let mut state = ready_state("multiple-select");
-        assert!(state.record_answer("player1", None, Some(vec![0, 1]), None).is_ok());
+        assert!(state
+            .record_answer("player1", None, Some(vec![0, 1]), None)
+            .is_ok());
     }
 
     #[test]
@@ -196,7 +208,9 @@ mod tests {
     #[test]
     fn record_answer_accepts_non_empty_text_for_type_answer() {
         let mut state = ready_state("type-answer");
-        assert!(state.record_answer("player1", None, None, Some("Paris".to_string())).is_ok());
+        assert!(state
+            .record_answer("player1", None, None, Some("Paris".to_string()))
+            .is_ok());
     }
 
     // Race-safety net for R3/R4 (rust/server socket::lifecycle): the server's
@@ -232,7 +246,10 @@ mod tests {
 
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         state.start().unwrap();
@@ -254,7 +271,10 @@ mod tests {
         assert!(p1_result.correct);
         assert!(!p2_result.correct);
         // Key assertion: first_correct is false even though player1 got it first
-        assert!(!p1_result.first_correct, "practice question should not award first_correct");
+        assert!(
+            !p1_result.first_correct,
+            "practice question should not award first_correct"
+        );
         assert!(!p2_result.first_correct);
     }
 
@@ -263,7 +283,10 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         assert_eq!(state.phase, GamePhase::ShowRoom);
@@ -273,25 +296,31 @@ mod tests {
 
         // First question
         state.show_question(0).unwrap();
-        
+
         // Insert sentinels into game_counters and recap_stats before first reveal
-        state.game_counters.insert("sentinel_counter".into(), GameCounter {
-            answered: 99,
-            correct: 88,
-            ever: true,
-        });
-        state.recap_stats.insert("sentinel_recap".into(), RecapStat {
-            username: "TestUser".to_string(),
-            fastest_ms: Some(1000),
-            peak_streak: 42,
-            correct: 10,
-            wrong: 5,
-            answered: 15,
-            best_climb: 3,
-            worst_rank_ever: 5,
-            achievement_ids: vec!["ach1".into()],
-            lucky_guess: true,
-        });
+        state.game_counters.insert(
+            "sentinel_counter".into(),
+            GameCounter {
+                answered: 99,
+                correct: 88,
+                ever: true,
+            },
+        );
+        state.recap_stats.insert(
+            "sentinel_recap".into(),
+            RecapStat {
+                username: "TestUser".to_string(),
+                fastest_ms: Some(1000),
+                peak_streak: 42,
+                correct: 10,
+                wrong: 5,
+                answered: 15,
+                best_climb: 3,
+                worst_rank_ever: 5,
+                achievement_ids: vec!["ach1".into()],
+                lucky_guess: true,
+            },
+        );
 
         state.open_answers().unwrap();
         state.set_clock_ms(100);
@@ -302,13 +331,21 @@ mod tests {
         state.leaderboard_view().unwrap();
 
         // Verify questions_history has 1 entry after first round
-        assert_eq!(state.questions_history.len(), 1, "questions_history should have 1 entry after first round");
+        assert_eq!(
+            state.questions_history.len(),
+            1,
+            "questions_history should have 1 entry after first round"
+        );
 
         // Verify sentinels still exist (show_question didn't clear them)
-        assert!(state.game_counters.contains_key("sentinel_counter"), 
-                "game_counters should persist after show_question");
-        assert!(state.recap_stats.contains_key("sentinel_recap"), 
-                "recap_stats should persist after show_question");
+        assert!(
+            state.game_counters.contains_key("sentinel_counter"),
+            "game_counters should persist after show_question"
+        );
+        assert!(
+            state.recap_stats.contains_key("sentinel_recap"),
+            "recap_stats should persist after show_question"
+        );
 
         // Second question
         let phase = state.next_or_finish().unwrap();
@@ -322,17 +359,29 @@ mod tests {
         state.reveal(ScoringMode::Speed).unwrap();
 
         // Verify questions_history has 2 entries after second round
-        assert_eq!(state.questions_history.len(), 2, "questions_history should have 2 entries after second round");
+        assert_eq!(
+            state.questions_history.len(),
+            2,
+            "questions_history should have 2 entries after second round"
+        );
 
         // Verify sentinels STILL exist (show_question didn't clear them on second call either)
-        assert!(state.game_counters.contains_key("sentinel_counter"), 
-                "game_counters should persist after second show_question");
-        assert_eq!(state.game_counters["sentinel_counter"].answered, 99, 
-                   "game_counters sentinel value should not be mutated");
-        assert!(state.recap_stats.contains_key("sentinel_recap"), 
-                "recap_stats should persist after second show_question");
-        assert_eq!(state.recap_stats["sentinel_recap"].peak_streak, 42, 
-                   "recap_stats sentinel value should not be mutated");
+        assert!(
+            state.game_counters.contains_key("sentinel_counter"),
+            "game_counters should persist after second show_question"
+        );
+        assert_eq!(
+            state.game_counters["sentinel_counter"].answered, 99,
+            "game_counters sentinel value should not be mutated"
+        );
+        assert!(
+            state.recap_stats.contains_key("sentinel_recap"),
+            "recap_stats should persist after second show_question"
+        );
+        assert_eq!(
+            state.recap_stats["sentinel_recap"].peak_streak, 42,
+            "recap_stats sentinel value should not be mutated"
+        );
     }
 
     #[test]
@@ -340,7 +389,10 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         state.start().unwrap();
@@ -372,7 +424,10 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         state.start().unwrap();
@@ -383,7 +438,10 @@ mod tests {
         let recap = state.build_manager_recap();
 
         // Verify superlatives were generated (should have fastest_finger at minimum)
-        assert!(!recap.superlatives.is_empty(), "Should have superlatives after round 1");
+        assert!(
+            !recap.superlatives.is_empty(),
+            "Should have superlatives after round 1"
+        );
     }
 
     #[test]
@@ -404,12 +462,15 @@ mod tests {
         let quiz = fixture_quizz();
         let mut state = GameState::new(
             quiz,
-            vec![make_player("player1", "Alice"), make_player("player2", "Bob")],
+            vec![
+                make_player("player1", "Alice"),
+                make_player("player2", "Bob"),
+            ],
         );
 
         state.start().unwrap();
         state.show_question(0).unwrap();
-        
+
         // Play the first round: player1 answers correctly (triggers first_correct achievement)
         state.open_answers().unwrap();
         state.set_clock_ms(100);
@@ -417,22 +478,30 @@ mod tests {
         state.set_clock_ms(200);
         state.record_answer("player2", Some(0), None, None).unwrap();
         let results = state.reveal(ScoringMode::Speed).unwrap();
-        
+
         // Verify that player1 unlocked at least one achievement (first_correct)
         let p1_result = results.iter().find(|r| r.client_id == "player1").unwrap();
-        assert!(!p1_result.achievements.is_empty(), "player1 should have unlocked achievements");
-        
+        assert!(
+            !p1_result.achievements.is_empty(),
+            "player1 should have unlocked achievements"
+        );
+
         // Verify that achievement_ids is populated in recap_stats
         let p1_stat = state.recap_stats.get("player1").unwrap();
-        assert!(!p1_stat.achievement_ids.is_empty(), 
-                "recap_stats should have achievement_ids populated");
-        
+        assert!(
+            !p1_stat.achievement_ids.is_empty(),
+            "recap_stats should have achievement_ids populated"
+        );
+
         // Verify that MostAchievements superlative is present
         let recap = state.build_manager_recap();
-        let has_most_achievements = recap.superlatives.iter()
-            .any(|s| s.key == razzoozle_protocol::results_display::SuperlativeKey::MostAchievements);
-        assert!(has_most_achievements, 
-                "recap should include MostAchievements superlative when achievements are unlocked");
+        let has_most_achievements = recap.superlatives.iter().any(|s| {
+            s.key == razzoozle_protocol::results_display::SuperlativeKey::MostAchievements
+        });
+        assert!(
+            has_most_achievements,
+            "recap should include MostAchievements superlative when achievements are unlocked"
+        );
     }
     #[test]
     fn display_order_permutation_and_reconnect_stability() {
@@ -440,12 +509,15 @@ mod tests {
         // and that reconnect (current_show_question_data) returns the same order.
         let quiz = fixture_quizz();
         let mut state = GameState::new(quiz, vec![make_player("p1", "Alice")]);
-        
+
         // Start game and show first question with randomize_answers disabled
         state.start().unwrap();
         let q1_no_randomize = state.show_question(0).unwrap();
-        assert_eq!(q1_no_randomize.display_order, None, "display_order should be None when randomize_answers is false");
-        
+        assert_eq!(
+            q1_no_randomize.display_order, None,
+            "display_order should be None when randomize_answers is false"
+        );
+
         // Play through round 0 completely: open answers → record → reveal → leaderboard
         state.open_answers().unwrap();
         state.set_clock_ms(100);
@@ -453,31 +525,43 @@ mod tests {
         state.set_clock_ms(200);
         let _results = state.reveal(ScoringMode::Speed).unwrap();
         let _leaderboard = state.leaderboard_view().unwrap();
-        
+
         // Now in ShowLeaderboard. Move to next question (which will be question 1).
         // Before doing that, enable randomization for question 1.
         state.set_randomize_answers(true);
         state.next_or_finish().unwrap();
-        
+
         // Now in ShowQuestion for question 1, with randomization enabled
         let q2_randomized = state.current_show_question_data();
-        
+
         // With randomizeAnswers enabled and a question with >1 answers (non-slider),
         // display_order should be Some(permutation)
-        let order = q2_randomized.display_order.as_ref()
+        let order = q2_randomized
+            .display_order
+            .as_ref()
             .expect("display_order should be Some when randomize_answers is true");
-        
-        let expected_len = state.current_question().answers.as_ref()
+
+        let expected_len = state
+            .current_question()
+            .answers
+            .as_ref()
             .map(|a| a.len())
             .unwrap_or(0);
-        assert_eq!(order.len(), expected_len, "permutation length should match answer count");
-        
+        assert_eq!(
+            order.len(),
+            expected_len,
+            "permutation length should match answer count"
+        );
+
         // Verify it's a permutation: sorted == (0..n)
         let mut sorted = order.clone();
         sorted.sort();
         let expected: Vec<i32> = (0..expected_len as i32).collect();
-        assert_eq!(sorted, expected, "display_order should be a valid permutation");
-        
+        assert_eq!(
+            sorted, expected,
+            "display_order should be a valid permutation"
+        );
+
         // Reconnect should return the SAME order (stored, not regenerated)
         let q2_reconnect = state.current_show_question_data();
         assert_eq!(
@@ -485,6 +569,4 @@ mod tests {
             "current_show_question_data should return the same stored order for reconnect stability"
         );
     }
-
 }
-

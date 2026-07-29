@@ -31,7 +31,10 @@ async fn authorize_manager(
     if crate::auth::ensure_admin(headers, &state.db_pool).await {
         Ok(())
     } else {
-        Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
+        Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+        ))
     }
 }
 
@@ -44,7 +47,10 @@ pub async fn handle_skeleton_export(
     let bytes = tokio::task::spawn_blocking(bundle::build_skeleton_zip)
         .await
         .map_err(|e| {
-            json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e))
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Task join error: {}", e),
+            )
         })?
         .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
@@ -52,7 +58,9 @@ pub async fn handle_skeleton_export(
     out.insert(header::CONTENT_TYPE, "application/zip".parse().unwrap());
     out.insert(
         header::CONTENT_DISPOSITION,
-        "attachment; filename=\"razzoozle-skeleton.zip\"".parse().unwrap(),
+        "attachment; filename=\"razzoozle-skeleton.zip\""
+            .parse()
+            .unwrap(),
     );
     Ok((StatusCode::OK, out, bytes))
 }
@@ -71,7 +79,10 @@ pub async fn handle_skeleton_import(
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(0);
     if content_length > SKELETON_IMPORT_MAX {
-        return Err(json_error_response(StatusCode::PAYLOAD_TOO_LARGE, "Payload Too Large"));
+        return Err(json_error_response(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "Payload Too Large",
+        ));
     }
     // Chunked-overflow guard: cap the streamed read at 16 MB.
     let bytes = to_bytes(body, SKELETON_IMPORT_MAX)
@@ -84,13 +95,17 @@ pub async fn handle_skeleton_import(
     let (theme, revision) = tokio::task::spawn_blocking(move || bundle::import_skeleton_zip(&buf))
         .await
         .map_err(|e| {
-            json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Task join error: {}", e))
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Task join error: {}", e),
+            )
         })?
         .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
     // Save revision to DB (if snapshot exists)
     if let Some(rev) = revision {
-        let created_at = rev.get("createdAt")
+        let created_at = rev
+            .get("createdAt")
             .and_then(|v| v.as_str())
             .unwrap_or("1970-01-01T00:00:00.000Z");
         if let Err(e) = crate::db::insert_theme_revision(&state.db_pool, &rev, created_at).await {

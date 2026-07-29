@@ -364,13 +364,15 @@ mod tests {
             "gameId": "game-789"
         }"#;
 
-        let payload: DisplayPairPayload = serde_json::from_str(json).expect("parse DisplayPairPayload");
+        let payload: DisplayPairPayload =
+            serde_json::from_str(json).expect("parse DisplayPairPayload");
         assert_eq!(payload.code, "ABC123");
         assert_eq!(payload.manager_password, Some("secret".to_string()));
         assert_eq!(payload.game_id, "game-789");
 
         let encoded = serde_json::to_string(&payload).expect("encode DisplayPairPayload");
-        let reparsed: DisplayPairPayload = serde_json::from_str(&encoded).expect("re-parse DisplayPairPayload");
+        let reparsed: DisplayPairPayload =
+            serde_json::from_str(&encoded).expect("re-parse DisplayPairPayload");
         assert_eq!(reparsed.code, payload.code);
     }
 
@@ -383,7 +385,8 @@ mod tests {
             ]
         }"#;
 
-        let payload: DisplayStatusPayload = serde_json::from_str(json).expect("parse DisplayStatusPayload");
+        let payload: DisplayStatusPayload =
+            serde_json::from_str(json).expect("parse DisplayStatusPayload");
         assert_eq!(payload.displays.len(), 2);
         assert_eq!(payload.displays[0].socket_id, "socket-1");
         assert_eq!(payload.displays[0].name, "Beamer");
@@ -391,7 +394,8 @@ mod tests {
         assert_eq!(payload.displays[1].name, "Kiosk");
 
         let encoded = serde_json::to_string(&payload).expect("encode DisplayStatusPayload");
-        let reparsed: DisplayStatusPayload = serde_json::from_str(&encoded).expect("re-parse DisplayStatusPayload");
+        let reparsed: DisplayStatusPayload =
+            serde_json::from_str(&encoded).expect("re-parse DisplayStatusPayload");
         assert_eq!(reparsed.displays.len(), payload.displays.len());
     }
 

@@ -98,7 +98,7 @@ impl QuestionType {
     /// Returns true if this question type does not award points or affect scores.
     /// Unscored types: Poll, WordCloud, Brainstorm, Confidence, MicroLesson.
     /// All other types are scored and contribute to player rankings.
-    /// 
+    ///
     /// EXHAUSTIVE MATCH: Every QuestionType variant is explicitly listed.
     /// When a new variant is added, the compiler will error until this function
     /// is updated. This enforces a conscious decision about scoring for new types.

@@ -54,8 +54,7 @@ impl GameRegistry {
             .chain(orphans.iter())
             .cloned()
             .collect();
-        self.empty_games
-            .retain(|e| !drop_ids.contains(&e.game_id));
+        self.empty_games.retain(|e| !drop_ids.contains(&e.game_id));
 
         for game_id in to_reset_and_remove {
             io.to(game_id.clone())
@@ -71,5 +70,4 @@ impl GameRegistry {
     pub fn empty_games_contains(&self, game_id: &str) -> bool {
         self.empty_games.iter().any(|e| e.game_id == game_id)
     }
-
 }

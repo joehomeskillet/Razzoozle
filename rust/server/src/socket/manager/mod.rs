@@ -6,22 +6,22 @@ use socketioxide::extract::SocketRef;
 pub mod auth;
 pub mod catalog;
 pub mod classes;
-pub mod students;
-pub mod labels;
 pub mod config;
 pub mod config_helper;
 pub mod game_flow;
 pub mod game_state;
 pub mod games_list;
-pub mod players;
-pub mod public;
+pub mod labels;
 pub mod media;
+pub mod players;
+pub mod plugins;
+pub(crate) mod plugins_zip;
+pub mod public;
 pub mod quizz;
+pub mod students;
 pub mod submissions;
 pub mod theme;
 pub mod theme_templates;
-pub mod plugins;
-pub(crate) mod plugins_zip;
 pub mod user_ai;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {

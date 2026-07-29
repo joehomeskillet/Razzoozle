@@ -9,8 +9,8 @@
 use super::super::HandlerCtx;
 use crate::db;
 use razzoozle_protocol::constants;
-use socketioxide::extract::{Data, SocketRef};
 use serde_json::json;
+use socketioxide::extract::{Data, SocketRef};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_list(socket, ctx.clone());
@@ -41,10 +41,7 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
 
                 let labels = db::get_labels(&ctx.db_pool).await;
                 socket
-                    .emit(
-                        constants::label::DATA,
-                        &json!({"labels": labels}),
-                    )
+                    .emit(constants::label::DATA, &json!({"labels": labels}))
                     .ok();
             });
         }
@@ -210,7 +207,10 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     Err(e) => {
                         tracing::warn!("label:delete failed: {}", e);
                         socket
-                            .emit(constants::label::ERROR, &json!({"message": "delete_failed"}))
+                            .emit(
+                                constants::label::ERROR,
+                                &json!({"message": "delete_failed"}),
+                            )
                             .ok();
                     }
                 }

@@ -188,10 +188,7 @@ pub fn compute_round_recap(
                 if !used.contains(&first.username) {
                     Some(*first)
                 } else {
-                    eligible
-                        .iter()
-                        .find(|r| r.answered && !r.correct)
-                        .copied()
+                    eligible.iter().find(|r| r.answered && !r.correct).copied()
                 }
             })
         {

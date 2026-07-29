@@ -41,49 +41,65 @@ pub fn snapshot_file() -> PathBuf {
 pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
     // Extract player tokens into a separate map (only Some values).
     // This preserves tokens for crash recovery while keeping the Player wire-serialization clean.
-    let player_tokens: std::collections::HashMap<String, String> = game.players
+    let player_tokens: std::collections::HashMap<String, String> = game
+        .players
         .iter()
         .filter_map(|p| p.player_token.clone().map(|token| (p.id.clone(), token)))
         .collect();
 
     // Serialize current_answers (HashMap<String, Answer> → JSON-friendly structure)
-    let current_answers = game.engine.current_answers.iter().map(|(client_id, answer)| {
-        serde_json::json!({
-            "clientId": client_id,
-            "answerInput": {
-                "answerKey": answer.answer_input.answer_key,
-                "answerKeys": &answer.answer_input.answer_keys,
-                "answerText": &answer.answer_input.answer_text,
-            },
-            "responseTimeMs": answer.response_time_ms,
+    let current_answers = game
+        .engine
+        .current_answers
+        .iter()
+        .map(|(client_id, answer)| {
+            serde_json::json!({
+                "clientId": client_id,
+                "answerInput": {
+                    "answerKey": answer.answer_input.answer_key,
+                    "answerKeys": &answer.answer_input.answer_keys,
+                    "answerText": &answer.answer_input.answer_text,
+                },
+                "responseTimeMs": answer.response_time_ms,
+            })
         })
-    }).collect::<Vec<_>>();
+        .collect::<Vec<_>>();
 
     // Serialize recap_stats (HashMap<String, RecapStat>)
-    let recap_stats = game.engine.recap_stats.iter().map(|(player_id, stat)| {
-        serde_json::json!({
-            "playerId": player_id,
-            "username": &stat.username,
-            "fastestMs": stat.fastest_ms,
-            "peakStreak": stat.peak_streak,
-            "correct": stat.correct,
-            "wrong": stat.wrong,
-            "answered": stat.answered,
-            "bestClimb": stat.best_climb,
-            "worstRankEver": stat.worst_rank_ever,
-            "achievementIds": &stat.achievement_ids,
-            "luckyGuess": stat.lucky_guess,
+    let recap_stats = game
+        .engine
+        .recap_stats
+        .iter()
+        .map(|(player_id, stat)| {
+            serde_json::json!({
+                "playerId": player_id,
+                "username": &stat.username,
+                "fastestMs": stat.fastest_ms,
+                "peakStreak": stat.peak_streak,
+                "correct": stat.correct,
+                "wrong": stat.wrong,
+                "answered": stat.answered,
+                "bestClimb": stat.best_climb,
+                "worstRankEver": stat.worst_rank_ever,
+                "achievementIds": &stat.achievement_ids,
+                "luckyGuess": stat.lucky_guess,
+            })
         })
-    }).collect::<Vec<_>>();
+        .collect::<Vec<_>>();
 
     // Serialize question_stats (HashMap<i32, QuestionStat>)
-    let question_stats = game.engine.question_stats.iter().map(|(question_index, stat)| {
-        serde_json::json!({
-            "questionIndex": question_index,
-            "correct": stat.correct,
-            "total": stat.total,
+    let question_stats = game
+        .engine
+        .question_stats
+        .iter()
+        .map(|(question_index, stat)| {
+            serde_json::json!({
+                "questionIndex": question_index,
+                "correct": stat.correct,
+                "total": stat.total,
+            })
         })
-    }).collect::<Vec<_>>();
+        .collect::<Vec<_>>();
 
     serde_json::json!({
         "gameId": game.game_id,
@@ -153,7 +169,10 @@ fn restore_phase(phase_str: &str, started: bool) -> GamePhase {
         "SHOW_LEADERBOARD" => GamePhase::ShowLeaderboard,
         "FINISHED" => GamePhase::Finished,
         _ => {
-            warn!("Unknown phase string '{}', defaulting to ShowRoom", phase_str);
+            warn!(
+                "Unknown phase string '{}', defaulting to ShowRoom",
+                phase_str
+            );
             GamePhase::ShowRoom
         }
     }
@@ -172,14 +191,19 @@ fn restore_phase(phase_str: &str, started: bool) -> GamePhase {
 pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     let game_id = snap.get("gameId")?.as_str()?.to_string();
     let invite_code = snap.get("inviteCode")?.as_str()?.to_string();
-    let manager_client_id = snap.get("managerClientId").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let manager_client_id = snap
+        .get("managerClientId")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
     let owner_user_id = snap.get("ownerUserId").and_then(|v| v.as_i64());
     // OLD snapshots (pre-Wave-1) omit classId → restore as free-join (None).
     let class_id = snap.get("classId").and_then(|v| v.as_i64());
     let host_token = snap.get("hostToken")?.as_str()?.to_string();
     let auto_mode = snap.get("autoMode")?.as_bool()?;
-    let mut players: Vec<razzoozle_protocol::player::Player> = serde_json::from_value(snap.get("players")?.clone()).ok()?;
-    let quiz: razzoozle_protocol::quizz::Quizz = serde_json::from_value(snap.get("quizz")?.clone()).ok()?;
+    let mut players: Vec<razzoozle_protocol::player::Player> =
+        serde_json::from_value(snap.get("players")?.clone()).ok()?;
+    let quiz: razzoozle_protocol::quizz::Quizz =
+        serde_json::from_value(snap.get("quizz")?.clone()).ok()?;
 
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -207,38 +231,48 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     }
 
     // WP-M Fix 2: Restore engine.phase using safe resume semantics
-    let started = snap.get("started").and_then(|v| v.as_bool()).unwrap_or(false);
+    let started = snap
+        .get("started")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     if let Some(phase_str) = snap.get("phase").and_then(|v| v.as_str()) {
         engine.phase = restore_phase(phase_str, started);
     }
 
     // W1-M2: Restore selected_modes from snapshot
-    let selected_modes = snap.get("selectedModes").and_then(|v| {
-        let scoring_mode = v.get("scoringMode").and_then(|s| s.as_str()).map(|s| s.to_string());
-        let team_mode = v.get("teamMode").and_then(|b| b.as_bool());
-        let klassen = v.get("klassen").and_then(|b| b.as_bool());
-        let end_screen = v.get("endScreen").and_then(|e| e.as_str()).and_then(|es| {
-            match es {
-                "top3" => Some(razzoozle_protocol::game::EndScreen::Top3),
-                "private" => Some(razzoozle_protocol::game::EndScreen::Private),
-                "full" => Some(razzoozle_protocol::game::EndScreen::Full),
-                _ => None,
-            }
-        });
-        Some(razzoozle_protocol::game::SelectedModes {
-            scoring_mode,
-            team_mode,
-            klassen,
-            end_screen,
-            participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
+    let selected_modes = snap
+        .get("selectedModes")
+        .and_then(|v| {
+            let scoring_mode = v
+                .get("scoringMode")
+                .and_then(|s| s.as_str())
+                .map(|s| s.to_string());
+            let team_mode = v.get("teamMode").and_then(|b| b.as_bool());
+            let klassen = v.get("klassen").and_then(|b| b.as_bool());
+            let end_screen = v
+                .get("endScreen")
+                .and_then(|e| e.as_str())
+                .and_then(|es| match es {
+                    "top3" => Some(razzoozle_protocol::game::EndScreen::Top3),
+                    "private" => Some(razzoozle_protocol::game::EndScreen::Private),
+                    "full" => Some(razzoozle_protocol::game::EndScreen::Full),
+                    _ => None,
+                });
+            Some(razzoozle_protocol::game::SelectedModes {
+                scoring_mode,
+                team_mode,
+                klassen,
+                end_screen,
+                participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
+            })
         })
-    }).unwrap_or(razzoozle_protocol::game::SelectedModes {
-        scoring_mode: None,
-        team_mode: None,
-        klassen: None,
-        end_screen: None,
-        participant_cap: None,
-    });
+        .unwrap_or(razzoozle_protocol::game::SelectedModes {
+            scoring_mode: None,
+            team_mode: None,
+            klassen: None,
+            end_screen: None,
+            participant_cap: None,
+        });
 
     // W1-1 Fix: Restore in-flight answers with backward compatibility
     if let Some(answers_array) = snap.get("currentAnswers").and_then(|v| v.as_array()) {
@@ -249,11 +283,20 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
                 answer_obj.get("responseTimeMs").and_then(|v| v.as_i64()),
             ) {
                 // Manually deserialize AnswerInput from JSON object
-                let answer_key = answer_input_obj.get("answerKey").and_then(|v| v.as_i64()).map(|k| k as i32);
-                let answer_keys = answer_input_obj.get("answerKeys")
+                let answer_key = answer_input_obj
+                    .get("answerKey")
+                    .and_then(|v| v.as_i64())
+                    .map(|k| k as i32);
+                let answer_keys = answer_input_obj
+                    .get("answerKeys")
                     .and_then(|v| v.as_array())
-                    .map(|arr| arr.iter().filter_map(|v| v.as_i64().map(|k| k as i32)).collect());
-                let answer_text = answer_input_obj.get("answerText")
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_i64().map(|k| k as i32))
+                            .collect()
+                    });
+                let answer_text = answer_input_obj
+                    .get("answerText")
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
 
@@ -285,22 +328,46 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         for stat_obj in stats_array {
             if let Some(player_id) = stat_obj.get("playerId").and_then(|v| v.as_str()) {
                 let stat = razzoozle_engine::state::RecapStat {
-                    username: stat_obj.get("username")
+                    username: stat_obj
+                        .get("username")
                         .and_then(|v| v.as_str())
                         .unwrap_or("")
                         .to_string(),
                     fastest_ms: stat_obj.get("fastestMs").and_then(|v| v.as_i64()),
-                    peak_streak: stat_obj.get("peakStreak").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-                    correct: stat_obj.get("correct").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    peak_streak: stat_obj
+                        .get("peakStreak")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
+                    correct: stat_obj
+                        .get("correct")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
                     wrong: stat_obj.get("wrong").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-                    answered: stat_obj.get("answered").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-                    best_climb: stat_obj.get("bestClimb").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-                    worst_rank_ever: stat_obj.get("worstRankEver").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
-                    achievement_ids: stat_obj.get("achievementIds")
+                    answered: stat_obj
+                        .get("answered")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
+                    best_climb: stat_obj
+                        .get("bestClimb")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
+                    worst_rank_ever: stat_obj
+                        .get("worstRankEver")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
+                    achievement_ids: stat_obj
+                        .get("achievementIds")
                         .and_then(|v| v.as_array())
-                        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                .collect()
+                        })
                         .unwrap_or_default(),
-                    lucky_guess: stat_obj.get("luckyGuess").and_then(|v| v.as_bool()).unwrap_or(false),
+                    lucky_guess: stat_obj
+                        .get("luckyGuess")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false),
                 };
                 engine.recap_stats.insert(player_id.to_string(), stat);
             }
@@ -312,7 +379,10 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         for stat_obj in stats_array {
             if let Some(question_index) = stat_obj.get("questionIndex").and_then(|v| v.as_i64()) {
                 let stat = razzoozle_engine::state::QuestionStat {
-                    correct: stat_obj.get("correct").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                    correct: stat_obj
+                        .get("correct")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
                     total: stat_obj.get("total").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
                 };
                 engine.question_stats.insert(question_index as i32, stat);
@@ -321,7 +391,11 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     }
 
     // W1-1 Fix: Restore questions_history (full history of question results)
-    if let Ok(history) = serde_json::from_value(snap.get("questionsHistory").cloned().unwrap_or_else(|| serde_json::json!([]))) {
+    if let Ok(history) = serde_json::from_value(
+        snap.get("questionsHistory")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    ) {
         engine.questions_history = history;
     }
 
@@ -336,11 +410,24 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         host_token,
         players,
         engine,
-        created_at_ms: snap.get("createdAtMs").and_then(|v| v.as_u64()).unwrap_or(now),
+        created_at_ms: snap
+            .get("createdAtMs")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(now),
         last_activity_ms: now,
-        low_latency: snap.get("lowLatency").and_then(|v| v.as_bool()).unwrap_or(false),
-        quiz_id: snap.get("quizId").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-        low_latency_config: snap.get("lowLatencyConfig").cloned().unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true})),
+        low_latency: snap
+            .get("lowLatency")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
+        quiz_id: snap
+            .get("quizId")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        low_latency_config: snap
+            .get("lowLatencyConfig")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({"enabled": false, "clockSync": true})),
         server_seq: 0,
         auto_mode,
         cooldown_abort: None,
@@ -405,7 +492,10 @@ pub struct ResumePlan {
 /// Lobby (WAIT) / FINISHED / unknown → `None` (no lifecycle to resume).
 pub fn resume_plan_from_snapshot(snap: &serde_json::Value) -> Option<ResumePlan> {
     let game_id = snap.get("gameId")?.as_str()?.to_string();
-    let started = snap.get("started").and_then(|v| v.as_bool()).unwrap_or(false);
+    let started = snap
+        .get("started")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     if !started {
         return None;
     }
@@ -449,7 +539,9 @@ pub fn resume_plan_from_snapshot(snap: &serde_json::Value) -> Option<ResumePlan>
 /// Save all in-flight games to disk. Filters out trivially-empty games (no players, not started).
 /// Atomic write via temp file + rename to prevent corruption on crash mid-write.
 /// Crash-guarded: a write failure logs a warning but never throws.
-pub async fn save_snapshot(games: Vec<std::sync::Arc<std::sync::Mutex<Game>>>) -> Result<(), String> {
+pub async fn save_snapshot(
+    games: Vec<std::sync::Arc<std::sync::Mutex<Game>>>,
+) -> Result<(), String> {
     // Filter: only save games with players or that have started
     let mut snapshots = Vec::new();
     for game_ref in games {
@@ -475,15 +567,17 @@ pub async fn save_snapshot(games: Vec<std::sync::Arc<std::sync::Mutex<Game>>>) -
     });
 
     let dir = snapshot_dir();
-    fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create snapshot directory: {}", e))?;
+    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create snapshot directory: {}", e))?;
 
     let file = snapshot_file();
     let tmp = file.with_extension("json.tmp");
 
-    tokio::fs::write(&tmp, serde_json::to_string(&payload).map_err(|e| e.to_string())?)
-        .await
-        .map_err(|e| format!("Failed to write snapshot temp file: {}", e))?;
+    tokio::fs::write(
+        &tmp,
+        serde_json::to_string(&payload).map_err(|e| e.to_string())?,
+    )
+    .await
+    .map_err(|e| format!("Failed to write snapshot temp file: {}", e))?;
 
     tokio::fs::rename(&tmp, &file)
         .await
@@ -524,7 +618,10 @@ pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
     // Version 1 snapshots will be restored with default empty values for new fields
     let version = parsed.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     if version != 1 && version != 2 {
-        warn!("Unrecognized snapshot version {} (expected 1 or 2), ignoring", version);
+        warn!(
+            "Unrecognized snapshot version {} (expected 1 or 2), ignoring",
+            version
+        );
         return Vec::new();
     }
 
@@ -606,11 +703,27 @@ mod tests {
 
         let restored = game_from_snapshot(&snap).expect("Failed to restore game");
 
-        let p1 = restored.players.iter().find(|p| p.id == "p1").expect("Player p1 not found");
-        assert_eq!(p1.player_token, Some("token-alice-secret".to_string()), "p1 token mismatch");
+        let p1 = restored
+            .players
+            .iter()
+            .find(|p| p.id == "p1")
+            .expect("Player p1 not found");
+        assert_eq!(
+            p1.player_token,
+            Some("token-alice-secret".to_string()),
+            "p1 token mismatch"
+        );
 
-        let p2 = restored.players.iter().find(|p| p.id == "p2").expect("Player p2 not found");
-        assert_eq!(p2.player_token, Some("token-bob-secret".to_string()), "p2 token mismatch");
+        let p2 = restored
+            .players
+            .iter()
+            .find(|p| p.id == "p2")
+            .expect("Player p2 not found");
+        assert_eq!(
+            p2.player_token,
+            Some("token-bob-secret".to_string()),
+            "p2 token mismatch"
+        );
     }
 
     /// Test that Player wire serialization does NOT include playerToken (security regression guard).
@@ -647,12 +760,19 @@ mod tests {
         });
 
         let restored = game_from_snapshot(&snap).expect("Failed to restore");
-        let p1 = restored.players.iter().find(|p| p.id == "p1").expect("Player p1 not found");
+        let p1 = restored
+            .players
+            .iter()
+            .find(|p| p.id == "p1")
+            .expect("Player p1 not found");
 
         assert_eq!(p1.player_token, Some("token-alice".to_string()));
 
         let player_json = serde_json::to_value(&p1).unwrap();
-        assert!(player_json.get("playerToken").is_none(), "Token leaked in wire serialization");
+        assert!(
+            player_json.get("playerToken").is_none(),
+            "Token leaked in wire serialization"
+        );
     }
 
     /// Test that engine.phase is restored correctly.
@@ -689,8 +809,13 @@ mod tests {
                 "currentQuestionIndex": 0,
             });
 
-            let restored = game_from_snapshot(&snap).expect(&format!("Failed to restore phase {}", phase_str));
-            assert_eq!(restored.engine.phase, expected_phase, "Phase mismatch for '{}'", phase_str);
+            let restored =
+                game_from_snapshot(&snap).expect(&format!("Failed to restore phase {}", phase_str));
+            assert_eq!(
+                restored.engine.phase, expected_phase,
+                "Phase mismatch for '{}'",
+                phase_str
+            );
         }
     }
 
@@ -717,7 +842,10 @@ mod tests {
         });
 
         let restored = game_from_snapshot(&snap).expect("Failed to restore");
-        assert_eq!(restored.engine.current_question_index, 3, "currentQuestionIndex not preserved");
+        assert_eq!(
+            restored.engine.current_question_index, 3,
+            "currentQuestionIndex not preserved"
+        );
     }
 
     /// Integration test: Snapshot round-trip with multi-player state.
@@ -794,13 +922,20 @@ mod tests {
 
         // Lobby / finished / not-started → no resume.
         assert_eq!(resume_plan_from_snapshot(&snap("WAIT", 0, 3, false)), None);
-        assert_eq!(resume_plan_from_snapshot(&snap("FINISHED", 2, 3, true)), None);
+        assert_eq!(
+            resume_plan_from_snapshot(&snap("FINISHED", 2, 3, true)),
+            None
+        );
 
         // Pre-reveal → replay the current question (start_index == index).
         for phase in ["SHOW_START", "SHOW_QUESTION", "SELECT_ANSWER"] {
             assert_eq!(
                 resume_plan_from_snapshot(&snap(phase, 1, 3, true)),
-                Some(ResumePlan { game_id: "game-1".into(), start_index: 1, finish_now: false }),
+                Some(ResumePlan {
+                    game_id: "game-1".into(),
+                    start_index: 1,
+                    finish_now: false
+                }),
                 "pre-reveal phase {phase} must replay the in-flight question"
             );
         }
@@ -809,7 +944,11 @@ mod tests {
         for phase in ["SHOW_RESULT", "SHOW_ROUND_RECAP", "SHOW_LEADERBOARD"] {
             assert_eq!(
                 resume_plan_from_snapshot(&snap(phase, 1, 3, true)),
-                Some(ResumePlan { game_id: "game-1".into(), start_index: 2, finish_now: false }),
+                Some(ResumePlan {
+                    game_id: "game-1".into(),
+                    start_index: 2,
+                    finish_now: false
+                }),
                 "post-reveal phase {phase} must advance past the scored question"
             );
         }
@@ -817,7 +956,11 @@ mod tests {
         // Post-reveal on the LAST question → finish, never re-open/double-count.
         assert_eq!(
             resume_plan_from_snapshot(&snap("SHOW_RESULT", 2, 3, true)),
-            Some(ResumePlan { game_id: "game-1".into(), start_index: 2, finish_now: true })
+            Some(ResumePlan {
+                game_id: "game-1".into(),
+                start_index: 2,
+                finish_now: true
+            })
         );
     }
 
@@ -894,18 +1037,45 @@ mod tests {
         let restored = game_from_snapshot(&snap).expect("Failed to restore interrupted game");
 
         // Verify the in-flight answers were restored (P1 bug fix validation)
-        assert_eq!(restored.engine.current_answers.len(), 2, "Should have 2 in-flight answers");
-        assert!(restored.engine.current_answers.contains_key("c1"), "Answer from c1 missing");
-        assert!(restored.engine.current_answers.contains_key("c2"), "Answer from c2 missing");
+        assert_eq!(
+            restored.engine.current_answers.len(),
+            2,
+            "Should have 2 in-flight answers"
+        );
+        assert!(
+            restored.engine.current_answers.contains_key("c1"),
+            "Answer from c1 missing"
+        );
+        assert!(
+            restored.engine.current_answers.contains_key("c2"),
+            "Answer from c2 missing"
+        );
 
         // Verify answer order was restored
-        assert_eq!(restored.engine.answer_order.len(), 2, "Should have 2 answers in order");
-        assert_eq!(restored.engine.answer_order[0], "c1", "First answer order incorrect");
-        assert_eq!(restored.engine.answer_order[1], "c2", "Second answer order incorrect");
+        assert_eq!(
+            restored.engine.answer_order.len(),
+            2,
+            "Should have 2 answers in order"
+        );
+        assert_eq!(
+            restored.engine.answer_order[0], "c1",
+            "First answer order incorrect"
+        );
+        assert_eq!(
+            restored.engine.answer_order[1], "c2",
+            "Second answer order incorrect"
+        );
 
         // Verify the active question is intact
-        assert_eq!(restored.engine.current_question_index, 0, "Question index mismatch");
-        assert_eq!(restored.engine.quiz.questions.len(), 1, "Question count mismatch");
+        assert_eq!(
+            restored.engine.current_question_index, 0,
+            "Question index mismatch"
+        );
+        assert_eq!(
+            restored.engine.quiz.questions.len(),
+            1,
+            "Question count mismatch"
+        );
     }
 
     /// W1-1 New Test: Backward compatibility with old snapshots (version 1).
@@ -950,11 +1120,31 @@ mod tests {
         assert_eq!(restored.players.len(), 1);
 
         // Verify new fields have sensible defaults
-        assert_eq!(restored.engine.current_answers.len(), 0, "Old snapshot should have empty current_answers");
-        assert_eq!(restored.engine.answer_order.len(), 0, "Old snapshot should have empty answer_order");
-        assert_eq!(restored.engine.recap_stats.len(), 0, "Old snapshot should have empty recap_stats");
-        assert_eq!(restored.engine.question_stats.len(), 0, "Old snapshot should have empty question_stats");
-        assert_eq!(restored.engine.questions_history.len(), 0, "Old snapshot should have empty questions_history");
+        assert_eq!(
+            restored.engine.current_answers.len(),
+            0,
+            "Old snapshot should have empty current_answers"
+        );
+        assert_eq!(
+            restored.engine.answer_order.len(),
+            0,
+            "Old snapshot should have empty answer_order"
+        );
+        assert_eq!(
+            restored.engine.recap_stats.len(),
+            0,
+            "Old snapshot should have empty recap_stats"
+        );
+        assert_eq!(
+            restored.engine.question_stats.len(),
+            0,
+            "Old snapshot should have empty question_stats"
+        );
+        assert_eq!(
+            restored.engine.questions_history.len(),
+            0,
+            "Old snapshot should have empty questions_history"
+        );
     }
 
     /// Test the updated load_snapshot logic accepts both version 1 and 2
@@ -962,6 +1152,9 @@ mod tests {
     async fn test_load_snapshot_accepts_version_1_and_2() {
         // This test would require mocking the file system, so we just test
         // the version check logic here by verifying the version constant was bumped
-        assert!(SNAPSHOT_VERSION >= 2, "SNAPSHOT_VERSION should be at least 2");
+        assert!(
+            SNAPSHOT_VERSION >= 2,
+            "SNAPSHOT_VERSION should be at least 2"
+        );
     }
 }

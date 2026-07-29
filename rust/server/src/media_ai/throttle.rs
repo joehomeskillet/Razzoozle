@@ -118,7 +118,13 @@ pub(crate) fn try_consume_image_gen_credit(client_id: &str) -> Result<(), &'stat
             st.total += 1;
         }
         None => {
-            store.insert(client_id.to_string(), ImageGenState { last: now, total: 1 });
+            store.insert(
+                client_id.to_string(),
+                ImageGenState {
+                    last: now,
+                    total: 1,
+                },
+            );
         }
     }
 

@@ -1,5 +1,5 @@
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 lazy_static! {
     static ref DATA_URL_REGEX: Regex = Regex::new(r"^data:([^;,]+);base64,(.+)$").unwrap();
@@ -8,7 +8,9 @@ lazy_static! {
 
 /// Validate upload payload and return (filename, dataUrl, category) or error message.
 /// Mimics Zod validation: returns first error message if validation fails.
-pub(super) fn validate_upload_payload(payload: &serde_json::Value) -> Result<(&str, &str, Option<&str>), String> {
+pub(super) fn validate_upload_payload(
+    payload: &serde_json::Value,
+) -> Result<(&str, &str, Option<&str>), String> {
     // Validate filename: required, string, 1-200 chars
     let filename = match payload.get("filename").and_then(|v| v.as_str()) {
         Some(f) if !f.is_empty() && f.len() <= 200 => f,

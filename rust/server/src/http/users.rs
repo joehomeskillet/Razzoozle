@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tracing::{info, warn};
 
+use super::{json_error_response, AppState};
 use crate::db;
-use super::{AppState, json_error_response};
 
 // ── HTTP request/response types ─────────────────────────────────────────────
 
@@ -46,18 +46,32 @@ pub async fn list(
     headers: HeaderMap,
 ) -> Result<Json<Vec<db::users::UserDetail>>, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        .await
+        .is_none()
+    {
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "Admin authorization required",
+        ));
     }
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
-    let users = db::users::list_users(pool)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to list users: {}", e)))?;
+    let users = db::users::list_users(pool).await.map_err(|e| {
+        json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to list users: {}", e),
+        )
+    })?;
 
     Ok(Json(users))
 }
@@ -71,8 +85,14 @@ pub async fn create(
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        .await
+        .is_none()
+    {
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "Admin authorization required",
+        ));
     }
 
     // Validate role
@@ -86,7 +106,12 @@ pub async fn create(
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     // Attempt to create user
@@ -120,7 +145,12 @@ pub async fn disable(
     // Verify admin
     let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
-        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "Admin authorization required",
+            ))
+        }
     };
 
     // Self-disable guard: locking yourself out is never allowed.
@@ -137,7 +167,12 @@ pub async fn disable(
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     // Load + last-admin-check + deactivate all happen inside a single DB
@@ -171,18 +206,34 @@ pub async fn enable(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        .await
+        .is_none()
+    {
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "Admin authorization required",
+        ));
     }
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     db::users::set_user_active(pool, id, true)
         .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to enable user: {}", e)))?;
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to enable user: {}", e),
+            )
+        })?;
 
     Ok(StatusCode::OK)
 }
@@ -198,12 +249,22 @@ pub async fn delete_user_handler(
     // Verify admin
     let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
-        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "Admin authorization required",
+            ))
+        }
     };
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     // Self-delete guard: an admin can never delete their own account.
@@ -212,7 +273,10 @@ pub async fn delete_user_handler(
             "Attempted self-modification: user={}, action=delete target={}",
             admin.user_id, id
         );
-        return Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete your own account"));
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "Cannot delete your own account",
+        ));
     }
 
     // Load + last-admin-check + delete all happen inside a single DB
@@ -229,7 +293,10 @@ pub async fn delete_user_handler(
         }
         Ok(db::users::DeleteUserOutcome::LastActiveAdmin) => {
             warn!("user delete denied: check=last_admin user={}", id);
-            Err(json_error_response(StatusCode::BAD_REQUEST, "Cannot delete the last active admin"))
+            Err(json_error_response(
+                StatusCode::BAD_REQUEST,
+                "Cannot delete the last active admin",
+            ))
         }
         Err(e) => Err(json_error_response(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -257,7 +324,10 @@ fn validate_bulk_ids(ids: &[i64]) -> Result<(), (StatusCode, Json<serde_json::Va
     if ids.len() > db::users::BULK_MAX_IDS {
         return Err(json_error_response(
             StatusCode::BAD_REQUEST,
-            format!("At most {} ids allowed per request", db::users::BULK_MAX_IDS),
+            format!(
+                "At most {} ids allowed per request",
+                db::users::BULK_MAX_IDS
+            ),
         ));
     }
     Ok(())
@@ -270,25 +340,34 @@ pub async fn bulk_activate(
     headers: HeaderMap,
     Json(req): Json<BulkRequestIds>,
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
-    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        .await
+        .is_none()
+    {
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "Admin authorization required",
+        ));
     }
 
     validate_bulk_ids(&req.ids)?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
-    let result = db::users::bulk_activate(pool, req.ids)
-        .await
-        .map_err(|e| {
-            json_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to bulk-activate users: {}", e),
-            )
-        })?;
+    let result = db::users::bulk_activate(pool, req.ids).await.map_err(|e| {
+        json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to bulk-activate users: {}", e),
+        )
+    })?;
 
     info!(
         "bulk-activate: succeeded={}, failed={}",
@@ -307,14 +386,24 @@ pub async fn bulk_deactivate(
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
     let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
-        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "Admin authorization required",
+            ))
+        }
     };
 
     validate_bulk_ids(&req.ids)?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     let result = db::users::bulk_deactivate(pool, admin.user_id, req.ids)
@@ -351,14 +440,24 @@ pub async fn bulk_delete(
 ) -> Result<Json<db::users::BulkOpResult>, (StatusCode, Json<serde_json::Value>)> {
     let admin = match crate::auth::ensure_admin_user(&headers, &state.db_pool).await {
         Some(user) => user,
-        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "Admin authorization required",
+            ))
+        }
     };
 
     validate_bulk_ids(&req.ids)?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     let result = db::users::bulk_delete(pool, admin.user_id, req.ids)
@@ -399,18 +498,32 @@ pub async fn reset_password(
     Json(req): Json<ResetPasswordRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     // Verify admin
-    if crate::auth::ensure_admin_user(&headers, &state.db_pool).await.is_none() {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "Admin authorization required"));
+    if crate::auth::ensure_admin_user(&headers, &state.db_pool)
+        .await
+        .is_none()
+    {
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "Admin authorization required",
+        ));
     }
 
     // Same validation as create path: reject empty passwords (create has no min-length either).
     if req.newPassword.is_empty() {
-        return Err(json_error_response(StatusCode::BAD_REQUEST, "Password cannot be empty"));
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "Password cannot be empty",
+        ));
     }
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     // SEC-M1: atomically update password and revoke all sessions (admin reset).
@@ -445,7 +558,12 @@ pub async fn change_password(
     // Verify authenticated session (any logged-in user, not admin-gated)
     let session_user = match crate::auth::ensure_manager_user(&headers, &state.db_pool).await {
         Some(user) => user,
-        None => return Err(json_error_response(StatusCode::UNAUTHORIZED, "Authentication required")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "Authentication required",
+            ))
+        }
     };
 
     // Raw bearer token of the session making this request (SEC-M1) — kept so
@@ -459,40 +577,61 @@ pub async fn change_password(
 
     // Reject empty new password
     if req.newPassword.is_empty() {
-        return Err(json_error_response(StatusCode::BAD_REQUEST, "New password cannot be empty"));
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "New password cannot be empty",
+        ));
     }
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "Database unavailable")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database unavailable",
+            ))
+        }
     };
 
     // Fetch current password hash for this user
     let hash = sqlx::query_as::<_, (String,)>(
-        "SELECT password_hash FROM users WHERE id = $1 AND active = true"
+        "SELECT password_hash FROM users WHERE id = $1 AND active = true",
     )
     .bind(session_user.user_id)
     .fetch_optional(pool)
     .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
+    .map_err(|e| {
+        json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )
+    })?
     .ok_or_else(|| json_error_response(StatusCode::UNAUTHORIZED, "User not found or inactive"))?;
 
     // Verify current password
     if !db::users::verify_password(&hash.0, &req.currentPassword) {
-        return Err(json_error_response(StatusCode::FORBIDDEN, "Current password is incorrect"));
+        return Err(json_error_response(
+            StatusCode::FORBIDDEN,
+            "Current password is incorrect",
+        ));
     }
 
     // SEC-M1: atomically update password and revoke other sessions (self-service change).
     // Both operations commit together — there's no window for old tokens to work.
     // The current session is preserved via keep_token.
-    db::users::set_password_and_revoke(pool, session_user.user_id, &req.newPassword, Some(current_token))
-        .await
-        .map_err(|e| {
-            json_error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to change password and revoke sessions: {}", e),
-            )
-        })?;
+    db::users::set_password_and_revoke(
+        pool,
+        session_user.user_id,
+        &req.newPassword,
+        Some(current_token),
+    )
+    .await
+    .map_err(|e| {
+        json_error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to change password and revoke sessions: {}", e),
+        )
+    })?;
 
     Ok(StatusCode::OK)
 }

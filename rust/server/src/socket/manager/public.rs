@@ -5,10 +5,10 @@ use super::super::HandlerCtx;
 use crate::db;
 use crate::http::RATE_LIMITER;
 use crate::state;
+use lazy_static::lazy_static;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::manager::SubmissionCategory;
 use socketioxide::extract::{Data, SocketRef};
-use lazy_static::lazy_static;
 
 // Default theme constant (mirrors Node's DEFAULT_THEME from packages/common/src/types/theme.ts)
 lazy_static! {
@@ -108,7 +108,6 @@ lazy_static! {
     });
 }
 
-
 pub fn get_default_theme() -> serde_json::Value {
     DEFAULT_THEME.clone()
 }
@@ -122,7 +121,7 @@ fn register_get_theme(socket: &SocketRef, _ctx: HandlerCtx) {
         move |socket: SocketRef| {
             tokio::spawn(async move {
                 let theme_path = "config/theme/theme.json";
-                
+
                 let theme = match tokio::fs::read_to_string(theme_path).await {
                     Ok(contents) => {
                         match serde_json::from_str::<serde_json::Value>(&contents) {
@@ -145,7 +144,7 @@ fn register_get_theme(socket: &SocketRef, _ctx: HandlerCtx) {
                     }
                     Err(_) => DEFAULT_THEME.clone(),
                 };
-                
+
                 socket.emit(constants::manager::THEME, &theme).ok();
             });
         }
@@ -220,16 +219,17 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                     || question_bytes > 16_384
                 {
                     socket
-                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalid")
+                        .emit(
+                            constants::manager::SUBMISSION_ERROR,
+                            "errors:submission.invalid",
+                        )
                         .ok();
                     return;
                 }
 
                 // Full questionValidator (Node submissionValidator includes questionValidator)
                 if let Err(key) = validation::validate_question(&question) {
-                    socket
-                        .emit(constants::manager::SUBMISSION_ERROR, key)
-                        .ok();
+                    socket.emit(constants::manager::SUBMISSION_ERROR, key).ok();
                     return;
                 }
 
@@ -256,7 +256,10 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                 // not lock out legitimate submitters.
                 if db::count_pending_submissions(&ctx.db_pool).await >= 200 {
                     socket
-                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.queueFull")
+                        .emit(
+                            constants::manager::SUBMISSION_ERROR,
+                            "errors:submission.queueFull",
+                        )
                         .ok();
                     return;
                 }
@@ -280,7 +283,10 @@ fn register_submit_question(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Err(_) => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.saveFailed")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.saveFailed",
+                            )
                             .ok();
                     }
                 }

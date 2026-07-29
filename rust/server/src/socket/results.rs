@@ -85,7 +85,11 @@ fn register_get(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 if crate::state::safe_asset_id(&id).is_err() {
                     return;
@@ -119,7 +123,11 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Path-traversal guard
                 if crate::state::safe_asset_id(&id).is_err() {
@@ -129,13 +137,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 // Attempt to delete the result (owner-scoped)
                 if db::delete_result(&ctx.db_pool, &id, me).await {
                     // On success, re-emit config so the manager sees the updated results list
-                    crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx).await;
+                    crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx)
+                        .await;
                 } else {
                     // Not found or not owned — never silently succeed
                     socket
                         .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                         .ok();
-                    crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx).await;
+                    crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx)
+                        .await;
                 }
             });
         }
@@ -163,7 +173,11 @@ fn register_bulk_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 if payload.ids.is_empty() {
                     socket
@@ -210,9 +224,7 @@ fn register_bulk_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                socket
-                    .emit(constants::results::BULK_DELETED, &outcome)
-                    .ok();
+                socket.emit(constants::results::BULK_DELETED, &outcome).ok();
                 // Same list refresh as single-delete
                 crate::socket::manager::config_helper::build_and_emit_config(&socket, &ctx).await;
             });

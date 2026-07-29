@@ -2,11 +2,11 @@ use super::super::super::HandlerCtx;
 use super::super::config_helper;
 use super::validate_theme;
 use crate::db;
+use chrono::Utc;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use std::fs;
 use std::path::Path;
-use chrono::Utc;
 
 /// Load current theme from disk for revision snapshot
 pub(super) fn load_current_theme() -> Option<serde_json::Value> {
@@ -22,7 +22,10 @@ pub(super) fn load_current_theme() -> Option<serde_json::Value> {
 }
 
 /// Save theme revision snapshot before overwriting (to database).
-async fn save_theme_revision(current_theme: serde_json::Value, ctx: &HandlerCtx) -> Result<(), String> {
+async fn save_theme_revision(
+    current_theme: serde_json::Value,
+    ctx: &HandlerCtx,
+) -> Result<(), String> {
     // Create new revision with timestamp-based ID
     let timestamp_ms = Utc::now().timestamp_millis();
     let id = format!("rev-{}", timestamp_ms);
@@ -60,7 +63,10 @@ fn clamp_skeleton_flags(theme: &mut serde_json::Value, skeleton_dir: &Path) {
 
 /// Apply theme: validate, save revision (if existing theme), persist to disk, and mirror to DB.
 /// Returns the persisted theme on success, or an error message on failure.
-pub async fn apply_theme(payload: &serde_json::Value, ctx: &HandlerCtx) -> Result<serde_json::Value, String> {
+pub async fn apply_theme(
+    payload: &serde_json::Value,
+    ctx: &HandlerCtx,
+) -> Result<serde_json::Value, String> {
     // Validate theme payload structure and field types
     if let Err(error) = validate_theme(&payload) {
         return Err(error);
@@ -122,9 +128,7 @@ pub(super) fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
                 let _user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, "")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, "").ok();
                         return;
                     }
                 };
@@ -135,16 +139,15 @@ pub(super) fn register_set_theme(socket: &SocketRef, ctx: HandlerCtx) {
                             .emit(constants::manager::SET_THEME_SUCCESS, &theme)
                             .ok();
 
-                        socket.broadcast()
+                        socket
+                            .broadcast()
                             .emit(constants::manager::THEME, &theme)
                             .ok();
 
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
                     Err(error) => {
-                        socket
-                            .emit(constants::manager::THEME_ERROR, &error)
-                            .ok();
+                        socket.emit(constants::manager::THEME_ERROR, &error).ok();
                     }
                 }
             });

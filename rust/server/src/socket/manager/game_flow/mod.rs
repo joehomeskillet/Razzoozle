@@ -11,8 +11,8 @@
 
 use super::super::HandlerCtx;
 use crate::is_game_host;
-use crate::socket::lifecycle;
 use crate::socket::auth;
+use crate::socket::lifecycle;
 use crate::socket::status_emit::broadcast_status;
 use razzoozle_engine::state::{GameError, GamePhase};
 use razzoozle_protocol::constants;
@@ -671,20 +671,14 @@ mod tests {
     #[test]
     fn set_auto_on_show_result_should_reemit() {
         let game_ref = test_game(GamePhase::ShowResult);
-        let should_reemit = matches!(
-            game_ref.lock().unwrap().engine.phase,
-            GamePhase::ShowResult
-        );
+        let should_reemit = matches!(game_ref.lock().unwrap().engine.phase, GamePhase::ShowResult);
         assert!(should_reemit);
     }
 
     #[test]
     fn set_auto_on_show_round_recap_should_not_reemit() {
         let game_ref = test_game(GamePhase::ShowRoundRecap);
-        let should_reemit = matches!(
-            game_ref.lock().unwrap().engine.phase,
-            GamePhase::ShowResult
-        );
+        let should_reemit = matches!(game_ref.lock().unwrap().engine.phase, GamePhase::ShowResult);
         assert!(!should_reemit);
         assert!(!game_ref.lock().unwrap().last_show_result_data.is_empty());
     }

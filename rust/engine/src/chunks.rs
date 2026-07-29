@@ -15,45 +15,11 @@ pub fn auto_generate_chunks(sentence: &str) -> Vec<String> {
 
     let abbreviations: HashSet<&str> = [
         // English
-        "mr.",
-        "mrs.",
-        "dr.",
-        "ms.",
-        "vs.",
-        "e.g.",
-        "i.e.",
-        "etc.",
-        // Spanish
-        "sr.",
-        "sra.",
-        "srta.",
-        "dra.",
-        "p.ej.",
-        "p.",
-        "ej.",
-        "ee.uu.",
-        // French
-        "m.",
-        "mme.",
-        "ex.",
-        // German
-        "fr.",
-        "hr.",
-        "z.b.",
-        "d.h.",
-        "u.a.",
-        "bzw.",
-        "ca.",
-        "v.a.",
-        "sog.",
-        // Italian
-        "sig.",
-        "sig.ra",
-        "dott.",
-        "prof.",
-        "prof.ssa",
-        "es.",
-        "ecc.",
+        "mr.", "mrs.", "dr.", "ms.", "vs.", "e.g.", "i.e.", "etc.", // Spanish
+        "sr.", "sra.", "srta.", "dra.", "p.ej.", "p.", "ej.", "ee.uu.", // French
+        "m.", "mme.", "ex.", // German
+        "fr.", "hr.", "z.b.", "d.h.", "u.a.", "bzw.", "ca.", "v.a.", "sog.", // Italian
+        "sig.", "sig.ra", "dott.", "prof.", "prof.ssa", "es.", "ecc.",
     ]
     .iter()
     .cloned()
@@ -322,10 +288,7 @@ fn is_pause_char(c: char) -> bool {
 /// Shuffles an array using Fisher-Yates algorithm with a provided RNG.
 /// Retries up to 10 times if the result equals the input order (elementwise).
 /// Returns the original array if all elements are identical or length < 2.
-pub fn shuffle_chunks_with_guard<R: Rng>(
-    chunks: &[String],
-    rng: &mut R,
-) -> Vec<String> {
+pub fn shuffle_chunks_with_guard<R: Rng>(chunks: &[String], rng: &mut R) -> Vec<String> {
     if chunks.len() < 2 {
         return chunks.to_vec();
     }

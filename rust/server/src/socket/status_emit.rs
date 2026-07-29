@@ -30,11 +30,7 @@ pub fn broadcast_status(
 
 /// Manager-socket STATUS: record, then emit to that socket only.
 /// Record and emit are atomic under the game lock.
-pub fn send_status_to_manager(
-    sock: &SocketRef,
-    game_ref: &Arc<Mutex<Game>>,
-    status: &GameStatus,
-) {
+pub fn send_status_to_manager(sock: &SocketRef, game_ref: &Arc<Mutex<Game>>, status: &GameStatus) {
     let mut game = game_ref.lock().unwrap();
     game.record_last_manager_status(status);
     sock.emit(constants::game::STATUS, status).ok();
@@ -46,14 +42,9 @@ pub fn send_status_to_manager(
 /// lifecycle events. Emits `plugin:<id>:lifecycle:<hook>` GLOBALLY (io.emit, all
 /// sockets — Node uses ioRef.emit, not a room) with payload {gameId, status, data}.
 /// Non-fatal: errors are logged but never break the game round (crash-guarded).
-pub fn emit_plugin_lifecycle(
-    io: &SocketIo,
-    game_id: &str,
-    hook_name: &str,
-    status_str: &str,
-) {
+pub fn emit_plugin_lifecycle(io: &SocketIo, game_id: &str, hook_name: &str, status_str: &str) {
     let plugins = crate::socket::manager::plugins::read_plugins_index();
-    
+
     for plugin in plugins {
         // Node parity gate: enabled AND SERVER_HANDLER capability (= would be
         // loaded by Node's runtime). UI-only plugins are skipped like on Node.
@@ -67,13 +58,15 @@ pub fn emit_plugin_lifecycle(
             "status": status_str,
             "data": {}
         });
-        
+
         match io.emit(&event_name, &payload) {
-            Ok(()) => {},
+            Ok(()) => {}
             Err(e) => {
                 tracing::warn!(
                     "failed to emit plugin lifecycle event {} for game {}: {}",
-                    event_name, game_id, e
+                    event_name,
+                    game_id,
+                    e
                 );
             }
         }

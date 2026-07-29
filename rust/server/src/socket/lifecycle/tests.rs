@@ -18,9 +18,10 @@ async fn lifecycle_continues_past_reveal_to_leaderboard_and_finishes() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
-        serde_json::json!({"enabled": false, "clockSync": true}),
-    )
+            None,
+            false,
+            serde_json::json!({"enabled": false, "clockSync": true}),
+        )
         .unwrap();
 
     let game_ref = registry.get_game_by_id(&game_id).unwrap();
@@ -90,7 +91,8 @@ async fn temp_round_recap_survives_round_recap_dwell_for_leaderboard() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -112,7 +114,9 @@ async fn temp_round_recap_survives_round_recap_dwell_for_leaderboard() {
         // Fixture Q0 solutions:[1] — a lone correct answerer triggers the
         // round's fastest_finger recap award, so temp_round_recap is
         // non-empty after reveal.
-        game.engine.record_answer("client-1", Some(1), None, None).unwrap();
+        game.engine
+            .record_answer("client-1", Some(1), None, None)
+            .unwrap();
     }
 
     let (_layer, io) = SocketIo::builder().build_layer();
@@ -145,7 +149,9 @@ async fn temp_round_recap_survives_round_recap_dwell_for_leaderboard() {
 
     let recap_at_leaderboard_time = game_ref.lock().unwrap().temp_round_recap.clone();
     assert!(
-        recap_at_leaderboard_time.as_ref().is_some_and(|r| !r.is_empty()),
+        recap_at_leaderboard_time
+            .as_ref()
+            .is_some_and(|r| !r.is_empty()),
         "temp_round_recap must still be populated when SHOW_LEADERBOARD reads it \
          (WP-H gap 5 regression — was cleared prematurely by the \
          SHOW_ROUND_RECAP dwell block before this point)"
@@ -170,7 +176,11 @@ async fn pause_resume_wakes_dwell_without_deadlock() {
 
     let game_ref_waiter = game_ref.clone();
     let waiter = tokio::spawn(async move {
-        tokio::time::timeout(Duration::from_millis(100), wait_while_paused(&game_ref_waiter)).await
+        tokio::time::timeout(
+            Duration::from_millis(100),
+            wait_while_paused(&game_ref_waiter),
+        )
+        .await
     });
 
     tokio::time::advance(Duration::from_millis(10)).await;
@@ -264,9 +274,12 @@ async fn adjust_timer_shifts_reveal_moment_not_just_the_display() {
     let abort = Arc::new(Notify::new());
     let game_ref_cooldown = game_ref.clone();
     let cooldown = tokio::spawn(async move {
-        run_cooldown_with_deadline(4, abort, |_count| {}, move || {
-            (game_ref_cooldown.lock().unwrap().remaining_answer_ms() / 1000) as i32
-        })
+        run_cooldown_with_deadline(
+            4,
+            abort,
+            |_count| {},
+            move || (game_ref_cooldown.lock().unwrap().remaining_answer_ms() / 1000) as i32,
+        )
         .await
     });
 
@@ -322,7 +335,8 @@ async fn resume_reopens_restored_question_not_index_zero() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -472,7 +486,8 @@ async fn manual_mode_single_abort_per_dwell_reaches_finished() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -531,7 +546,10 @@ async fn manual_mode_single_abort_per_dwell_reaches_finished() {
         run_game_lifecycle(io, registry, game_id.clone(), None),
     )
     .await;
-    assert!(outcome.is_ok(), "manual-mode lifecycle hung / never returned");
+    assert!(
+        outcome.is_ok(),
+        "manual-mode lifecycle hung / never returned"
+    );
     assert_eq!(
         game_ref.lock().unwrap().engine.phase,
         GamePhase::Finished,

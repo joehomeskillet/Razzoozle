@@ -2,14 +2,14 @@ use super::super::super::HandlerCtx;
 use super::apply::load_current_theme;
 use super::decode_base64;
 use crate::db;
+use chrono::Utc;
+use lazy_static::lazy_static;
 use razzoozle_protocol::constants;
+use regex::Regex;
 use socketioxide::extract::{Data, SocketRef};
+use sqlx::PgPool;
 use std::fs;
 use std::path::Path;
-use regex::Regex;
-use lazy_static::lazy_static;
-use chrono::Utc;
-use sqlx::PgPool;
 
 lazy_static! {
     // Data URL pattern: data:<mime>;base64,<base64-data>
@@ -20,11 +20,17 @@ const BACKGROUND_SIZE_CAP: usize = 8 * 1024 * 1024; // 8 MB
 const SOUND_SIZE_CAP: usize = 4 * 1024 * 1024; // 4 MB
 
 /// Decode a data URL with required ;base64, marker and return MIME type + buffer
-fn decode_data_url(data_url: &str, expected_mimes: &[&str], error_key: &str) -> Result<(String, Vec<u8>), String> {
-    let caps = DATA_URL_REGEX.captures(data_url)
+fn decode_data_url(
+    data_url: &str,
+    expected_mimes: &[&str],
+    error_key: &str,
+) -> Result<(String, Vec<u8>), String> {
+    let caps = DATA_URL_REGEX
+        .captures(data_url)
         .ok_or_else(|| error_key.to_string())?;
 
-    let mime_type = caps.get(1)
+    let mime_type = caps
+        .get(1)
         .map(|m| m.as_str())
         .ok_or_else(|| error_key.to_string())?;
 
@@ -32,12 +38,12 @@ fn decode_data_url(data_url: &str, expected_mimes: &[&str], error_key: &str) -> 
         return Err(error_key.to_string());
     }
 
-    let data_part = caps.get(2)
+    let data_part = caps
+        .get(2)
         .map(|m| m.as_str())
         .ok_or_else(|| error_key.to_string())?;
 
-    let buffer = decode_base64(data_part)
-        .map_err(|_| error_key.to_string())?;
+    let buffer = decode_base64(data_part).map_err(|_| error_key.to_string())?;
 
     Ok((mime_type.to_string(), buffer))
 }
@@ -66,7 +72,11 @@ async fn save_background_image(
         return Err("errors:theme.invalidSlot".to_string());
     }
 
-    let (mime, buffer) = decode_data_url(data_url, &["image/png", "image/jpeg", "image/webp"], "errors:theme.invalidImage")?;
+    let (mime, buffer) = decode_data_url(
+        data_url,
+        &["image/png", "image/jpeg", "image/webp"],
+        "errors:theme.invalidImage",
+    )?;
 
     if buffer.len() > BACKGROUND_SIZE_CAP {
         return Err("errors:theme.imageTooLarge".to_string());
@@ -101,8 +111,7 @@ async fn save_background_image(
         let filename = format!("{}-{}.{}", slot_owned, timestamp, ext);
         let filepath = backgrounds_dir.join(&filename);
 
-        fs::write(&filepath, &buffer_clone)
-            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        fs::write(&filepath, &buffer_clone).map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
         Ok::<(String, i32), String>((filename, buffer_clone.len() as i32))
     })
@@ -129,8 +138,13 @@ async fn save_background_image(
         uploaded_at,
         &buffer,
         owner_id,
-    ).await {
-        eprintln!("Failed to persist background media asset {} to DB: {}", asset_id, e);
+    )
+    .await
+    {
+        eprintln!(
+            "Failed to persist background media asset {} to DB: {}",
+            asset_id, e
+        );
     }
 
     Ok(format!("/media/backgrounds/{}", filename))
@@ -146,9 +160,19 @@ async fn save_sound_file(
     me: Option<i64>,
 ) -> Result<String, String> {
     let valid_slots = [
-        "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
-        "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
-        "tierGold", "tierDiamant"
+        "answersMusic",
+        "answersSound",
+        "podiumThree",
+        "podiumSecond",
+        "podiumFirst",
+        "podiumSnearRoll",
+        "results",
+        "show",
+        "boump",
+        "tierBronze",
+        "tierSilver",
+        "tierGold",
+        "tierDiamant",
     ];
     if !valid_slots.contains(&slot) {
         return Err("errors:theme.invalidSlot".to_string());
@@ -156,7 +180,8 @@ async fn save_sound_file(
 
     let (mime, buffer) = decode_data_url(
         data_url,
-        &["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"], "errors:theme.invalidAudio"
+        &["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"],
+        "errors:theme.invalidAudio",
     )?;
 
     if buffer.len() > SOUND_SIZE_CAP {
@@ -172,8 +197,7 @@ async fn save_sound_file(
     let (filename, size) = tokio::task::spawn_blocking(move || {
         let sounds_dir = Path::new("config/media/sounds");
         if !sounds_dir.exists() {
-            fs::create_dir_all(sounds_dir)
-                .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+            fs::create_dir_all(sounds_dir).map_err(|_| "errors:theme.uploadFailed".to_string())?;
         }
 
         if let Ok(entries) = fs::read_dir(sounds_dir) {
@@ -197,8 +221,7 @@ async fn save_sound_file(
         let filename = format!("{}-{}{}", slot_owned, timestamp, ext);
         let filepath = sounds_dir.join(&filename);
 
-        fs::write(&filepath, &buffer_clone)
-            .map_err(|_| "errors:theme.uploadFailed".to_string())?;
+        fs::write(&filepath, &buffer_clone).map_err(|_| "errors:theme.uploadFailed".to_string())?;
 
         Ok::<(String, i32), String>((filename, buffer_clone.len() as i32))
     })
@@ -225,8 +248,13 @@ async fn save_sound_file(
         uploaded_at,
         &buffer,
         owner_id,
-    ).await {
-        eprintln!("Failed to persist sound media asset {} to DB: {}", asset_id, e);
+    )
+    .await
+    {
+        eprintln!(
+            "Failed to persist sound media asset {} to DB: {}",
+            asset_id, e
+        );
     }
 
     Ok(format!("/media/sounds/{}", filename))
@@ -243,13 +271,15 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, "")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, "").ok();
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),
@@ -271,19 +301,19 @@ pub(super) fn register_upload_background(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                match save_background_image(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me).await {
+                match save_background_image(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me)
+                    .await
+                {
                     Ok(path) => {
                         socket
                             .emit(
                                 constants::manager::BACKGROUND_UPLOADED,
-                                &serde_json::json!({ "slot": slot, "path": path })
+                                &serde_json::json!({ "slot": slot, "path": path }),
                             )
                             .ok();
                     }
                     Err(error) => {
-                        socket
-                            .emit(constants::manager::THEME_ERROR, &error)
-                            .ok();
+                        socket.emit(constants::manager::THEME_ERROR, &error).ok();
                     }
                 }
             });
@@ -302,13 +332,15 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_admin().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, "")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, "").ok();
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 let slot = match payload.get("slot").and_then(|v| v.as_str()) {
                     Some(s) => s.to_string(),
@@ -330,15 +362,16 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let asset_ref = match save_sound_file(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me).await {
-                    Ok(ref_path) => ref_path,
-                    Err(error) => {
-                        socket
-                            .emit(constants::manager::THEME_ERROR, &error)
-                            .ok();
-                        return;
-                    }
-                };
+                let asset_ref =
+                    match save_sound_file(&slot, &data_url, &ctx.db_pool, Some(user.user_id), me)
+                        .await
+                    {
+                        Ok(ref_path) => ref_path,
+                        Err(error) => {
+                            socket.emit(constants::manager::THEME_ERROR, &error).ok();
+                            return;
+                        }
+                    };
 
                 let current_theme = match load_current_theme() {
                     Some(theme) => theme,
@@ -351,7 +384,8 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                         if let Some(cur) = load_current_theme() {
                             let ts = Utc::now().timestamp_millis();
                             let id = format!("rev-{}", ts);
-                            let created_at = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+                            let created_at =
+                                Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
                             Some(serde_json::json!({
                                 "id": id,
                                 "createdAt": created_at,
@@ -368,10 +402,13 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Save revision to DB (if snapshot exists)
                 if let Some(revision) = revision_snapshot {
-                    let created_at = revision.get("createdAt")
+                    let created_at = revision
+                        .get("createdAt")
                         .and_then(|v| v.as_str())
                         .unwrap_or("1970-01-01T00:00:00Z");
-                    if let Err(e) = db::insert_theme_revision(&ctx.db_pool, &revision, created_at).await {
+                    if let Err(e) =
+                        db::insert_theme_revision(&ctx.db_pool, &revision, created_at).await
+                    {
                         eprintln!("upload_sound — revision save failed (non-fatal): {}", e);
                     }
                 }
@@ -418,11 +455,12 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                 socket
                     .emit(
                         constants::manager::SOUND_UPLOADED,
-                        &serde_json::json!({ "slot": slot, "assetRef": asset_ref })
+                        &serde_json::json!({ "slot": slot, "assetRef": asset_ref }),
                     )
                     .ok();
 
-                socket.broadcast()
+                socket
+                    .broadcast()
                     .emit(constants::manager::THEME, &new_theme)
                     .ok();
             });

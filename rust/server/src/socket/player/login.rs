@@ -1,4 +1,5 @@
 use super::HandlerCtx;
+use crate::state::socket_role;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::{GameSuccessRoom, RosterEntry};
@@ -7,7 +8,6 @@ use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use std::net::IpAddr;
 use tracing::{info, warn};
-use crate::state::socket_role;
 
 /// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
 const INVALID_CREDENTIALS: &str = "errors:game.invalidCredentials";
@@ -56,11 +56,7 @@ fn client_ip_key(socket: &SocketRef, client_id: &str) -> String {
                 }
             }
             // Check x-real-ip
-            if let Some(real) = parts
-                .headers
-                .get("x-real-ip")
-                .and_then(|v| v.to_str().ok())
-            {
+            if let Some(real) = parts.headers.get("x-real-ip").and_then(|v| v.to_str().ok()) {
                 let ip = real.trim();
                 if !ip.is_empty() {
                     return ip.to_string();
@@ -122,10 +118,7 @@ pub(crate) fn decide_klassen_login(
     // WP-F1: inactive student — same client error as wrong PIN (no info leak).
     // Audit trail only: server-side warn with student id.
     if !*student_active {
-        warn!(
-            "login denied: check=student_inactive student={}",
-            sid
-        );
+        warn!("login denied: check=student_inactive student={}", sid);
         return KlassenLoginDecision::InvalidCredentials;
     }
     // A6: post-PIN dedup — active session for this student.
@@ -179,7 +172,10 @@ pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
                 // #11: Validate invite code is exactly 6 characters
                 if invite_code.len() != 6 {
                     socket
-                        .emit(constants::game::ERROR_MESSAGE, "errors:auth.invalidInviteCode")
+                        .emit(
+                            constants::game::ERROR_MESSAGE,
+                            "errors:auth.invalidInviteCode",
+                        )
                         .ok();
                     return;
                 }
@@ -238,7 +234,10 @@ pub(super) fn register_join(socket: &SocketRef, ctx: HandlerCtx) {
                         };
 
                         // SECURITY: never log the raw invite_code
-                        info!("Player checking game: invite_code_len={}", invite_code.len());
+                        info!(
+                            "Player checking game: invite_code_len={}",
+                            invite_code.len()
+                        );
 
                         socket.emit(constants::game::SUCCESS_ROOM, &payload).ok();
                     }
@@ -753,13 +752,7 @@ mod tests {
 
     #[test]
     fn klassen_login_rostered_correct_pin_success() {
-        let d = decide_klassen_login(
-            Some(1),
-            Some("🐱🐶🐭🐹"),
-            &roster(),
-            &[],
-            false,
-        );
+        let d = decide_klassen_login(Some(1), Some("🐱🐶🐭🐹"), &roster(), &[], false);
         assert_eq!(
             d,
             KlassenLoginDecision::Allow {
@@ -770,39 +763,21 @@ mod tests {
 
     #[test]
     fn klassen_login_wrong_pin_invalid_credentials() {
-        let d = decide_klassen_login(
-            Some(1),
-            Some("🍕📚🎮🌸"),
-            &roster(),
-            &[],
-            false,
-        );
+        let d = decide_klassen_login(Some(1), Some("🍕📚🎮🌸"), &roster(), &[], false);
         assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
     }
 
     #[test]
     fn klassen_login_inactive_student_invalid_credentials_no_oracle() {
         // Correct PIN but inactive → same shape as wrong PIN (WP-F1, no info leak).
-        let d = decide_klassen_login(
-            Some(3),
-            Some("🍎🍌🍇🍊"),
-            &roster(),
-            &[],
-            false,
-        );
+        let d = decide_klassen_login(Some(3), Some("🍎🍌🍇🍊"), &roster(), &[], false);
         assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
     }
 
     #[test]
     fn klassen_login_non_rostered_invalid_credentials_no_oracle() {
         // Unknown student_id → same shape as wrong PIN (A7).
-        let d = decide_klassen_login(
-            Some(99),
-            Some("🐱🐶🐭🐹"),
-            &roster(),
-            &[],
-            false,
-        );
+        let d = decide_klassen_login(Some(99), Some("🐱🐶🐭🐹"), &roster(), &[], false);
         assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
 
         // Missing student_id
@@ -812,25 +787,13 @@ mod tests {
 
     #[test]
     fn klassen_login_second_active_session_already_joined() {
-        let d = decide_klassen_login(
-            Some(1),
-            Some("🐱🐶🐭🐹"),
-            &roster(),
-            &[1],
-            false,
-        );
+        let d = decide_klassen_login(Some(1), Some("🐱🐶🐭🐹"), &roster(), &[1], false);
         assert_eq!(d, KlassenLoginDecision::AlreadyJoined);
     }
 
     #[test]
     fn klassen_login_throttle_lockout_invalid_credentials() {
-        let d = decide_klassen_login(
-            Some(1),
-            Some("🐱🐶🐭🐹"),
-            &roster(),
-            &[],
-            true,
-        );
+        let d = decide_klassen_login(Some(1), Some("🐱🐶🐭🐹"), &roster(), &[], true);
         assert_eq!(d, KlassenLoginDecision::InvalidCredentials);
     }
 

@@ -2,18 +2,14 @@ use sqlx::PgPool;
 
 /// Create a new class owned by a user.
 /// Returns the class id.
-pub async fn create_class(
-    pool: &Option<PgPool>,
-    name: &str,
-    owner_id: i64,
-) -> Result<i64, String> {
+pub async fn create_class(pool: &Option<PgPool>, name: &str, owner_id: i64) -> Result<i64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
     };
 
     let result = sqlx::query_as::<_, (i64,)>(
-        "INSERT INTO classes (owner_id, name) VALUES ($1, $2) RETURNING id"
+        "INSERT INTO classes (owner_id, name) VALUES ($1, $2) RETURNING id",
     )
     .bind(owner_id)
     .bind(name)
@@ -67,23 +63,24 @@ pub async fn get_classes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
     };
 
     rows.into_iter()
-        .map(|(id, name, created_at, active, student_count, owner_name, label_ids)| {
-            let mut obj = serde_json::json!({
-                "id": id,
-                "name": name,
-                "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
-                "active": active,
-                "studentCount": student_count,
-                "labelIds": label_ids,
-            });
-            if let Some(owner_name) = owner_name {
-                obj["ownerName"] = serde_json::json!(owner_name);
-            }
-            obj
-        })
+        .map(
+            |(id, name, created_at, active, student_count, owner_name, label_ids)| {
+                let mut obj = serde_json::json!({
+                    "id": id,
+                    "name": name,
+                    "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                    "active": active,
+                    "studentCount": student_count,
+                    "labelIds": label_ids,
+                });
+                if let Some(owner_name) = owner_name {
+                    obj["ownerName"] = serde_json::json!(owner_name);
+                }
+                obj
+            },
+        )
         .collect()
 }
-
 
 /// Get a single class by id.
 /// Returns Ok(class_obj) or Err if not found or not owned.
@@ -99,7 +96,7 @@ pub async fn get_class(
 
     let result: Option<(i64, String, chrono::DateTime<chrono::Utc>, bool)> = sqlx::query_as(
         "SELECT id, name, created_at, active FROM classes \
-         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(class_id)
     .bind(me)
@@ -108,14 +105,12 @@ pub async fn get_class(
     .map_err(|e| e.to_string())?;
 
     match result {
-        Some((id, name, created_at, active)) => {
-            Ok(serde_json::json!({
-                "id": id,
-                "name": name,
-                "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
-                "active": active,
-            }))
-        }
+        Some((id, name, created_at, active)) => Ok(serde_json::json!({
+            "id": id,
+            "name": name,
+            "createdAt": created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+            "active": active,
+        })),
         None => Err("class not found".to_string()),
     }
 }
@@ -591,8 +586,7 @@ pub async fn bulk_assign_students(
     .await
     .map_err(|e| e.to_string())?;
 
-    let already_set: std::collections::HashSet<i64> =
-        already.into_iter().map(|(id,)| id).collect();
+    let already_set: std::collections::HashSet<i64> = already.into_iter().map(|(id,)| id).collect();
 
     let mut to_insert = Vec::new();
     let mut succeeded = Vec::new();
@@ -736,7 +730,7 @@ pub async fn update_class(
 
     let result = sqlx::query(
         "UPDATE classes SET name = $1 \
-         WHERE id = $2 AND ($3::bigint IS NULL OR owner_id = $3)"
+         WHERE id = $2 AND ($3::bigint IS NULL OR owner_id = $3)",
     )
     .bind(name)
     .bind(class_id)
@@ -769,7 +763,7 @@ pub async fn delete_class(
 
     let result = sqlx::query(
         "DELETE FROM classes \
-         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(class_id)
     .bind(me)
@@ -797,7 +791,7 @@ pub async fn add_student(
 
     // Insert student with legacy class_id for compat window
     let student_result = sqlx::query_as::<_, (i64,)>(
-        "INSERT INTO students (class_id, owner_id, display_name) VALUES ($1, $2, $3) RETURNING id"
+        "INSERT INTO students (class_id, owner_id, display_name) VALUES ($1, $2, $3) RETURNING id",
     )
     .bind(class_id)
     .bind(owner_id)
@@ -810,7 +804,7 @@ pub async fn add_student(
 
     // Insert junction row
     sqlx::query(
-        "INSERT INTO class_students (class_id, student_id, joined_at) VALUES ($1, $2, now())"
+        "INSERT INTO class_students (class_id, student_id, joined_at) VALUES ($1, $2, now())",
     )
     .bind(class_id)
     .bind(student_id)
@@ -868,18 +862,28 @@ pub async fn students_for_class(
 
 /// Get all students in a class via junction table.
 /// `me`: None = unfiltered (admin); Some(id) = only if user owns the class.
-pub async fn get_students(pool: &Option<PgPool>, class_id: i64, me: Option<i64>) -> Vec<serde_json::Value> {
+pub async fn get_students(
+    pool: &Option<PgPool>,
+    class_id: i64,
+    me: Option<i64>,
+) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, chrono::DateTime<chrono::Utc>, Option<String>, Option<String>)> = match sqlx::query_as(
+    let rows: Vec<(
+        i64,
+        String,
+        chrono::DateTime<chrono::Utc>,
+        Option<String>,
+        Option<String>,
+    )> = match sqlx::query_as(
         "SELECT s.id, s.display_name, s.created_at, s.first_name, s.last_name FROM students s \
          INNER JOIN class_students cs ON s.id = cs.student_id \
          INNER JOIN classes c ON cs.class_id = c.id \
          WHERE cs.class_id = $1 AND ($2::bigint IS NULL OR c.owner_id = $2) \
-         ORDER BY s.created_at ASC"
+         ORDER BY s.created_at ASC",
     )
     .bind(class_id)
     .bind(me)
@@ -930,7 +934,7 @@ pub async fn remove_student(
                SELECT 1 FROM class_students cs \
                INNER JOIN classes c ON cs.class_id = c.id \
                WHERE cs.student_id = $1 AND c.owner_id = $2 \
-             )"
+             )",
         )
         .bind(student_id)
         .bind(user_id)
@@ -978,7 +982,7 @@ pub async fn remove_student(
     };
 
     tx.commit().await.map_err(|e| e.to_string())?;
-    
+
     if result.rows_affected() > 0 {
         Ok(1)
     } else {
@@ -1007,7 +1011,7 @@ pub async fn update_student(
     // Fetch old display_name for audit
     let old_name: Option<(String,)> = match sqlx::query_as(
         "SELECT display_name FROM students \
-         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+         WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(student_id)
     .bind(me)
@@ -1048,7 +1052,7 @@ pub async fn update_student(
          first_name = COALESCE($2, first_name), \
          last_name = CASE WHEN $2 IS NOT NULL THEN $3 ELSE last_name END, \
          birthdate = COALESCE($4, birthdate) \
-         WHERE id = $5 AND ($6::bigint IS NULL OR owner_id = $6)"
+         WHERE id = $5 AND ($6::bigint IS NULL OR owner_id = $6)",
     )
     .bind(&display_name)
     .bind(first_name_opt)
@@ -1105,7 +1109,7 @@ pub async fn move_student_to_class(
 
     // Verify me owns the target class
     let owns_class: Option<(i64,)> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(class_id)
     .bind(me)
@@ -1125,7 +1129,7 @@ pub async fn move_student_to_class(
     // Insert junction row (idempotent: ON CONFLICT DO NOTHING)
     sqlx::query(
         "INSERT INTO class_students (class_id, student_id, joined_at) VALUES ($1, $2, now()) \
-         ON CONFLICT (class_id, student_id) DO NOTHING"
+         ON CONFLICT (class_id, student_id) DO NOTHING",
     )
     .bind(class_id)
     .bind(student_id)
@@ -1152,7 +1156,7 @@ pub async fn remove_student_from_class(
 
     // Verify me owns the class
     let owns_class: Option<(i64,)> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+        "SELECT id FROM classes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(class_id)
     .bind(me)
@@ -1165,23 +1169,19 @@ pub async fn remove_student_from_class(
     }
 
     // Delete the junction row (orphan trigger may delete student)
-    sqlx::query(
-        "DELETE FROM class_students WHERE student_id = $1 AND class_id = $2"
-    )
-    .bind(student_id)
-    .bind(class_id)
-    .execute(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    sqlx::query("DELETE FROM class_students WHERE student_id = $1 AND class_id = $2")
+        .bind(student_id)
+        .bind(class_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // Check if student still exists
-    let exists: Option<(i64,)> = sqlx::query_as(
-        "SELECT id FROM students WHERE id = $1"
-    )
-    .bind(student_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM students WHERE id = $1")
+        .bind(student_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(exists.is_none())
 }
@@ -1202,7 +1202,7 @@ pub async fn get_student_classes(
         "SELECT c.id, c.name, cs.joined_at FROM classes c \
          INNER JOIN class_students cs ON c.id = cs.class_id \
          WHERE cs.student_id = $1 AND ($2::bigint IS NULL OR c.owner_id = $2) \
-         ORDER BY cs.joined_at ASC"
+         ORDER BY cs.joined_at ASC",
     )
     .bind(student_id)
     .bind(me)
@@ -1210,7 +1210,8 @@ pub async fn get_student_classes(
     .await
     .map_err(|e| e.to_string())?;
 
-    Ok(rows.into_iter()
+    Ok(rows
+        .into_iter()
         .map(|(id, name, joined_at)| {
             serde_json::json!({
                 "id": id,
@@ -1256,7 +1257,7 @@ pub async fn list_all_students(
             "SELECT c.id, c.name FROM classes c \
              INNER JOIN class_students cs ON c.id = cs.class_id \
              WHERE cs.student_id = $1 AND ($2::bigint IS NULL OR c.owner_id = $2) \
-             ORDER BY c.name ASC"
+             ORDER BY c.name ASC",
         )
         .bind(student_id)
         .bind(me)
@@ -1318,7 +1319,7 @@ async fn can_manage_student_internal(
                    SELECT 1 FROM class_students cs \
                    INNER JOIN classes c ON cs.class_id = c.id \
                    WHERE cs.student_id = $1 AND c.owner_id = $2 \
-                 )"
+                 )",
             )
             .bind(student_id)
             .bind(user_id)
@@ -1380,7 +1381,11 @@ pub async fn create_student(
         format!("{} {}", first_name.trim(), last_name.trim())
     };
 
-    let final_last = if last_name.trim().is_empty() { None } else { Some(last_name.trim()) };
+    let final_last = if last_name.trim().is_empty() {
+        None
+    } else {
+        Some(last_name.trim())
+    };
 
     let student_result = match sqlx::query_as::<_, (i64,)>(
         "INSERT INTO students (display_name, first_name, last_name, owner_id, pin, birthdate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
@@ -1479,13 +1484,12 @@ pub async fn class_get_student_pin(
         return Err("cannot manage student".to_string());
     }
 
-    let result: Option<(Option<String>,)> = sqlx::query_as(
-        "SELECT pin FROM students WHERE id = $1"
-    )
-    .bind(student_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let result: Option<(Option<String>,)> =
+        sqlx::query_as("SELECT pin FROM students WHERE id = $1")
+            .bind(student_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     match result {
         Some((pin,)) => Ok(pin),
@@ -1508,14 +1512,12 @@ pub async fn class_set_student_pin(
         return Ok(0);
     }
 
-    let result = sqlx::query(
-        "UPDATE students SET pin = $1 WHERE id = $2"
-    )
-    .bind(pin)
-    .bind(student_id)
-    .execute(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let result = sqlx::query("UPDATE students SET pin = $1 WHERE id = $2")
+        .bind(pin)
+        .bind(student_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(result.rows_affected())
 }
@@ -1525,13 +1527,25 @@ mod tests {
     #[tokio::test]
     async fn mutations_without_pool_return_err() {
         assert!(super::create_class(&None, "Test", 1).await.is_err());
-        assert!(super::update_class(&None, 1, "Updated", Some(1)).await.is_err());
+        assert!(super::update_class(&None, 1, "Updated", Some(1))
+            .await
+            .is_err());
         assert!(super::delete_class(&None, 1, Some(1)).await.is_err());
         assert!(super::add_student(&None, 1, "Student", 1).await.is_err());
         assert!(super::remove_student(&None, 1, Some(1)).await.is_err());
-        assert!(super::update_student(&None, 1, Some("Updated"), None, None, None, Some(1)).await.is_err());
-        assert!(super::create_student(&None, "Student", "", &[], 1, Some(1), None, "1234").await.is_err());
-        assert!(super::set_class_active(&None, 1, false, Some(1)).await.is_err());
+        assert!(
+            super::update_student(&None, 1, Some("Updated"), None, None, None, Some(1))
+                .await
+                .is_err()
+        );
+        assert!(
+            super::create_student(&None, "Student", "", &[], 1, Some(1), None, "1234")
+                .await
+                .is_err()
+        );
+        assert!(super::set_class_active(&None, 1, false, Some(1))
+            .await
+            .is_err());
         assert!(
             super::bulk_set_class_active(&None, vec![1], false, Some(1), super::BULK_MAX_IDS)
                 .await
@@ -1542,12 +1556,18 @@ mod tests {
                 .await
                 .is_err()
         );
-        assert!(super::set_student_active(&None, 1, false, Some(1)).await.is_err());
-        assert!(
-            super::bulk_set_student_active(&None, vec![1], false, Some(1), super::BULK_MAX_IDS)
-                .await
-                .is_err()
-        );
+        assert!(super::set_student_active(&None, 1, false, Some(1))
+            .await
+            .is_err());
+        assert!(super::bulk_set_student_active(
+            &None,
+            vec![1],
+            false,
+            Some(1),
+            super::BULK_MAX_IDS
+        )
+        .await
+        .is_err());
         assert!(
             super::bulk_delete_students(&None, vec![1], Some(1), super::BULK_MAX_IDS)
                 .await
@@ -1574,8 +1594,12 @@ mod tests {
 
     #[tokio::test]
     async fn new_functions_without_pool_return_err() {
-        assert!(super::move_student_to_class(&None, 1, 1, Some(1)).await.is_err());
-        assert!(super::remove_student_from_class(&None, 1, 1, Some(1)).await.is_err());
+        assert!(super::move_student_to_class(&None, 1, 1, Some(1))
+            .await
+            .is_err());
+        assert!(super::remove_student_from_class(&None, 1, 1, Some(1))
+            .await
+            .is_err());
         assert!(super::get_student_classes(&None, 1, Some(1)).await.is_err());
         assert!(super::list_all_students(&None, Some(1)).await.is_err());
         assert!(super::can_manage_student(&None, 1, Some(1)).await.is_err());

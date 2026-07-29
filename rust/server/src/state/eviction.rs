@@ -1,7 +1,7 @@
-use razzoozle_protocol::player::Player;
 use razzoozle_engine::state::GamePhase;
-use socketioxide::SocketIo;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::player::Player;
+use socketioxide::SocketIo;
 use tracing::warn;
 
 use super::{get_now_ms, GameRegistry};
@@ -54,8 +54,12 @@ impl GameRegistry {
                 warn!(
                     "Evicting abandoned RUNNING game: gameId={}, inviteCode={}, phase={:?}, \
                      manager_socket_id={}, last_activity_ms={}, now_ms={}",
-                    game.game_id, game.invite_code, game.engine.phase,
-                    game.manager_socket_id, game.last_activity_ms, now
+                    game.game_id,
+                    game.invite_code,
+                    game.engine.phase,
+                    game.manager_socket_id,
+                    game.last_activity_ms,
+                    now
                 );
                 abandoned_running_games.push(game.game_id.clone());
             } else if game.has_connected_players() {
@@ -118,7 +122,6 @@ impl GameRegistry {
         false
     }
 
-
     /// `lobby_hard_remove`: caller-controlled override for the ShowRoom
     /// branch. Transport disconnects (#83) pass false — a flaky connection
     /// must keep the roster slot in the lobby too, not just mid-game.
@@ -150,14 +153,14 @@ impl GameRegistry {
                     game.players.remove(player_index);
                     game.engine.players.retain(|player| player.id != socket_id);
                     game.engine.current_answers.remove(&client_id);
-                    game.engine
-                        .answer_order
-                        .retain(|cid| cid != &client_id);
+                    game.engine.answer_order.retain(|cid| cid != &client_id);
                     true
                 } else {
                     // Keep slot: mid-game, or lobby transport-disconnect grace (#83).
                     game.players[player_index].connected = false;
-                    if let Some(eng_pos) = game.engine.players.iter().position(|p| p.id == socket_id) {
+                    if let Some(eng_pos) =
+                        game.engine.players.iter().position(|p| p.id == socket_id)
+                    {
                         game.engine.players[eng_pos].connected = false;
                     }
                     false
@@ -186,7 +189,11 @@ impl GameRegistry {
     /// game_id/manager_socket_id a caller needs to broadcast MANAGER.NEW_PLAYER
     /// / PLAYER.UPDATE_LEADERBOARD (the Game is locked here anyway, so reading
     /// them out costs nothing extra). No broadcast happens here.
-    pub fn set_player_team(&self, socket_id: &str, team_id: String) -> Option<(Player, String, String)> {
+    pub fn set_player_team(
+        &self,
+        socket_id: &str,
+        team_id: String,
+    ) -> Option<(Player, String, String)> {
         for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 
@@ -208,7 +215,11 @@ impl GameRegistry {
     /// Updates the player's avatar and returns their updated snapshot plus the
     /// game_id/manager_socket_id (see set_player_team above). No broadcast
     /// happens here.
-    pub fn set_player_avatar(&self, socket_id: &str, avatar: String) -> Option<(Player, String, String)> {
+    pub fn set_player_avatar(
+        &self,
+        socket_id: &str,
+        avatar: String,
+    ) -> Option<(Player, String, String)> {
         for game_ref in self.socket_lookup_candidates(socket_id) {
             let mut game = game_ref.lock().unwrap();
 

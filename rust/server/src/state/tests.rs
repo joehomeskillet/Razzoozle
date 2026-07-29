@@ -29,22 +29,25 @@ impl ConfigPathGuard {
     /// Serializes with other tests via mutex to prevent CONFIG_PATH races.
     fn acquire() -> std::io::Result<Self> {
         use std::path::PathBuf;
-        
+
         // Acquire lock FIRST, before any env operations
         let _lock = TEST_CONFIG_PATH_LOCK.lock().unwrap();
-        
+
         // Preserve original CONFIG_PATH (may be unset)
         let prev_config_path = std::env::var("CONFIG_PATH").ok();
-        
+
         // Create unique test directory: /tmp/razzoozle-test-{uuid}/
-        let test_dir = std::env::temp_dir()
-            .join(format!("razzoozle-test-{}", uuid::Uuid::new_v4()));
+        let test_dir =
+            std::env::temp_dir().join(format!("razzoozle-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&test_dir)?;
-        
+
         // Set CONFIG_PATH to our isolated directory
         std::env::set_var("CONFIG_PATH", test_dir.to_string_lossy().as_ref());
-        
-        Ok(ConfigPathGuard { _lock, prev_config_path })
+
+        Ok(ConfigPathGuard {
+            _lock,
+            prev_config_path,
+        })
     }
 }
 
@@ -73,16 +76,28 @@ fn test_validate_username() {
     assert!(GameRegistry::validate_username("verylongusernamethatexceedsmax").is_err());
 
     // CJK characters: 3 chars (9 bytes) — should fail (too short)
-    assert!(GameRegistry::validate_username("中文名").is_err(), "3 CJK chars should be too short");
+    assert!(
+        GameRegistry::validate_username("中文名").is_err(),
+        "3 CJK chars should be too short"
+    );
 
     // CJK characters: 4 chars (12 bytes) — should pass (exactly min)
-    assert!(GameRegistry::validate_username("中文名字").is_ok(), "4 CJK chars should be valid");
+    assert!(
+        GameRegistry::validate_username("中文名字").is_ok(),
+        "4 CJK chars should be valid"
+    );
 
     // CJK characters: 20 chars (60 bytes) — should pass (exactly max)
-    assert!(GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字").is_ok(), "20 CJK chars should be valid");
+    assert!(
+        GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字").is_ok(),
+        "20 CJK chars should be valid"
+    );
 
     // CJK characters: 21 chars (63 bytes) — should fail (too long)
-    assert!(GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字中").is_err(), "21 CJK chars should be too long");
+    assert!(
+        GameRegistry::validate_username("中文名字中文名字中文名字中文名字中文名字中").is_err(),
+        "21 CJK chars should be too long"
+    );
 }
 
 #[test]
@@ -94,7 +109,10 @@ fn test_validate_avatar() {
 
     // SVG too large (exceeds 64KB max)
     let large_svg = format!("data:image/svg+xml;{}", "x".repeat(66000));
-    assert!(GameRegistry::validate_avatar(&large_svg).is_err(), "Large SVG should be rejected");
+    assert!(
+        GameRegistry::validate_avatar(&large_svg).is_err(),
+        "Large SVG should be rejected"
+    );
 }
 
 #[test]
@@ -175,7 +193,8 @@ fn test_active_game_cap() {
             format!("socket-{}", i),
             Some("test-quiz".to_string()),
             format!("client-{}", i),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         );
         assert!(result.is_ok(), "Game {} creation failed", i);
@@ -186,9 +205,10 @@ fn test_active_game_cap() {
         "socket-overflow".to_string(),
         Some("test-quiz".to_string()),
         "client-overflow".to_string(),
-        None, false,
-            serde_json::json!({"enabled": false, "clockSync": true}),
-        );
+        None,
+        false,
+        serde_json::json!({"enabled": false, "clockSync": true}),
+    );
     assert!(result.is_err(), "101st game should fail");
     assert_eq!(result.unwrap_err(), "errors:game.serverBusy");
 }
@@ -205,7 +225,14 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
     let mut registry = rt.block_on(GameRegistry::new(&None, empty_quiz));
 
     // Missing quizzId
-    let result = registry.create_game("socket-1".to_string(), None, "client-1".to_string(), None, false, serde_json::json!({"enabled": false, "clockSync": true}));
+    let result = registry.create_game(
+        "socket-1".to_string(),
+        None,
+        "client-1".to_string(),
+        None,
+        false,
+        serde_json::json!({"enabled": false, "clockSync": true}),
+    );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // Empty-string quizzId
@@ -213,9 +240,10 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         "socket-2".to_string(),
         Some(String::new()),
         "client-2".to_string(),
-        None, false,
-            serde_json::json!({"enabled": false, "clockSync": true}),
-        );
+        None,
+        false,
+        serde_json::json!({"enabled": false, "clockSync": true}),
+    );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // Unknown quizzId (not registered)
@@ -223,9 +251,10 @@ fn test_create_game_rejects_missing_or_unknown_quiz_id() {
         "socket-3".to_string(),
         Some("does-not-exist".to_string()),
         "client-3".to_string(),
-        None, false,
-            serde_json::json!({"enabled": false, "clockSync": true}),
-        );
+        None,
+        false,
+        serde_json::json!({"enabled": false, "clockSync": true}),
+    );
     assert_eq!(result.unwrap_err(), "errors:quizz.notFound");
 
     // None of the above should have created a game (parity with Node:
@@ -250,7 +279,12 @@ fn test_add_player_rejects_duplicate_client_id() {
     );
 
     assert!(game
-        .add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None)
+        .add_player(
+            "socket-1".to_string(),
+            "client-1".to_string(),
+            "Alice".to_string(),
+            None
+        )
         .is_ok());
 
     let result = game.add_player(
@@ -260,7 +294,11 @@ fn test_add_player_rejects_duplicate_client_id() {
         None,
     );
     assert_eq!(result.unwrap_err(), "errors:game.playerAlreadyConnected");
-    assert_eq!(game.players.len(), 1, "duplicate join must not create a second player record");
+    assert_eq!(
+        game.players.len(),
+        1,
+        "duplicate join must not create a second player record"
+    );
 }
 
 #[test]
@@ -280,7 +318,8 @@ fn test_evict_stale_games_recovers_poisoned_mutex() {
             "manager-1".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -332,7 +371,8 @@ fn test_evict_stale_games_skips_game_with_connected_player() {
             "manager-1".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -340,7 +380,13 @@ fn test_evict_stale_games_skips_game_with_connected_player() {
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let mut game = game_ref.lock().unwrap();
-        game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None).unwrap();
+        game.add_player(
+            "socket-1".to_string(),
+            "client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
         // add_player always sets connected=true — this player is still there,
         // just idle in the lobby.
         game.last_activity_ms = 0; // force is_stale true
@@ -372,7 +418,8 @@ fn test_game_eviction_clears_players() {
             "manager-1".to_string(),
             Some("test-quiz".to_string()),
             "manager-client-1".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -384,8 +431,20 @@ fn test_game_eviction_clears_players() {
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let mut game = game_ref.lock().unwrap();
-        game.add_player("socket-1".to_string(), "client-1".to_string(), "Alice".to_string(), None).unwrap();
-        game.add_player("socket-2".to_string(), "client-2".to_string(), "Bob".to_string(), None).unwrap();
+        game.add_player(
+            "socket-1".to_string(),
+            "client-1".to_string(),
+            "Alice".to_string(),
+            None,
+        )
+        .unwrap();
+        game.add_player(
+            "socket-2".to_string(),
+            "client-2".to_string(),
+            "Bob".to_string(),
+            None,
+        )
+        .unwrap();
         for p in game.players.iter_mut() {
             p.connected = false;
         }
@@ -396,7 +455,10 @@ fn test_game_eviction_clears_players() {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
         assert_eq!(game.players.len(), 2, "Should have 2 players");
-        assert!(!game.has_connected_players(), "setup: both players must be disconnected");
+        assert!(
+            !game.has_connected_players(),
+            "setup: both players must be disconnected"
+        );
     }
 
     // Mark game as stale by setting old activity timestamp
@@ -410,7 +472,10 @@ fn test_game_eviction_clears_players() {
     registry.evict_stale_games(&make_socket_io());
 
     // Verify game is gone
-    assert!(registry.get_game_by_id(&game_id).is_none(), "Game should be evicted");
+    assert!(
+        registry.get_game_by_id(&game_id).is_none(),
+        "Game should be evicted"
+    );
     assert_eq!(registry.game_count(), 0, "No games should remain");
 }
 
@@ -420,13 +485,25 @@ fn test_per_ip_solo_rate_limit() {
 
     // IP 1 should be allowed up to SOLO_RATE_MAX_PER_CLIENT calls
     for _ in 0..SOLO_RATE_MAX_PER_CLIENT {
-        assert!(rate_limiter.check_solo_rate("192.168.1.1"), "IP1 should be allowed");
+        assert!(
+            rate_limiter.check_solo_rate("192.168.1.1"),
+            "IP1 should be allowed"
+        );
     }
-    assert!(!rate_limiter.check_solo_rate("192.168.1.1"), "IP1 should be throttled");
+    assert!(
+        !rate_limiter.check_solo_rate("192.168.1.1"),
+        "IP1 should be throttled"
+    );
 
     // IP 2 should have independent limit
-    assert!(rate_limiter.check_solo_rate("192.168.1.2"), "IP2 should be allowed");
-    assert!(rate_limiter.check_solo_rate("192.168.1.2"), "IP2 should be allowed");
+    assert!(
+        rate_limiter.check_solo_rate("192.168.1.2"),
+        "IP2 should be allowed"
+    );
+    assert!(
+        rate_limiter.check_solo_rate("192.168.1.2"),
+        "IP2 should be allowed"
+    );
 }
 
 #[test]
@@ -435,12 +512,21 @@ fn test_per_ip_auth_throttle() {
 
     // IP 1: 10 failures should trigger throttle on 11th attempt
     for _ in 0..AUTH_RATE_MAX_PER_CLIENT {
-        assert!(!rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"), "Should not be throttled yet");
+        assert!(
+            !rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"),
+            "Should not be throttled yet"
+        );
     }
-    assert!(rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"), "Should be throttled now");
+    assert!(
+        rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"),
+        "Should be throttled now"
+    );
 
     // IP 2 should have independent limit
-    assert!(!rate_limiter.record_auth_failure_and_check_throttle("192.168.1.2"), "IP2 should not be throttled");
+    assert!(
+        !rate_limiter.record_auth_failure_and_check_throttle("192.168.1.2"),
+        "IP2 should not be throttled"
+    );
 }
 
 #[tokio::test]
@@ -454,7 +540,8 @@ async fn test_empty_grace_mark_reactivate_cleanup() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -615,23 +702,15 @@ async fn test_bot_manager_schedule_answers() {
 
     let bot = test_bot_player(bot_client_id);
     bot_manager
-        .schedule_answers(
-            "game-bot".to_string(),
-            vec![bot],
-            question,
-            game_ref,
-            io,
-        )
+        .schedule_answers("game-bot".to_string(), vec![bot], question, game_ref, io)
         .await;
 
     bot_manager.cancel_pending(Some(bot_client_id)).await;
 }
 
-
 #[tokio::test]
 async fn test_load_snapshot_restores_games_by_invite_code() {
-    let _guard = ConfigPathGuard::acquire()
-        .expect("Failed to create test config directory");
+    let _guard = ConfigPathGuard::acquire().expect("Failed to create test config directory");
 
     let quiz = test_quiz();
     let mut registry = GameRegistry::new(&None, quiz.clone()).await;
@@ -642,7 +721,8 @@ async fn test_load_snapshot_restores_games_by_invite_code() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -688,7 +768,8 @@ async fn test_showroom_transport_disconnect_keeps_slot() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -706,22 +787,41 @@ async fn test_showroom_transport_disconnect_keeps_slot() {
     }
 
     let result = registry.mark_player_disconnected("player-socket", false);
-    assert!(result.is_some(), "mark_player_disconnected should return Some");
+    assert!(
+        result.is_some(),
+        "mark_player_disconnected should return Some"
+    );
 
     let (ret_game_id, ret_manager_socket_id, removed_socket_id, total_players, removed) =
         result.unwrap();
 
     assert_eq!(ret_game_id, game_id, "game_id should match");
-    assert_eq!(ret_manager_socket_id, "manager-socket", "manager_socket_id should match");
-    assert_eq!(removed_socket_id, "player-socket", "third element should be player socket_id");
+    assert_eq!(
+        ret_manager_socket_id, "manager-socket",
+        "manager_socket_id should match"
+    );
+    assert_eq!(
+        removed_socket_id, "player-socket",
+        "third element should be player socket_id"
+    );
     assert_eq!(total_players, 1, "player should still be in roster");
-    assert_eq!(removed, false, "removed flag should be false for keep-slot disconnect");
+    assert_eq!(
+        removed, false,
+        "removed flag should be false for keep-slot disconnect"
+    );
 
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
-        assert_eq!(game.players.len(), 1, "player should still be in players list");
-        assert_eq!(game.players[0].connected, false, "player should be marked disconnected");
+        assert_eq!(
+            game.players.len(),
+            1,
+            "player should still be in players list"
+        );
+        assert_eq!(
+            game.players[0].connected, false,
+            "player should be marked disconnected"
+        );
         assert_eq!(
             game.players[0].id, "player-socket",
             "player socket_id should match"
@@ -740,7 +840,8 @@ async fn test_showroom_leave_hard_removes() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -758,13 +859,19 @@ async fn test_showroom_leave_hard_removes() {
     }
 
     let result = registry.mark_player_disconnected("player-socket", true);
-    assert!(result.is_some(), "mark_player_disconnected should return Some");
+    assert!(
+        result.is_some(),
+        "mark_player_disconnected should return Some"
+    );
 
     let (ret_game_id, ret_manager_socket_id, removed_socket_id, total_players, removed) =
         result.unwrap();
 
     assert_eq!(ret_game_id, game_id, "game_id should match");
-    assert_eq!(ret_manager_socket_id, "manager-socket", "manager_socket_id should match");
+    assert_eq!(
+        ret_manager_socket_id, "manager-socket",
+        "manager_socket_id should match"
+    );
     assert_eq!(
         removed_socket_id, "player-socket",
         "third element should be player SOCKET id, not client_id (regression test #84)"
@@ -776,7 +883,11 @@ async fn test_showroom_leave_hard_removes() {
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
-        assert_eq!(game.players.len(), 0, "player should be removed from players list");
+        assert_eq!(
+            game.players.len(),
+            0,
+            "player should be removed from players list"
+        );
     }
 }
 
@@ -791,7 +902,8 @@ async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -811,7 +923,10 @@ async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
     }
 
     let result = registry.mark_player_disconnected("player-socket", true);
-    assert!(result.is_some(), "mark_player_disconnected should return Some");
+    assert!(
+        result.is_some(),
+        "mark_player_disconnected should return Some"
+    );
 
     let (_ret_game_id, _ret_manager_socket_id, _removed_socket_id, total_players, removed) =
         result.unwrap();
@@ -825,8 +940,15 @@ async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
-        assert_eq!(game.players.len(), 1, "player should still be in players list");
-        assert_eq!(game.players[0].connected, false, "player should be marked disconnected");
+        assert_eq!(
+            game.players.len(),
+            1,
+            "player should still be in players list"
+        );
+        assert_eq!(
+            game.players[0].connected, false,
+            "player should be marked disconnected"
+        );
     }
 }
 
@@ -841,7 +963,8 @@ async fn test_disconnect_cleans_socket_index() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -862,8 +985,15 @@ async fn test_disconnect_cleans_socket_index() {
 
     let game_ref = registry.get_game_by_id(&game_id).unwrap();
     let game = game_ref.lock().unwrap();
-    assert_eq!(game.players.len(), 1, "player slot kept after keep-slot disconnect");
-    assert_eq!(game.players[0].connected, false, "player marked disconnected");
+    assert_eq!(
+        game.players.len(),
+        1,
+        "player slot kept after keep-slot disconnect"
+    );
+    assert_eq!(
+        game.players[0].connected, false,
+        "player marked disconnected"
+    );
 }
 
 #[tokio::test]
@@ -877,7 +1007,8 @@ async fn test_keep_slot_player_still_findable_by_client_id() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -899,17 +1030,17 @@ async fn test_keep_slot_player_still_findable_by_client_id() {
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
         let game = game_ref.lock().unwrap();
-        let player = game
-            .players
-            .iter()
-            .find(|p| p.client_id == "player-client");
+        let player = game.players.iter().find(|p| p.client_id == "player-client");
         assert!(
             player.is_some(),
             "player should be findable by client_id after keep-slot disconnect"
         );
         let player = player.unwrap();
         assert_eq!(player.id, "player-socket", "socket_id should still match");
-        assert_eq!(player.connected, false, "player should be marked disconnected");
+        assert_eq!(
+            player.connected, false,
+            "player should be marked disconnected"
+        );
     }
 }
 
@@ -926,7 +1057,8 @@ async fn test_evict_running_abandoned_game_with_stale_last_activity() {
             "manager-socket-dead".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -970,7 +1102,8 @@ async fn test_dont_evict_running_game_with_fresh_activity() {
             "manager-socket-dead".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -1033,7 +1166,8 @@ async fn test_evict_running_abandoned_even_with_connected_players() {
             "manager-socket-dead".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -1061,7 +1195,10 @@ async fn test_evict_running_abandoned_even_with_connected_players() {
         // Mark as stale
         game.last_activity_ms = 0;
         // Both players still connected (default from add_player)
-        assert!(game.has_connected_players(), "setup: should have connected players");
+        assert!(
+            game.has_connected_players(),
+            "setup: should have connected players"
+        );
     }
 
     let io = make_socket_io();
@@ -1087,7 +1224,8 @@ async fn test_kick_player_cleans_socket_to_game_index() {
             "manager-socket".to_string(),
             Some("test-quiz".to_string()),
             "manager-client".to_string(),
-            None, false,
+            None,
+            false,
             serde_json::json!({"enabled": false, "clockSync": true}),
         )
         .unwrap();
@@ -1189,7 +1327,10 @@ fn test_player_cap_allows_join_under_configured_limit() {
         )
         .unwrap();
     }
-    assert!(!game.is_at_player_cap(), "2 players with cap 3 must still allow join");
+    assert!(
+        !game.is_at_player_cap(),
+        "2 players with cap 3 must still allow join"
+    );
 }
 
 #[test]
@@ -1426,8 +1567,8 @@ fn test_participant_cap_snapshot_stores_clamped_value_not_raw_client_value() {
 
 #[test]
 fn test_participant_cap_snapshot_roundtrip_preserves_value() {
+    use crate::state::snapshot::{game_from_snapshot, game_to_snapshot};
     use razzoozle_protocol::game::SelectedModes;
-    use crate::state::snapshot::{game_to_snapshot, game_from_snapshot};
 
     let empty_quiz = Quizz {
         subject: "Test".to_string(),
@@ -1460,7 +1601,8 @@ fn test_participant_cap_snapshot_roundtrip_preserves_value() {
 
     // Verify snapshot contains the participant_cap
     assert_eq!(
-        snapshot_json.get("selectedModes")
+        snapshot_json
+            .get("selectedModes")
             .and_then(|m| m.get("participantCap"))
             .and_then(|p| p.as_i64()),
         Some(50),
@@ -1468,8 +1610,8 @@ fn test_participant_cap_snapshot_roundtrip_preserves_value() {
     );
 
     // Read from snapshot
-    let restored_game = game_from_snapshot(&snapshot_json)
-        .expect("snapshot restoration should not fail");
+    let restored_game =
+        game_from_snapshot(&snapshot_json).expect("snapshot restoration should not fail");
 
     // Verify roundtrip: selected_modes.participant_cap restored
     assert_eq!(
@@ -1502,8 +1644,8 @@ fn test_participant_cap_snapshot_roundtrip_preserves_value() {
     let snapshot_json2 = game_to_snapshot(&game2);
 
     // Read from snapshot
-    let restored_game2 = game_from_snapshot(&snapshot_json2)
-        .expect("snapshot restoration should not fail");
+    let restored_game2 =
+        game_from_snapshot(&snapshot_json2).expect("snapshot restoration should not fail");
 
     // Verify clamped value round-trips correctly
     assert_eq!(

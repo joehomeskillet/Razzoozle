@@ -3,11 +3,11 @@
 use super::super::HandlerCtx;
 use crate::bot::BotManager;
 use crate::is_game_host;
-use razzoozle_protocol::constants;
-use std::sync::Arc;
 use razzoozle_engine::state::GamePhase;
+use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashSet;
+use std::sync::Arc;
 use tracing::warn;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {

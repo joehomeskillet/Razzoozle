@@ -96,7 +96,11 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
                 let classes = db::get_classes(&ctx.db_pool, me).await;
 
                 socket.emit(constants::class::DATA, &classes).ok();
@@ -126,7 +130,9 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                 let name = match payload.get("name").and_then(|v| v.as_str()) {
                     Some(n) if !n.is_empty() => n,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidName")
+                            .ok();
                         return;
                     }
                 };
@@ -137,11 +143,15 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             "id": id,
                             "name": name,
                         });
-                        socket.emit(constants::class::CREATE_SUCCESS, &class_obj).ok();
+                        socket
+                            .emit(constants::class::CREATE_SUCCESS, &class_obj)
+                            .ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to create class: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.createFailed").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.createFailed")
+                            .ok();
                     }
                 }
             });
@@ -170,7 +180,9 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                 let class_id = match payload.get("id").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidId")
+                            .ok();
                         return;
                     }
                 };
@@ -178,12 +190,18 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                 let name = match payload.get("name").and_then(|v| v.as_str()) {
                     Some(n) if !n.is_empty() => n,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidName")
+                            .ok();
                         return;
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::update_class(&ctx.db_pool, class_id, name, me).await {
                     Ok(0) => {
@@ -192,11 +210,15 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::UPDATE_SUCCESS, &serde_json::json!({})).ok();
+                        socket
+                            .emit(constants::class::UPDATE_SUCCESS, &serde_json::json!({}))
+                            .ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to update class: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.updateFailed").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.updateFailed")
+                            .ok();
                     }
                 }
             });
@@ -273,7 +295,9 @@ fn register_set_active(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if payload.id <= 0 {
-                    socket.emit(constants::class::ERROR, "errors:class.invalidId").ok();
+                    socket
+                        .emit(constants::class::ERROR, "errors:class.invalidId")
+                        .ok();
                     return;
                 }
 
@@ -475,7 +499,9 @@ fn register_add_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let class_id = match payload.get("classId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidClassId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidClassId")
+                            .ok();
                         return;
                     }
                 };
@@ -483,28 +509,40 @@ fn register_add_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let display_name = match payload.get("displayName").and_then(|v| v.as_str()) {
                     Some(n) if !n.is_empty() => n,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidName").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidName")
+                            .ok();
                         return;
                     }
                 };
 
                 // Verify class ownership before adding student
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
                 match db::get_class(&ctx.db_pool, class_id, me).await {
                     Ok(_) => {
                         // Class exists and is owned
-                        match db::add_student(&ctx.db_pool, class_id, display_name, user.user_id).await {
+                        match db::add_student(&ctx.db_pool, class_id, display_name, user.user_id)
+                            .await
+                        {
                             Ok(student_id) => {
                                 let student_obj = serde_json::json!({
                                     "id": student_id,
                                     "displayName": display_name,
                                     "classId": class_id,
                                 });
-                                socket.emit(constants::class::STUDENT_ADDED, &student_obj).ok();
+                                socket
+                                    .emit(constants::class::STUDENT_ADDED, &student_obj)
+                                    .ok();
                             }
                             Err(e) => {
                                 eprintln!("Failed to add student: {}", e);
-                                socket.emit(constants::class::ERROR, "errors:class.addStudentFailed").ok();
+                                socket
+                                    .emit(constants::class::ERROR, "errors:class.addStudentFailed")
+                                    .ok();
                             }
                         }
                     }
@@ -537,7 +575,11 @@ fn register_remove_student(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::remove_student(&ctx.db_pool, student_id, me).await {
                     Ok(0) => {
@@ -546,11 +588,18 @@ fn register_remove_student(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Ok(_) => {
-                        socket.emit(constants::class::STUDENT_REMOVED, &serde_json::json!({"studentId": student_id})).ok();
+                        socket
+                            .emit(
+                                constants::class::STUDENT_REMOVED,
+                                &serde_json::json!({"studentId": student_id}),
+                            )
+                            .ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to remove student: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.removeStudentFailed").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.removeStudentFailed")
+                            .ok();
                     }
                 }
             });
@@ -579,39 +628,73 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let student_id = match payload.get("id").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidId")
+                            .ok();
                         return;
                     }
                 };
 
-                let display_name = payload.get("displayName").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
-                let first_name = payload.get("firstName").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
+                let display_name = payload
+                    .get("displayName")
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty());
+                let first_name = payload
+                    .get("firstName")
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty());
                 let last_name = payload.get("lastName").and_then(|v| v.as_str());
 
                 // Addendum: birthdate is optional here too — absent/empty means
                 // "not touched by this update" (same COALESCE semantics as
                 // first_name/last_name), so it's only parsed+validated when present.
-                let birthdate = match payload.get("birthdate").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
-                    Some(date_str) => match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                let birthdate = match payload
+                    .get("birthdate")
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty())
+                {
+                    Some(date_str) => match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                    {
                         Ok(d) => {
                             if d > chrono::Utc::now().date_naive() {
-                                tracing::warn!("class:updateStudent rejected: birthdate {} is in the future", d);
-                                socket.emit(constants::class::ERROR, "errors:class.birthdateInFuture").ok();
+                                tracing::warn!(
+                                    "class:updateStudent rejected: birthdate {} is in the future",
+                                    d
+                                );
+                                socket
+                                    .emit(constants::class::ERROR, "errors:class.birthdateInFuture")
+                                    .ok();
                                 return;
                             }
                             Some(d)
                         }
                         Err(_) => {
-                            socket.emit(constants::class::ERROR, "errors:class.invalidBirthdate").ok();
+                            socket
+                                .emit(constants::class::ERROR, "errors:class.invalidBirthdate")
+                                .ok();
                             return;
                         }
                     },
                     None => None,
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
-                match db::update_student(&ctx.db_pool, student_id, display_name, first_name, last_name, birthdate, me).await {
+                match db::update_student(
+                    &ctx.db_pool,
+                    student_id,
+                    display_name,
+                    first_name,
+                    last_name,
+                    birthdate,
+                    me,
+                )
+                .await
+                {
                     Ok(0) => {
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
@@ -628,13 +711,16 @@ fn register_update_student(socket: &SocketRef, ctx: HandlerCtx) {
                             "lastName": last_name.filter(|s| !s.is_empty())
                         });
                         if let Some(d) = birthdate {
-                            event["birthdate"] = serde_json::json!(d.format("%Y-%m-%d").to_string());
+                            event["birthdate"] =
+                                serde_json::json!(d.format("%Y-%m-%d").to_string());
                         }
                         socket.emit(constants::class::STUDENT_UPDATED, &event).ok();
                     }
                     Err(e) => {
                         eprintln!("Failed to update student: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.updateStudentFailed").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.updateStudentFailed")
+                            .ok();
                     }
                 }
             });
@@ -660,13 +746,22 @@ fn register_get_students(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
                 let students = db::get_students(&ctx.db_pool, class_id, me).await;
 
-                socket.emit(constants::class::STUDENTS_DATA, &serde_json::json!({
-                    "classId": class_id,
-                    "students": students,
-                })).ok();
+                socket
+                    .emit(
+                        constants::class::STUDENTS_DATA,
+                        &serde_json::json!({
+                            "classId": class_id,
+                            "students": students,
+                        }),
+                    )
+                    .ok();
             });
         }
     });
@@ -694,7 +789,9 @@ fn register_move_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidStudentId")
+                            .ok();
                         return;
                     }
                 };
@@ -702,12 +799,18 @@ fn register_move_student(socket: &SocketRef, ctx: HandlerCtx) {
                 let class_id = match payload.get("classId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidClassId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidClassId")
+                            .ok();
                         return;
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::move_student_to_class(&ctx.db_pool, student_id, class_id, me).await {
                     Ok(()) => {
@@ -715,19 +818,30 @@ fn register_move_student(socket: &SocketRef, ctx: HandlerCtx) {
                         match db::get_student_classes(&ctx.db_pool, student_id, me).await {
                             Ok(classes) => {
                                 // Find the joined_at for the target class
-                                if let Some(class) = classes.iter().find(|c| c.get("id").and_then(|v| v.as_i64()) == Some(class_id)) {
-                                    if let Some(joined_at) = class.get("joinedAt").and_then(|v| v.as_str()) {
-                                        socket.emit(constants::class::STUDENT_MOVED, &serde_json::json!({
-                                            "studentId": student_id,
-                                            "classId": class_id,
-                                            "joinedAt": joined_at,
-                                        })).ok();
+                                if let Some(class) = classes.iter().find(|c| {
+                                    c.get("id").and_then(|v| v.as_i64()) == Some(class_id)
+                                }) {
+                                    if let Some(joined_at) =
+                                        class.get("joinedAt").and_then(|v| v.as_str())
+                                    {
+                                        socket
+                                            .emit(
+                                                constants::class::STUDENT_MOVED,
+                                                &serde_json::json!({
+                                                    "studentId": student_id,
+                                                    "classId": class_id,
+                                                    "joinedAt": joined_at,
+                                                }),
+                                            )
+                                            .ok();
                                     }
                                 }
                             }
                             Err(e) => {
                                 tracing::warn!("class:moveStudent failed to fetch classes: {}", e);
-                                socket.emit(constants::class::ERROR, "errors:class.moveStudentFailed").ok();
+                                socket
+                                    .emit(constants::class::ERROR, "errors:class.moveStudentFailed")
+                                    .ok();
                             }
                         }
                     }
@@ -764,7 +878,9 @@ fn register_remove_from_class(socket: &SocketRef, ctx: HandlerCtx) {
                 let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidStudentId")
+                            .ok();
                         return;
                     }
                 };
@@ -772,20 +888,31 @@ fn register_remove_from_class(socket: &SocketRef, ctx: HandlerCtx) {
                 let class_id = match payload.get("classId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidClassId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidClassId")
+                            .ok();
                         return;
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::remove_student_from_class(&ctx.db_pool, student_id, class_id, me).await {
                     Ok(student_deleted) => {
-                        socket.emit(constants::class::REMOVED_FROM_CLASS, &serde_json::json!({
-                            "studentId": student_id,
-                            "classId": class_id,
-                            "studentDeleted": student_deleted,
-                        })).ok();
+                        socket
+                            .emit(
+                                constants::class::REMOVED_FROM_CLASS,
+                                &serde_json::json!({
+                                    "studentId": student_id,
+                                    "classId": class_id,
+                                    "studentDeleted": student_deleted,
+                                }),
+                            )
+                            .ok();
                     }
                     Err(e) => {
                         tracing::warn!("class:removeFromClass failed: {}", e);
@@ -820,23 +947,39 @@ fn register_student_classes(socket: &SocketRef, ctx: HandlerCtx) {
                 let student_id = match payload.get("studentId").and_then(|v| v.as_i64()) {
                     Some(id) => id,
                     _ => {
-                        socket.emit(constants::class::ERROR, "errors:class.invalidStudentId").ok();
+                        socket
+                            .emit(constants::class::ERROR, "errors:class.invalidStudentId")
+                            .ok();
                         return;
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::get_student_classes(&ctx.db_pool, student_id, me).await {
                     Ok(classes) => {
-                        socket.emit(constants::class::STUDENT_CLASSES_DATA, &serde_json::json!({
-                            "studentId": student_id,
-                            "classes": classes,
-                        })).ok();
+                        socket
+                            .emit(
+                                constants::class::STUDENT_CLASSES_DATA,
+                                &serde_json::json!({
+                                    "studentId": student_id,
+                                    "classes": classes,
+                                }),
+                            )
+                            .ok();
                     }
                     Err(e) => {
                         tracing::warn!("class:studentClasses failed: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.getStudentClassesFailed").ok();
+                        socket
+                            .emit(
+                                constants::class::ERROR,
+                                "errors:class.getStudentClassesFailed",
+                            )
+                            .ok();
                     }
                 }
             });
@@ -863,17 +1006,31 @@ fn register_list_all_students(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 match db::list_all_students(&ctx.db_pool, me).await {
                     Ok(students) => {
-                        socket.emit(constants::class::ALL_STUDENTS_DATA, &serde_json::json!({
-                            "students": students,
-                        })).ok();
+                        socket
+                            .emit(
+                                constants::class::ALL_STUDENTS_DATA,
+                                &serde_json::json!({
+                                    "students": students,
+                                }),
+                            )
+                            .ok();
                     }
                     Err(e) => {
                         tracing::warn!("class:listAllStudents failed: {}", e);
-                        socket.emit(constants::class::ERROR, "errors:class.listAllStudentsFailed").ok();
+                        socket
+                            .emit(
+                                constants::class::ERROR,
+                                "errors:class.listAllStudentsFailed",
+                            )
+                            .ok();
                     }
                 }
             });

@@ -39,7 +39,11 @@ fn register_list_submissions(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 let subs = db::get_submissions_full(&ctx.db_pool, me).await;
                 socket
@@ -67,14 +71,21 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract id and question from payload
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
                     Some(i) => i.to_string(),
                     None => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidId")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.invalidId",
+                            )
                             .ok();
                         return;
                     }
@@ -84,25 +95,32 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(q) if q.is_object() => q.clone(),
                     _ => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidQuestion")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.invalidQuestion",
+                            )
                             .ok();
                         return;
                     }
                 };
 
                 // Check submission exists
-                if db::get_submission_by_id(&ctx.db_pool, &id, me).await.is_none() {
+                if db::get_submission_by_id(&ctx.db_pool, &id, me)
+                    .await
+                    .is_none()
+                {
                     socket
-                        .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.notFound")
+                        .emit(
+                            constants::manager::SUBMISSION_ERROR,
+                            "errors:submission.notFound",
+                        )
                         .ok();
                     return;
                 }
 
                 // Full questionValidator parity (Node emits issue.message = i18n key)
                 if let Err(key) = validation::validate_question(&question) {
-                    socket
-                        .emit(constants::manager::SUBMISSION_ERROR, key)
-                        .ok();
+                    socket.emit(constants::manager::SUBMISSION_ERROR, key).ok();
                     return;
                 }
 
@@ -120,9 +138,7 @@ fn register_edit_submission(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Err(e) => {
-                        socket
-                            .emit(constants::manager::SUBMISSION_ERROR, &e)
-                            .ok();
+                        socket.emit(constants::manager::SUBMISSION_ERROR, &e).ok();
                     }
                 }
             });
@@ -147,28 +163,44 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract id, quizzId (optional), toCatalog (optional)
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
                     Some(i) => i.to_string(),
                     None => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidId")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.invalidId",
+                            )
                             .ok();
                         return;
                     }
                 };
 
-                let to_catalog = payload.get("toCatalog").and_then(|v| v.as_bool()).unwrap_or(false);
-                let quiz_id = payload.get("quizzId").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let to_catalog = payload
+                    .get("toCatalog")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                let quiz_id = payload
+                    .get("quizzId")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
 
                 // Fetch the submission to get the question + submittedBy
                 let submission = match db::get_submission_by_id(&ctx.db_pool, &id, me).await {
                     Some(sub) => sub,
                     None => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.notFound")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.notFound",
+                            )
                             .ok();
                         return;
                     }
@@ -177,7 +209,10 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 // Approve-to-catalog path
                 if to_catalog {
                     // Save to catalog
-                    let question = submission.get("question").cloned().unwrap_or(serde_json::json!({}));
+                    let question = submission
+                        .get("question")
+                        .cloned()
+                        .unwrap_or(serde_json::json!({}));
                     // Timestamp at handler level (Node parity: Date.now() in the handler)
                     let added_at = chrono::Utc::now();
                     match db::insert_catalog_entry(
@@ -186,7 +221,9 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         "submission",
                         added_at,
                         Some(user.user_id),
-                    ).await {
+                    )
+                    .await
+                    {
                         Ok(_) => {
                             // Update submission status to "approved" (owner-scoped)
                             let patch = serde_json::json!({ "status": "approved" });
@@ -196,20 +233,19 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
                                 Ok(_) => {
                                     socket
-                                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                                        .emit(
+                                            constants::manager::UNAUTHORIZED,
+                                            &serde_json::json!([]),
+                                        )
                                         .ok();
                                 }
                                 Err(e) => {
-                                    socket
-                                        .emit(constants::manager::SUBMISSION_ERROR, &e)
-                                        .ok();
+                                    socket.emit(constants::manager::SUBMISSION_ERROR, &e).ok();
                                 }
                             }
                         }
                         Err(e) => {
-                            socket
-                                .emit(constants::manager::SUBMISSION_ERROR, &e)
-                                .ok();
+                            socket.emit(constants::manager::SUBMISSION_ERROR, &e).ok();
                         }
                     }
                     return;
@@ -220,28 +256,34 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(qid) => qid,
                     None => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.quizzNotFound")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.quizzNotFound",
+                            )
                             .ok();
                         return;
                     }
                 };
 
                 // Build the question to append (with submittedBy preserved)
-                let mut question_to_append = submission.get("question").cloned().unwrap_or(serde_json::json!({}));
+                let mut question_to_append = submission
+                    .get("question")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({}));
                 if let Some(submitted_by) = submission.get("submittedBy").and_then(|v| v.as_str()) {
                     question_to_append["submittedBy"] = serde_json::json!(submitted_by);
                 }
 
                 // Validate before append (Node updateQuizz runs quizzValidator)
                 if let Err(key) = validation::validate_question(&question_to_append) {
-                    socket
-                        .emit(constants::manager::SUBMISSION_ERROR, key)
-                        .ok();
+                    socket.emit(constants::manager::SUBMISSION_ERROR, key).ok();
                     return;
                 }
 
                 // Append question to quiz (owner-scoped)
-                match db::append_question_to_quiz(&ctx.db_pool, &quiz_id, &question_to_append, me).await {
+                match db::append_question_to_quiz(&ctx.db_pool, &quiz_id, &question_to_append, me)
+                    .await
+                {
                     Ok(n) if n > 0 => {
                         // Update submission status to "approved" (owner-scoped)
                         let patch = serde_json::json!({ "status": "approved" });
@@ -262,9 +304,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                                     .ok();
                             }
                             Err(e) => {
-                                socket
-                                    .emit(constants::manager::SUBMISSION_ERROR, &e)
-                                    .ok();
+                                socket.emit(constants::manager::SUBMISSION_ERROR, &e).ok();
                             }
                         }
                     }
@@ -281,9 +321,7 @@ fn register_approve_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         } else {
                             e
                         };
-                        socket
-                            .emit(constants::manager::SUBMISSION_ERROR, &msg)
-                            .ok();
+                        socket.emit(constants::manager::SUBMISSION_ERROR, &msg).ok();
                     }
                 }
             });
@@ -308,14 +346,21 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract id (required)
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
                     Some(i) => i.to_string(),
                     None => {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidId")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.invalidId",
+                            )
                             .ok();
                         return;
                     }
@@ -329,7 +374,10 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                 if let Some(r) = reason {
                     if r.chars().count() > 500 {
                         socket
-                            .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.reasonTooLong")
+                            .emit(
+                                constants::manager::SUBMISSION_ERROR,
+                                "errors:submission.reasonTooLong",
+                            )
                             .ok();
                         return;
                     }
@@ -343,7 +391,10 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                         Err(_) => {
                             socket
-                                .emit(constants::manager::SUBMISSION_ERROR, "errors:submission.invalidCategory")
+                                .emit(
+                                    constants::manager::SUBMISSION_ERROR,
+                                    "errors:submission.invalidCategory",
+                                )
                                 .ok();
                             return;
                         }
@@ -372,9 +423,7 @@ fn register_reject_submission(socket: &SocketRef, ctx: HandlerCtx) {
                             .ok();
                     }
                     Err(e) => {
-                        socket
-                            .emit(constants::manager::SUBMISSION_ERROR, &e)
-                            .ok();
+                        socket.emit(constants::manager::SUBMISSION_ERROR, &e).ok();
                     }
                 }
             });

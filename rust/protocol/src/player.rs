@@ -321,10 +321,7 @@ mod tests {
                 count: 0,
             },
             reconnect_count: 1,
-            rejected: [("duplicate".to_string(), 2)]
-                .iter()
-                .cloned()
-                .collect(),
+            rejected: [("duplicate".to_string(), 2)].iter().cloned().collect(),
         };
 
         let json_str = serde_json::to_string(&snapshot).unwrap();
@@ -369,8 +366,7 @@ mod tests {
             }
         });
 
-        let payload: PlayerSelectedAnswer =
-            serde_json::from_value(legacy_json).unwrap();
+        let payload: PlayerSelectedAnswer = serde_json::from_value(legacy_json).unwrap();
 
         assert_eq!(payload.game_id, "g456");
         assert_eq!(payload.data.answer_key, Some(2));
@@ -398,7 +394,13 @@ mod tests {
         assert!(json["data"]["answerKey"].is_number());
         assert!(!json["data"].as_object().unwrap().contains_key("answerKeys"));
         assert!(!json["data"].as_object().unwrap().contains_key("answerText"));
-        assert!(!json["data"].as_object().unwrap().contains_key("clientMessageId"));
-        assert!(!json["data"].as_object().unwrap().contains_key("playerToken"));
+        assert!(!json["data"]
+            .as_object()
+            .unwrap()
+            .contains_key("clientMessageId"));
+        assert!(!json["data"]
+            .as_object()
+            .unwrap()
+            .contains_key("playerToken"));
     }
 }

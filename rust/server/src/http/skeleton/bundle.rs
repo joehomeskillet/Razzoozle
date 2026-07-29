@@ -7,11 +7,11 @@
 //! /-\, "..", NUL, symlink skip, dest-containment) — no unwrap/expect on ZIP
 //! bytes: every fallible step -> Err.
 
+use chrono::Utc;
 use serde_json::{json, Value};
 use std::fs;
 use std::io::{Cursor, Read, Write};
 use std::path::{Path, PathBuf};
-use chrono::Utc;
 
 use crate::socket::manager::public::get_default_theme;
 use crate::socket::manager::theme::validate_theme;
@@ -22,14 +22,25 @@ const SKELETON_TOTAL_MAX_BYTES: usize = 32 * 1024 * 1024;
 const SKELETON_ENTRY_MAX: usize = 200;
 
 /// theme-skeleton.ts:26-36 — INCLUDES svg (trusted manager surface).
-const SKELETON_ASSET_EXT: [&str; 9] =
-    ["svg", "webp", "png", "jpg", "jpeg", "woff2", "mp3", "wav", "ogg"];
+const SKELETON_ASSET_EXT: [&str; 9] = [
+    "svg", "webp", "png", "jpg", "jpeg", "woff2", "mp3", "wav", "ogg",
+];
 const SKELETON_BACKGROUND_SLOTS: [&str; 3] = ["auth", "managerGame", "playerGame"];
 /// common/constants.ts:410-425 SOUND_SLOTS.
 const SOUND_SLOTS: [&str; 13] = [
-    "answersMusic", "answersSound", "podiumThree", "podiumSecond", "podiumFirst",
-    "podiumSnearRoll", "results", "show", "boump", "tierBronze", "tierSilver",
-    "tierGold", "tierDiamant",
+    "answersMusic",
+    "answersSound",
+    "podiumThree",
+    "podiumSecond",
+    "podiumFirst",
+    "podiumSnearRoll",
+    "results",
+    "show",
+    "boump",
+    "tierBronze",
+    "tierSilver",
+    "tierGold",
+    "tierDiamant",
 ];
 
 /// The socket theme subsystem (apply.rs/uploads.rs/public.rs) reads+writes
@@ -123,7 +134,8 @@ pub(super) fn build_skeleton_zip() -> Result<Vec<u8>, String> {
         "name": name,
         "theme": theme,
     });
-    zip.start_file("skeleton.json", opts).map_err(|e| e.to_string())?;
+    zip.start_file("skeleton.json", opts)
+        .map_err(|e| e.to_string())?;
     zip.write_all(
         serde_json::to_string_pretty(&manifest)
             .map_err(|e| e.to_string())?
@@ -145,7 +157,10 @@ pub(super) fn build_skeleton_zip() -> Result<Vec<u8>, String> {
 
     // Ship the saved custom overrides when present (else omit — the generated
     // scaffold is the deferred renderer's job).
-    for (file, entry) in [("theme/skeleton.css", "theme.css"), ("theme/skeleton.js", "theme.js")] {
+    for (file, entry) in [
+        ("theme/skeleton.css", "theme.css"),
+        ("theme/skeleton.js", "theme.js"),
+    ] {
         if let Ok(content) = fs::read(base.join(file)) {
             zip.start_file(entry, opts).map_err(|e| e.to_string())?;
             zip.write_all(&content).map_err(|e| e.to_string())?;
@@ -180,7 +195,10 @@ pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<(Value, Option<Value>)
         if f.is_dir() {
             continue;
         }
-        let is_symlink = f.unix_mode().map(|m| m & 0o170000 == 0o120000).unwrap_or(false);
+        let is_symlink = f
+            .unix_mode()
+            .map(|m| m & 0o170000 == 0o120000)
+            .unwrap_or(false);
         let mut buf = Vec::new();
         (&mut f)
             .take(SKELETON_TOTAL_MAX_BYTES as u64 + 1)
@@ -243,18 +261,31 @@ pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<(Value, Option<Value>)
 
         // Rewrite theme refs whose basename matches the written asset.
         if !is_bg && !is_sound {
-            rewrite_ref(&mut theme, &["logo"], base_name, &format!("/theme/{}", base_name));
+            rewrite_ref(
+                &mut theme,
+                &["logo"],
+                base_name,
+                &format!("/theme/{}", base_name),
+            );
         }
         if is_bg {
             for slot in SKELETON_BACKGROUND_SLOTS {
-                rewrite_ref(&mut theme, &["backgrounds", slot], base_name,
-                    &format!("/media/backgrounds/{}", base_name));
+                rewrite_ref(
+                    &mut theme,
+                    &["backgrounds", slot],
+                    base_name,
+                    &format!("/media/backgrounds/{}", base_name),
+                );
             }
         }
         if is_sound {
             for slot in SOUND_SLOTS {
-                rewrite_ref(&mut theme, &["sounds", slot], base_name,
-                    &format!("/media/sounds/{}", base_name));
+                rewrite_ref(
+                    &mut theme,
+                    &["sounds", slot],
+                    base_name,
+                    &format!("/media/sounds/{}", base_name),
+                );
             }
         }
     }
@@ -276,7 +307,11 @@ pub(super) fn import_skeleton_zip(bytes: &[u8]) -> Result<(Value, Option<Value>)
         }
     }
 
-    let next_ver = theme.get("skeletonVersion").and_then(|v| v.as_u64()).unwrap_or(0) + 1;
+    let next_ver = theme
+        .get("skeletonVersion")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0)
+        + 1;
     if let Some(o) = theme.as_object_mut() {
         o.insert("skeletonVersion".to_string(), json!(next_ver));
     }
@@ -372,17 +407,29 @@ mod tests {
 
     #[test]
     fn malformed_zip_is_rejected_not_panicked() {
-        assert_eq!(import_skeleton_zip(&[]).unwrap_err(), "errors:skeleton.invalidZip");
-        assert_eq!(import_skeleton_zip(b"not a zip").unwrap_err(), "errors:skeleton.invalidZip");
-        assert_eq!(import_skeleton_zip(b"PK\x05\x06").unwrap_err(), "errors:skeleton.invalidZip");
+        assert_eq!(
+            import_skeleton_zip(&[]).unwrap_err(),
+            "errors:skeleton.invalidZip"
+        );
+        assert_eq!(
+            import_skeleton_zip(b"not a zip").unwrap_err(),
+            "errors:skeleton.invalidZip"
+        );
+        assert_eq!(
+            import_skeleton_zip(b"PK\x05\x06").unwrap_err(),
+            "errors:skeleton.invalidZip"
+        );
     }
 
     #[test]
     fn too_many_entries_rejected_before_any_write() {
-        let owned: Vec<(String, Vec<u8>)> =
-            (0..201).map(|i| (format!("f{i}.txt"), b"x".to_vec())).collect();
-        let refs: Vec<(&str, &[u8])> =
-            owned.iter().map(|(n, c)| (n.as_str(), c.as_slice())).collect();
+        let owned: Vec<(String, Vec<u8>)> = (0..201)
+            .map(|i| (format!("f{i}.txt"), b"x".to_vec()))
+            .collect();
+        let refs: Vec<(&str, &[u8])> = owned
+            .iter()
+            .map(|(n, c)| (n.as_str(), c.as_slice()))
+            .collect();
         assert_eq!(
             import_skeleton_zip(&make_zip(&refs)).unwrap_err(),
             "errors:skeleton.tooManyEntries"

@@ -23,11 +23,10 @@ use razzoozle_protocol::constants;
 use razzoozle_protocol::manager::InstalledPlugin;
 use serde_json::Value;
 use socketioxide::extract::{Data, SocketRef};
-use tracing;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-
+use tracing;
 
 /// Simple base64 encoder (no external dependency)
 fn encode_base64(bytes: &[u8]) -> String {
@@ -202,10 +201,9 @@ fn walk_plugin_files(dir: &Path) -> std::io::Result<Vec<(String, Vec<u8>)>> {
                     .ok()
                     .and_then(|p| p.to_str())
                     .map(|p| p.to_string().replace('\\', "/"))
-                    .ok_or_else(|| std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "path not under base",
-                    ))?;
+                    .ok_or_else(|| {
+                        std::io::Error::new(std::io::ErrorKind::InvalidData, "path not under base")
+                    })?;
                 out.push((relative, bytes));
             }
         }
@@ -347,7 +345,10 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(s) => s.to_string(),
                     None => {
                         socket
-                            .emit(constants::manager::ERROR_MESSAGE, "errors:plugin.invalidPayload")
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:plugin.invalidPayload",
+                            )
                             .ok();
                         return;
                     }
@@ -385,17 +386,23 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                         let plugin_id = installed.id.clone();
                         tokio::spawn(async move {
                             let dir = plugin_dir(&plugin_id);
-                            let files_vec = match tokio::task::spawn_blocking(move || walk_plugin_files(&dir)).await {
-                                Ok(Ok(f)) => f,
-                                Ok(Err(e)) => {
-                                    tracing::error!("failed to walk plugin files for DB mirror: {}", e);
-                                    Vec::new()
-                                }
-                                Err(e) => {
-                                    tracing::error!("join error walking plugin files: {}", e);
-                                    Vec::new()
-                                }
-                            };
+                            let files_vec =
+                                match tokio::task::spawn_blocking(move || walk_plugin_files(&dir))
+                                    .await
+                                {
+                                    Ok(Ok(f)) => f,
+                                    Ok(Err(e)) => {
+                                        tracing::error!(
+                                            "failed to walk plugin files for DB mirror: {}",
+                                            e
+                                        );
+                                        Vec::new()
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("join error walking plugin files: {}", e);
+                                        Vec::new()
+                                    }
+                                };
 
                             let mut files_map = serde_json::json!({});
                             for (relpath, bytes) in files_vec {
@@ -403,7 +410,10 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                                 files_map[relpath] = serde_json::json!(b64);
                             }
 
-                            if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &installed, &files_map).await {
+                            if let Err(e) =
+                                crate::db::upsert_installed_plugin(&db_pool, &installed, &files_map)
+                                    .await
+                            {
                                 tracing::error!(error = %e, "failed to mirror plugin to DB");
                             }
                         });
@@ -413,7 +423,10 @@ fn register_plugin_install(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Err(_join_err) => {
                         socket
-                            .emit(constants::manager::ERROR_MESSAGE, "errors:plugin.installFailed")
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:plugin.installFailed",
+                            )
                             .ok();
                     }
                 }

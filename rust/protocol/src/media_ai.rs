@@ -6,9 +6,9 @@
 //!
 // filled by WP-media_ai
 
+use crate::media_usage::MediaUsageEntry;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use crate::media_usage::MediaUsageEntry;
 
 // ============================================================================
 // MEDIA Domain Types
@@ -27,8 +27,8 @@ pub struct MediaMeta {
     pub size: u32,
     #[serde(rename = "type")]
     pub media_type: String, // "image" | "audio" | "video"
-    pub category: String,   // MediaCategory constant
-    pub source: String,     // "upload" | "ai" | "theme"
+    pub category: String, // MediaCategory constant
+    pub source: String,   // "upload" | "ai" | "theme"
     pub uploaded_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -399,7 +399,8 @@ mod tests {
         let json = r#"{"distractors":["wrong1","wrong2","wrong3"]}"#;
         let payload: AIDistractorsGeneratedPayload = serde_json::from_str(json).expect("parse");
         let serialized = serde_json::to_string(&payload).expect("serialize");
-        let payload2: AIDistractorsGeneratedPayload = serde_json::from_str(&serialized).expect("reparse");
+        let payload2: AIDistractorsGeneratedPayload =
+            serde_json::from_str(&serialized).expect("reparse");
         assert_eq!(payload, payload2);
         assert_eq!(payload.distractors.len(), 3);
     }

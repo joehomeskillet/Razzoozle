@@ -27,7 +27,9 @@ lazy_static! {
 /// On mutex poisoning: recover the map and continue. HashMap has no invariant
 /// that a panic within the critical section could violate, so recovery is safe.
 pub fn try_claim(socket_id: &str, role: VerifiedRole) -> Result<(), VerifiedRole> {
-    let mut map = SOCKET_ROLE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut map = SOCKET_ROLE_REGISTRY
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
 
     match map.get(socket_id) {
         None => {
@@ -42,13 +44,17 @@ pub fn try_claim(socket_id: &str, role: VerifiedRole) -> Result<(), VerifiedRole
 /// Removes the role binding for `socket_id` if present. Idempotent no-op on
 /// unknown sockets. On mutex poisoning: recover and continue.
 pub fn release(socket_id: &str) {
-    let mut map = SOCKET_ROLE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut map = SOCKET_ROLE_REGISTRY
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     map.remove(socket_id);
 }
 
 /// Reads the current role assigned to `socket_id`, if any.
 /// On mutex poisoning: recover and return None.
 pub fn role_of(socket_id: &str) -> Option<VerifiedRole> {
-    let map = SOCKET_ROLE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+    let map = SOCKET_ROLE_REGISTRY
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     map.get(socket_id).copied()
 }

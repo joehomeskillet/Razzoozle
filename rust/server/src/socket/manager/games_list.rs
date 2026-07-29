@@ -2,12 +2,12 @@
 //! Lists currently running games with summary info (id, pin, quiz subject, player count, phase, etc.)
 
 use super::super::HandlerCtx;
-use crate::state::socket_role;
 use crate::is_game_host;
+use crate::state::socket_role;
 use razzoozle_protocol::constants;
-use socketioxide::extract::{Data, SocketRef};
 use serde_json::json;
-use tracing::{warn, info};
+use socketioxide::extract::{Data, SocketRef};
+use tracing::{info, warn};
 
 /// Decision outcome for manager leave: what action to take based on game phase
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,7 +140,10 @@ fn register_end_game(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if !owns_game {
-                    warn!("END_GAME denied: not game host (game={}, client_id={})", game_id, ctx.client_id);
+                    warn!(
+                        "END_GAME denied: not game host (game={}, client_id={})",
+                        game_id, ctx.client_id
+                    );
                     return;
                 }
 
@@ -197,7 +200,10 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 if !owns_game {
-                    warn!("LEAVE denied: not game host (game={}, client_id={})", game_id, ctx.client_id);
+                    warn!(
+                        "LEAVE denied: not game host (game={}, client_id={})",
+                        game_id, ctx.client_id
+                    );
                     return;
                 }
 
@@ -214,7 +220,10 @@ fn register_leave(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                     LeaveAction::EndNow => {
-                        info!("LEAVE on finished game: ending immediately (game={}, client_id={})", game_id, ctx.client_id);
+                        info!(
+                            "LEAVE on finished game: ending immediately (game={}, client_id={})",
+                            game_id, ctx.client_id
+                        );
                         ctx.io
                             .to(game_id.clone())
                             .emit(constants::game::RESET, "errors:game.managerDisconnected")

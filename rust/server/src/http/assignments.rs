@@ -1,6 +1,6 @@
 use axum::{
     extract::{ConnectInfo, Path, State},
-    http::{StatusCode, HeaderMap},
+    http::{HeaderMap, StatusCode},
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -8,8 +8,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use super::{emoji_pin, json_error_response, AppState};
 use crate::state::{safe_asset_id, GameRegistry};
-use super::{json_error_response, AppState, emoji_pin};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Assignment {
@@ -111,7 +111,10 @@ async fn authorize_manager_request(
         tracing::warn!("assignments: denied for role={} (SEC-X2a)", user.role);
     }
 
-    Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
+    Err(json_error_response(
+        StatusCode::UNAUTHORIZED,
+        "unauthorized",
+    ))
 }
 
 pub async fn handle_create_assignment(
@@ -122,7 +125,10 @@ pub async fn handle_create_assignment(
     authorize_manager_request(&headers, &state.registry, &state.db_pool).await?;
 
     if payload.quizz_id.is_empty() {
-        return Err(json_error_response(StatusCode::BAD_REQUEST, "quizzId required"));
+        return Err(json_error_response(
+            StatusCode::BAD_REQUEST,
+            "quizzId required",
+        ));
     }
 
     safe_asset_id(&payload.quizz_id)
@@ -139,7 +145,12 @@ pub async fn handle_create_assignment(
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database not configured",
+            ))
+        }
     };
 
     // Extract owner_id from the x-manager-token
@@ -147,7 +158,11 @@ pub async fn handle_create_assignment(
         .get("x-manager-token")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    let owner_id = if let Some(user) = crate::db::users::session_user(pool, header_token).await.ok().flatten() {
+    let owner_id = if let Some(user) = crate::db::users::session_user(pool, header_token)
+        .await
+        .ok()
+        .flatten()
+    {
         Some(user.user_id)
     } else {
         None
@@ -155,22 +170,36 @@ pub async fn handle_create_assignment(
 
     let id = uuid::Uuid::new_v4().to_string().replace("-", "")[0..12].to_string();
     let now = chrono::Utc::now().timestamp_millis();
-    let assigned_at = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(now)
-        .ok_or_else(|| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "invalid timestamp"))?;
+    let assigned_at =
+        chrono::DateTime::<chrono::Utc>::from_timestamp_millis(now).ok_or_else(|| {
+            json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "invalid timestamp")
+        })?;
 
     // Build metadata JSON with only present optionals
     let mut metadata = serde_json::Map::new();
     if let Some(deadline) = payload.deadline {
-        metadata.insert("deadline".to_string(), serde_json::Value::Number(deadline.into()));
+        metadata.insert(
+            "deadline".to_string(),
+            serde_json::Value::Number(deadline.into()),
+        );
     }
     if let Some(max_attempts) = payload.max_attempts {
-        metadata.insert("maxAttempts".to_string(), serde_json::Value::Number(max_attempts.into()));
+        metadata.insert(
+            "maxAttempts".to_string(),
+            serde_json::Value::Number(max_attempts.into()),
+        );
     }
     if let Some(require_identifier) = payload.require_identifier {
-        metadata.insert("requireIdentifier".to_string(), serde_json::Value::Bool(require_identifier));
+        metadata.insert(
+            "requireIdentifier".to_string(),
+            serde_json::Value::Bool(require_identifier),
+        );
     }
     if let Some(show_correct_answers) = payload.show_correct_answers {
-        metadata.insert("showCorrectAnswers".to_string(), serde_json::Value::Bool(show_correct_answers));
+        metadata.insert(
+            "showCorrectAnswers".to_string(),
+            serde_json::Value::Bool(show_correct_answers),
+        );
     }
     let metadata_value = serde_json::Value::Object(metadata);
 
@@ -199,7 +228,10 @@ pub async fn handle_validate_pin(
     // Brute-force guard (F-08): 3 failed attempts / 60s per assignment+IP; failures recorded below
     let rate_key = format!("{}:{}", id, addr.ip());
     if !super::RATE_LIMITER.check_pin_rate(&rate_key, false) {
-        return Err(json_error_response(StatusCode::TOO_MANY_REQUESTS, "invalid"));
+        return Err(json_error_response(
+            StatusCode::TOO_MANY_REQUESTS,
+            "invalid",
+        ));
     }
 
     // First validate the PIN format
@@ -215,12 +247,17 @@ pub async fn handle_validate_pin(
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "invalid")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "invalid",
+            ))
+        }
     };
 
     // Validate the PIN against the student and assignment
     match crate::db::pins::validate_student_pin(pool, &id, payload.student_id, &payload.pin).await {
-        Ok(true) => {},
+        Ok(true) => {}
         _ => {
             super::RATE_LIMITER.check_pin_rate(&rate_key, true);
             return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
@@ -232,7 +269,9 @@ pub async fn handle_validate_pin(
     let expires_at = chrono::Utc::now() + chrono::Duration::minutes(120);
 
     // Create solo session
-    if let Err(_) = crate::db::pins::create_solo_session(pool, &token, &id, payload.student_id, 120).await {
+    if let Err(_) =
+        crate::db::pins::create_solo_session(pool, &token, &id, payload.student_id, 120).await
+    {
         return Err(json_error_response(StatusCode::FORBIDDEN, "invalid"));
     }
 
@@ -246,28 +285,40 @@ pub async fn handle_get_assignment(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Assignment>, (StatusCode, Json<serde_json::Value>)> {
-    safe_asset_id(&id)
-        .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&id).map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database not configured",
+            ))
+        }
     };
 
-    let (quiz_id, assigned_at, metadata) = sqlx::query_as::<_, (String, chrono::DateTime<chrono::Utc>, serde_json::Value)>(
-        "SELECT quiz_id, assigned_at, metadata FROM assignments WHERE id = $1"
-    )
-    .bind(&id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
-    .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+    let (quiz_id, assigned_at, metadata) =
+        sqlx::query_as::<_, (String, chrono::DateTime<chrono::Utc>, serde_json::Value)>(
+            "SELECT quiz_id, assigned_at, metadata FROM assignments WHERE id = $1",
+        )
+        .bind(&id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| {
+            json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?
+        .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
     let created_at_ms = assigned_at.timestamp_millis();
 
     // Reconstruct optional fields from metadata
     let deadline = metadata.get("deadline").and_then(|v| v.as_i64());
-    let max_attempts = metadata.get("maxAttempts").and_then(|v| v.as_i64().map(|n| n as i32));
+    let max_attempts = metadata
+        .get("maxAttempts")
+        .and_then(|v| v.as_i64().map(|n| n as i32));
     let require_identifier = metadata.get("requireIdentifier").and_then(|v| v.as_bool());
     let show_correct_answers = metadata.get("showCorrectAnswers").and_then(|v| v.as_bool());
 
@@ -295,25 +346,38 @@ pub async fn handle_get_assignment_results(
         .await
         .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
-    safe_asset_id(&id)
-        .map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&id).map_err(|e| json_error_response(StatusCode::BAD_REQUEST, e))?;
 
     let pool = match &state.db_pool {
         Some(p) => p,
-        None => return Err(json_error_response(StatusCode::INTERNAL_SERVER_ERROR, "database not configured")),
+        None => {
+            return Err(json_error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database not configured",
+            ))
+        }
     };
 
     // Check that assignment exists and verify ownership for lehrkraft
-    let owner_id: Option<i64> = sqlx::query_scalar("SELECT owner_id FROM assignments WHERE id = $1")
-        .bind(&id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| json_error_response(StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?
-        .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
+    let owner_id: Option<i64> =
+        sqlx::query_scalar("SELECT owner_id FROM assignments WHERE id = $1")
+            .bind(&id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| {
+                json_error_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Database error: {}", e),
+                )
+            })?
+            .ok_or_else(|| json_error_response(StatusCode::NOT_FOUND, "Assignment not found"))?;
 
     // Scoping: verify authorization via can_view_assignment_results
     if !can_view_assignment_results(&user.role, owner_id, user.user_id) {
-        return Err(json_error_response(StatusCode::NOT_FOUND, "Assignment not found"));
+        return Err(json_error_response(
+            StatusCode::NOT_FOUND,
+            "Assignment not found",
+        ));
     }
 
     // Fetch solo_results for this assignment
@@ -405,9 +469,11 @@ mod tests {
     fn test_can_view_assignment_results_lehrkraft_other_assignment_denied() {
         // Lehrkraft CANNOT view another lehrkraft's assignment
         let user_id = 42;
-        let owner_id = Some(99);  // Different owner
-        assert!(!can_view_assignment_results("lehrkraft", owner_id, user_id),
-                "lehrkraft should not see assignment owned by another lehrkraft");
+        let owner_id = Some(99); // Different owner
+        assert!(
+            !can_view_assignment_results("lehrkraft", owner_id, user_id),
+            "lehrkraft should not see assignment owned by another lehrkraft"
+        );
     }
 
     #[test]
@@ -415,9 +481,11 @@ mod tests {
         // Current implementation: NULL owner_id → denied for lehrkraft
         // (This is the point of contention: should NULL be allowed for all?)
         let user_id = 42;
-        let owner_id = None;  // No owner set
-        assert!(!can_view_assignment_results("lehrkraft", owner_id, user_id),
-                "current impl: lehrkraft denied for NULL owner_id");
+        let owner_id = None; // No owner set
+        assert!(
+            !can_view_assignment_results("lehrkraft", owner_id, user_id),
+            "current impl: lehrkraft denied for NULL owner_id"
+        );
     }
 
     #[test]

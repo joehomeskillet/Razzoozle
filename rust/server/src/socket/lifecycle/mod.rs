@@ -18,9 +18,8 @@
 //! race-safety net for "timer elapsed vs. skip vs. all-answered".
 
 use crate::db;
-use uuid::Uuid;
-use crate::state::{Game, GameRegistry};
 use crate::question_type_wire;
+use crate::state::{Game, GameRegistry};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::GameUpdateQuestion;
@@ -33,11 +32,12 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{Notify, RwLock};
 use tracing::{info, warn};
+use uuid::Uuid;
 
 use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
-use super::status_emit::{broadcast_status, send_status_to_manager};
 use super::status_emit::emit_plugin_lifecycle;
+use super::status_emit::{broadcast_status, send_status_to_manager};
 
 pub(crate) mod payloads;
 pub(crate) use payloads::build_select_answer_data;
@@ -129,7 +129,15 @@ async fn open_question(
     broadcast_status(io, game_ref, game_id, &show_question_status);
     emit_plugin_lifecycle(&io, &game_id, "onQuestionShown", "SHOW_QUESTION");
 
-    let (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled_chunks, shuffled_items) = {
+    let (
+        question,
+        total_players,
+        server_now_ms,
+        deadline_ms,
+        server_seq,
+        shuffled_chunks,
+        shuffled_items,
+    ) = {
         let mut game = game_ref.lock().unwrap();
         let server_now_ms = timing::now_ms();
         game.engine.set_clock_ms(server_now_ms);
@@ -153,7 +161,9 @@ async fn open_question(
             None
         };
         // Shuffle chunks for sentence-builder questions
-        let shuffled = if question.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sentence-builder") {
+        let shuffled = if question.r#type.as_ref().map(|t| question_type_wire(t))
+            == Some("sentence-builder")
+        {
             if let Some(chunks) = &question.chunks {
                 let shuffled = payloads::shuffle_chunks_with_guard(chunks.clone());
                 game.shuffled_chunks = Some(shuffled.clone());
@@ -166,28 +176,43 @@ async fn open_question(
             None
         };
         // Shuffle items for sequencing questions
-        let shuffled_items_opt = if question.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
-            if let Some(items) = &question.items {
-                // Extract item IDs for shuffling
-                let item_ids: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
-                if !item_ids.is_empty() {
-                    let shuffled_ids = payloads::shuffle_chunks_with_guard(item_ids);
-                    // Map shuffled IDs back to original items
-                    let id_to_item: std::collections::HashMap<_, _> = items.iter().map(|item| (item.id.clone(), item.clone())).collect();
-                    let shuffled: Vec<_> = shuffled_ids.iter().filter_map(|id| id_to_item.get(id).cloned()).collect();
-                    game.shuffled_items = Some(shuffled.clone());
-                    Some(shuffled)
+        let shuffled_items_opt =
+            if question.r#type.as_ref().map(|t| question_type_wire(t)) == Some("sequencing") {
+                if let Some(items) = &question.items {
+                    // Extract item IDs for shuffling
+                    let item_ids: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
+                    if !item_ids.is_empty() {
+                        let shuffled_ids = payloads::shuffle_chunks_with_guard(item_ids);
+                        // Map shuffled IDs back to original items
+                        let id_to_item: std::collections::HashMap<_, _> = items
+                            .iter()
+                            .map(|item| (item.id.clone(), item.clone()))
+                            .collect();
+                        let shuffled: Vec<_> = shuffled_ids
+                            .iter()
+                            .filter_map(|id| id_to_item.get(id).cloned())
+                            .collect();
+                        game.shuffled_items = Some(shuffled.clone());
+                        Some(shuffled)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
             } else {
+                game.shuffled_items = None;
                 None
-            }
-        } else {
-            game.shuffled_items = None;
-            None
-        };
-        (question, total_players, server_now_ms, deadline_ms, server_seq, shuffled, shuffled_items_opt)
+            };
+        (
+            question,
+            total_players,
+            server_now_ms,
+            deadline_ms,
+            server_seq,
+            shuffled,
+            shuffled_items_opt,
+        )
     };
 
     let select_data = build_select_answer_data(
@@ -365,8 +390,11 @@ async fn run_lifecycle_from(
         // is populated (done by reveal_helpers). After recap dwell, temp_round_recap is cleared.
         let should_show_recap = {
             let game = game_ref.lock().unwrap();
-            let is_last_round = game.engine.current_question_index + 1 == game.engine.quiz.questions.len();
-            !is_last_round && game.temp_round_recap.is_some() && !game.temp_round_recap.as_ref().unwrap().is_empty()
+            let is_last_round =
+                game.engine.current_question_index + 1 == game.engine.quiz.questions.len();
+            !is_last_round
+                && game.temp_round_recap.is_some()
+                && !game.temp_round_recap.as_ref().unwrap().is_empty()
         };
 
         if should_show_recap {
@@ -411,7 +439,6 @@ async fn run_lifecycle_from(
                 game.engine.phase = GamePhase::ShowResult;
             }
         }
-
 
         // Leaderboard-Notify VOR dem phase-flip armen (L105-Race:
         // ein request_abort der phase==ShowLeaderboard sieht, landet garantiert auf DIESEM Notify).
@@ -485,7 +512,6 @@ async fn run_lifecycle_from(
         // (which runs BEFORE this point) never sees it stale.
         game_ref.lock().unwrap().temp_round_recap = None;
 
-
         // Leaderboard dwell: host may cut it short via manager:nextQuestion.
         // Notify already armed before leaderboard_view() phase flip (L105-Race safe).
         dwell_auto_or_manual(&game_ref, 3600, LEADERBOARD_DWELL_SECS, abort_leaderboard).await;
@@ -538,15 +564,21 @@ async fn finish_and_broadcast(
         let game = game_ref.lock().unwrap();
         let players: Vec<razzoozle_protocol::results_display::GameResultPlayer> = {
             let mut sorted = game.engine.players.clone();
-            sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+            sorted.sort_by(|a, b| {
+                b.points
+                    .cmp(&a.points)
+                    .then_with(|| a.username.cmp(&b.username))
+            });
             sorted
                 .iter()
                 .enumerate()
-                .map(|(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
-                    username: p.username.clone(),
-                    points: p.points,
-                    rank: (idx + 1) as i32,
-                })
+                .map(
+                    |(idx, p)| razzoozle_protocol::results_display::GameResultPlayer {
+                        username: p.username.clone(),
+                        points: p.points,
+                        rank: (idx + 1) as i32,
+                    },
+                )
                 .collect()
         };
         (
@@ -568,9 +600,26 @@ async fn finish_and_broadcast(
     let recap_json_clone = recap_json.clone();
     tokio::spawn(async move {
         let now = chrono::Utc::now();
-        let rand8: String = Uuid::new_v4().simple().to_string().chars().take(8).collect();
+        let rand8: String = Uuid::new_v4()
+            .simple()
+            .to_string()
+            .chars()
+            .take(8)
+            .collect();
         let result_id = format!("{}-{}", now.timestamp_millis(), rand8);
-        if let Err(e) = db::insert_result(&db, &result_id, quiz_id.as_deref(), &subject, now, &players_json, Some(&questions_json_clone), recap_json_clone.as_ref(), owner_user_id).await {
+        if let Err(e) = db::insert_result(
+            &db,
+            &result_id,
+            quiz_id.as_deref(),
+            &subject,
+            now,
+            &players_json,
+            Some(&questions_json_clone),
+            recap_json_clone.as_ref(),
+            owner_user_id,
+        )
+        .await
+        {
             warn!("Result persistence failed for gameId={}: {}", gid, e);
         }
     });
@@ -592,7 +641,11 @@ async fn finish_and_broadcast(
     let game = game_ref.lock().unwrap();
     let sorted_players: Vec<_> = {
         let mut sorted = game.engine.players.clone();
-        sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+        sorted.sort_by(|a, b| {
+            b.points
+                .cmp(&a.points)
+                .then_with(|| a.username.cmp(&b.username))
+        });
         sorted
     };
     for (rank_idx, player) in sorted_players.iter().enumerate() {
@@ -616,8 +669,11 @@ async fn finish_and_broadcast(
             };
             if let Ok(sid) = player_info.id.parse() {
                 if let Some(sock) = io.get_socket(sid) {
-                    sock.emit(constants::game::STATUS, &GameStatus::Finished(personalized_finished))
-                        .ok();
+                    sock.emit(
+                        constants::game::STATUS,
+                        &GameStatus::Finished(personalized_finished),
+                    )
+                    .ok();
                 }
             }
         }
@@ -665,7 +721,6 @@ pub async fn resume_game_lifecycle(
     );
     run_lifecycle_from(io, registry, plan.game_id, db_pool, plan.start_index, false).await;
 }
-
 
 #[cfg(test)]
 mod tests;

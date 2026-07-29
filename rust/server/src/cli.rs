@@ -132,27 +132,18 @@ mod tests {
     #[test]
     fn test_no_args_serves_by_default() {
         let args = vec!["razzoozle-server".to_string()];
-        assert_eq!(
-            parse_args(args),
-            Ok(CliAction::Execute(Command::Serve))
-        );
+        assert_eq!(parse_args(args), Ok(CliAction::Execute(Command::Serve)));
     }
 
     #[test]
     fn test_serve_command() {
         let args = vec!["razzoozle-server".to_string(), "serve".to_string()];
-        assert_eq!(
-            parse_args(args),
-            Ok(CliAction::Execute(Command::Serve))
-        );
+        assert_eq!(parse_args(args), Ok(CliAction::Execute(Command::Serve)));
     }
 
     #[test]
     fn test_healthcheck_command() {
-        let args = vec![
-            "razzoozle-server".to_string(),
-            "healthcheck".to_string(),
-        ];
+        let args = vec!["razzoozle-server".to_string(), "healthcheck".to_string()];
         assert_eq!(
             parse_args(args),
             Ok(CliAction::Execute(Command::Healthcheck))
@@ -162,10 +153,7 @@ mod tests {
     #[test]
     fn test_migrate_command() {
         let args = vec!["razzoozle-server".to_string(), "migrate".to_string()];
-        assert_eq!(
-            parse_args(args),
-            Ok(CliAction::Execute(Command::Migrate))
-        );
+        assert_eq!(parse_args(args), Ok(CliAction::Execute(Command::Migrate)));
     }
 
     #[test]
@@ -203,10 +191,7 @@ mod tests {
 
     #[test]
     fn test_unknown_argument_with_dashes_fails() {
-        let args = vec![
-            "razzoozle-server".to_string(),
-            "--unknown-flag".to_string(),
-        ];
+        let args = vec!["razzoozle-server".to_string(), "--unknown-flag".to_string()];
         match parse_args(args) {
             Err(ParseError::UnknownArgument(s)) => assert_eq!(s, "--unknown-flag"),
             _ => panic!("Expected UnknownArgument error"),

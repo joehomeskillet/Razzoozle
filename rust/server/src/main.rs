@@ -1,13 +1,13 @@
 mod auth;
 mod bot;
-mod socket;
-mod state;
-mod media_ai;
-mod http;
-mod db;
 mod cli;
 mod config;
+mod db;
+mod http;
+mod media_ai;
 mod migrate;
+mod socket;
+mod state;
 
 use razzoozle_protocol::quizz::QuestionType;
 use razzoozle_protocol::status::MatchMode;
@@ -99,8 +99,6 @@ pub(crate) fn is_game_host(
     }
 }
 
-
-
 #[cfg(test)]
 mod host_token_tests {
     use super::*;
@@ -169,7 +167,12 @@ mod host_token_tests {
         let non_owner = test_user(456, "user");
         let payload = serde_json::json!({ "gameId": game.game_id });
 
-        assert!(!is_game_host(&game, &payload, "non-owner-client", Some(&non_owner)));
+        assert!(!is_game_host(
+            &game,
+            &payload,
+            "non-owner-client",
+            Some(&non_owner)
+        ));
     }
 
     #[test]
@@ -252,7 +255,6 @@ async fn start_server() {
 
     // Initialize registry with pool (prefers DB quizzes when available, falls back to files)
     let registry = Arc::new(RwLock::new(GameRegistry::new(&db_pool, quiz_fixture).await));
-
 
     // W2h — Crash-recovery snapshot: restore any games from the last shutdown, then start the periodic save task.
     // Mirrors Node's boot order: loadSnapshot (if present) → cleanupStaleAvatars → startSnapshotTask.
@@ -340,8 +342,12 @@ async fn start_server() {
             // (registered above via socket::register_all).
 
             // Register AI/media handlers
-            media_ai::register(&socket, Arc::clone(&registry), client_id.clone(), db_pool.clone());
-
+            media_ai::register(
+                &socket,
+                Arc::clone(&registry),
+                client_id.clone(),
+                db_pool.clone(),
+            );
         }
     });
 
@@ -442,10 +448,13 @@ async fn start_server() {
     // spawning a separate signal handler with std::process::exit.
     // This allows in-flight requests to complete while saving the final snapshot.
     let registry_shutdown = Arc::clone(&registry);
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-        .with_graceful_shutdown(shutdown_signal(registry_shutdown))
-        .await
-        .expect("Failed to start server");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal(registry_shutdown))
+    .await
+    .expect("Failed to start server");
 
     // After axum::serve returns (graceful shutdown completed), the periodic
     // snapshot task and background reapers are still running in the background.

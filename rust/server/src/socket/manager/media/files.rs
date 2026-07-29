@@ -60,13 +60,16 @@ pub(super) fn normalize_media_stem(filename: &str) -> String {
 }
 
 /// Write media file to disk at config/media/<category>/<filename>.
-pub(super) fn write_media_file(buffer: &[u8], category: &str, filename: &str) -> Result<(), String> {
+pub(super) fn write_media_file(
+    buffer: &[u8],
+    category: &str,
+    filename: &str,
+) -> Result<(), String> {
     let media_dir = Path::new("config/media").join(category);
 
     // Ensure directory exists
     if !media_dir.exists() {
-        fs::create_dir_all(&media_dir)
-            .map_err(|_| "errors:media.saveFailed".to_string())?;
+        fs::create_dir_all(&media_dir).map_err(|_| "errors:media.saveFailed".to_string())?;
     }
 
     let filepath = media_dir.join(filename);
@@ -98,17 +101,43 @@ pub(super) async fn get_media_asset_by_id(
 ) -> Option<serde_json::Value> {
     let pool = pool.as_ref()?;
 
-    match sqlx::query_as::<_, (String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)>(
+    match sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            i32,
+            String,
+            String,
+            String,
+            Option<i32>,
+            Option<i32>,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
-         FROM media_assets WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)"
+         FROM media_assets WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
     )
     .bind(id)
     .bind(me)
     .fetch_optional(pool)
     .await
     {
-        Ok(Some((id, filename, url, size, media_type, category, source, width, height, uploaded_at))) => {
-            let uploaded_at_rfc3339 = uploaded_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        Ok(Some((
+            id,
+            filename,
+            url,
+            size,
+            media_type,
+            category,
+            source,
+            width,
+            height,
+            uploaded_at,
+        ))) => {
+            let uploaded_at_rfc3339 =
+                uploaded_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
             let mut obj = serde_json::json!({
                 "id": id,
                 "filename": filename,

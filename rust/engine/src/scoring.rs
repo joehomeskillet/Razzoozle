@@ -9,11 +9,7 @@ pub const STREAK_STEP: f64 = 0.1;
 pub const STREAK_CAP: i32 = 5;
 
 /// Time-decayed base points for an answer received within the question window.
-pub fn time_to_point(
-    response_time_ms: i64,
-    question_time_s: i32,
-    mode: ScoringMode,
-) -> i32 {
+pub fn time_to_point(response_time_ms: i64, question_time_s: i32, mode: ScoringMode) -> i32 {
     let seconds = question_time_s.max(1) as f64;
     let elapsed_s = response_time_ms.max(0) as f64 / 1000.0;
 
@@ -71,7 +67,11 @@ pub fn calculate_points(
         1.0
     };
 
-    let bonus_mult = if question.bonus == Some(true) { 2.0 } else { 1.0 };
+    let bonus_mult = if question.bonus == Some(true) {
+        2.0
+    } else {
+        1.0
+    };
 
     (raw_points * streak_mult * bonus_mult).round() as i32
 }
@@ -113,11 +113,11 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
-        tolerance: None,
-        decimals: None,
-        sentence: None,
-        tokens: None,
-        pos_set: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
         }
     }
 

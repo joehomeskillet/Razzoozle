@@ -1,8 +1,8 @@
 //! LOGOUT, RECONNECT — manager session handlers (DB-session-token auth only)
 
 use super::super::HandlerCtx;
-use crate::state::socket_role;
 use super::config_helper;
+use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 
@@ -15,7 +15,7 @@ fn register_logout(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::LOGOUT, {
         let ctx = ctx.clone();
 
-        move |_socket: SocketRef, _data: Data::<serde_json::Value>| {
+        move |_socket: SocketRef, _data: Data<serde_json::Value>| {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {

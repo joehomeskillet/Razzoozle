@@ -7,7 +7,8 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{
-    get_now_ms, Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN, USERNAME_MIN_LEN,
+    get_now_ms, Game, AVATAR_MAX_BYTES, AVATAR_SVG_MAX_CHARS, MAX_ACTIVE_GAMES, USERNAME_MAX_LEN,
+    USERNAME_MIN_LEN,
 };
 
 /// A game whose manager has left but may reconnect within the grace window.
@@ -138,9 +139,16 @@ impl GameRegistry {
 
     /// Resolve a user by session token (thin wrapper over db::users::session_user).
     /// Returns None if token is invalid, expired, or if there's a DB error.
-    pub async fn session_user(&self, token: &str, pool: &Option<PgPool>) -> Option<crate::db::users::AuthUser> {
+    pub async fn session_user(
+        &self,
+        token: &str,
+        pool: &Option<PgPool>,
+    ) -> Option<crate::db::users::AuthUser> {
         if let Some(ref p) = pool {
-            crate::db::users::session_user(p, token).await.ok().flatten()
+            crate::db::users::session_user(p, token)
+                .await
+                .ok()
+                .flatten()
         } else {
             None
         }
@@ -194,7 +202,8 @@ impl GameRegistry {
         let host_token = game.host_token.clone();
         let game = Arc::new(Mutex::new(game));
 
-        self.games_by_code.insert(invite_code.clone(), Arc::clone(&game));
+        self.games_by_code
+            .insert(invite_code.clone(), Arc::clone(&game));
         self.games_by_id.insert(game_id.clone(), game);
 
         Ok((game_id, invite_code, host_token))
@@ -214,7 +223,10 @@ impl GameRegistry {
     /// when gameId is missing; mirrors Node getManagerGame logic). Scans active
     /// games for a match on manager_client_id. Used as a fallback in SET_AUTO and
     /// other manager handlers when the payload gameId is absent/unknown.
-    pub fn get_game_by_manager_client_id(&self, manager_client_id: &str) -> Option<Arc<Mutex<Game>>> {
+    pub fn get_game_by_manager_client_id(
+        &self,
+        manager_client_id: &str,
+    ) -> Option<Arc<Mutex<Game>>> {
         self.games_by_id
             .values()
             .find(|game_ref| {
@@ -256,7 +268,10 @@ impl GameRegistry {
     }
 
     /// Reload quizzes from a HashMap. Used after DB operations to keep the registry in sync.
-    pub fn reload_quizzes(&mut self, quizzes: std::collections::HashMap<String, razzoozle_protocol::quizz::Quizz>) {
+    pub fn reload_quizzes(
+        &mut self,
+        quizzes: std::collections::HashMap<String, razzoozle_protocol::quizz::Quizz>,
+    ) {
         self.quizzes = quizzes;
     }
 
@@ -275,8 +290,12 @@ impl GameRegistry {
     /// out of caution — so recovering it here keeps the eviction reaper (a
     /// single unsupervised background loop, see main.rs) alive instead of it
     /// dying forever on the first panic anywhere that touches a Game lock.
-    pub(super) fn lock_game_recover(game_ref: &Arc<Mutex<Game>>) -> std::sync::MutexGuard<'_, Game> {
-        game_ref.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    pub(super) fn lock_game_recover(
+        game_ref: &Arc<Mutex<Game>>,
+    ) -> std::sync::MutexGuard<'_, Game> {
+        game_ref
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     /// Record (or update) which game a socket_id currently belongs to. Call
@@ -316,7 +335,8 @@ impl GameRegistry {
         use std::fs;
         use std::path::Path;
 
-        let active_game_ids: std::collections::HashSet<_> = self.games_by_id.keys().cloned().collect();
+        let active_game_ids: std::collections::HashSet<_> =
+            self.games_by_id.keys().cloned().collect();
         let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config".to_string());
         let avatar_root = Path::new(&config_path).join("media/avatars");
 
@@ -371,8 +391,7 @@ impl GameRegistry {
             let invite_code = game.invite_code.clone();
             let game = Arc::new(Mutex::new(game));
 
-            self.games_by_code
-                .insert(invite_code, Arc::clone(&game));
+            self.games_by_code.insert(invite_code, Arc::clone(&game));
             self.games_by_id.insert(game_id.clone(), game);
 
             // Mark as empty so it's cleaned up if nobody reconnects within the grace window

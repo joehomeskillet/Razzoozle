@@ -70,7 +70,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     patch["teamMode"] = serde_json::json!(team_mode);
                 }
 
-                if let Some(low_latency_enabled) = payload.get("lowLatencyEnabled").and_then(|v| v.as_bool()) {
+                if let Some(low_latency_enabled) =
+                    payload.get("lowLatencyEnabled").and_then(|v| v.as_bool())
+                {
                     patch["lowLatencyEnabled"] = serde_json::json!(low_latency_enabled);
                 }
 
@@ -85,7 +87,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     patch["joinLocked"] = serde_json::json!(join_locked);
                 }
 
-                if let Some(randomize_answers) = payload.get("randomizeAnswers").and_then(|v| v.as_bool()) {
+                if let Some(randomize_answers) =
+                    payload.get("randomizeAnswers").and_then(|v| v.as_bool())
+                {
                     patch["randomizeAnswers"] = serde_json::json!(randomize_answers);
                 }
 
@@ -96,12 +100,16 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 // Pass through managerPassword if provided (COALESCE prevents null-out)
-                if let Some(manager_password) = payload.get("managerPassword").and_then(|v| v.as_str()) {
+                if let Some(manager_password) =
+                    payload.get("managerPassword").and_then(|v| v.as_str())
+                {
                     patch["managerPassword"] = serde_json::json!(manager_password);
                 }
 
                 // Pass through klassenEnabled if provided
-                if let Some(klassen_enabled) = payload.get("klassenEnabled").and_then(|v| v.as_bool()) {
+                if let Some(klassen_enabled) =
+                    payload.get("klassenEnabled").and_then(|v| v.as_bool())
+                {
                     patch["klassenEnabled"] = serde_json::json!(klassen_enabled);
                 }
 
@@ -109,7 +117,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 // deduplicate, restore canonical order (full→top3→private), rejoin.
                 // Trust boundary: Socket client input may contain arbitrary strings.
                 // Downstream: ConfigSelectQuizz splits on "," to construct UI mode selector.
-                if let Some(end_screen_modes) = payload.get("endScreenModes").and_then(|v| v.as_str()) {
+                if let Some(end_screen_modes) =
+                    payload.get("endScreenModes").and_then(|v| v.as_str())
+                {
                     let raw_value = end_screen_modes.to_string();
                     let modes: std::collections::HashSet<&str> = end_screen_modes
                         .split(',')
@@ -132,10 +142,7 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         // Invalid input: skip patching (preserve existing config value)
                         // Truncate at char boundary (not byte) to prevent UTF-8 panic on multi-byte chars
                         let truncated = if raw_value.len() > 64 {
-                            format!(
-                                "{}…",
-                                raw_value.chars().take(64).collect::<String>()
-                            )
+                            format!("{}…", raw_value.chars().take(64).collect::<String>())
                         } else {
                             raw_value
                         };
@@ -155,7 +162,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         // lowLatencyEnabled change must refresh the in-memory
                         // cache (state.rs Game.low_latency) on every currently
                         // active game, not just future ones.
-                        if let Some(new_value) = patch.get("lowLatencyEnabled").and_then(|v| v.as_bool()) {
+                        if let Some(new_value) =
+                            patch.get("lowLatencyEnabled").and_then(|v| v.as_bool())
+                        {
                             let registry = ctx.registry.read().await;
                             for game_ref in registry.get_all_games() {
                                 if let Ok(mut game) = game_ref.lock() {
@@ -170,7 +179,10 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     Err(_e) => {
                         // Emit error to match Node's game.ts catch block
                         socket
-                            .emit(constants::manager::ERROR_MESSAGE, "errors:manager.saveFailed")
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:manager.saveFailed",
+                            )
                             .ok();
                     }
                 }
@@ -216,7 +228,10 @@ fn register_set_achievements_config(socket: &SocketRef, ctx: HandlerCtx) {
                     Err(_e) => {
                         // Emit error to match Node's game.ts catch block
                         socket
-                            .emit(constants::manager::ERROR_MESSAGE, "errors:manager.saveFailed")
+                            .emit(
+                                constants::manager::ERROR_MESSAGE,
+                                "errors:manager.saveFailed",
+                            )
                             .ok();
                     }
                 }

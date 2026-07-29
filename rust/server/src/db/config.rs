@@ -1,15 +1,17 @@
+use crate::config::resolve_secret;
+use crate::socket::manager::plugins::is_generic_safe_id;
+use crate::socket::manager::theme::decode_base64;
 use sqlx::PgPool;
 use std::fs;
 use std::path::Path;
-use crate::socket::manager::theme::decode_base64;
-use crate::socket::manager::plugins::is_generic_safe_id;
-use crate::config::resolve_secret;
 
 pub async fn create_pool() -> Option<PgPool> {
     match resolve_secret("DATABASE_URL") {
-        Ok(Some(url)) => {
-            Some(sqlx::PgPool::connect(&url).await.expect("Failed to connect to DATABASE_URL"))
-        }
+        Ok(Some(url)) => Some(
+            sqlx::PgPool::connect(&url)
+                .await
+                .expect("Failed to connect to DATABASE_URL"),
+        ),
         Ok(None) => None,
         Err(crate::config::SecretError::Conflict(v)) => {
             panic!("Configuration error: {} and {}_FILE both set", v, v);
@@ -27,10 +29,11 @@ pub async fn get_manager_password(pool: &Option<PgPool>) -> Option<String> {
         None => return None,
     };
 
-    let row: Option<(Option<String>,)> = sqlx::query_as("SELECT manager_password FROM games_config WHERE id = 1")
-        .fetch_optional(pool)
-        .await
-        .ok()?;
+    let row: Option<(Option<String>,)> =
+        sqlx::query_as("SELECT manager_password FROM games_config WHERE id = 1")
+            .fetch_optional(pool)
+            .await
+            .ok()?;
 
     row.and_then(|(pw,)| pw)
 }
@@ -62,7 +65,8 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
     // Load the registry once to inject tier from the engine (static property, not in DB)
     let registry = razzoozle_engine::achievements::default_config();
 
-    let result = rows.into_iter()
+    let result = rows
+        .into_iter()
         .map(|(id, enabled, name, description, threshold, bonus)| {
             let mut obj = serde_json::json!({"id": id});
             if let Some(e) = enabled {
@@ -93,29 +97,32 @@ pub async fn get_achievements(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 
 /// Get plugins for hydration (id, files map) from Postgres.
 /// Returns empty vec if pool is None or DB query fails.
-async fn get_plugins_for_hydrate(pool: &Option<PgPool>) -> Vec<(String, Option<serde_json::Value>)> {
+async fn get_plugins_for_hydrate(
+    pool: &Option<PgPool>,
+) -> Vec<(String, Option<serde_json::Value>)> {
     let pool = match pool {
         Some(p) => p,
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Option<serde_json::Value>)> =
-        match sqlx::query_as(
-            "SELECT id, files FROM installed_plugins WHERE files IS NOT NULL ORDER BY id"
-        )
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch installed_plugins for hydration from database: {}", e);
-                return Vec::new();
-            }
-        };
+    let rows: Vec<(String, Option<serde_json::Value>)> = match sqlx::query_as(
+        "SELECT id, files FROM installed_plugins WHERE files IS NOT NULL ORDER BY id",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!(
+                "Failed to fetch installed_plugins for hydration from database: {}",
+                e
+            );
+            return Vec::new();
+        }
+    };
 
     rows
 }
-
 
 /// Boot-hydrate plugins from Postgres to disk.
 /// Mirrors Node's hydratePluginsFromPg semantics:
@@ -136,7 +143,10 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 
     // Ensure plugins root directory exists
     if let Err(e) = fs::create_dir_all(&plugins_root) {
-        eprintln!("Failed to create plugins directory '{}': {}", plugins_root, e);
+        eprintln!(
+            "Failed to create plugins directory '{}': {}",
+            plugins_root, e
+        );
         return;
     }
 
@@ -150,7 +160,10 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
         let files_map = match files_opt {
             Some(files_val) => {
                 if !files_val.is_object() {
-                    eprintln!("plugins-pg hydrate: skipping plugin {} — files is not a JSON object", plugin_id);
+                    eprintln!(
+                        "plugins-pg hydrate: skipping plugin {} — files is not a JSON object",
+                        plugin_id
+                    );
                     continue;
                 }
                 files_val
@@ -163,7 +176,10 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 
         // Sanitize plugin_id to prevent directory traversal
         if !is_generic_safe_id(&plugin_id) {
-            eprintln!("plugins-pg hydrate: skipping plugin with unsafe id: {}", plugin_id);
+            eprintln!(
+                "plugins-pg hydrate: skipping plugin with unsafe id: {}",
+                plugin_id
+            );
             continue;
         }
 
@@ -212,24 +228,25 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
                 // Ensure parent directory exists
                 if let Some(parent) = Path::new(&file_path).parent() {
                     if let Err(e) = fs::create_dir_all(parent) {
-                        eprintln!("Failed to create parent directory for '{}': {}", file_path, e);
+                        eprintln!(
+                            "Failed to create parent directory for '{}': {}",
+                            file_path, e
+                        );
                         continue;
                     }
                 }
 
                 // Decode base64 and write
                 match decode_base64(base64_str) {
-                    Ok(bytes) => {
-                        match fs::write(&file_path, &bytes) {
-                            Ok(_) => total_files += 1,
-                            Err(e) => {
-                                eprintln!(
-                                    "plugins-pg hydrate: failed to write file {} in plugin {}: {}",
-                                    relpath, plugin_id, e
-                                );
-                            }
+                    Ok(bytes) => match fs::write(&file_path, &bytes) {
+                        Ok(_) => total_files += 1,
+                        Err(e) => {
+                            eprintln!(
+                                "plugins-pg hydrate: failed to write file {} in plugin {}: {}",
+                                relpath, plugin_id, e
+                            );
                         }
-                    }
+                    },
                     Err(e) => {
                         eprintln!(
                             "plugins-pg hydrate: failed to decode base64 for file {} in plugin {}: {}",
@@ -251,7 +268,18 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 /// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config, klassen_enabled, end_screen_modes).
 /// low_latency_config is the full jsonb object that should be merged with low_latency_enabled into lowLatencyMode.
 /// Returns Nones if pool is None or DB query fails.
-pub async fn get_game_config(pool: &Option<PgPool>) -> (Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>, Option<bool>, Option<String>) {
+pub async fn get_game_config(
+    pool: &Option<PgPool>,
+) -> (
+    Option<bool>,
+    Option<bool>,
+    Option<bool>,
+    Option<bool>,
+    Option<String>,
+    Option<serde_json::Value>,
+    Option<bool>,
+    Option<String>,
+) {
     let pool = match pool {
         Some(p) => p,
         None => return (None, None, None, None, None, None, None, None),
@@ -293,13 +321,16 @@ pub async fn update_game_config(
     let manager_password = patch.get("managerPassword").and_then(|v| v.as_str());
     let klassen_enabled = patch.get("klassenEnabled").and_then(|v| v.as_bool());
     let end_screen_modes = patch.get("endScreenModes").and_then(|v| v.as_str());
-    let low_latency_mode = patch.get("lowLatencyMode").and_then(|v| {
-        if v.is_object() {
-            Some(v.clone())
-        } else {
-            None
-        }
-    });
+    let low_latency_mode =
+        patch.get("lowLatencyMode").and_then(
+            |v| {
+                if v.is_object() {
+                    Some(v.clone())
+                } else {
+                    None
+                }
+            },
+        );
 
     // Build the UPDATE statement dynamically — only touch fields that are present
     let mut query_str = "UPDATE games_config SET ".to_string();
@@ -331,7 +362,10 @@ pub async fn update_game_config(
         idx += 1;
     }
     if manager_password.is_some() {
-        updates.push(format!("manager_password = COALESCE(${}, manager_password)", idx));
+        updates.push(format!(
+            "manager_password = COALESCE(${}, manager_password)",
+            idx
+        ));
         idx += 1;
     }
     if klassen_enabled.is_some() {
@@ -415,8 +449,14 @@ pub async fn update_achievements_config(
         let enabled = override_val.get("enabled").and_then(|v| v.as_bool());
         let name = override_val.get("name").and_then(|v| v.as_str());
         let description = override_val.get("description").and_then(|v| v.as_str());
-        let threshold = override_val.get("threshold").and_then(|v| v.as_i64()).map(|v| v as i32);
-        let bonus = override_val.get("bonus").and_then(|v| v.as_i64()).map(|v| v as i32);
+        let threshold = override_val
+            .get("threshold")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
+        let bonus = override_val
+            .get("bonus")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
 
         // UPSERT: if the row exists, update only the non-None fields; if it doesn't, insert
         sqlx::query(
@@ -427,7 +467,7 @@ pub async fn update_achievements_config(
                 name = COALESCE(EXCLUDED.name, achievements_config.name), \
                 description = COALESCE(EXCLUDED.description, achievements_config.description), \
                 threshold = COALESCE(EXCLUDED.threshold, achievements_config.threshold), \
-                bonus = COALESCE(EXCLUDED.bonus, achievements_config.bonus)"
+                bonus = COALESCE(EXCLUDED.bonus, achievements_config.bonus)",
         )
         .bind(id)
         .bind(enabled)

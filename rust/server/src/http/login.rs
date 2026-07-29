@@ -1,14 +1,10 @@
 //! POST /api/login — user login handler. W0-A1 auth foundation primitive.
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::db;
 use super::{AppState, RATE_LIMITER};
+use crate::db;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {

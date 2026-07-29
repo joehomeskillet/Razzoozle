@@ -10,8 +10,8 @@ use super::config_helper;
 use super::theme;
 use crate::db;
 use razzoozle_protocol::constants;
-use socketioxide::extract::{Data, SocketRef};
 use serde_json;
+use socketioxide::extract::{Data, SocketRef};
 use uuid::Uuid;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
@@ -73,11 +73,17 @@ fn register_theme_template_list(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Fetch and emit full theme templates (with theme payload)
                 let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
-                socket.emit(constants::theme_template::DATA, &templates).ok();
+                socket
+                    .emit(constants::theme_template::DATA, &templates)
+                    .ok();
             });
         }
     });
@@ -101,7 +107,11 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract name and theme
                 let name = match payload.get("name").and_then(|v| v.as_str()) {
@@ -117,7 +127,10 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                 // Validate name: not empty, max 60 chars
                 if name.is_empty() || name.len() > 60 {
                     socket
-                        .emit(constants::theme_template::ERROR, &"name must be 1-60 characters")
+                        .emit(
+                            constants::theme_template::ERROR,
+                            &"name must be 1-60 characters",
+                        )
                         .ok();
                     return;
                 }
@@ -168,10 +181,17 @@ fn register_theme_template_save(socket: &SocketRef, ctx: HandlerCtx) {
                 .await
                 {
                     Ok(n) if n > 0 => {
-                        socket.emit(constants::theme_template::SAVE_SUCCESS, &serde_json::json!([])).ok();
+                        socket
+                            .emit(
+                                constants::theme_template::SAVE_SUCCESS,
+                                &serde_json::json!([]),
+                            )
+                            .ok();
                         // Re-emit full list so connected admins stay in sync
                         let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
-                        socket.emit(constants::theme_template::DATA, &templates).ok();
+                        socket
+                            .emit(constants::theme_template::DATA, &templates)
+                            .ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
@@ -207,7 +227,11 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -225,7 +249,9 @@ fn register_theme_template_delete(socket: &SocketRef, ctx: HandlerCtx) {
                     Ok(n) if n > 0 => {
                         // Re-emit full list
                         let templates = db::get_theme_templates_full(&ctx.db_pool, me).await;
-                        socket.emit(constants::theme_template::DATA, &templates).ok();
+                        socket
+                            .emit(constants::theme_template::DATA, &templates)
+                            .ok();
                         // Re-emit full manager config
                         config_helper::build_and_emit_config(&socket, &ctx).await;
                     }
@@ -264,7 +290,9 @@ fn register_theme_revision_list(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Load revisions from database (newest-first, capped at 10)
                 let revisions = db::list_theme_revisions(&ctx.db_pool).await;
-                socket.emit(constants::theme_revision::DATA, &revisions).ok();
+                socket
+                    .emit(constants::theme_revision::DATA, &revisions)
+                    .ok();
             });
         }
     });
@@ -288,7 +316,11 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -305,7 +337,10 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                 let revision = db::get_theme_revision_by_id(&ctx.db_pool, id).await;
                 if revision.is_none() {
                     socket
-                        .emit(constants::theme_revision::ERROR, &"errors:themeRevision.notFound")
+                        .emit(
+                            constants::theme_revision::ERROR,
+                            &"errors:themeRevision.notFound",
+                        )
                         .ok();
                     return;
                 }
@@ -315,7 +350,10 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                     Some(t) => t.clone(),
                     None => {
                         socket
-                            .emit(constants::theme_revision::ERROR, &"errors:themeRevision.restoreFailed")
+                            .emit(
+                                constants::theme_revision::ERROR,
+                                &"errors:themeRevision.restoreFailed",
+                            )
                             .ok();
                         return;
                     }
@@ -325,19 +363,22 @@ fn register_theme_revision_restore(socket: &SocketRef, ctx: HandlerCtx) {
                 match theme::apply_theme(&revision_theme, &ctx).await {
                     Ok(theme) => {
                         // Emit success with theme payload
-                        socket.emit(constants::theme_revision::RESTORE_SUCCESS, &theme).ok();
+                        socket
+                            .emit(constants::theme_revision::RESTORE_SUCCESS, &theme)
+                            .ok();
                         // Broadcast to all OTHER clients
-                        socket.broadcast()
+                        socket
+                            .broadcast()
                             .emit(constants::manager::THEME, &theme)
                             .ok();
                         // Re-emit fresh revisions to this socket
                         let revisions = db::list_theme_revisions(&ctx.db_pool).await;
-                        socket.emit(constants::theme_revision::DATA, &revisions).ok();
+                        socket
+                            .emit(constants::theme_revision::DATA, &revisions)
+                            .ok();
                     }
                     Err(e) => {
-                        socket
-                            .emit(constants::theme_revision::ERROR, &e)
-                            .ok();
+                        socket.emit(constants::theme_revision::ERROR, &e).ok();
                     }
                 }
             });

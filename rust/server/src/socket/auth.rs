@@ -81,7 +81,10 @@ mod tests {
     #[test]
     fn test_satellite_token_absent() {
         let token: Option<String> = None;
-        assert!(!is_satellite_authenticated(&token), "should deny when no token provided");
+        assert!(
+            !is_satellite_authenticated(&token),
+            "should deny when no token provided"
+        );
     }
 
     #[test]
@@ -89,7 +92,10 @@ mod tests {
         // Env var not set: deny any token
         std::env::remove_var("SATELLITE_TOKEN");
         let token = Some("any-token".to_string());
-        assert!(!is_satellite_authenticated(&token), "should deny when SATELLITE_TOKEN env not set");
+        assert!(
+            !is_satellite_authenticated(&token),
+            "should deny when SATELLITE_TOKEN env not set"
+        );
     }
 
     #[test]

@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use super::{
-    get_now_ms, AUTH_RATE_MAX_PER_CLIENT, SOLO_RATE_MAX_PER_CLIENT, SOLO_RATE_WINDOW_MS,
+    get_now_ms, AUTH_RATE_MAX_PER_CLIENT, GAME_CREATE_RATE_MAX_PER_USER,
+    GAME_CREATE_RATE_WINDOW_MS, KLASSEN_PIN_RATE_MAX, KLASSEN_PIN_RATE_WINDOW_MS,
+    PIN_RATE_MAX_PER_CLIENT, PIN_RATE_WINDOW_MS, SOLO_RATE_MAX_PER_CLIENT, SOLO_RATE_WINDOW_MS,
     SUBMISSION_GLOBAL_MAX, SUBMISSION_GLOBAL_WINDOW_MS, SUBMISSION_RATE_MAX_PER_CLIENT,
-    SUBMISSION_RATE_WINDOW_MS, PIN_RATE_MAX_PER_CLIENT, PIN_RATE_WINDOW_MS,
-    GAME_CREATE_RATE_MAX_PER_USER, GAME_CREATE_RATE_WINDOW_MS,
-    KLASSEN_PIN_RATE_MAX, KLASSEN_PIN_RATE_WINDOW_MS,
+    SUBMISSION_RATE_WINDOW_MS,
 };
 
 #[derive(Debug, Clone)]
@@ -77,7 +77,9 @@ impl RateLimiter {
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
                 let now = get_now_ms();
-                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS);
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS
+                });
             }
 
             !is_limited
@@ -85,7 +87,6 @@ impl RateLimiter {
             true // lock failed, allow in fail-open mode
         }
     }
-
 
     /// Record a failed auth attempt and return true if throttled (for the given key).
     /// Returns true if throttled, false if allowed.
@@ -101,7 +102,9 @@ impl RateLimiter {
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
                 let now = get_now_ms();
-                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS);
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS
+                });
             }
 
             is_throttled
@@ -109,7 +112,6 @@ impl RateLimiter {
             false // lock failed, allow in fail-open mode
         }
     }
-
 
     // ── APPENDED for rust-auth-parity (manager:auth throttle fix) ────────────
     // Node's submissionRateLimit.ts keeps isAuthThrottled() (pure read) and
@@ -143,7 +145,9 @@ impl RateLimiter {
     pub fn record_auth_failure_global(&self) {
         let now = get_now_ms();
         if let Ok(mut map) = self.auth_by_key.lock() {
-            let entry = map.entry("global".to_string()).or_insert_with(RateState::new);
+            let entry = map
+                .entry("global".to_string())
+                .or_insert_with(RateState::new);
             entry.maybe_reset(now);
             entry.count += 1;
         }
@@ -171,7 +175,9 @@ impl RateLimiter {
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
                 let now = get_now_ms();
-                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= SUBMISSION_RATE_WINDOW_MS);
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= SUBMISSION_RATE_WINDOW_MS
+                });
             }
 
             !is_limited
@@ -227,7 +233,9 @@ impl RateLimiter {
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
                 let now = get_now_ms();
-                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= PIN_RATE_WINDOW_MS);
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= PIN_RATE_WINDOW_MS
+                });
             }
 
             !is_limited
@@ -325,7 +333,9 @@ impl RateLimiter {
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
                 let now = get_now_ms();
-                map.retain(|_, state| now.saturating_sub(state.window_start_ms) <= GAME_CREATE_RATE_WINDOW_MS);
+                map.retain(|_, state| {
+                    now.saturating_sub(state.window_start_ms) <= GAME_CREATE_RATE_WINDOW_MS
+                });
             }
 
             !is_limited
@@ -446,7 +456,9 @@ mod tests {
         if let Ok(mut map) = limiter.game_create_by_key.lock() {
             if let Some(entry) = map.get_mut(key) {
                 // Simulate time passage: set window_start_ms to >1hr ago
-                entry.window_start_ms = entry.window_start_ms.saturating_sub(GAME_CREATE_RATE_WINDOW_MS + 1000);
+                entry.window_start_ms = entry
+                    .window_start_ms
+                    .saturating_sub(GAME_CREATE_RATE_WINDOW_MS + 1000);
             }
         }
 

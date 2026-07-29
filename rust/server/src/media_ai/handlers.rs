@@ -50,7 +50,10 @@ pub(super) fn register_generate_image(socket: &SocketRef, client_id: String) {
                 let len = prompt.chars().count();
                 if len < 1 || len > PROMPT_MAX_LEN {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptInvalid")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptInvalid",
+                        )
                         .ok();
                     return;
                 }
@@ -58,7 +61,10 @@ pub(super) fn register_generate_image(socket: &SocketRef, client_id: String) {
                 // 2. secret scan
                 if throttle::matches_secret(&prompt) {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptRejected")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptRejected",
+                        )
                         .ok();
                     return;
                 }
@@ -66,7 +72,10 @@ pub(super) fn register_generate_image(socket: &SocketRef, client_id: String) {
                 // 3. global server-wide submission ceiling FIRST (no per-user side effect)
                 if !RATE_LIMITER.check_global_submission_rate() {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -129,7 +138,10 @@ pub(super) fn register_edit_image(socket: &SocketRef, client_id: String) {
                     || plen > PROMPT_MAX_LEN
                 {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptInvalid")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptInvalid",
+                        )
                         .ok();
                     return;
                 }
@@ -137,7 +149,10 @@ pub(super) fn register_edit_image(socket: &SocketRef, client_id: String) {
                 // 2. secret scan
                 if throttle::matches_secret(&prompt) {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptRejected")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptRejected",
+                        )
                         .ok();
                     return;
                 }
@@ -145,7 +160,10 @@ pub(super) fn register_edit_image(socket: &SocketRef, client_id: String) {
                 // 3. global rate
                 if !RATE_LIMITER.check_global_submission_rate() {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -205,7 +223,10 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
                 // 1. global rate FIRST (no per-user side effect)
                 if !RATE_LIMITER.check_global_submission_rate() {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -213,7 +234,10 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
                 // 2. per-client submission throttle (3/60s, shared with upload), durable clientId
                 if !RATE_LIMITER.check_submission_rate(&client_id) {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -227,7 +251,10 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
                 let len = prompt.chars().count();
                 if len < 1 || len > PROMPT_MAX_LEN {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptInvalid")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptInvalid",
+                        )
                         .ok();
                     return;
                 }
@@ -235,7 +262,10 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
                 // 4. secret scan
                 if throttle::matches_secret(&prompt) {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.promptRejected")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.promptRejected",
+                        )
                         .ok();
                     return;
                 }
@@ -268,7 +298,10 @@ pub(super) fn register_submit_upload_image(
                 // 1. global rate
                 if !RATE_LIMITER.check_global_submission_rate() {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -276,7 +309,10 @@ pub(super) fn register_submit_upload_image(
                 // 2. per-client submission throttle (shared with ENHANCE_PROMPT)
                 if !RATE_LIMITER.check_submission_rate(&client_id) {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:submission.rateLimited")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:submission.rateLimited",
+                        )
                         .ok();
                     return;
                 }
@@ -297,7 +333,10 @@ pub(super) fn register_submit_upload_image(
                     || !data_url.starts_with("data:image/")
                 {
                     socket
-                        .emit(constants::manager::IMAGE_ERROR, "errors:media.invalidDataUrl")
+                        .emit(
+                            constants::manager::IMAGE_ERROR,
+                            "errors:media.invalidDataUrl",
+                        )
                         .ok();
                     return;
                 }
@@ -326,15 +365,17 @@ pub(super) fn register_submit_upload_image(
                     save_upload_image(&mime_for_block, &bytes_for_block, &filename_for_block)
                 })
                 .await;
-                
+
                 let save_outcome = match save_result {
                     Ok(result) => result,
                     Err(_) => {
-                        socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
+                        socket
+                            .emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed")
+                            .ok();
                         return;
                     }
                 };
-                
+
                 if let Ok(saved) = save_outcome {
                     let uploaded_at = Utc::now();
                     if let Err(e) = db::insert_media_asset(
@@ -367,7 +408,9 @@ pub(super) fn register_submit_upload_image(
                         .ok();
                 } else {
                     warn!("SUBMIT_UPLOAD_IMAGE failed: save_upload_image error");
-                    socket.emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed").ok();
+                    socket
+                        .emit(constants::manager::IMAGE_ERROR, "errors:media.saveFailed")
+                        .ok();
                 }
             });
         },
@@ -488,7 +531,12 @@ fn save_upload_image(mime: &str, bytes: &[u8], filename: &str) -> Result<SavedUp
     // so we don't need to wrap to_webp again. Just call it directly.
     let (webp_bytes, width, height) = to_webp(bytes)?;
     let stem = normalize_stem(filename);
-    let id: String = uuid::Uuid::new_v4().simple().to_string().chars().take(8).collect();
+    let id: String = uuid::Uuid::new_v4()
+        .simple()
+        .to_string()
+        .chars()
+        .take(8)
+        .collect();
     let stored = format!("{}-{}.webp", stem, id);
     let filename_stem = stored.rsplit_once('.').map(|(s, _)| s).unwrap_or(&stored);
     let asset_id = format!("questions-{}", filename_stem);

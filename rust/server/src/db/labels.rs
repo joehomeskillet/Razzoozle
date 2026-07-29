@@ -8,18 +8,17 @@ pub async fn get_labels(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
         None => return vec![],
     };
 
-    let rows: Vec<(i64, String, String)> = match sqlx::query_as(
-        "SELECT id, name, color FROM labels ORDER BY created_at ASC"
-    )
-    .fetch_all(pool)
-    .await
-    {
-        Ok(rows) => rows,
-        Err(e) => {
-            eprintln!("Failed to fetch labels: {}", e);
-            return vec![];
-        }
-    };
+    let rows: Vec<(i64, String, String)> =
+        match sqlx::query_as("SELECT id, name, color FROM labels ORDER BY created_at ASC")
+            .fetch_all(pool)
+            .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Failed to fetch labels: {}", e);
+                return vec![];
+            }
+        };
 
     rows.into_iter()
         .map(|(id, name, color)| {
@@ -33,18 +32,14 @@ pub async fn get_labels(pool: &Option<PgPool>) -> Vec<serde_json::Value> {
 }
 
 /// Create a new global label. Returns label_id on success, or "name_exists" error if duplicate.
-pub async fn create_label(
-    pool: &Option<PgPool>,
-    name: &str,
-    color: &str,
-) -> Result<i64, String> {
+pub async fn create_label(pool: &Option<PgPool>, name: &str, color: &str) -> Result<i64, String> {
     let pool = match pool {
         Some(p) => p,
         None => return Err("no database configured".to_string()),
     };
 
     let result = sqlx::query_as::<_, (i64,)>(
-        "INSERT INTO labels (name, color) VALUES ($1, $2) RETURNING id"
+        "INSERT INTO labels (name, color) VALUES ($1, $2) RETURNING id",
     )
     .bind(name)
     .bind(color)
@@ -75,7 +70,11 @@ pub async fn update_label(
     };
 
     let (query, bind_name, bind_color) = if let (Some(n), Some(c)) = (name, color) {
-        ("UPDATE labels SET name = $1, color = $2 WHERE id = $3", Some(n), Some(c))
+        (
+            "UPDATE labels SET name = $1, color = $2 WHERE id = $3",
+            Some(n),
+            Some(c),
+        )
     } else if let Some(n) = name {
         ("UPDATE labels SET name = $1 WHERE id = $2", Some(n), None)
     } else if let Some(c) = color {
@@ -93,17 +92,14 @@ pub async fn update_label(
     }
     q = q.bind(label_id);
 
-    let result = q
-        .execute(pool)
-        .await
-        .map_err(|e| {
-            if let sqlx::Error::Database(db_err) = &e {
-                if db_err.code().as_deref() == Some("23505") {
-                    return "name_exists".to_string();
-                }
+    let result = q.execute(pool).await.map_err(|e| {
+        if let sqlx::Error::Database(db_err) = &e {
+            if db_err.code().as_deref() == Some("23505") {
+                return "name_exists".to_string();
             }
-            e.to_string()
-        })?;
+        }
+        e.to_string()
+    })?;
 
     Ok(result.rows_affected())
 }
@@ -191,7 +187,6 @@ pub async fn assign_labels(
     Ok(())
 }
 
-
 /// Carry labels from one quiz to another (on rename). Moves all labels from old_id to new_id,
 /// but ONLY if old_id is owned by the caller (IDOR hardening).
 /// No-op if old_id == new_id or old_id doesn't exist or is not owned by caller.
@@ -258,7 +253,10 @@ pub async fn get_media_label_ids_batch(
 
     let mut result = HashMap::new();
     for (media_id, label_id) in rows {
-        result.entry(media_id).or_insert_with(Vec::new).push(label_id);
+        result
+            .entry(media_id)
+            .or_insert_with(Vec::new)
+            .push(label_id);
     }
 
     result

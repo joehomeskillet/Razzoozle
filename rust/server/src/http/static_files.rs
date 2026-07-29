@@ -7,8 +7,8 @@ use axum::{
 use std::fs;
 use std::path::{Path as StdPath, PathBuf};
 
-use crate::state::safe_asset_id;
 use super::get_config_path;
+use crate::state::safe_asset_id;
 
 /// Validate a file path component to prevent traversal attacks.
 fn safe_path_component(component: &str) -> Result<(), String> {
@@ -63,8 +63,7 @@ async fn serve_static_file(
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), (StatusCode, String)> {
     // Validate the relative path components
     for component in rel_path.split('/').filter(|c| !c.is_empty()) {
-        safe_path_component(component)
-            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        safe_path_component(component).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     }
 
     let file_path = StdPath::new(base_dir).join(rel_path);
@@ -86,11 +85,14 @@ async fn serve_static_file(
         )
     })?;
 
-    let canonical = canonical
-        .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
+    let canonical = canonical.map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
-    let base_canonical = base_canonical
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid base directory".to_string()))?;
+    let base_canonical = base_canonical.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Invalid base directory".to_string(),
+        )
+    })?;
 
     if !canonical.starts_with(&base_canonical) {
         return Err((StatusCode::FORBIDDEN, "Path traversal detected".to_string()));
@@ -109,10 +111,7 @@ async fn serve_static_file(
     })?
     .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
-    let ext = canonical
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let ext = canonical.extension().and_then(|s| s.to_str()).unwrap_or("");
 
     let content_type = mime_type_for_ext(ext);
 
@@ -168,9 +167,7 @@ pub async fn handle_root() -> Result<impl IntoResponse, (StatusCode, String)> {
 }
 
 /// Handle SPA fallback for unknown routes
-pub async fn handle_spa_fallback(
-    uri: Uri,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+pub async fn handle_spa_fallback(uri: Uri) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Extract path from URI and strip leading slash
     let path = uri.path().trim_start_matches('/');
 
@@ -217,9 +214,7 @@ pub async fn handle_assets(
 }
 
 /// Handle specific SPA files: /sw.js, /registerSW.js, /manifest.webmanifest
-pub async fn handle_spa_static(
-    filename: &str,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+pub async fn handle_spa_static(filename: &str) -> Result<impl IntoResponse, (StatusCode, String)> {
     let web_dist = get_web_dist_path();
 
     serve_static_file(&web_dist, filename)
@@ -239,8 +234,7 @@ pub async fn handle_media_asset(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Validate path components
     for component in rel_path.split('/').filter(|c| !c.is_empty()) {
-        safe_path_component(component)
-            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        safe_path_component(component).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     }
 
     let base_dir = format!("{}/media", get_config_path());

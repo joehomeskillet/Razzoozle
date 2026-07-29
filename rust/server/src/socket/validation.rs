@@ -159,7 +159,12 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
         }
         Some(QuestionType::Wortarten) => {
             // Wortarten: sentence + tokens + solutions + pos_set validation
-            if question.sentence.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
+            if question
+                .sentence
+                .as_ref()
+                .map(|s| s.is_empty())
+                .unwrap_or(true)
+            {
                 return Err("errors:quizz.sentenceEmpty");
             }
             if let Some(tokens) = &question.tokens {
@@ -179,7 +184,12 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             } else {
                 return Err("errors:quizz.invalidPayload");
             }
-            if question.pos_set.as_ref().map(|ps| ps.is_empty()).unwrap_or(true) {
+            if question
+                .pos_set
+                .as_ref()
+                .map(|ps| ps.is_empty())
+                .unwrap_or(true)
+            {
                 return Err("errors:quizz.invalidPayload");
             }
         }
@@ -241,7 +251,12 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             }
         }
         Some(QuestionType::DropPin) => {
-            if question.media.as_ref().map(|m| m.url.is_empty()).unwrap_or(true) {
+            if question
+                .media
+                .as_ref()
+                .map(|m| m.url.is_empty())
+                .unwrap_or(true)
+            {
                 return Err("errors:quizz.invalidPayload");
             }
             let spots = match question.hotspots.as_ref() {
@@ -249,7 +264,13 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
                 _ => return Err("errors:quizz.invalidPayload"),
             };
             for h in spots {
-                if h.w <= 0.0 || h.h <= 0.0 || h.x < 0.0 || h.y < 0.0 || h.x + h.w > 1.0 + 1e-9 || h.y + h.h > 1.0 + 1e-9 {
+                if h.w <= 0.0
+                    || h.h <= 0.0
+                    || h.x < 0.0
+                    || h.y < 0.0
+                    || h.x + h.w > 1.0 + 1e-9
+                    || h.y + h.h > 1.0 + 1e-9
+                {
                     return Err("errors:quizz.invalidPayload");
                 }
             }

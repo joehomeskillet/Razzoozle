@@ -31,12 +31,13 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 // Gate 2: Check if this game has low-latency enabled.
                 let (low_latency_enabled, clock_sync_enabled) = match game_ref.lock() {
                     Ok(game) => {
-                        let clock_sync = game.low_latency_config
+                        let clock_sync = game
+                            .low_latency_config
                             .get("clockSync")
                             .and_then(|v| v.as_bool())
                             .unwrap_or(true); // Default to true when absent (Node parity)
                         (game.low_latency, clock_sync)
-                    },
+                    }
                     Err(_) => return, // Lock failed, drop silently
                 };
 

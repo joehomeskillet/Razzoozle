@@ -36,23 +36,79 @@ struct RegistryEntry {
 
 static ACHIEVEMENTS_REGISTRY: &[RegistryEntry] = &[
     // Bronze
-    RegistryEntry { id: "first_correct", tier: "bronze", threshold: None },
-    RegistryEntry { id: "participation", tier: "bronze", threshold: None },
-    RegistryEntry { id: "lucky_guess", tier: "bronze", threshold: t(5.0, 1.0, 50.0) },
+    RegistryEntry {
+        id: "first_correct",
+        tier: "bronze",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "participation",
+        tier: "bronze",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "lucky_guess",
+        tier: "bronze",
+        threshold: t(5.0, 1.0, 50.0),
+    },
     // Silver
-    RegistryEntry { id: "speed_demon", tier: "silver", threshold: t(1000.0, 200.0, 5000.0) },
-    RegistryEntry { id: "streak_3", tier: "silver", threshold: t(3.0, 2.0, 20.0) },
-    RegistryEntry { id: "sharpshooter", tier: "silver", threshold: t(95.0, 50.0, 100.0) },
-    RegistryEntry { id: "climber", tier: "silver", threshold: t(3.0, 1.0, 20.0) },
+    RegistryEntry {
+        id: "speed_demon",
+        tier: "silver",
+        threshold: t(1000.0, 200.0, 5000.0),
+    },
+    RegistryEntry {
+        id: "streak_3",
+        tier: "silver",
+        threshold: t(3.0, 2.0, 20.0),
+    },
+    RegistryEntry {
+        id: "sharpshooter",
+        tier: "silver",
+        threshold: t(95.0, 50.0, 100.0),
+    },
+    RegistryEntry {
+        id: "climber",
+        tier: "silver",
+        threshold: t(3.0, 1.0, 20.0),
+    },
     // Gold
-    RegistryEntry { id: "first_responder", tier: "gold", threshold: None },
-    RegistryEntry { id: "streak_5", tier: "gold", threshold: t(5.0, 2.0, 30.0) },
-    RegistryEntry { id: "underdog", tier: "gold", threshold: t(2000.0, 100.0, 100000.0) },
-    RegistryEntry { id: "perfect_round", tier: "gold", threshold: t(5.0, 2.0, 30.0) },
+    RegistryEntry {
+        id: "first_responder",
+        tier: "gold",
+        threshold: None,
+    },
+    RegistryEntry {
+        id: "streak_5",
+        tier: "gold",
+        threshold: t(5.0, 2.0, 30.0),
+    },
+    RegistryEntry {
+        id: "underdog",
+        tier: "gold",
+        threshold: t(2000.0, 100.0, 100000.0),
+    },
+    RegistryEntry {
+        id: "perfect_round",
+        tier: "gold",
+        threshold: t(5.0, 2.0, 30.0),
+    },
     // Diamant
-    RegistryEntry { id: "streak_10", tier: "diamant", threshold: t(10.0, 2.0, 50.0) },
-    RegistryEntry { id: "speedy_gonzales", tier: "diamant", threshold: t(400.0, 100.0, 2000.0) },
-    RegistryEntry { id: "perfect_game", tier: "diamant", threshold: None },
+    RegistryEntry {
+        id: "streak_10",
+        tier: "diamant",
+        threshold: t(10.0, 2.0, 50.0),
+    },
+    RegistryEntry {
+        id: "speedy_gonzales",
+        tier: "diamant",
+        threshold: t(400.0, 100.0, 2000.0),
+    },
+    RegistryEntry {
+        id: "perfect_game",
+        tier: "diamant",
+        threshold: None,
+    },
 ];
 
 /// Merge configuration: threshold clamped to [min, max], bonus clamped to [0, BONUS_MAX].
@@ -61,9 +117,7 @@ pub fn merge_config(overrides: &Map<String, Value>) -> HashMap<String, MergedAch
     let mut result = HashMap::new();
 
     for entry in ACHIEVEMENTS_REGISTRY {
-        let o = overrides
-            .get(entry.id)
-            .and_then(|v| v.as_object());
+        let o = overrides.get(entry.id).and_then(|v| v.as_object());
 
         let enabled = o
             .and_then(|m| m.get("enabled"))
@@ -114,9 +168,7 @@ pub fn enabled(cfg: &HashMap<String, MergedAchievement>, id: &str) -> bool {
 
 /// Get the threshold for an achievement, with a fallback default.
 pub fn threshold(cfg: &HashMap<String, MergedAchievement>, id: &str, default: f64) -> f64 {
-    cfg.get(id)
-        .and_then(|a| a.threshold)
-        .unwrap_or(default)
+    cfg.get(id).and_then(|a| a.threshold).unwrap_or(default)
 }
 
 /// Get the bonus points for an achievement.

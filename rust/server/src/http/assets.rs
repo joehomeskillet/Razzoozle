@@ -1,12 +1,9 @@
-use axum::{
-    extract::Path,
-    http::StatusCode,
-};
+use axum::{extract::Path, http::StatusCode};
 use std::fs;
 
-use crate::state::safe_asset_id;
-use crate::socket::manager::plugins_zip::PLUGIN_ASSET_EXT;
 use super::get_config_path;
+use crate::socket::manager::plugins_zip::PLUGIN_ASSET_EXT;
+use crate::state::safe_asset_id;
 
 // ── Static file helpers ─────────────────────────────────────────────────────
 
@@ -56,15 +53,16 @@ fn mime_type_for_ext(ext: &str) -> &'static str {
 }
 
 /// Serve a static file with path-traversal protection
-async fn serve_static_file(base_dir: &str, rel_path: &str) -> Result<(StatusCode, axum::http::HeaderMap, Vec<u8>), (StatusCode, String)> {
+async fn serve_static_file(
+    base_dir: &str,
+    rel_path: &str,
+) -> Result<(StatusCode, axum::http::HeaderMap, Vec<u8>), (StatusCode, String)> {
     // Validate the relative path components
     for component in rel_path.split('/') {
-        safe_path_component(component)
-            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        safe_path_component(component).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     }
 
-    let file_path = std::path::Path::new(base_dir)
-        .join(rel_path);
+    let file_path = std::path::Path::new(base_dir).join(rel_path);
 
     // Move blocking FS operations off-thread
     let (canonical, base_canonical) = tokio::task::spawn_blocking({
@@ -83,11 +81,14 @@ async fn serve_static_file(base_dir: &str, rel_path: &str) -> Result<(StatusCode
         )
     })?;
 
-    let canonical = canonical
-        .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
+    let canonical = canonical.map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
-    let base_canonical = base_canonical
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid base directory".to_string()))?;
+    let base_canonical = base_canonical.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Invalid base directory".to_string(),
+        )
+    })?;
 
     if !canonical.starts_with(&base_canonical) {
         return Err((StatusCode::FORBIDDEN, "Path traversal detected".to_string()));
@@ -106,17 +107,16 @@ async fn serve_static_file(base_dir: &str, rel_path: &str) -> Result<(StatusCode
     })?
     .map_err(|_| (StatusCode::NOT_FOUND, "File not found".to_string()))?;
 
-    let ext = canonical
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let ext = canonical.extension().and_then(|s| s.to_str()).unwrap_or("");
 
     let content_type = mime_type_for_ext(ext);
 
     let mut headers = axum::http::HeaderMap::new();
     headers.insert(
         axum::http::header::CONTENT_TYPE,
-        content_type.parse().unwrap_or_else(|_| "application/octet-stream".parse().unwrap()),
+        content_type
+            .parse()
+            .unwrap_or_else(|_| "application/octet-stream".parse().unwrap()),
     );
     headers.insert(
         axum::http::header::CONTENT_LENGTH,
@@ -153,14 +153,17 @@ pub async fn handle_plugin_asset(
     Path((plugin_id, rel_path)): Path<(String, String)>,
 ) -> Result<(StatusCode, axum::http::HeaderMap, Vec<u8>), (StatusCode, String)> {
     // Validate plugin ID
-    safe_asset_id(&plugin_id)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    safe_asset_id(&plugin_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     // Public unauth surface: mirror Node resolvePluginAsset — only ui.js or assets/**, allowlisted ext, no svg.
     if rel_path != "ui.js" && !rel_path.starts_with("assets/") {
         return Err((StatusCode::NOT_FOUND, "not found".to_string()));
     }
-    let ext = rel_path.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    let ext = rel_path
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase();
     if !PLUGIN_ASSET_EXT.contains(&ext.as_str()) {
         return Err((StatusCode::NOT_FOUND, "not found".to_string()));
     }
@@ -179,8 +182,12 @@ pub async fn handle_sounds_asset(
         Ok(result) => Ok(result),
         Err((StatusCode::NOT_FOUND, _)) => {
             // Fallback to web/public/sounds
-            let cwd = std::env::current_dir()
-                .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Cannot access cwd".to_string()))?;
+            let cwd = std::env::current_dir().map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Cannot access cwd".to_string(),
+                )
+            })?;
             let web_base = cwd
                 .parent()
                 .and_then(|p| p.parent())

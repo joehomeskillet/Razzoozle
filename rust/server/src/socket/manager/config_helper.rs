@@ -38,8 +38,16 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
     let plugins = plugins::read_plugins_index();
     // Note: low_latency_config (6th element) is fetched but not currently used in ManagerConfig.
     // It will be consumed by deferred clock-sync sub-flag fix; callers ignore with _.
-    let (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, _low_latency_config, klassen_enabled, end_screen_modes) =
-        db::get_game_config(&ctx.db_pool).await;
+    let (
+        team_mode,
+        low_latency_enabled,
+        join_locked,
+        randomize_answers,
+        scoring_mode,
+        _low_latency_config,
+        klassen_enabled,
+        end_screen_modes,
+    ) = db::get_game_config(&ctx.db_pool).await;
 
     let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
 
@@ -64,17 +72,18 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         low_latency_enabled,
         join_locked,
         randomize_answers,
-        scoring_mode: scoring_mode.and_then(|s| {
-            match s.as_str() {
-                "speed" => Some(ScoringMode::Speed),
-                "accuracy" => Some(ScoringMode::Accuracy),
-                _ => None,
-            }
+        scoring_mode: scoring_mode.and_then(|s| match s.as_str() {
+            "speed" => Some(ScoringMode::Speed),
+            "accuracy" => Some(ScoringMode::Accuracy),
+            _ => None,
         }),
         achievements: Some(serde_json::Value::Array(achievements)),
         dev_mode: Some(dev_mode_on),
         dev_api_key: if dev_mode_on
-            && user_opt.as_ref().map(|u| u.role == "admin").unwrap_or(false)
+            && user_opt
+                .as_ref()
+                .map(|u| u.role == "admin")
+                .unwrap_or(false)
         {
             match crate::config::resolve_secret("DEV_API_KEY") {
                 Ok(val) => val,

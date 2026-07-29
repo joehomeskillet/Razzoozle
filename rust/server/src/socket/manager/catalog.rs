@@ -71,7 +71,11 @@ fn register_catalog_list(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract optional scope from payload
                 let scope = payload
@@ -105,7 +109,11 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract and validate question
                 let question = match payload.get("question") {
@@ -150,12 +158,22 @@ fn register_catalog_add(socket: &SocketRef, ctx: HandlerCtx) {
                 let added_at = chrono::Utc::now();
 
                 // Persist to DB
-                match db::insert_catalog_entry_with_tags(&ctx.db_pool, &question, &source, &tags, added_at, Some(user.user_id))
-                    .await
+                match db::insert_catalog_entry_with_tags(
+                    &ctx.db_pool,
+                    &question,
+                    &source,
+                    &tags,
+                    added_at,
+                    Some(user.user_id),
+                )
+                .await
                 {
                     Ok(id) => {
                         socket
-                            .emit(constants::catalog::ADD_SUCCESS, &serde_json::json!({ "id": id.to_string() }))
+                            .emit(
+                                constants::catalog::ADD_SUCCESS,
+                                &serde_json::json!({ "id": id.to_string() }),
+                            )
                             .ok();
                         // Re-emit full catalog so connected admins stay in sync
                         let catalog = db::get_catalog(&ctx.db_pool, me, None).await;
@@ -188,7 +206,11 @@ fn register_catalog_update(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract and validate id
                 let id = match payload.get("id").and_then(|v| v.as_str()) {
@@ -270,7 +292,11 @@ fn register_catalog_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Validate payload: { id: string }
                 let id = match payload.get("id").and_then(|v| v.as_str()) {

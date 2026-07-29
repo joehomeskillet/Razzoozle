@@ -1,5 +1,5 @@
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 lazy_static! {
     // Hex color pattern: #xxx or #xxxxxx (3 or 6 hex digits)
@@ -189,8 +189,12 @@ pub fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
     if let Some(backgrounds) = obj.get("backgrounds") {
         if let Some(bg_obj) = backgrounds.as_object() {
             for (key, value) in bg_obj.iter() {
-                if key != "auth" && key != "managerGame" && key != "playerGame" &&
-                   key != "animated" && key != "animatedCss" {
+                if key != "auth"
+                    && key != "managerGame"
+                    && key != "playerGame"
+                    && key != "animated"
+                    && key != "animatedCss"
+                {
                     // Unknown background field, but don't fail hard — just ignore
                     continue;
                 }

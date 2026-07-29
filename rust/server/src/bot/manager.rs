@@ -2,6 +2,7 @@
 //! Ported from packages/socket/src/services/game/bot-manager.ts.
 
 use crate::state::Game;
+use rand::Rng;
 use razzoozle_engine::eval::SLIDER_TOLERANCE_FRACTION;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants::Bot;
@@ -11,7 +12,6 @@ use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use rand::Rng;
 
 pub struct BotManager {
     pending: Arc<Mutex<HashMap<String, tokio::task::JoinHandle<()>>>>,
@@ -69,10 +69,7 @@ impl BotManager {
                 pending.lock().unwrap().remove(&client_id_cleanup);
             });
 
-            self.pending
-                .lock()
-                .unwrap()
-                .insert(bot.client_id, handle);
+            self.pending.lock().unwrap().insert(bot.client_id, handle);
         }
     }
 
@@ -250,9 +247,10 @@ fn pick_sequencing(question: &Question) -> String {
     let want_correct = rand::thread_rng().gen::<f64>() < Bot::CORRECT_RATE;
 
     let order: Vec<String> = if want_correct {
-        question.correct_order.clone().unwrap_or_else(|| {
-            items.iter().map(|item| item.id.clone()).collect()
-        })
+        question
+            .correct_order
+            .clone()
+            .unwrap_or_else(|| items.iter().map(|item| item.id.clone()).collect())
     } else {
         let mut shuffled: Vec<String> = items.iter().map(|item| item.id.clone()).collect();
         let mut rng = rand::thread_rng();
@@ -318,7 +316,8 @@ fn pick_drop_pin(question: &Question) -> String {
             return serde_json::json!({"x": x, "y": y}).to_string();
         }
     }
-    serde_json::json!({"x": rand::thread_rng().gen::<f64>(), "y": rand::thread_rng().gen::<f64>()}).to_string()
+    serde_json::json!({"x": rand::thread_rng().gen::<f64>(), "y": rand::thread_rng().gen::<f64>()})
+        .to_string()
 }
 
 async fn submit_bot_answer(
@@ -341,12 +340,8 @@ async fn submit_bot_answer(
             return;
         }
         game.engine.set_clock_ms(server_now_ms);
-        game.engine.record_answer(
-            &client_id,
-            answer_key,
-            answer_keys,
-            answer_text,
-        )
+        game.engine
+            .record_answer(&client_id, answer_key, answer_keys, answer_text)
     };
 
     if record_result.is_err() {
@@ -358,7 +353,10 @@ async fn submit_bot_answer(
         game.engine.current_answers.len() as i32
     };
     io.to(game_id.clone())
-        .emit(razzoozle_protocol::constants::game::PLAYER_ANSWER, &answer_count)
+        .emit(
+            razzoozle_protocol::constants::game::PLAYER_ANSWER,
+            &answer_count,
+        )
         .ok();
 
     let should_auto_advance = {
@@ -481,8 +479,17 @@ mod tests {
 
         // Unhandled question types should not provide an answer
         // to avoid incorrect data in records and statistics
-        assert!(answer_key.is_none(), "WordCloud should not provide answer_key");
-        assert!(answer_keys.is_none(), "WordCloud should not provide answer_keys");
-        assert!(answer_text.is_none(), "WordCloud should not provide answer_text");
+        assert!(
+            answer_key.is_none(),
+            "WordCloud should not provide answer_key"
+        );
+        assert!(
+            answer_keys.is_none(),
+            "WordCloud should not provide answer_keys"
+        );
+        assert!(
+            answer_text.is_none(),
+            "WordCloud should not provide answer_text"
+        );
     }
 }

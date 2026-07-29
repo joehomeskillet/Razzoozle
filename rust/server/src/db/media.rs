@@ -1,6 +1,6 @@
+use razzoozle_protocol::media_usage::MediaUsageEntry;
 use sqlx::PgPool;
 use std::collections::HashMap;
-use razzoozle_protocol::media_usage::MediaUsageEntry;
 
 /// Get media usage mapping from all quizzes.
 /// Returns HashMap<media_url, Vec<MediaUsageEntry>> for all questions with media.
@@ -13,7 +13,7 @@ async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageE
          FROM quizzes q, \
               jsonb_array_elements(q.questions) WITH ORDINALITY AS elem(obj, ord) \
          WHERE obj->'media'->>'url' IS NOT NULL \
-         ORDER BY q.id, ord"
+         ORDER BY q.id, ord",
     )
     .fetch_all(pool)
     .await
@@ -29,10 +29,7 @@ async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageE
 
     for (quiz_id, quiz_title, question_label, question_index, media_url) in usage_with_urls {
         // Truncate question_label to 80 chars using safe UTF-8 iteration
-        let truncated_label: String = question_label
-            .chars()
-            .take(80)
-            .collect();
+        let truncated_label: String = question_label.chars().take(80).collect();
 
         let entry = MediaUsageEntry {
             quiz_id,
@@ -57,7 +54,11 @@ async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageE
 /// `scope`: "all" (default) = ($me IS NULL OR owner_id = $me OR is_global = true)
 ///          "own" = ($me IS NULL OR owner_id = $me)
 ///          "global" = is_global = true
-pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&str>) -> Vec<serde_json::Value> {
+pub async fn get_media_list(
+    pool: &Option<PgPool>,
+    me: Option<i64>,
+    scope: Option<&str>,
+) -> Vec<serde_json::Value> {
     let pool_ref = match pool {
         Some(p) => p,
         None => return Vec::new(),
@@ -65,10 +66,20 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
 
     let scope_filter = scope.unwrap_or("all");
 
-    let rows: Vec<(String, String, String, i32, String, String, String, Option<i32>, Option<i32>, chrono::DateTime<chrono::Utc>)> =
-        match scope_filter {
-            "own" => {
-                match sqlx::query_as(
+    let rows: Vec<(
+        String,
+        String,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        Option<i32>,
+        Option<i32>,
+        chrono::DateTime<chrono::Utc>,
+    )> = match scope_filter {
+        "own" => {
+            match sqlx::query_as(
                     "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
                      FROM media_assets \
                      WHERE ($1::bigint IS NULL OR owner_id = $1) \
@@ -84,9 +95,9 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                         return Vec::new();
                     }
                 }
-            }
-            "global" => {
-                match sqlx::query_as(
+        }
+        "global" => {
+            match sqlx::query_as(
                     "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
                      FROM media_assets \
                      WHERE is_global = true \
@@ -101,10 +112,10 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                         return Vec::new();
                     }
                 }
-            }
-            _ => {
-                // "all" or unknown → default to all
-                match sqlx::query_as(
+        }
+        _ => {
+            // "all" or unknown → default to all
+            match sqlx::query_as(
                     "SELECT id, filename, url, size, type, category, source, width, height, uploaded_at \
                      FROM media_assets \
                      WHERE ($1::bigint IS NULL OR owner_id = $1 OR is_global = true) \
@@ -120,11 +131,14 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
                         return Vec::new();
                     }
                 }
-            }
-        };
+        }
+    };
 
     // Batch-fetch label IDs for all media assets in one query
-    let media_ids: Vec<&str> = rows.iter().map(|(id, _, _, _, _, _, _, _, _, _)| id.as_str()).collect();
+    let media_ids: Vec<&str> = rows
+        .iter()
+        .map(|(id, _, _, _, _, _, _, _, _, _)| id.as_str())
+        .collect();
     let label_map = super::labels::get_media_label_ids_batch(pool, &media_ids).await;
 
     // Batch-fetch media usage for all media items in one query
@@ -132,7 +146,8 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
 
     let mut result = Vec::new();
 
-    for (id, filename, url, size, media_type, category, source, width, height, uploaded_at) in rows {
+    for (id, filename, url, size, media_type, category, source, width, height, uploaded_at) in rows
+    {
         // uploaded_at is a TIMESTAMPTZ decoded into DateTime<Utc>; emit as RFC3339.
         let uploaded_at_rfc3339 = uploaded_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
 
@@ -167,7 +182,8 @@ pub async fn get_media_list(pool: &Option<PgPool>, me: Option<i64>, scope: Optio
         // Add usage only if media URL is found in usage map
         if let Some(usage_entries) = usage_map.get(&url) {
             if !usage_entries.is_empty() {
-                media_obj["usage"] = serde_json::to_value(usage_entries).unwrap_or(serde_json::Value::Null);
+                media_obj["usage"] =
+                    serde_json::to_value(usage_entries).unwrap_or(serde_json::Value::Null);
             }
         }
 
@@ -304,7 +320,8 @@ mod tests {
     #[test]
     fn test_media_usage_label_truncation_exact_boundary() {
         // Test with emoji exactly at boundary
-        let label = "12345678901234567890123456789012345678901234567890123456789012345678901234567890🎉";
+        let label =
+            "12345678901234567890123456789012345678901234567890123456789012345678901234567890🎉";
         let truncated: String = label.chars().take(80).collect();
         assert_eq!(truncated.chars().count(), 80);
     }
@@ -334,9 +351,18 @@ mod tests {
         };
 
         let media_url = "/media/images/pic.jpg".to_string();
-        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry1);
-        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry2);
-        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry3);
+        usage_map
+            .entry(media_url.clone())
+            .or_insert_with(Vec::new)
+            .push(entry1);
+        usage_map
+            .entry(media_url.clone())
+            .or_insert_with(Vec::new)
+            .push(entry2);
+        usage_map
+            .entry(media_url.clone())
+            .or_insert_with(Vec::new)
+            .push(entry3);
 
         assert_eq!(usage_map.len(), 1);
         assert_eq!(usage_map[&media_url].len(), 3);
@@ -364,7 +390,10 @@ mod tests {
 
         let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
         let media_url = "/media/test.jpg".to_string();
-        usage_map.entry(media_url.clone()).or_insert_with(Vec::new).push(entry);
+        usage_map
+            .entry(media_url.clone())
+            .or_insert_with(Vec::new)
+            .push(entry);
 
         assert_eq!(usage_map.len(), 1);
         assert_eq!(usage_map[&media_url].len(), 1);
@@ -381,19 +410,21 @@ pub async fn get_media_for_hydrate(pool: &Option<sqlx::PgPool>) -> Vec<(String, 
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, Vec<u8>)> =
-        match sqlx::query_as(
-            "SELECT url, data FROM media_assets WHERE data IS NOT NULL ORDER BY uploaded_at DESC"
-        )
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                tracing::warn!("Failed to fetch media_assets for hydration from database: {}", e);
-                return Vec::new();
-            }
-        };
+    let rows: Vec<(String, Vec<u8>)> = match sqlx::query_as(
+        "SELECT url, data FROM media_assets WHERE data IS NOT NULL ORDER BY uploaded_at DESC",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            tracing::warn!(
+                "Failed to fetch media_assets for hydration from database: {}",
+                e
+            );
+            return Vec::new();
+        }
+    };
 
     rows
 }
@@ -423,7 +454,11 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
     for category in &["questions", "backgrounds", "audio", "avatars", "generated"] {
         let cat_dir = format!("{}/{}", media_base, category);
         if let Err(e) = std::fs::create_dir_all(&cat_dir) {
-            tracing::warn!("Failed to create media category directory '{}': {}", cat_dir, e);
+            tracing::warn!(
+                "Failed to create media category directory '{}': {}",
+                cat_dir,
+                e
+            );
         }
     }
 
@@ -434,20 +469,24 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
         let rel_path = if let Some(stripped) = url.strip_prefix("/media/") {
             stripped
         } else {
-            tracing::warn!("media hydrate: Invalid url format '{}' (expected '/media/<category>/<filename>')", url);
+            tracing::warn!(
+                "media hydrate: Invalid url format '{}' (expected '/media/<category>/<filename>')",
+                url
+            );
             continue;
         };
-
 
         // Path traversal guard: reject unsafe paths
         if rel_path.is_empty()
             || rel_path.starts_with('/')
             || rel_path.split('/').any(|c| c == ".." || c.is_empty())
         {
-            tracing::warn!("media hydrate: rejecting unsafe path from url '{}' (traversal/absolute)", url);
+            tracing::warn!(
+                "media hydrate: rejecting unsafe path from url '{}' (traversal/absolute)",
+                url
+            );
             continue;
         }
-
 
         let file_path = format!("{}/{}", media_base, rel_path);
 
@@ -464,7 +503,11 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
         // Ensure parent directory exists
         if let Some(parent) = std::path::Path::new(&file_path).parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
-                tracing::warn!("Failed to create parent directory for '{}': {}", file_path, e);
+                tracing::warn!(
+                    "Failed to create parent directory for '{}': {}",
+                    file_path,
+                    e
+                );
                 continue;
             }
         }

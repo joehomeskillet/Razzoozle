@@ -3,17 +3,17 @@
 use super::super::HandlerCtx;
 use crate::db;
 use crate::state::safe_asset_id;
+use chrono::Utc;
 use image::codecs::webp::WebPEncoder;
 use image::io::Reader as ImageReader;
 use image::ColorType;
-use std::io::Cursor;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
-use chrono::Utc;
+use std::io::Cursor;
 use uuid::Uuid;
 
-mod validate;
 mod files;
+mod validate;
 
 /// Transcode raw image bytes (PNG/JPEG/WebP) to WebP. Returns (webp_bytes, width, height).
 /// Never panics — all decode/encode failures become `Err(String)`.
@@ -33,7 +33,8 @@ pub fn to_webp(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), String> {
     limits.max_alloc = Some(64 * 1024 * 1024);
     reader.limits(limits);
 
-    let img = reader.decode()
+    let img = reader
+        .decode()
         .map_err(|_| "errors:media.invalidDataUrl".to_string())?;
 
     let width = img.width();
@@ -42,12 +43,7 @@ pub fn to_webp(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), String> {
     let rgba = img.to_rgba8();
     let mut output = Vec::new();
     WebPEncoder::new_lossless(&mut output)
-        .encode(
-            rgba.as_raw(),
-            width,
-            height,
-            ColorType::Rgba8,
-        )
+        .encode(rgba.as_raw(), width, height, ColorType::Rgba8)
         .map_err(|_| "errors:submission.imageGenFailed".to_string())?;
 
     Ok((output, width, height))
@@ -71,13 +67,15 @@ fn register_list(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &())
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &()).ok();
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Extract optional scope from payload
                 let scope = payload
@@ -105,22 +103,25 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &())
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &()).ok();
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Validate payload (Zod-like validator). Returns first error message.
-                let (filename, data_url, category) = match validate::validate_upload_payload(&payload) {
-                    Ok(data) => data,
-                    Err(error_msg) => {
-                        socket.emit(constants::media::ERROR, &error_msg).ok();
-                        return;
-                    }
-                };
+                let (filename, data_url, category) =
+                    match validate::validate_upload_payload(&payload) {
+                        Ok(data) => data,
+                        Err(error_msg) => {
+                            socket.emit(constants::media::ERROR, &error_msg).ok();
+                            return;
+                        }
+                    };
 
                 // Decode base64 data URL
                 let (mime, buffer) = match validate::decode_data_url(data_url) {
@@ -132,21 +133,22 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 // Infer type and validate MIME
-                let (inferred_type, resolved_category) = match validate::infer_type_and_validate_mime(&mime, category) {
-                    Ok(result) => result,
-                    Err(e) => {
-                        socket.emit(constants::media::ERROR, &e).ok();
-                        return;
-                    }
-                };
+                let (inferred_type, resolved_category) =
+                    match validate::infer_type_and_validate_mime(&mime, category) {
+                        Ok(result) => result,
+                        Err(e) => {
+                            socket.emit(constants::media::ERROR, &e).ok();
+                            return;
+                        }
+                    };
 
                 // Images are transcoded to WebP (parity with Node toWebp); audio/video stay raw.
                 // Wrap in spawn_blocking to avoid starving the tokio worker pool on large uploads.
                 let (write_buffer, size, width, height) = if inferred_type == "image" {
                     let buffer_clone = buffer.clone();
-                    let transcode_result = tokio::task::spawn_blocking(move || to_webp(&buffer_clone))
-                        .await;
-                    
+                    let transcode_result =
+                        tokio::task::spawn_blocking(move || to_webp(&buffer_clone)).await;
+
                     let (webp_bytes, w, h) = match transcode_result {
                         Ok(Ok(v)) => v,
                         Ok(Err(e)) => {
@@ -154,7 +156,9 @@ fn register_upload(socket: &SocketRef, ctx: HandlerCtx) {
                             return;
                         }
                         Err(_) => {
-                            socket.emit(constants::media::ERROR, "errors:media.saveFailed").ok();
+                            socket
+                                .emit(constants::media::ERROR, "errors:media.saveFailed")
+                                .ok();
                             return;
                         }
                     };
@@ -251,13 +255,15 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &())
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &()).ok();
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Validate payload (Zod-like validator). Returns first error message or the ID.
                 let id = match validate::validate_delete_payload(&payload) {
@@ -278,9 +284,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 let media_entry = match files::get_media_asset_by_id(&ctx.db_pool, id, me).await {
                     Some(entry) => entry,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &())
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &()).ok();
                         return;
                     }
                 };
@@ -308,11 +312,10 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                 // Delete from disk (spawn_blocking)
                 let category_owned = category.to_string();
                 let filename_owned = filename.to_string();
-                let disk_result =
-                    tokio::task::spawn_blocking(move || {
-                        files::delete_media_file(&category_owned, &filename_owned)
-                    })
-                    .await;
+                let disk_result = tokio::task::spawn_blocking(move || {
+                    files::delete_media_file(&category_owned, &filename_owned)
+                })
+                .await;
 
                 if let Ok(Err(e)) = disk_result {
                     socket.emit(constants::media::ERROR, &e).ok();
@@ -328,9 +331,7 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Delete from database (owner-scoped)
                 if !db::delete_media_asset(&ctx.db_pool, id, me).await {
-                    socket
-                        .emit(constants::manager::UNAUTHORIZED, &())
-                        .ok();
+                    socket.emit(constants::manager::UNAUTHORIZED, &()).ok();
                     return;
                 }
 
@@ -342,7 +343,6 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::to_webp;
@@ -350,7 +350,10 @@ mod tests {
     #[test]
     fn to_webp_rejects_malformed_input_without_panic() {
         let result = to_webp(b"not-valid-image-data");
-        assert!(result.is_err(), "Malformed input should return Err, not panic");
+        assert!(
+            result.is_err(),
+            "Malformed input should return Err, not panic"
+        );
         if let Err(e) = result {
             assert!(e.contains("errors:"), "Error should be an i18n key");
         }
@@ -365,8 +368,9 @@ mod tests {
     #[test]
     fn to_webp_rejects_invalid_png_header() {
         // Fake PNG signature but invalid data
-        let fake_png = vec![0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 
-                            0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        let fake_png = vec![
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        ];
         let result = to_webp(&fake_png);
         assert!(result.is_err(), "Invalid PNG should error");
     }

@@ -1,10 +1,10 @@
 //! state.rs — In-memory game registry and state management.
 
+use lazy_static::lazy_static;
 use razzoozle_protocol::quizz::Quizz;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 mod empty_grace;
 mod eviction;
@@ -53,7 +53,6 @@ pub const TEAMS: [&str; 4] = ["red", "blue", "green", "yellow"];
 
 // Game eviction: TTL for finished/stale games (milliseconds)
 pub const GAME_EVICTION_TTL_MS: u64 = 300_000; // 5 minutes
-
 
 // ── Path-traversal protection ─────────────────────────────────────────────────
 // Validate asset IDs (quiz/result file names) to prevent path-traversal attacks
@@ -125,8 +124,7 @@ impl QuizFixture {
     }
 }
 
-
 // ── Solo-score payload structure caps ─────────────────────────────────────
-pub const SOLO_SCORE_PLAYER_NAME_MAX: usize = 255;      // Max player name length
-pub const SOLO_SCORE_ANSWER_TEXT_MAX: usize = 10_000;   // Max single answer text
-pub const SOLO_SCORE_ASSIGNMENT_ID_MAX: usize = 255;    // Max assignment ID length
+pub const SOLO_SCORE_PLAYER_NAME_MAX: usize = 255; // Max player name length
+pub const SOLO_SCORE_ANSWER_TEXT_MAX: usize = 10_000; // Max single answer text
+pub const SOLO_SCORE_ASSIGNMENT_ID_MAX: usize = 255; // Max assignment ID length

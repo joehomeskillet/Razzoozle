@@ -55,13 +55,10 @@ pub struct AnimatedBackgroundConfig {
 #[serde(rename_all = "camelCase")]
 pub struct ThemeBackgrounds {
     /// Background image path for auth screens (null = none)
-    
     pub auth: Option<String>,
     /// Background image path for manager game screen (null = none)
-    
     pub manager_game: Option<String>,
     /// Background image path for player game screen (null = none)
-    
     pub player_game: Option<String>,
     /// Animated background configs per slot
     pub animated: AnimatedBackgroundsConfig,
@@ -192,43 +189,30 @@ pub struct AnimationConfig {
 #[serde(rename_all = "camelCase")]
 pub struct SoundsConfig {
     /// Background music for answer selection phase
-
     pub answers_music: Option<String>,
     /// Sound effect when an answer is selected
-
     pub answers_sound: Option<String>,
     /// Sound for 3rd place podium finish
-
     pub podium_three: Option<String>,
     /// Sound for 2nd place podium finish
-
     pub podium_second: Option<String>,
     /// Sound for 1st place podium finish
-
     pub podium_first: Option<String>,
     /// Sound for podium snare roll (roll-up effect)
-
     pub podium_snear_roll: Option<String>,
     /// Sound effect at results screen entry
-
     pub results: Option<String>,
     /// Sound effect for question reveal
-
     pub show: Option<String>,
     /// Notification "boump" sound (e.g., player join)
-
     pub boump: Option<String>,
     /// Sound for unlocking a Bronze-tier achievement
-
     pub tier_bronze: Option<String>,
     /// Sound for unlocking a Silver-tier achievement
-
     pub tier_silver: Option<String>,
     /// Sound for unlocking a Gold-tier achievement
-
     pub tier_gold: Option<String>,
     /// Sound for unlocking a Diamant-tier achievement
-
     pub tier_diamant: Option<String>,
 }
 

@@ -78,10 +78,10 @@ where
             _ = abort.notified(), if !aborted => { aborted = true; }
             _ = ticker.tick() => {
                 if aborted { return CooldownOutcome::Aborted; }
-                
+
                 // Get remaining seconds from deadline (allows adjustTimer to shift it)
                 let remaining_secs = get_remaining_secs();
-                
+
                 if remaining_secs <= 0 { return CooldownOutcome::Elapsed; }
                 on_tick(remaining_secs);
             }

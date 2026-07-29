@@ -1,13 +1,13 @@
 //! Game lifecycle handlers: CREATE and DISCONNECT
 use super::HandlerCtx;
+use crate::state::socket_role;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::game::EndScreen;
 use razzoozle_protocol::game::GameCreate;
 use razzoozle_protocol::game::SelectedModes;
-use razzoozle_protocol::game::EndScreen;
 use razzoozle_protocol::status::ScoringMode;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
-use crate::state::socket_role;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_create(socket, ctx.clone());
@@ -267,8 +267,13 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 registry.mark_player_disconnected(&socket_id, false)
             };
 
-            if let Some((game_id, manager_socket_id, removed_player_socket_id, total_players, removed)) =
-                removed_player
+            if let Some((
+                game_id,
+                manager_socket_id,
+                removed_player_socket_id,
+                total_players,
+                removed,
+            )) = removed_player
             {
                 info!(
                     "Player disconnected: gameId={}, socketId={}, totalPlayers={}",

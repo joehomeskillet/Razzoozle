@@ -114,7 +114,6 @@ pub struct ShowPreparedData {
     pub question_type: Option<String>,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

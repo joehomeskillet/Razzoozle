@@ -1,14 +1,18 @@
 //! Quiz template library — file-backed under config/templates/*.json
 
-use axum::{extract::{Path, State}, http::{HeaderMap, StatusCode}, Json};
+use axum::{
+    extract::{Path, State},
+    http::{HeaderMap, StatusCode},
+    Json,
+};
 use razzoozle_protocol::quizz::Quizz;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::state::safe_asset_id;
 use super::{get_config_path, AppState};
+use crate::state::safe_asset_id;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TemplateMeta {
@@ -64,7 +68,10 @@ pub struct TemplateCreateBody {
 }
 
 fn templates_dir() -> PathBuf {
-    for c in [PathBuf::from("config/templates"), PathBuf::from("../config/templates")] {
+    for c in [
+        PathBuf::from("config/templates"),
+        PathBuf::from("../config/templates"),
+    ] {
         if c.is_dir() {
             return c;
         }
@@ -81,7 +88,13 @@ fn load_template_file(path: &std::path::Path) -> Option<Value> {
 fn slugify_id(name: &str) -> String {
     name.to_lowercase()
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .chars()
         .take(50)
@@ -116,7 +129,11 @@ pub async fn handle_list_templates() -> Result<Json<Vec<TemplateMeta>>, (StatusC
             if let Some(v) = load_template_file(&path) {
                 let questions = v.get("questions").and_then(|q| q.as_array());
                 out.push(TemplateMeta {
-                    id: v.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string(),
+                    id: v
+                        .get("id")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .to_string(),
                     category: v
                         .get("category")
                         .and_then(|x| x.as_str())
@@ -158,17 +175,35 @@ pub async fn handle_get_template(
     let v = load_template_file(&path)
         .ok_or_else(|| (StatusCode::NOT_FOUND, "Template not found".to_string()))?;
 
-    let questions = v.get("questions")
+    let questions = v
+        .get("questions")
         .and_then(|q| q.as_array())
         .cloned()
         .unwrap_or_default();
 
     let full = TemplateFull {
-        id: v.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string(),
-        category: v.get("category").and_then(|x| x.as_str()).unwrap_or("custom").to_string(),
-        name: v.get("name").and_then(|x| x.as_str()).unwrap_or("Template").to_string(),
-        description: v.get("description").and_then(|x| x.as_str()).unwrap_or("").to_string(),
-        tags: v.get("tags")
+        id: v
+            .get("id")
+            .and_then(|x| x.as_str())
+            .unwrap_or("")
+            .to_string(),
+        category: v
+            .get("category")
+            .and_then(|x| x.as_str())
+            .unwrap_or("custom")
+            .to_string(),
+        name: v
+            .get("name")
+            .and_then(|x| x.as_str())
+            .unwrap_or("Template")
+            .to_string(),
+        description: v
+            .get("description")
+            .and_then(|x| x.as_str())
+            .unwrap_or("")
+            .to_string(),
+        tags: v
+            .get("tags")
             .and_then(|x| x.as_array())
             .map(|a| {
                 a.iter()
@@ -196,7 +231,9 @@ pub async fn handle_create_template(
     let questions = if let Some(quiz_id) = body.from_quiz_id {
         safe_asset_id(&quiz_id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
         let registry = state.registry.read().await;
-        registry.quizzes.get(&quiz_id)
+        registry
+            .quizzes
+            .get(&quiz_id)
             .map(|q| {
                 serde_json::to_value(&q.questions)
                     .unwrap_or(Value::Array(vec![]))
@@ -212,7 +249,10 @@ pub async fn handle_create_template(
     // Generate ID from name
     let base_id = slugify_id(&body.name);
     if base_id.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "Template name cannot be empty or contain only special characters".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Template name cannot be empty or contain only special characters".to_string(),
+        ));
     }
     let id = next_template_id(&base_id);
 
@@ -228,19 +268,36 @@ pub async fn handle_create_template(
 
     // Atomic write: tmp + rename
     let dir = templates_dir();
-    fs::create_dir_all(&dir).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create templates directory: {e}")))?;
+    fs::create_dir_all(&dir).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to create templates directory: {e}"),
+        )
+    })?;
 
     let tmp_path = dir.join(format!("{}.json.tmp", id));
     let final_path = dir.join(format!("{}.json", id));
 
-    let json_str = serde_json::to_string_pretty(&template)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to serialize template: {e}")))?;
+    let json_str = serde_json::to_string_pretty(&template).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to serialize template: {e}"),
+        )
+    })?;
 
-    fs::write(&tmp_path, json_str)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to write template: {e}")))?;
+    fs::write(&tmp_path, json_str).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to write template: {e}"),
+        )
+    })?;
 
-    fs::rename(&tmp_path, &final_path)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to rename template file: {e}")))?;
+    fs::rename(&tmp_path, &final_path).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to rename template file: {e}"),
+        )
+    })?;
 
     let full = TemplateFull {
         id: id.clone(),
@@ -287,14 +344,26 @@ pub async fn handle_update_template(
     // Atomic write: tmp + rename
     let tmp_path = path.with_file_name(format!("{}.json.tmp", id));
 
-    let json_str = serde_json::to_string_pretty(&template)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to serialize template: {e}")))?;
+    let json_str = serde_json::to_string_pretty(&template).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to serialize template: {e}"),
+        )
+    })?;
 
-    fs::write(&tmp_path, json_str)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to write template: {e}")))?;
+    fs::write(&tmp_path, json_str).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to write template: {e}"),
+        )
+    })?;
 
-    fs::rename(&tmp_path, &path)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to rename template file: {e}")))?;
+    fs::rename(&tmp_path, &path).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to rename template file: {e}"),
+        )
+    })?;
 
     let full = TemplateFull {
         id: id.clone(),
@@ -322,8 +391,12 @@ pub async fn handle_delete_template(
     safe_asset_id(&id).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let path = templates_dir().join(format!("{}.json", id));
 
-    fs::remove_file(&path)
-        .map_err(|e| (StatusCode::NOT_FOUND, format!("Template not found or could not be deleted: {e}")))?;
+    fs::remove_file(&path).map_err(|e| {
+        (
+            StatusCode::NOT_FOUND,
+            format!("Template not found or could not be deleted: {e}"),
+        )
+    })?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -352,9 +425,7 @@ pub async fn handle_create_from_template(
         .get("name")
         .and_then(|x| x.as_str())
         .unwrap_or("Template");
-    let subject = body
-        .subject
-        .unwrap_or_else(|| format!("(Vorlage: {name})"));
+    let subject = body.subject.unwrap_or_else(|| format!("(Vorlage: {name})"));
     let millis = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
@@ -409,17 +480,20 @@ pub async fn handle_create_from_template(
 
 #[cfg(test)]
 mod tests {
-    use super::{slugify_id, load_template_file, templates_dir, TemplateMeta, TemplateFull, TemplateCreateBody, TemplateWriteBody, handle_create_template, handle_update_template, handle_delete_template};
     use super::super::AppState;
+    use super::{
+        handle_create_template, handle_delete_template, handle_update_template, load_template_file,
+        slugify_id, templates_dir, TemplateCreateBody, TemplateFull, TemplateMeta,
+        TemplateWriteBody,
+    };
     use crate::state::{safe_asset_id, GameRegistry};
-    use axum::http::{HeaderMap, StatusCode};
     use axum::extract::State;
+    use axum::http::{HeaderMap, StatusCode};
     use serde_json::json;
+    use socketioxide::SocketIo;
     use std::fs;
     use std::sync::Arc;
     use tokio::sync::RwLock;
-    use socketioxide::SocketIo;
-
 
     // ── Helper: create a HeaderMap with no authorization ─────────────────────
     fn empty_headers() -> HeaderMap {
@@ -445,7 +519,7 @@ mod tests {
 
         AppState {
             registry: Arc::new(RwLock::new(registry)),
-            db_pool: None,  // No database = admin check will fail
+            db_pool: None, // No database = admin check will fail
             io: make_socket_io(),
         }
     }
@@ -454,10 +528,16 @@ mod tests {
     #[test]
     fn test_path_traversal_dots_rejected() {
         let result = safe_asset_id("../evil");
-        assert!(result.is_err(), "Path traversal '../evil' should be rejected");
+        assert!(
+            result.is_err(),
+            "Path traversal '../evil' should be rejected"
+        );
 
         let result = safe_asset_id("..%2Fevil");
-        assert!(result.is_err(), "Encoded path traversal '..%2Fevil' should be rejected");
+        assert!(
+            result.is_err(),
+            "Encoded path traversal '..%2Fevil' should be rejected"
+        );
 
         let result = safe_asset_id("../../etc/passwd");
         assert!(result.is_err(), "Deep path traversal should be rejected");
@@ -467,23 +547,38 @@ mod tests {
     #[test]
     fn test_reserved_keywords_rejected() {
         let result = safe_asset_id("__proto__");
-        assert!(result.is_err(), "Reserved keyword '__proto__' should be rejected");
+        assert!(
+            result.is_err(),
+            "Reserved keyword '__proto__' should be rejected"
+        );
 
         let result = safe_asset_id("constructor");
-        assert!(result.is_err(), "Reserved keyword 'constructor' should be rejected");
+        assert!(
+            result.is_err(),
+            "Reserved keyword 'constructor' should be rejected"
+        );
 
         let result = safe_asset_id("prototype");
-        assert!(result.is_err(), "Reserved keyword 'prototype' should be rejected");
+        assert!(
+            result.is_err(),
+            "Reserved keyword 'prototype' should be rejected"
+        );
     }
 
     // ── Test: safe_asset_id accepts valid IDs ──────────────────────────────
     #[test]
     fn test_valid_asset_ids_accepted() {
         let result = safe_asset_id("tpl-math-quad");
-        assert!(result.is_ok(), "Valid ID 'tpl-math-quad' should be accepted");
+        assert!(
+            result.is_ok(),
+            "Valid ID 'tpl-math-quad' should be accepted"
+        );
 
         let result = safe_asset_id("my_template_42");
-        assert!(result.is_ok(), "Valid ID 'my_template_42' should be accepted");
+        assert!(
+            result.is_ok(),
+            "Valid ID 'my_template_42' should be accepted"
+        );
 
         let result = safe_asset_id("Quiz2024");
         assert!(result.is_ok(), "Valid ID 'Quiz2024' should be accepted");
@@ -493,7 +588,10 @@ mod tests {
     #[test]
     fn test_slugify_id_lowercase() {
         let result = slugify_id("Math Quadratic");
-        assert_eq!(result, "math-quadratic", "Should convert to lowercase with hyphens");
+        assert_eq!(
+            result, "math-quadratic",
+            "Should convert to lowercase with hyphens"
+        );
 
         let result = slugify_id("UPPER CASE NAME");
         assert_eq!(result, "upper-case-name", "Should lowercase all caps");
@@ -503,7 +601,10 @@ mod tests {
     #[test]
     fn test_slugify_id_special_chars() {
         let result = slugify_id("Quiz@2024#Edition!");
-        assert!(result.contains('-'), "Special chars should be replaced with dashes");
+        assert!(
+            result.contains('-'),
+            "Special chars should be replaced with dashes"
+        );
         assert!(!result.contains('@'), "@ should be replaced");
         assert!(!result.contains('#'), "# should be replaced");
         assert!(!result.contains('!'), "! should be replaced");
@@ -529,7 +630,10 @@ mod tests {
     fn test_slugify_id_max_length() {
         let long_name = "a".repeat(100);
         let result = slugify_id(&long_name);
-        assert!(result.len() <= 50, "Slugified ID should be trimmed to 50 chars max");
+        assert!(
+            result.len() <= 50,
+            "Slugified ID should be trimmed to 50 chars max"
+        );
     }
 
     // ── Test: slugify_id trims trailing dashes ──────────────────────────────
@@ -587,8 +691,10 @@ mod tests {
     #[test]
     fn test_empty_template_name_rejected() {
         let result = slugify_id("@#$%");
-        assert!(result.is_empty() || result.trim_matches('-').is_empty(),
-            "Special-chars-only name should slugify to empty or dashes");
+        assert!(
+            result.is_empty() || result.trim_matches('-').is_empty(),
+            "Special-chars-only name should slugify to empty or dashes"
+        );
     }
 
     // ── Test: handle_create_template forbids non-admin (403) ─────────────────
@@ -610,7 +716,11 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert_eq!(err.0, StatusCode::FORBIDDEN, "CREATE template without admin should return 403");
+        assert_eq!(
+            err.0,
+            StatusCode::FORBIDDEN,
+            "CREATE template without admin should return 403"
+        );
     }
 
     // ── Test: handle_update_template forbids non-admin (403) ─────────────────
@@ -637,7 +747,11 @@ mod tests {
         .await
         .unwrap_err();
 
-        assert_eq!(err.0, StatusCode::FORBIDDEN, "UPDATE template without admin should return 403");
+        assert_eq!(
+            err.0,
+            StatusCode::FORBIDDEN,
+            "UPDATE template without admin should return 403"
+        );
     }
 
     // ── Test: handle_delete_template forbids non-admin (403) ─────────────────
@@ -648,14 +762,14 @@ mod tests {
 
         let template_id = "tpl-test".to_string();
 
-        let err = handle_delete_template(
-            headers,
-            axum::extract::Path(template_id),
-            State(state),
-        )
-        .await
-        .unwrap_err();
+        let err = handle_delete_template(headers, axum::extract::Path(template_id), State(state))
+            .await
+            .unwrap_err();
 
-        assert_eq!(err.0, StatusCode::FORBIDDEN, "DELETE template without admin should return 403");
+        assert_eq!(
+            err.0,
+            StatusCode::FORBIDDEN,
+            "DELETE template without admin should return 403"
+        );
     }
 }

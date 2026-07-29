@@ -37,19 +37,25 @@ fn inject_og(html: &str, title: &str, desc: &str) -> String {
     // Replace og:title content attribute (full-match replace, no $1/$2)
     if let Ok(re) = regex::Regex::new(r#"<meta property="og:title" content="[^"]*""#) {
         let repl = format!(r#"<meta property="og:title" content="{}""#, title_esc);
-        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
+        result = re
+            .replace(&result, regex::NoExpand(repl.as_str()))
+            .to_string();
     }
 
     // Replace og:description content attribute
     if let Ok(re) = regex::Regex::new(r#"<meta property="og:description" content="[^"]*""#) {
         let repl = format!(r#"<meta property="og:description" content="{}""#, desc_esc);
-        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
+        result = re
+            .replace(&result, regex::NoExpand(repl.as_str()))
+            .to_string();
     }
 
     // Replace title element
     if let Ok(re) = regex::Regex::new(r"<title>[^<]*</title>") {
         let repl = format!("<title>{}</title>", title_esc);
-        result = re.replace(&result, regex::NoExpand(repl.as_str())).to_string();
+        result = re
+            .replace(&result, regex::NoExpand(repl.as_str()))
+            .to_string();
     }
 
     result
@@ -81,10 +87,7 @@ pub async fn handle_result_og(
     let mut html = match read_index_html() {
         Ok(h) => h,
         Err(_) => {
-            return Err((
-                StatusCode::FOUND,
-                [("Location", "/")],
-            ).into_response());
+            return Err((StatusCode::FOUND, [("Location", "/")]).into_response());
         }
     };
 
@@ -118,7 +121,10 @@ pub async fn handle_result_og(
 
     Ok((
         StatusCode::OK,
-        [("Content-Type", "text/html; charset=utf-8"), ("Cache-Control", "no-cache")],
+        [
+            ("Content-Type", "text/html; charset=utf-8"),
+            ("Cache-Control", "no-cache"),
+        ],
         Html(html),
     ))
 }

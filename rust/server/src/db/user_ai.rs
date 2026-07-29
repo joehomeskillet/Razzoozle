@@ -10,7 +10,9 @@ use sqlx::PgPool;
 /// Returns Err if unset or empty — fail loud, never store unencrypted.
 fn get_encryption_key() -> Result<String, String> {
     std::env::var("AI_KEY_ENCRYPTION_KEY")
-        .map_err(|_| "AI_KEY_ENCRYPTION_KEY not set; cannot encrypt/decrypt user AI keys".to_string())
+        .map_err(|_| {
+            "AI_KEY_ENCRYPTION_KEY not set; cannot encrypt/decrypt user AI keys".to_string()
+        })
         .and_then(|key| {
             if key.trim().is_empty() {
                 Err("AI_KEY_ENCRYPTION_KEY is empty".to_string())
@@ -35,7 +37,7 @@ pub async fn set_user_ai_key(
         "INSERT INTO user_ai_keys (user_id, provider_id, key_encrypted, updated_at) \
          VALUES ($1, $2, pgp_sym_encrypt($3, $4), now()) \
          ON CONFLICT (user_id, provider_id) \
-         DO UPDATE SET key_encrypted = pgp_sym_encrypt($3, $4), updated_at = now()"
+         DO UPDATE SET key_encrypted = pgp_sym_encrypt($3, $4), updated_at = now()",
     )
     .bind(user_id)
     .bind(provider_id)
@@ -61,7 +63,7 @@ pub async fn get_user_ai_key(
     let result = sqlx::query_as::<_, (String,)>(
         "SELECT pgp_sym_decrypt(key_encrypted, $3) \
          FROM user_ai_keys \
-         WHERE user_id = $1 AND provider_id = $2"
+         WHERE user_id = $1 AND provider_id = $2",
     )
     .bind(user_id)
     .bind(provider_id)
@@ -82,15 +84,17 @@ pub async fn list_user_ai_key_status(
 ) -> Result<Vec<(String, bool)>, String> {
     let _passphrase = get_encryption_key()?;
 
-    let result = sqlx::query_as::<_, (String,)>(
-        "SELECT provider_id FROM user_ai_keys WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let result =
+        sqlx::query_as::<_, (String,)>("SELECT provider_id FROM user_ai_keys WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
-    Ok(result.into_iter().map(|(provider_id,)| (provider_id, true)).collect())
+    Ok(result
+        .into_iter()
+        .map(|(provider_id,)| (provider_id, true))
+        .collect())
 }
 
 /// Delete a user's API key for a provider.

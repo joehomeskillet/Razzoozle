@@ -43,10 +43,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             .and_then(|v| v.as_str())
             .ok_or(format!("text.providers[{}].id is required", idx))?;
         if id.is_empty() || id.len() > 40 {
-            return Err(format!(
-                "text.providers[{}].id must be 1-40 chars",
-                idx
-            ));
+            return Err(format!("text.providers[{}].id must be 1-40 chars", idx));
         }
 
         let label = obj
@@ -54,10 +51,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             .and_then(|v| v.as_str())
             .ok_or(format!("text.providers[{}].label is required", idx))?;
         if label.is_empty() || label.len() > 60 {
-            return Err(format!(
-                "text.providers[{}].label must be 1-60 chars",
-                idx
-            ));
+            return Err(format!("text.providers[{}].label must be 1-60 chars", idx));
         }
 
         let kind = obj
@@ -76,10 +70,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             .and_then(|v| v.as_str())
             .ok_or(format!("text.providers[{}].model is required", idx))?;
         if model.is_empty() || model.len() > 120 {
-            return Err(format!(
-                "text.providers[{}].model must be 1-120 chars",
-                idx
-            ));
+            return Err(format!("text.providers[{}].model must be 1-120 chars", idx));
         }
 
         // Optional: baseUrl validation (if present, must be valid URL)
@@ -97,7 +88,9 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             if temp < constants::AI::TEMP_MIN || temp > constants::AI::TEMP_MAX {
                 return Err(format!(
                     "text.providers[{}].temperature must be {} to {}",
-                    idx, constants::AI::TEMP_MIN, constants::AI::TEMP_MAX
+                    idx,
+                    constants::AI::TEMP_MIN,
+                    constants::AI::TEMP_MAX
                 ));
             }
         }
@@ -127,10 +120,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             .and_then(|v| v.as_str())
             .ok_or(format!("image.providers[{}].id is required", idx))?;
         if id.is_empty() || id.len() > 40 {
-            return Err(format!(
-                "image.providers[{}].id must be 1-40 chars",
-                idx
-            ));
+            return Err(format!("image.providers[{}].id must be 1-40 chars", idx));
         }
 
         let label = obj
@@ -138,10 +128,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             .and_then(|v| v.as_str())
             .ok_or(format!("image.providers[{}].label is required", idx))?;
         if label.is_empty() || label.len() > 60 {
-            return Err(format!(
-                "image.providers[{}].label must be 1-60 chars",
-                idx
-            ));
+            return Err(format!("image.providers[{}].label must be 1-60 chars", idx));
         }
 
         // Optional: baseUrl, workflow, resolution
@@ -167,7 +154,10 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
             let res = obj
                 .get("resolution")
                 .and_then(|v| v.as_u64())
-                .ok_or(format!("image.providers[{}].resolution must be a number", idx))?;
+                .ok_or(format!(
+                    "image.providers[{}].resolution must be a number",
+                    idx
+                ))?;
             if res != 512 && res != 768 && res != 1024 {
                 return Err(format!(
                     "image.providers[{}].resolution must be 512, 768, or 1024",
@@ -201,7 +191,11 @@ pub fn validate_set_key(payload: &Value) -> Result<(String, Option<String>), Str
     }
 
     // Trim and return Option<String>
-    let trimmed_key = if key.trim().is_empty() { None } else { Some(key.trim().to_string()) };
+    let trimmed_key = if key.trim().is_empty() {
+        None
+    } else {
+        Some(key.trim().to_string())
+    };
 
     Ok((provider_id.to_string(), trimmed_key))
 }
@@ -209,9 +203,7 @@ pub fn validate_set_key(payload: &Value) -> Result<(String, Option<String>), Str
 /// Validate TEST_PROVIDER payload.
 pub fn validate_test_provider(payload: &Value) -> Result<Option<String>, String> {
     if let Some(provider_id) = payload.get("providerId") {
-        let id = provider_id
-            .as_str()
-            .ok_or("providerId must be a string")?;
+        let id = provider_id.as_str().ok_or("providerId must be a string")?;
 
         if id.is_empty() || id.len() > 40 {
             return Err("providerId must be 1-40 chars".to_string());
@@ -259,10 +251,7 @@ pub fn validate_generate_question(payload: &Value) -> Result<(String, String, St
         "drop-pin",
     ];
     if !ALLOWED_TYPES.contains(&q_type) {
-        return Err(format!(
-            "type must be one of: {}",
-            ALLOWED_TYPES.join(", ")
-        ));
+        return Err(format!("type must be one of: {}", ALLOWED_TYPES.join(", ")));
     }
 
     let language = payload

@@ -10,8 +10,8 @@ use ts_rs::TS;
 
 use crate::player::GameUpdateQuestion;
 use crate::player::Player;
-use crate::status::Status;
 use crate::status::ScoringMode;
+use crate::status::Status;
 
 // ─── Helper / Wrapper Types ──────────────────────────────────────────────────
 
@@ -65,7 +65,6 @@ pub enum SkeletonAssetKind {
     #[serde(rename = "js")]
     Js,
 }
-
 
 // ─── Client → Server (C2S) Payloads ─────────────────────────────────────────
 

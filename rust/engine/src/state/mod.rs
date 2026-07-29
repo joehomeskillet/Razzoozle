@@ -13,8 +13,8 @@ mod results;
 pub use results::RoundResult;
 mod accum;
 pub use accum::*;
-mod recap;
 mod achievement_awards;
+mod recap;
 pub use achievement_awards::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GamePhase {
@@ -30,12 +30,24 @@ pub enum GamePhase {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GameError {
-    InvalidTransition { from: GamePhase, action: &'static str },
+    InvalidTransition {
+        from: GamePhase,
+        action: &'static str,
+    },
     NoPlayers,
-    InvalidQuestionIndex { index: usize, total: usize },
-    UnknownPlayer { client_id: String },
-    DuplicateAnswer { client_id: String },
-    InvalidAnswerShape { client_id: String },
+    InvalidQuestionIndex {
+        index: usize,
+        total: usize,
+    },
+    UnknownPlayer {
+        client_id: String,
+    },
+    DuplicateAnswer {
+        client_id: String,
+    },
+    InvalidAnswerShape {
+        client_id: String,
+    },
 }
 
 impl std::fmt::Display for GameError {
@@ -123,10 +135,12 @@ impl GameState {
     }
 
     /// Set the achievements configuration (typically injected from DB by server).
-    pub fn set_achievements_config(&mut self, cfg: HashMap<String, crate::achievements::MergedAchievement>) {
+    pub fn set_achievements_config(
+        &mut self,
+        cfg: HashMap<String, crate::achievements::MergedAchievement>,
+    ) {
         self.achievements_config = cfg;
     }
-
 
     pub fn set_randomize_answers(&mut self, v: bool) {
         self.randomize_answers = v;
@@ -191,7 +205,12 @@ impl GameState {
         self.phase = GamePhase::ShowQuestion;
 
         // Compute display_order if randomizeAnswers is enabled
-        let n = self.current_question().answers.as_ref().map(|a| a.len()).unwrap_or(0);
+        let n = self
+            .current_question()
+            .answers
+            .as_ref()
+            .map(|a| a.len())
+            .unwrap_or(0);
         let is_slider = self.current_question().r#type == Some(QuestionType::Slider);
         self.current_display_order = if self.randomize_answers && !is_slider && n > 1 {
             use rand::Rng;
@@ -257,7 +276,11 @@ impl GameState {
             question_type,
             Some(QuestionType::TypeAnswer) | Some(QuestionType::SentenceBuilder)
         );
-        let trimmed_text_is_empty = answer_text.as_deref().map(str::trim).unwrap_or("").is_empty();
+        let trimmed_text_is_empty = answer_text
+            .as_deref()
+            .map(str::trim)
+            .unwrap_or("")
+            .is_empty();
 
         if is_multi_select && answer_keys.is_none() {
             return Err(GameError::InvalidAnswerShape {
@@ -318,15 +341,12 @@ impl GameState {
         // Gate first_correct calculation on practice+poll (matches Node's
         // `!isPoll && !question.practice`, results-stats.ts:168).
         let first_correct_id = if is_scored_question {
-            self
-                .answer_order
+            self.answer_order
                 .iter()
                 .find(|client_id| {
-                    self.current_answers
-                        .get(*client_id)
-                        .is_some_and(|answer| {
-                            eval::evaluate_answer(&question, &answer.answer_input).correct
-                        })
+                    self.current_answers.get(*client_id).is_some_and(|answer| {
+                        eval::evaluate_answer(&question, &answer.answer_input).correct
+                    })
                 })
                 .cloned()
         } else {
@@ -334,13 +354,16 @@ impl GameState {
         };
 
         // STEP 2: Snapshot rankBefore (pre-scoring rank order, by points descending)
-        let mut rank_before_vec: Vec<(String, i32)> = self.players.iter()
+        let mut rank_before_vec: Vec<(String, i32)> = self
+            .players
+            .iter()
             .map(|p| (p.client_id.clone(), p.points))
             .collect();
         rank_before_vec.sort_by(|a, b| b.1.cmp(&a.1));
         self.last_round_rank_before.clear();
         for (idx, (client_id, _)) in rank_before_vec.iter().enumerate() {
-            self.last_round_rank_before.insert(client_id.clone(), (idx + 1) as i32);
+            self.last_round_rank_before
+                .insert(client_id.clone(), (idx + 1) as i32);
         }
 
         let mut results = Vec::new();
@@ -381,11 +404,7 @@ impl GameState {
             // return never mutates `player`).
             if is_scored_question {
                 player.points += points;
-                player.streak = if correct {
-                    streak_before + 1
-                } else {
-                    0
-                };
+                player.streak = if correct { streak_before + 1 } else { 0 };
             }
 
             results.push(RoundResult {
@@ -422,8 +441,7 @@ impl GameState {
             .collect();
         self.questions_history
             .push(razzoozle_protocol::results_display::QuestionResult {
-                question: serde_json::to_value(&question)
-                    .unwrap_or_else(|_| serde_json::json!({})),
+                question: serde_json::to_value(&question).unwrap_or_else(|_| serde_json::json!({})),
                 player_answers,
             });
 
@@ -432,13 +450,12 @@ impl GameState {
         // achievement-awards.ts gates this fold on `row.aScored`, WP-H gap 3).
         if is_scored_question {
             // Compute rank_after map (from PRE-bonus points — N3 bonus fold runs after)
-            let mut rank_after_vec: Vec<(String, i32)> = self.players
+            let mut rank_after_vec: Vec<(String, i32)> = self
+                .players
                 .iter()
                 .map(|p| (p.client_id.clone(), p.points))
                 .collect();
-            rank_after_vec.sort_by(|a, b| {
-                b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0))
-            });
+            rank_after_vec.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
             let rank_after_map: HashMap<String, i32> = rank_after_vec
                 .iter()
                 .enumerate()
@@ -453,11 +470,17 @@ impl GameState {
                 }
 
                 let result = &results[i];
-                let rank_before = self.last_round_rank_before.get(&player.client_id).copied().unwrap_or(0);
+                let rank_before = self
+                    .last_round_rank_before
+                    .get(&player.client_id)
+                    .copied()
+                    .unwrap_or(0);
                 let rank_after = rank_after_map.get(&player.client_id).copied().unwrap_or(0);
 
-                let stat = self.recap_stats.entry(player.client_id.clone()).or_insert_with(|| {
-                    crate::state::RecapStat {
+                let stat = self
+                    .recap_stats
+                    .entry(player.client_id.clone())
+                    .or_insert_with(|| crate::state::RecapStat {
                         username: player.username.clone(),
                         fastest_ms: None,
                         peak_streak: 0,
@@ -468,14 +491,15 @@ impl GameState {
                         worst_rank_ever: 0,
                         achievement_ids: Vec::new(),
                         lucky_guess: false,
-                    }
-                });
+                    });
 
                 // Update recap_stats
                 if result.answered {
                     stat.answered += 1;
                     // fastest_ms: fastest ANSWERED response (Node parity, not correct-only)
-                    if stat.fastest_ms.is_none() || result.response_time_ms < stat.fastest_ms.unwrap() {
+                    if stat.fastest_ms.is_none()
+                        || result.response_time_ms < stat.fastest_ms.unwrap()
+                    {
                         stat.fastest_ms = Some(result.response_time_ms);
                     }
                     if result.correct {
@@ -509,12 +533,13 @@ impl GameState {
                 }
 
                 // question_stats: per-question total and correct counts
-                let q_stat = self.question_stats.entry(self.current_question_index as i32).or_insert_with(|| {
-                    crate::state::QuestionStat {
+                let q_stat = self
+                    .question_stats
+                    .entry(self.current_question_index as i32)
+                    .or_insert_with(|| crate::state::QuestionStat {
                         correct: 0,
                         total: 0,
-                    }
-                });
+                    });
                 if result.answered {
                     q_stat.total += 1;
                     if result.correct {
@@ -532,7 +557,11 @@ impl GameState {
         // Build AwardRow structs for each player, sorted DESC by points_after (results order)
         let mut award_rows: Vec<AwardRow> = Vec::new();
         for (_idx, result) in results.iter().enumerate() {
-            if let Some(player) = self.players.iter().find(|p| p.client_id == result.client_id) {
+            if let Some(player) = self
+                .players
+                .iter()
+                .find(|p| p.client_id == result.client_id)
+            {
                 award_rows.push(AwardRow {
                     client_id: result.client_id.clone(),
                     is_bot: player.is_bot == Some(true),
@@ -549,18 +578,25 @@ impl GameState {
                             .unwrap_or(0.0)
                     },
                     streak_after: result.streak,
-                    response_time_ms: if result.answered { Some(result.response_time_ms) } else { None },
-                    points_before: self.last_round_rank_before
+                    response_time_ms: if result.answered {
+                        Some(result.response_time_ms)
+                    } else {
+                        None
+                    },
+                    points_before: self
+                        .last_round_rank_before
                         .get(&result.client_id)
                         .and_then(|_rank_before| {
                             // Infer points_before from rank_before (rough — ideally from snapshot)
                             // For now, use the player's previous points state
-                            self.old_leaderboard.iter()
+                            self.old_leaderboard
+                                .iter()
                                 .find(|p| p.client_id == result.client_id)
                                 .map(|p| p.points)
                         })
                         .unwrap_or(0),
-                    points_after: self.players
+                    points_after: self
+                        .players
                         .iter()
                         .find(|p| p.client_id == result.client_id)
                         .map(|p| p.points)
@@ -577,10 +613,17 @@ impl GameState {
         // anchors on the LAST scored question's index — not the quiz's literal
         // last index — so a trailing poll/practice question never blocks
         // participation/perfect_game from firing on the true final round.
-        let total_scored = self.quiz.questions.iter()
+        let total_scored = self
+            .quiz
+            .questions
+            .iter()
             .filter(|q| q.practice != Some(true) && q.r#type != Some(QuestionType::Poll))
             .count() as i32;
-        let last_scored_index: i32 = self.quiz.questions.iter().enumerate()
+        let last_scored_index: i32 = self
+            .quiz
+            .questions
+            .iter()
+            .enumerate()
             .filter(|(_, q)| q.practice != Some(true) && q.r#type != Some(QuestionType::Poll))
             .map(|(idx, _)| idx as i32)
             .last()
@@ -735,10 +778,13 @@ impl GameState {
             .find(|result| result.client_id == client_id)
     }
 
-
     fn sorted_leaderboard(&self) -> Vec<Player> {
         let mut ranked = self.players.clone();
-        ranked.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+        ranked.sort_by(|a, b| {
+            b.points
+                .cmp(&a.points)
+                .then_with(|| a.username.cmp(&b.username))
+        });
         ranked
     }
 

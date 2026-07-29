@@ -117,7 +117,9 @@ impl ClientEvent {
                 }
                 Ok(())
             }
-            ClientEvent::SocketReconnect { clientId, attempts, .. } => {
+            ClientEvent::SocketReconnect {
+                clientId, attempts, ..
+            } => {
                 if clientId.is_empty() || clientId.len() > CAP_SHORT {
                     return Err("String must contain at most 200 character(s)");
                 }
@@ -249,11 +251,7 @@ pub async fn handle_client_events(
 
     // Input validation: enforce caps (Node Zod parity)
     if let Err(cap_error) = event.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": cap_error })),
-        )
-            .into_response();
+        return (StatusCode::BAD_REQUEST, Json(json!({ "error": cap_error }))).into_response();
     }
 
     // Rate limit check (per-clientId)
@@ -262,7 +260,9 @@ pub async fn handle_client_events(
     }
 
     // Increment counter for all accepted, rate-limited events (Node parity: client-events.ts:126)
-    CLIENT_EVENTS_TOTAL.with_label_values(&[event.event_type()]).inc();
+    CLIENT_EVENTS_TOTAL
+        .with_label_values(&[event.event_type()])
+        .inc();
 
     // Sampling: always keep errors/join-failures, sample the rest at 0.1
     let should_keep = always_keep(event.event_type())
@@ -272,7 +272,10 @@ pub async fn handle_client_events(
         // Create a redacted log line for the CLIENT ring (parity: Node client-events.ts:133-134)
         let mut log_obj = serde_json::Map::new();
         log_obj.insert("level".to_string(), json!("info"));
-        log_obj.insert("time".to_string(), json!(chrono::Utc::now().timestamp_millis()));
+        log_obj.insert(
+            "time".to_string(),
+            json!(chrono::Utc::now().timestamp_millis()),
+        );
         log_obj.insert("service".to_string(), json!("quiz-socket"));
         log_obj.insert("target".to_string(), json!(module_path!()));
         log_obj.insert("msg".to_string(), json!("client-event"));

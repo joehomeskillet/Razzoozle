@@ -7,8 +7,8 @@ mod quizz;
 mod results;
 mod submissions;
 mod theme;
-pub mod users;
 pub mod user_ai;
+pub mod users;
 
 pub use catalog::*;
 pub use classes::*;
@@ -19,8 +19,8 @@ pub use quizz::*;
 pub use results::*;
 pub use submissions::*;
 pub use theme::*;
-pub use users::*;
 pub use user_ai::*;
+pub use users::*;
 pub mod labels;
 pub use labels::*;
 

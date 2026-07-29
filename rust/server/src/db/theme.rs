@@ -31,7 +31,8 @@ pub async fn get_themes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_jso
             }
         };
 
-    let result = rows.into_iter()
+    let result = rows
+        .into_iter()
         .map(|(id, name)| serde_json::json!({"id": id, "name": name}))
         .collect();
 
@@ -46,13 +47,12 @@ pub async fn get_theme(pool: &Option<PgPool>) -> Option<serde_json::Value> {
         None => return None,
     };
 
-    let row: Option<(serde_json::Value,)> = sqlx::query_as(
-        "SELECT theme FROM themes WHERE id = 'active' LIMIT 1"
-    )
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten();
+    let row: Option<(serde_json::Value,)> =
+        sqlx::query_as("SELECT theme FROM themes WHERE id = 'active' LIMIT 1")
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
 
     row.map(|(theme_data,)| theme_data)
 }
@@ -70,7 +70,7 @@ pub async fn upsert_theme(
 
     sqlx::query(
         "INSERT INTO themes (id, theme, updated_at, owner_id) VALUES ('active', $1, now(), NULL) \
-         ON CONFLICT (id) DO UPDATE SET theme = $1, updated_at = now(), owner_id = NULL"
+         ON CONFLICT (id) DO UPDATE SET theme = $1, updated_at = now(), owner_id = NULL",
     )
     .bind(theme_data)
     .execute(pool)
@@ -111,7 +111,8 @@ pub async fn get_theme_templates_full(
             }
         };
 
-    let result = rows.into_iter()
+    let result = rows
+        .into_iter()
         .map(|(id, name, theme)| serde_json::json!({"id": id, "name": name, "theme": theme}))
         .collect();
 
@@ -179,7 +180,10 @@ pub async fn delete_theme_template(
     .map_err(|e| e.to_string())?;
 
     if result.rows_affected() == 0 {
-        warn!("Attempted to delete protected/unowned theme template: {}", id);
+        warn!(
+            "Attempted to delete protected/unowned theme template: {}",
+            id
+        );
     }
 
     Ok(result.rows_affected())
@@ -196,7 +200,9 @@ mod tests {
                 .unwrap(),
             0
         );
-        assert!(super::delete_theme_template(&None, "t", Some(1)).await.is_err());
+        assert!(super::delete_theme_template(&None, "t", Some(1))
+            .await
+            .is_err());
     }
 }
 
@@ -216,7 +222,7 @@ pub async fn insert_theme_revision(
     // INSERT the revision
     sqlx::query(
         "INSERT INTO theme_revisions (theme_id, theme_snapshot, created_at) \
-         VALUES ('active', $1, $2::timestamptz)"
+         VALUES ('active', $1, $2::timestamptz)",
     )
     .bind(snapshot)
     .bind(created_at_rfc3339)
@@ -227,7 +233,7 @@ pub async fn insert_theme_revision(
     // Prune to keep only newest 10
     sqlx::query(
         "DELETE FROM theme_revisions WHERE theme_id='active' AND id NOT IN \
-         (SELECT id FROM theme_revisions WHERE theme_id='active' ORDER BY id DESC LIMIT 10)"
+         (SELECT id FROM theme_revisions WHERE theme_id='active' ORDER BY id DESC LIMIT 10)",
     )
     .execute(pool)
     .await
@@ -247,7 +253,7 @@ pub async fn list_theme_revisions(pool: &Option<PgPool>) -> Vec<serde_json::Valu
 
     let rows: Vec<(serde_json::Value,)> = match sqlx::query_as(
         "SELECT theme_snapshot FROM theme_revisions WHERE theme_id='active' \
-         ORDER BY id DESC LIMIT 10"
+         ORDER BY id DESC LIMIT 10",
     )
     .fetch_all(pool)
     .await
@@ -272,7 +278,7 @@ pub async fn get_theme_revision_by_id(
 
     sqlx::query_as::<_, (serde_json::Value,)>(
         "SELECT theme_snapshot FROM theme_revisions WHERE theme_id='active' AND \
-         theme_snapshot->>'id' = $1 ORDER BY id DESC LIMIT 1"
+         theme_snapshot->>'id' = $1 ORDER BY id DESC LIMIT 1",
     )
     .bind(id)
     .fetch_optional(pool)

@@ -1,13 +1,11 @@
 use super::HandlerCtx;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::status::{
-    GameStatus, WaitData,
-};
+use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const SCOREBOARD_THROTTLE_MS: u64 = 100;
 

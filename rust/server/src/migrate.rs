@@ -20,7 +20,6 @@
 /// manually insert the 22 applied migrations into the _sqlx_migrations table
 /// (without re-running them). This prevents migration 001 (CREATE DOMAIN without
 /// IF NOT EXISTS) from failing. This is a manual, gated decision in DCK-07/09.
-
 use sqlx::PgPool;
 use tracing::warn;
 
@@ -94,26 +93,25 @@ async fn get_migration_status(pool: &PgPool) -> Result<MigrationStatus, String> 
     // so it is automatically correct when new migrations are added.
     let expected_count = get_expected_migration_count();
 
-    let count: i64 = match sqlx::query_scalar(
-        "SELECT COUNT(*) FROM _sqlx_migrations WHERE success = true"
-    )
-    .fetch_one(pool)
-    .await
-    {
-        Ok(count) => count,
-        Err(e) => {
-            // Check if this is a "table doesn't exist" error (pre-sqlx state).
-            // sqlx errors for missing tables contain both "does not exist" and the table name.
-            let err_str = e.to_string();
-            if err_str.contains("does not exist") {
-                // Pre-sqlx database: migrations were applied via bash, no ledger yet.
-                // This is a known state, not an error. Return PreSqlx without error.
-                return Ok(MigrationStatus::PreSqlx);
+    let count: i64 =
+        match sqlx::query_scalar("SELECT COUNT(*) FROM _sqlx_migrations WHERE success = true")
+            .fetch_one(pool)
+            .await
+        {
+            Ok(count) => count,
+            Err(e) => {
+                // Check if this is a "table doesn't exist" error (pre-sqlx state).
+                // sqlx errors for missing tables contain both "does not exist" and the table name.
+                let err_str = e.to_string();
+                if err_str.contains("does not exist") {
+                    // Pre-sqlx database: migrations were applied via bash, no ledger yet.
+                    // This is a known state, not an error. Return PreSqlx without error.
+                    return Ok(MigrationStatus::PreSqlx);
+                }
+                // Other DB errors (connection, permission, etc.) are real errors.
+                return Err(format!("failed to check migration status: {}", e));
             }
-            // Other DB errors (connection, permission, etc.) are real errors.
-            return Err(format!("failed to check migration status: {}", e));
-        }
-    };
+        };
 
     if count == expected_count {
         Ok(MigrationStatus::Complete)

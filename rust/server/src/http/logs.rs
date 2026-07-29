@@ -224,7 +224,12 @@ fn authorize_log_download(
 
     let expected = match dev_api_key() {
         Some(k) if !k.is_empty() => k,
-        _ => return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized")),
+        _ => {
+            return Err(json_error_response(
+                StatusCode::UNAUTHORIZED,
+                "unauthorized",
+            ))
+        }
     };
 
     // If Authorization header with Bearer schema is present, it is FINAL (no fallback).
@@ -235,7 +240,10 @@ fn authorize_log_download(
                 return if constant_time_eq(token.as_bytes(), expected.as_bytes()) {
                     Ok(())
                 } else {
-                    Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"))
+                    Err(json_error_response(
+                        StatusCode::UNAUTHORIZED,
+                        "unauthorized",
+                    ))
                 };
             }
         }
@@ -249,12 +257,14 @@ fn authorize_log_download(
         .unwrap_or("");
 
     if !constant_time_eq(presented.as_bytes(), expected.as_bytes()) {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+        ));
     }
 
     Ok(())
 }
-
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 

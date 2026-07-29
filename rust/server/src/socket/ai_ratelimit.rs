@@ -8,7 +8,7 @@ const TEXT_GEN_GC_MS: u64 = 3_600_000; // 1 hour
 
 #[derive(Clone)]
 struct TextGenState {
-    last: u64, // last call timestamp (ms)
+    last: u64,  // last call timestamp (ms)
     total: u64, // cumulative call count
 }
 
@@ -56,7 +56,10 @@ pub fn allow_text_gen(client_id: &str, cooldown_ms: u64, max_per_socket: u64) ->
     } else {
         store.insert(
             client_id.to_string(),
-            TextGenState { last: now, total: 1 },
+            TextGenState {
+                last: now,
+                total: 1,
+            },
         );
         true
     }

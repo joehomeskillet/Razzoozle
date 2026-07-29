@@ -1,5 +1,5 @@
-use sqlx::PgPool;
 use razzoozle_protocol::quizz::{Question, Quizz};
+use sqlx::PgPool;
 
 /// Load quizzes from the database, keyed by id.
 /// Returns a HashMap of (quiz_id -> Quizz).
@@ -17,21 +17,26 @@ pub async fn get_quizzes(
     };
 
     // Load all quizzes including archived; theme_id is populated from the column.
-    let rows: Vec<(String, String, serde_json::Value, Option<bool>, Option<String>)> =
-        match sqlx::query_as(
-            "SELECT id, subject, questions, archived, theme_id FROM quizzes \
-             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY id"
-        )
-        .bind(me)
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch quizzes from database: {}", e);
-                return result;
-            }
-        };
+    let rows: Vec<(
+        String,
+        String,
+        serde_json::Value,
+        Option<bool>,
+        Option<String>,
+    )> = match sqlx::query_as(
+        "SELECT id, subject, questions, archived, theme_id FROM quizzes \
+             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY id",
+    )
+    .bind(me)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch quizzes from database: {}", e);
+            return result;
+        }
+    };
 
     for (id, subject, questions_json, archived, theme_id) in rows {
         // Deserialize questions from JSONB
@@ -105,7 +110,6 @@ pub async fn get_quizzes_meta(pool: &Option<PgPool>, me: Option<i64>) -> Vec<ser
     result
 }
 
-
 /// Upsert a quiz (create or update by id). Takes subject and questions as JSON.
 /// Returns Ok(rows_affected) on success (0 = conflict row not owned / no-op), or Err on failure.
 /// `owner_id` is stamped on INSERT; not overwritten on conflict (preserves original owner).
@@ -156,14 +160,13 @@ pub async fn delete_quiz(pool: &Option<PgPool>, id: &str, me: Option<i64>) -> Re
         None => return Err("errors:quizz.failedToDelete".to_string()),
     };
 
-    let result = sqlx::query(
-        "DELETE FROM quizzes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
-    )
-    .bind(id)
-    .bind(me)
-    .execute(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let result =
+        sqlx::query("DELETE FROM quizzes WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)")
+            .bind(id)
+            .bind(me)
+            .execute(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(result.rows_affected())
 }
@@ -188,16 +191,15 @@ pub async fn duplicate_quiz(
     };
 
     // Fetch source quiz (including theme_id; archived comes from caller)
-    let source_row: Option<(serde_json::Value, Option<String>)> =
-        sqlx::query_as(
-            "SELECT questions, theme_id FROM quizzes \
+    let source_row: Option<(serde_json::Value, Option<String>)> = sqlx::query_as(
+        "SELECT questions, theme_id FROM quizzes \
              WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
-        )
-            .bind(source_id)
-            .bind(me)
-            .fetch_optional(pool)
-            .await
-            .map_err(|e| e.to_string())?;
+    )
+    .bind(source_id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     let (questions, theme_id) = match source_row {
         Some((q, t)) => (q, t),
@@ -351,13 +353,25 @@ mod tests {
     #[tokio::test]
     async fn mutation_without_pool_returns_err_or_zero() {
         // No DATABASE_URL / pool: mutations must not silently succeed.
-        assert!(upsert_quiz(&None, "x", "s", serde_json::json!([]), None, Some(1), Some(1))
-            .await
-            .is_err());
+        assert!(upsert_quiz(
+            &None,
+            "x",
+            "s",
+            serde_json::json!([]),
+            None,
+            Some(1),
+            Some(1)
+        )
+        .await
+        .is_err());
         assert!(delete_quiz(&None, "x", Some(1)).await.is_err());
-        assert!(update_quiz_archived(&None, "x", true, Some(1)).await.is_err());
-        assert!(append_question_to_quiz(&None, "x", &serde_json::json!({}), Some(1))
+        assert!(update_quiz_archived(&None, "x", true, Some(1))
             .await
             .is_err());
+        assert!(
+            append_question_to_quiz(&None, "x", &serde_json::json!({}), Some(1))
+                .await
+                .is_err()
+        );
     }
 }

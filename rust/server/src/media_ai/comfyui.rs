@@ -8,8 +8,8 @@
 //! the natural `errors:submission.imageGen*` error (no fake-success stub).
 
 use rand::Rng;
-use tracing::warn;
 use serde_json::{json, Value};
+use tracing::warn;
 use uuid::Uuid;
 
 use super::config_root;
@@ -24,8 +24,8 @@ const PROMPT_NODE: &str = "6"; // CLIPTextEncode positive — .inputs.text
 const SAMPLER_NODE: &str = "3"; // KSampler — .inputs.seed
 const SAVE_NODE: &str = "9"; // SaveImage — history images[0].filename
 const LATENT_NODE: &str = "5"; // EmptyLatentImage — .inputs.width/height
-// img2img node ids — DISTINCT from txt2img: node 6 is TextEncodeZImageOmni whose
-// prompt field is `.inputs.prompt` (NOT `.inputs.text`).
+                               // img2img node ids — DISTINCT from txt2img: node 6 is TextEncodeZImageOmni whose
+                               // prompt field is `.inputs.prompt` (NOT `.inputs.text`).
 const IMG2IMG_PROMPT_NODE: &str = "6";
 const IMG2IMG_LOADIMAGE_NODE: &str = "12";
 const IMG2IMG_SAMPLER_NODE: &str = "3";
@@ -52,7 +52,8 @@ fn txt2img_workflow_path() -> String {
 }
 
 fn img2img_workflow_path() -> String {
-    std::env::var("COMFYUI_IMG2IMG_WORKFLOW").unwrap_or_else(|_| DEFAULT_IMG2IMG_WORKFLOW.to_string())
+    std::env::var("COMFYUI_IMG2IMG_WORKFLOW")
+        .unwrap_or_else(|_| DEFAULT_IMG2IMG_WORKFLOW.to_string())
 }
 
 fn read_workflow(path: &str) -> Result<Value, String> {
@@ -65,7 +66,12 @@ fn random_seed() -> u64 {
 }
 
 fn short_id() -> String {
-    Uuid::new_v4().simple().to_string().chars().take(8).collect()
+    Uuid::new_v4()
+        .simple()
+        .to_string()
+        .chars()
+        .take(8)
+        .collect()
 }
 
 /// Square output resolution from the active image provider (config/ai-settings),
@@ -225,8 +231,7 @@ async fn queue_and_collect(workflow: Value, save_node: &str) -> Result<String, S
     };
 
     // Poll history until the SaveImage node reports an output (or we time out).
-    let deadline =
-        std::time::Instant::now() + std::time::Duration::from_millis(POLL_TIMEOUT_MS);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(POLL_TIMEOUT_MS);
 
     while std::time::Instant::now() < deadline {
         tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
@@ -296,16 +301,15 @@ async fn fetch_and_save(
     }
 
     let bytes = resp.bytes().await.map_err(|_| None)?;
-    
+
     // Wrap transcode in spawn_blocking to avoid starving the tokio worker pool.
     // Return Some(error_key) on TERMINAL errors (transcode failure),
     // return None on transient fetch failures (retryable).
     let bytes_owned = bytes.to_vec();
-    let transcode_result = tokio::task::spawn_blocking(move || {
-        crate::socket::manager::media::to_webp(&bytes_owned)
-    })
-    .await;
-    
+    let transcode_result =
+        tokio::task::spawn_blocking(move || crate::socket::manager::media::to_webp(&bytes_owned))
+            .await;
+
     let (webp_bytes, _width, _height) = match transcode_result {
         Ok(Ok(v)) => v,
         Ok(Err(e)) => {
@@ -318,16 +322,18 @@ async fn fetch_and_save(
             return Err(None);
         }
     };
-    
-    save_generated_image_bytes(&webp_bytes, &format!("gen-{}.webp", short_id()))
-        .map_err(|_| None)
+
+    save_generated_image_bytes(&webp_bytes, &format!("gen-{}.webp", short_id())).map_err(|_| None)
 }
 
 /// Persist generated image bytes into config/media/generated/ and return the
 /// public "/media/generated/<name>" URL. Validates the stem (parity: assertSafeId)
 /// before touching disk.
 fn save_generated_image_bytes(bytes: &[u8], dest_name: &str) -> Result<String, String> {
-    let stem = dest_name.rsplit_once('.').map(|(s, _)| s).unwrap_or(dest_name);
+    let stem = dest_name
+        .rsplit_once('.')
+        .map(|(s, _)| s)
+        .unwrap_or(dest_name);
     crate::state::safe_asset_id(stem).map_err(|_| FAILED.to_string())?;
 
     let dir = config_root().join("media").join("generated");

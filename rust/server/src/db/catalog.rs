@@ -57,12 +57,13 @@ pub async fn insert_catalog_entry_with_tags(
     let mut suffix = 2;
 
     loop {
-        let existing: Option<(String,)> = sqlx::query_as("SELECT id FROM catalog_entries WHERE id = $1")
-            .bind(&id)
-            .fetch_optional(pool)
-            .await
-            .ok()
-            .flatten();
+        let existing: Option<(String,)> =
+            sqlx::query_as("SELECT id FROM catalog_entries WHERE id = $1")
+                .bind(&id)
+                .fetch_optional(pool)
+                .await
+                .ok()
+                .flatten();
 
         if existing.is_none() {
             break;
@@ -75,7 +76,7 @@ pub async fn insert_catalog_entry_with_tags(
     // Insert the catalog entry
     sqlx::query(
         "INSERT INTO catalog_entries (id, question, tags, source, added_at, owner_id) \
-         VALUES ($1, $2, $3, $4, $5, $6)"
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(&id)
     .bind(question)
@@ -89,14 +90,17 @@ pub async fn insert_catalog_entry_with_tags(
     .map_err(|e| e.to_string())
 }
 
-
 /// Fetch all catalog entries as an array of JSON objects (matches the
 /// Node `CatalogEntry` shape: id, question, tags, source, addedAt, labelIds).
 /// `me`: None = unfiltered (admin); Some(id) = own rows + is_global.
 /// `scope`: "all" (default) = ($me IS NULL OR owner_id = $me OR is_global = true)
 ///          "own" = ($me IS NULL OR owner_id = $me)
 ///          "global" = is_global = true
-pub async fn get_catalog(pool: &Option<PgPool>, me: Option<i64>, scope: Option<&str>) -> Vec<serde_json::Value> {
+pub async fn get_catalog(
+    pool: &Option<PgPool>,
+    me: Option<i64>,
+    scope: Option<&str>,
+) -> Vec<serde_json::Value> {
     let pool = match pool {
         Some(p) => p,
         None => return vec![],
@@ -230,6 +234,8 @@ mod tests {
         assert!(super::update_catalog_entry(&None, "id", &q, &tags, Some(1))
             .await
             .is_err());
-        assert!(super::delete_catalog_entry(&None, "id", Some(1)).await.is_err());
+        assert!(super::delete_catalog_entry(&None, "id", Some(1))
+            .await
+            .is_err());
     }
 }

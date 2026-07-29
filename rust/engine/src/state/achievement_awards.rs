@@ -2,7 +2,7 @@
 // Verbatim port of packages/socket/src/services/game/round-manager/achievement-awards.ts
 // with 14 triggers, underdog O(n) backward-run, and bonus-point mutation.
 
-use crate::achievements::{enabled, threshold, bonus};
+use crate::achievements::{bonus, enabled, threshold};
 use crate::state::GameCounter;
 use razzoozle_protocol::quizz::{Question, QuestionType};
 use std::collections::HashMap;
@@ -76,11 +76,13 @@ pub fn compute_achievement_awards(
 
         // Only scored questions (not polls, not practice) can unlock badges
         if row.scored {
-            let counter = counters.entry(row.client_id.clone()).or_insert(GameCounter {
-                answered: 0,
-                correct: 0,
-                ever: false,
-            });
+            let counter = counters
+                .entry(row.client_id.clone())
+                .or_insert(GameCounter {
+                    answered: 0,
+                    correct: 0,
+                    ever: false,
+                });
 
             // Capture pre-update state for triggers that need it
             let ever_before = counter.ever;
@@ -114,7 +116,8 @@ pub fn compute_achievement_awards(
                 "lucky_guess",
                 row.is_correct
                     && rt.is_some()
-                    && (rt.unwrap() as f64) >= (1.0 - lucky_percent / 100.0) * question.time as f64 * 1000.0,
+                    && (rt.unwrap() as f64)
+                        >= (1.0 - lucky_percent / 100.0) * question.time as f64 * 1000.0,
             );
 
             // participation: answered every scored question (only on last scored round)
@@ -132,10 +135,7 @@ pub fn compute_achievement_awards(
             );
 
             // streak_3: streak equals threshold (default 3)
-            award(
-                "streak_3",
-                row.streak_after as f64 == thr("streak_3", 3.0),
-            );
+            award("streak_3", row.streak_after as f64 == thr("streak_3", 3.0));
 
             // sharpshooter: slider question, correct, accuracy > 95%
             let sharp_pct = thr("sharpshooter", 95.0);
@@ -166,10 +166,7 @@ pub fn compute_achievement_awards(
             );
 
             // streak_5: streak equals threshold (default 5)
-            award(
-                "streak_5",
-                row.streak_after as f64 == thr("streak_5", 5.0),
-            );
+            award("streak_5", row.streak_after as f64 == thr("streak_5", 5.0));
 
             // perfect_round: streak equals threshold (default 5)
             award(
@@ -181,7 +178,8 @@ pub fn compute_achievement_awards(
             let underdog_thr = thr("underdog", 2000.0);
             award(
                 "underdog",
-                max_before_strictly_below[index] > i32::MIN && (max_before_strictly_below[index] - row.points_before) as f64 > underdog_thr,
+                max_before_strictly_below[index] > i32::MIN
+                    && (max_before_strictly_below[index] - row.points_before) as f64 > underdog_thr,
             );
 
             // ── Diamant ───────────────────────────────────────────────────────────
@@ -224,10 +222,7 @@ pub fn compute_achievement_awards(
         }
 
         if let Some(unlocked) = unlocked_by_client.get(&row.client_id) {
-            let total_bonus: i32 = unlocked
-                .iter()
-                .map(|id| bonus(cfg, id))
-                .sum();
+            let total_bonus: i32 = unlocked.iter().map(|id| bonus(cfg, id)).sum();
 
             if total_bonus > 0 {
                 bonus_by_client.insert(row.client_id.clone(), total_bonus);
@@ -266,14 +261,14 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
-        tolerance: None,
-        decimals: None,
-        sentence: None,
-        tokens: None,
-        pos_set: None,
-        disabled_tokens: None,
-        items: None,
-        correct_order: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+            items: None,
+            correct_order: None,
             segments: None,
             slots: None,
             left_items: None,
@@ -332,14 +327,14 @@ mod tests {
             submitted_by: None,
             accepted_answers: None,
             match_mode: None,
-        tolerance: None,
-        decimals: None,
-        sentence: None,
-        tokens: None,
-        pos_set: None,
-        disabled_tokens: None,
-        items: None,
-        correct_order: None,
+            tolerance: None,
+            decimals: None,
+            sentence: None,
+            tokens: None,
+            pos_set: None,
+            disabled_tokens: None,
+            items: None,
+            correct_order: None,
             segments: None,
             slots: None,
             left_items: None,

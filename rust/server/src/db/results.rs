@@ -10,21 +10,25 @@ pub async fn get_results(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_js
         None => return Vec::new(),
     };
 
-    let rows: Vec<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value)> =
-        match sqlx::query_as(
-            "SELECT id, subject, date, players FROM game_results \
-             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY date DESC"
-        )
-        .bind(me)
-        .fetch_all(pool)
-        .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Failed to fetch game_results from database: {}", e);
-                return Vec::new();
-            }
-        };
+    let rows: Vec<(
+        String,
+        String,
+        chrono::DateTime<chrono::Utc>,
+        serde_json::Value,
+    )> = match sqlx::query_as(
+        "SELECT id, subject, date, players FROM game_results \
+             WHERE ($1::bigint IS NULL OR owner_id = $1) ORDER BY date DESC",
+    )
+    .bind(me)
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("Failed to fetch game_results from database: {}", e);
+            return Vec::new();
+        }
+    };
 
     let mut result = Vec::new();
     for (id, subject, date, players) in rows {
@@ -55,17 +59,23 @@ pub async fn get_result_by_id(
         None => return None,
     };
 
-    let row: Option<(String, String, chrono::DateTime<chrono::Utc>, serde_json::Value, Option<serde_json::Value>, Option<serde_json::Value>)> =
-        sqlx::query_as(
-            "SELECT id, subject, date, players, questions, recap FROM game_results \
+    let row: Option<(
+        String,
+        String,
+        chrono::DateTime<chrono::Utc>,
+        serde_json::Value,
+        Option<serde_json::Value>,
+        Option<serde_json::Value>,
+    )> = sqlx::query_as(
+        "SELECT id, subject, date, players, questions, recap FROM game_results \
              WHERE id = $1 AND ($2::bigint IS NULL OR owner_id = $2)",
-        )
-            .bind(id)
-            .bind(me)
-            .fetch_optional(pool)
-            .await
-            .ok()
-            .flatten();
+    )
+    .bind(id)
+    .bind(me)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
 
     row.map(|(id, subject, date, players, questions, recap)| {
         let mut obj = serde_json::json!({
@@ -224,14 +234,31 @@ mod tests {
         let now = chrono::Utc::now();
         let formatted = now.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
 
-        assert_eq!(formatted.len(), 24, "Timestamp should be exactly 24 chars: {}", formatted);
-        assert!(formatted.ends_with('Z'), "Timestamp should end with Z: {}", formatted);
+        assert_eq!(
+            formatted.len(),
+            24,
+            "Timestamp should be exactly 24 chars: {}",
+            formatted
+        );
+        assert!(
+            formatted.ends_with('Z'),
+            "Timestamp should end with Z: {}",
+            formatted
+        );
 
         // Verify format: YYYY-MM-DDTHH:MM:SS.sssZ
         // Position 19 should be '.', position 23 should be 'Z'
         let chars: Vec<char> = formatted.chars().collect();
-        assert_eq!(chars[19], '.', "Char at position 19 should be '.': {}", formatted);
-        assert_eq!(chars[23], 'Z', "Char at position 23 should be 'Z': {}", formatted);
+        assert_eq!(
+            chars[19], '.',
+            "Char at position 19 should be '.': {}",
+            formatted
+        );
+        assert_eq!(
+            chars[23], 'Z',
+            "Char at position 23 should be 'Z': {}",
+            formatted
+        );
     }
 
     #[tokio::test]

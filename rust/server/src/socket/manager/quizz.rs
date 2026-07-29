@@ -238,7 +238,11 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Update an existing quiz in place: {id, subject, questions[]}.
                 // Keeps the SAME id (matches Node updateQuizz, which returns the input id).
@@ -251,7 +255,10 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                     (Some(quiz_id), Some(subj), Some(qs))
                         if !quiz_id.is_empty() && !subj.is_empty() && !qs.is_empty() =>
                     {
-                        let questions_json = payload.get("questions").cloned().unwrap_or(serde_json::json!([]));
+                        let questions_json = payload
+                            .get("questions")
+                            .cloned()
+                            .unwrap_or(serde_json::json!([]));
 
                         // Validate questions against full questionValidator
                         if let Err(e) = validate_questions(&questions_json) {
@@ -292,7 +299,9 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
 
                                 let response = serde_json::json!({ "id": quiz_id });
-                                socket.emit(constants::quizz::UPDATE_SUCCESS, &response).ok();
+                                socket
+                                    .emit(constants::quizz::UPDATE_SUCCESS, &response)
+                                    .ok();
                                 config_helper::build_and_emit_config(&socket, &ctx).await;
                             }
                             Ok(_) => {
@@ -306,7 +315,9 @@ fn register_update(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                     _ => {
-                        socket.emit(constants::quizz::ERROR, "errors:quizz.invalidPayload").ok();
+                        socket
+                            .emit(constants::quizz::ERROR, "errors:quizz.invalidPayload")
+                            .ok();
                     }
                 }
             });
@@ -331,7 +342,11 @@ fn register_delete(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 if let Err(e) = safe_asset_id(&id) {
                     socket.emit(constants::quizz::ERROR, &e).ok();
@@ -383,7 +398,11 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Read source quiz from registry
                 let source_quiz = {
@@ -403,9 +422,12 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         // Re-validate the source questions before duplicating
-                        let questions_json = serde_json::to_value(&quiz.questions).unwrap_or(serde_json::json!([]));
+                        let questions_json =
+                            serde_json::to_value(&quiz.questions).unwrap_or(serde_json::json!([]));
                         if validate_questions(&questions_json).is_err() {
-                            socket.emit(constants::quizz::ERROR, "errors:quizz.failedToSave").ok();
+                            socket
+                                .emit(constants::quizz::ERROR, "errors:quizz.failedToSave")
+                                .ok();
                             return;
                         }
 
@@ -439,7 +461,9 @@ fn register_duplicate(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                     None => {
-                        socket.emit(constants::quizz::ERROR, "errors:quizz.notFound").ok();
+                        socket
+                            .emit(constants::quizz::ERROR, "errors:quizz.notFound")
+                            .ok();
                     }
                 }
             });
@@ -464,7 +488,11 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                         return;
                     }
                 };
-                let me = if user.role == "admin" { None } else { Some(user.user_id) };
+                let me = if user.role == "admin" {
+                    None
+                } else {
+                    Some(user.user_id)
+                };
 
                 // Parse payload {id, archived}
                 let id = payload.get("id").and_then(|v| v.as_str());
@@ -499,7 +527,9 @@ fn register_set_archived(socket: &SocketRef, ctx: HandlerCtx) {
                         }
                     }
                     _ => {
-                        socket.emit(constants::quizz::ERROR, "errors:quizz.invalidPayload").ok();
+                        socket
+                            .emit(constants::quizz::ERROR, "errors:quizz.invalidPayload")
+                            .ok();
                     }
                 }
             });

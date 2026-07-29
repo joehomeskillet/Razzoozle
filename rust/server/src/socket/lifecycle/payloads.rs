@@ -5,23 +5,23 @@ use super::*;
 pub(crate) fn shuffle_chunks_with_guard(chunks: Vec<String>) -> Vec<String> {
     use rand::seq::SliceRandom;
     use rand::thread_rng;
-    
+
     let is_equal = |a: &[String], b: &[String]| -> bool {
         if a.len() != b.len() {
             return false;
         }
         a.iter().zip(b.iter()).all(|(x, y)| x == y)
     };
-    
+
     let mut rng = thread_rng();
     let mut shuffled = chunks.clone();
     let mut attempts = 0;
-    
+
     while attempts < 10 && is_equal(&shuffled, &chunks) {
         shuffled.shuffle(&mut rng);
         attempts += 1;
     }
-    
+
     shuffled
 }
 
@@ -70,9 +70,10 @@ pub(crate) fn build_select_answer_data(
         disabled_tokens: question.disabled_tokens.clone(),
         // Fill-blank / matching: play-time options only (no correctIndex leak).
         segments: question.segments.clone(),
-        slot_options: question.slots.as_ref().map(|slots| {
-            slots.iter().map(|s| s.options.clone()).collect()
-        }),
+        slot_options: question
+            .slots
+            .as_ref()
+            .map(|slots| slots.iter().map(|s| s.options.clone()).collect()),
         match_items: question.left_items.as_ref().map(|items| {
             items
                 .iter()
@@ -85,12 +86,19 @@ pub(crate) fn build_select_answer_data(
     }
 }
 
-pub(crate) fn build_finished_data(game: &Game, recap_json: Option<serde_json::Value>) -> FinishedData {
+pub(crate) fn build_finished_data(
+    game: &Game,
+    recap_json: Option<serde_json::Value>,
+) -> FinishedData {
     FinishedData {
         subject: game.engine.quiz.subject.clone(),
         top: {
             let mut sorted = game.engine.players.clone();
-            sorted.sort_by(|a, b| b.points.cmp(&a.points).then_with(|| a.username.cmp(&b.username)));
+            sorted.sort_by(|a, b| {
+                b.points
+                    .cmp(&a.points)
+                    .then_with(|| a.username.cmp(&b.username))
+            });
             sorted
         },
         rank: None,
@@ -102,8 +110,9 @@ pub(crate) fn build_finished_data(game: &Game, recap_json: Option<serde_json::Va
     }
 }
 
-pub(crate) fn build_recap_and_questions(engine: &razzoozle_engine::state::GameState)
-    -> (Option<serde_json::Value>, serde_json::Value) {
+pub(crate) fn build_recap_and_questions(
+    engine: &razzoozle_engine::state::GameState,
+) -> (Option<serde_json::Value>, serde_json::Value) {
     let recap = engine.build_manager_recap();
     let recap_json = if recap.superlatives.is_empty() {
         None

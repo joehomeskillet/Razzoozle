@@ -115,7 +115,10 @@ fn validate_manifest(v: &Value) -> Result<ParsedManifest, String> {
         .ok_or_else(fail)?;
 
     // tab: required { nameKey: string, icon: string, gated: enum default "always" }
-    let tab = obj.get("tab").and_then(|x| x.as_object()).ok_or_else(fail)?;
+    let tab = obj
+        .get("tab")
+        .and_then(|x| x.as_object())
+        .ok_or_else(fail)?;
     if tab.get("nameKey").and_then(|x| x.as_str()).is_none()
         || tab.get("icon").and_then(|x| x.as_str()).is_none()
     {
@@ -181,7 +184,10 @@ fn validate_manifest(v: &Value) -> Result<ParsedManifest, String> {
         for h in lh.as_array().ok_or_else(fail)? {
             if !matches!(
                 h.as_str(),
-                Some("onQuestionShown") | Some("onResult") | Some("onLeaderboard") | Some("onGameEnd")
+                Some("onQuestionShown")
+                    | Some("onResult")
+                    | Some("onLeaderboard")
+                    | Some("onGameEnd")
             ) {
                 return Err(fail());
             }
@@ -191,10 +197,17 @@ fn validate_manifest(v: &Value) -> Result<ParsedManifest, String> {
     // renderSlot (v2): { events: enum[] } when present.
     if let Some(rs) = obj.get("renderSlot") {
         let o = rs.as_object().ok_or_else(fail)?;
-        for e in o.get("events").and_then(|e| e.as_array()).ok_or_else(fail)? {
+        for e in o
+            .get("events")
+            .and_then(|e| e.as_array())
+            .ok_or_else(fail)?
+        {
             if !matches!(
                 e.as_str(),
-                Some("SHOW_QUESTION") | Some("SHOW_RESULT") | Some("SHOW_LEADERBOARD") | Some("FINISHED")
+                Some("SHOW_QUESTION")
+                    | Some("SHOW_RESULT")
+                    | Some("SHOW_LEADERBOARD")
+                    | Some("FINISHED")
             ) {
                 return Err(fail());
             }
@@ -334,7 +347,9 @@ pub(crate) fn import_plugin_zip(bytes: &[u8]) -> Result<InstalledPlugin, String>
     let mut total_bytes = 0usize;
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).map_err(|_| INSTALL_FAILED.to_string())?;
+        let mut file = archive
+            .by_index(i)
+            .map_err(|_| INSTALL_FAILED.to_string())?;
         if file.is_dir() {
             continue;
         }
@@ -484,7 +499,10 @@ mod tests {
     #[test]
     fn allowlist_excludes_svg_and_video() {
         for banned in ["svg", "mp4", "webm", "ogv", "html", "exe", ""] {
-            assert!(!PLUGIN_ASSET_EXT.contains(&banned), "{banned} must be banned");
+            assert!(
+                !PLUGIN_ASSET_EXT.contains(&banned),
+                "{banned} must be banned"
+            );
         }
         for ok in ["js", "json", "css", "png", "woff2", "gif"] {
             assert!(PLUGIN_ASSET_EXT.contains(&ok), "{ok} must be allowed");
@@ -526,7 +544,10 @@ mod tests {
         assert_eq!(import_plugin_zip(&[]).unwrap_err(), INSTALL_FAILED);
         assert_eq!(import_plugin_zip(b"not a zip").unwrap_err(), INSTALL_FAILED);
         // Truncated central-directory magic.
-        assert_eq!(import_plugin_zip(b"PK\x05\x06").unwrap_err(), INSTALL_FAILED);
+        assert_eq!(
+            import_plugin_zip(b"PK\x05\x06").unwrap_err(),
+            INSTALL_FAILED
+        );
     }
 
     /// export → import → re-export must be byte-identical, and on-disk files
@@ -580,11 +601,9 @@ mod tests {
 
         // Clear disk so import can re-install the same id.
         fs::remove_dir_all(&dir).unwrap();
-        assert!(
-            !super::super::plugins::read_plugins_index()
-                .iter()
-                .any(|p| p.id == id)
-        );
+        assert!(!super::super::plugins::read_plugins_index()
+            .iter()
+            .any(|p| p.id == id));
 
         let installed = import_plugin_zip(&zip_a).expect("import exported zip");
         assert_eq!(installed.id, id);

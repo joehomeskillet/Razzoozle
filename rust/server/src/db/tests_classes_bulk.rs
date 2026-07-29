@@ -194,14 +194,9 @@ mod tests {
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_set_group1_idem_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_set_group1_idem_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_set_group1_idem_class", owner_id)
             .await
@@ -232,8 +227,14 @@ mod tests {
         .await
         .expect("Failed to create student s2");
 
-        assert!(fetch_student_active(&pool, s1).await, "s1 should start active");
-        assert!(fetch_student_active(&pool, s2).await, "s2 should start active");
+        assert!(
+            fetch_student_active(&pool, s1).await,
+            "s1 should start active"
+        );
+        assert!(
+            fetch_student_active(&pool, s2).await,
+            "s2 should start active"
+        );
 
         let first = bulk_set_student_active(&opt, vec![s1, s2], true, Some(owner_id), BULK_MAX_IDS)
             .await
@@ -289,14 +290,9 @@ mod tests {
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_set_group1_nf_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_set_group1_nf_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let result =
             bulk_set_student_active(&opt, vec![99999, 88888], true, Some(owner_id), BULK_MAX_IDS)
@@ -338,14 +334,9 @@ mod tests {
         cleanup_test_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_set_group1_dedup_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_set_group1_dedup_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_set_group1_dedup_class", owner_id)
             .await
@@ -423,14 +414,9 @@ mod tests {
 
         let opt = Some(pool.clone());
         // Real owner creates fixtures; call uses a different me (999).
-        let owner_id = create_user(
-            &pool,
-            "test_f6_set_group1_scope_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_set_group1_scope_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_set_group1_scope_class", owner_id)
             .await
@@ -467,15 +453,10 @@ mod tests {
             "fixture owner must differ from wrong-owner probe id"
         );
 
-        let result = bulk_set_student_active(
-            &opt,
-            vec![s1, s2],
-            false,
-            Some(wrong_owner),
-            BULK_MAX_IDS,
-        )
-        .await
-        .expect("bulk_set_student_active failed");
+        let result =
+            bulk_set_student_active(&opt, vec![s1, s2], false, Some(wrong_owner), BULK_MAX_IDS)
+                .await
+                .expect("bulk_set_student_active failed");
 
         assert!(
             result.succeeded.is_empty(),
@@ -524,14 +505,9 @@ mod tests {
         cleanup_delete_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_delete_cascade_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_delete_cascade_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_delete_cascade_class", owner_id)
             .await
@@ -556,10 +532,9 @@ mod tests {
             "fixture must have one class_students row"
         );
 
-        let result =
-            bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
-                .await
-                .expect("bulk_delete_students failed");
+        let result = bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
+            .await
+            .expect("bulk_delete_students failed");
 
         assert_eq!(
             result.succeeded,
@@ -608,14 +583,9 @@ mod tests {
         cleanup_delete_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_delete_hard_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_delete_hard_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_a = create_class(&opt, "test_f6_delete_hard_class_a", owner_id)
             .await
@@ -647,10 +617,9 @@ mod tests {
             "student starts active (soft-delete would only flip this)"
         );
 
-        let result =
-            bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
-                .await
-                .expect("bulk_delete_students failed");
+        let result = bulk_delete_students(&opt, vec![student_id], Some(owner_id), BULK_MAX_IDS)
+            .await
+            .expect("bulk_delete_students failed");
 
         assert_eq!(
             result.succeeded,
@@ -698,14 +667,9 @@ mod tests {
         cleanup_assign_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_assign_skip_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_assign_skip_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_assign_skip_class", owner_id)
             .await
@@ -784,14 +748,9 @@ mod tests {
         cleanup_assign_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_assign_nodup_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_assign_nodup_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_assign_nodup_class", owner_id)
             .await
@@ -915,14 +874,9 @@ mod tests {
         cleanup_remove_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_f6_remove_idem_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_f6_remove_idem_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_f6_remove_idem_class", owner_id)
             .await
@@ -1036,14 +990,9 @@ mod tests {
         cleanup_pin_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_validate_pin_inactive_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_validate_pin_inactive_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_validate_pin_inactive_class", owner_id)
             .await
@@ -1107,14 +1056,9 @@ mod tests {
         cleanup_pin_fixtures(&pool).await;
 
         let opt = Some(pool.clone());
-        let owner_id = create_user(
-            &pool,
-            "test_validate_pin_active_owner",
-            "pass123",
-            "user",
-        )
-        .await
-        .expect("Failed to create owner");
+        let owner_id = create_user(&pool, "test_validate_pin_active_owner", "pass123", "user")
+            .await
+            .expect("Failed to create owner");
 
         let class_id = create_class(&opt, "test_validate_pin_active_class", owner_id)
             .await
@@ -1156,5 +1100,4 @@ mod tests {
 
         cleanup_pin_fixtures(&pool).await;
     }
-
 }

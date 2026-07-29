@@ -1,14 +1,14 @@
 //! DISPLAY.REGISTER / PAIR / PING / DISCONNECT — pairing and management of display sockets.
 
 use super::HandlerCtx;
+use crate::state::socket_role;
 use lazy_static::lazy_static;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tracing::{info, warn};
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::state::socket_role;
+use tracing::{info, warn};
 
 const CODE_CHARS: &str = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH: usize = 6;
@@ -106,9 +106,8 @@ impl PairingRegistry {
     }
 
     fn prune_stale_codes(&mut self, now: u64) {
-        self.codes.retain(|_, pairing| {
-            now.saturating_sub(pairing.registered_at) <= CODE_TTL_MS
-        });
+        self.codes
+            .retain(|_, pairing| now.saturating_sub(pairing.registered_at) <= CODE_TTL_MS);
     }
 
     fn register_display(&mut self, socket_id: String, game_id: String, name: String) {
@@ -136,9 +135,7 @@ impl PairingRegistry {
     }
 
     fn remove_display(&mut self, socket_id: &str) -> Option<String> {
-        self.displays
-            .remove(socket_id)
-            .map(|d| d.game_id)
+        self.displays.remove(socket_id).map(|d| d.game_id)
     }
 
     fn get_displays_by_game(&self, game_id: &str) -> Vec<DisplayRecord> {
@@ -194,7 +191,12 @@ pub fn sweep_pairing_and_displays() {
     }
 }
 
-fn broadcast_status(io: socketioxide::SocketIo, registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>, game_id: String, db_pool: Option<sqlx::PgPool>) {
+fn broadcast_status(
+    io: socketioxide::SocketIo,
+    registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
+    game_id: String,
+    db_pool: Option<sqlx::PgPool>,
+) {
     tokio::spawn(async move {
         let game_opt = {
             let registry = registry.read().await;
@@ -256,7 +258,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
             }
 
             socket
-                .emit(constants::display::REGISTERED, &serde_json::json!({ "code": code }))
+                .emit(
+                    constants::display::REGISTERED,
+                    &serde_json::json!({ "code": code }),
+                )
                 .ok();
         }
     });
@@ -268,7 +273,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         let db_pool = ctx.db_pool.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
-            let code_opt = payload.get("code").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let code_opt = payload
+                .get("code")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let game_id_opt = payload
                 .get("gameId")
                 .and_then(|v| v.as_str())
@@ -355,7 +363,8 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
 
                     // Get display socket from pairing record
-                    let display_socket = io_clone.get_socket(pairing_data.socket_id.parse().unwrap());
+                    let display_socket =
+                        io_clone.get_socket(pairing_data.socket_id.parse().unwrap());
 
                     let Some(display_socket) = display_socket else {
                         socket
@@ -385,7 +394,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                         .ok();
 
                     // Claim Display role — observe only, don't reject on conflict
-                    if let Err(held_role) = socket_role::try_claim(&pairing_data.socket_id, socket_role::VerifiedRole::Display) {
+                    if let Err(held_role) = socket_role::try_claim(
+                        &pairing_data.socket_id,
+                        socket_role::VerifiedRole::Display,
+                    ) {
                         warn!(
                             "display role conflict: socketId={} held_role={:?} requested=Display",
                             pairing_data.socket_id, held_role
@@ -410,12 +422,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
 
                     // Broadcast status
-                    broadcast_status(
-                        io_clone,
-                        registry_clone,
-                        game_id_clone,
-                        db_pool_clone,
-                    );
+                    broadcast_status(io_clone, registry_clone, game_id_clone, db_pool_clone);
                 });
             }
         }
@@ -433,7 +440,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 .get("gameId")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
-            let name_opt = payload.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let name_opt = payload
+                .get("name")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
             if let Some(game_id) = game_id_opt {
                 let io_clone = io.clone();
@@ -449,12 +459,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
 
                     // Broadcast status
-                    broadcast_status(
-                        io_clone,
-                        registry_clone,
-                        game_id,
-                        db_pool_clone,
-                    );
+                    broadcast_status(io_clone, registry_clone, game_id, db_pool_clone);
                 });
             }
         }
@@ -486,7 +491,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
             let db_pool_clone = db_pool.clone();
 
             tokio::spawn(async move {
-        socket_role::release(&socket_id);
+                socket_role::release(&socket_id);
                 // Get game_id before removing
                 let game_id_opt = {
                     let mut pairing = PAIRING_REGISTRY.lock().unwrap();
@@ -495,12 +500,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Broadcast status if display was removed
                 if let Some(game_id) = game_id_opt {
-                    broadcast_status(
-                        io_clone,
-                        registry_clone,
-                        game_id,
-                        db_pool_clone,
-                    );
+                    broadcast_status(io_clone, registry_clone, game_id, db_pool_clone);
                 }
             });
         }

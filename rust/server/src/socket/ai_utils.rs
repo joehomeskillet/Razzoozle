@@ -44,8 +44,7 @@ pub fn strip_code_fence(s: &str) -> String {
 /// Parse JSON with code-fence stripping. Throws "errors:ai.invalidOutput" on parse failure.
 pub fn parse_json(raw: &str) -> Result<Value, String> {
     let stripped = strip_code_fence(raw);
-    serde_json::from_str(&stripped)
-        .map_err(|_| "errors:ai.invalidOutput".to_string())
+    serde_json::from_str(&stripped).map_err(|_| "errors:ai.invalidOutput".to_string())
 }
 
 /// Check if a baseUrl is a local host (no API key required).

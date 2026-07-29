@@ -27,7 +27,10 @@ pub async fn handle_plugin_import(
     body: Body,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     if !authorize_admin_request(&headers, &state.db_pool).await {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+        ));
     }
 
     // Content-Length pre-check (Node readRawBody) → 413 without reading body.
@@ -43,9 +46,9 @@ pub async fn handle_plugin_import(
         ));
     }
 
-    let bytes = to_bytes(body, PLUGIN_ZIP_MAX_BYTES).await.map_err(|_| {
-        json_error_response(StatusCode::PAYLOAD_TOO_LARGE, "Payload Too Large")
-    })?;
+    let bytes = to_bytes(body, PLUGIN_ZIP_MAX_BYTES)
+        .await
+        .map_err(|_| json_error_response(StatusCode::PAYLOAD_TOO_LARGE, "Payload Too Large"))?;
 
     let buf = bytes.to_vec();
     let plugin = tokio::task::spawn_blocking(move || import_plugin_zip(&buf))
@@ -63,19 +66,18 @@ pub async fn handle_plugin_import(
     let plugin_for_db = plugin.clone();
     let plugin_id = plugin.id.clone();
     tokio::spawn(async move {
-        let files = match tokio::task::spawn_blocking(move || build_plugin_files_map(&plugin_id))
-            .await
-        {
-            Ok(Ok(m)) => m,
-            Ok(Err(e)) => {
-                eprintln!("plugin import — files map failed (non-fatal): {}", e);
-                return;
-            }
-            Err(e) => {
-                eprintln!("plugin import — files map join failed (non-fatal): {}", e);
-                return;
-            }
-        };
+        let files =
+            match tokio::task::spawn_blocking(move || build_plugin_files_map(&plugin_id)).await {
+                Ok(Ok(m)) => m,
+                Ok(Err(e)) => {
+                    eprintln!("plugin import — files map failed (non-fatal): {}", e);
+                    return;
+                }
+                Err(e) => {
+                    eprintln!("plugin import — files map join failed (non-fatal): {}", e);
+                    return;
+                }
+            };
         if let Err(e) = crate::db::upsert_installed_plugin(&db_pool, &plugin_for_db, &files).await {
             eprintln!("plugin import — DB mirror failed (non-fatal): {}", e);
         }
@@ -83,10 +85,7 @@ pub async fn handle_plugin_import(
 
     // Broadcast full installed list (Node registerPluginBroadcaster → PLUGIN_CONFIG).
     let list = crate::socket::manager::plugins::read_plugins_index();
-    state
-        .io
-        .emit(constants::manager::PLUGIN_CONFIG, &list)
-        .ok();
+    state.io.emit(constants::manager::PLUGIN_CONFIG, &list).ok();
 
     Ok(Json(json!({ "ok": true, "plugin": plugin })))
 }
@@ -98,7 +97,10 @@ pub async fn handle_plugin_export(
     Path(id): Path<String>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), (StatusCode, Json<Value>)> {
     if !authorize_admin_request(&headers, &state.db_pool).await {
-        return Err(json_error_response(StatusCode::UNAUTHORIZED, "unauthorized"));
+        return Err(json_error_response(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+        ));
     }
 
     // Path-traversal / reserved-id guard (Node assertSafeId).
@@ -129,9 +131,9 @@ pub async fn handle_plugin_export(
     let disposition = format!("attachment; filename=\"plugin-{}.zip\"", id);
     out.insert(
         header::CONTENT_DISPOSITION,
-        disposition.parse().unwrap_or_else(|_| {
-            "attachment; filename=\"plugin.zip\"".parse().unwrap()
-        }),
+        disposition
+            .parse()
+            .unwrap_or_else(|_| "attachment; filename=\"plugin.zip\"".parse().unwrap()),
     );
 
     Ok((StatusCode::OK, out, bytes))

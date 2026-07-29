@@ -5,8 +5,8 @@
 
 use super::super::HandlerCtx;
 use razzoozle_protocol::constants;
-use socketioxide::extract::{Data, SocketRef};
 use serde_json::{json, Value};
+use socketioxide::extract::{Data, SocketRef};
 
 /// Check if a provider is external (not local/Ollama/localhost).
 fn is_external_provider(provider: &Value) -> bool {
@@ -26,9 +26,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -44,7 +42,14 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Set the key for this user
                 if let Some(ref pool) = ctx.db_pool {
-                    match crate::db::user_ai::set_user_ai_key(pool, user.user_id, &provider_id, &key_plain).await {
+                    match crate::db::user_ai::set_user_ai_key(
+                        pool,
+                        user.user_id,
+                        &provider_id,
+                        &key_plain,
+                    )
+                    .await
+                    {
                         Ok(()) => {
                             socket
                                 .emit(
@@ -75,9 +80,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -116,9 +119,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
@@ -138,7 +139,10 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     {
                         Ok(()) => {
                             socket
-                                .emit(constants::ai::SETTINGS, &super::super::ai_config::get_public_ai_settings())
+                                .emit(
+                                    constants::ai::SETTINGS,
+                                    &super::super::ai_config::get_public_ai_settings(),
+                                )
                                 .ok();
                         }
                         Err(e) => {
@@ -163,9 +167,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                 let _user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &"")
-                            .ok();
+                        socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
                         return;
                     }
                 };
