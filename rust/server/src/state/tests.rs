@@ -9,6 +9,56 @@ use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+// Test isolation: use Mutex to serialize CONFIG_PATH mutations.
+// std::env is not thread-safe (used by tests in parallel async tasks).
+// This mutex ensures only one test modifies CONFIG_PATH at a time.
+lazy_static::lazy_static! {
+    static ref TEST_CONFIG_PATH_LOCK: Mutex<()> = Mutex::new(());
+}
+
+/// Guard that isolates snapshot tests by redirecting CONFIG_PATH to a unique temporary directory.
+/// Each test invocation gets its own snapshot file, preventing parallel test interference.
+/// Acquires a mutex to serialize CONFIG_PATH mutations across all tests.
+struct ConfigPathGuard {
+    _lock: std::sync::MutexGuard<'static, ()>,
+    prev_config_path: Option<String>,
+}
+
+impl ConfigPathGuard {
+    /// Create a new guard that redirects CONFIG_PATH to a unique test directory.
+    /// Serializes with other tests via mutex to prevent CONFIG_PATH races.
+    fn acquire() -> std::io::Result<Self> {
+        use std::path::PathBuf;
+        
+        // Acquire lock FIRST, before any env operations
+        let _lock = TEST_CONFIG_PATH_LOCK.lock().unwrap();
+        
+        // Preserve original CONFIG_PATH (may be unset)
+        let prev_config_path = std::env::var("CONFIG_PATH").ok();
+        
+        // Create unique test directory: /tmp/razzoozle-test-{uuid}/
+        let test_dir = std::env::temp_dir()
+            .join(format!("razzoozle-test-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&test_dir)?;
+        
+        // Set CONFIG_PATH to our isolated directory
+        std::env::set_var("CONFIG_PATH", test_dir.to_string_lossy().as_ref());
+        
+        Ok(ConfigPathGuard { _lock, prev_config_path })
+    }
+}
+
+impl Drop for ConfigPathGuard {
+    fn drop(&mut self) {
+        // CONFIG_PATH is still protected by _lock until we return
+        match &self.prev_config_path {
+            Some(path) => std::env::set_var("CONFIG_PATH", path),
+            None => std::env::remove_var("CONFIG_PATH"),
+        }
+        // Lock is automatically released when _lock is dropped here
+    }
+}
+
 #[test]
 fn test_validate_username() {
     // Valid usernames
@@ -580,6 +630,9 @@ async fn test_bot_manager_schedule_answers() {
 
 #[tokio::test]
 async fn test_load_snapshot_restores_games_by_invite_code() {
+    let _guard = ConfigPathGuard::acquire()
+        .expect("Failed to create test config directory");
+
     let quiz = test_quiz();
     let mut registry = GameRegistry::new(&None, quiz.clone()).await;
     seed_quiz(&mut registry, "test-quiz", quiz);
