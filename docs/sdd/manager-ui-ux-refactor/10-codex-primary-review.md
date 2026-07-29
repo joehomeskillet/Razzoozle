@@ -32,8 +32,6 @@ All are **cosmetic documentation** — no code logic changes:
 2. **CircularTimer.tsx:25, 49** — Comment: "Theme-agnostic: reads on both flat cream and glass"  
    Status: No active code; explains why `--timer-urgent` is used instead of theme-dependent color.
 
-3. **RoundRecapCard.tsx:4** — Comment: "same white liquid-glass surface"  
-   Status: No active code; refers to historical glass styling (now applied via flat CSS).
 
 ### Live Glass CSS References Count
 

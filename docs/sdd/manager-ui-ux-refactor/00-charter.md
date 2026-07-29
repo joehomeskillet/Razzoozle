@@ -11,7 +11,7 @@ SDD. This pass is **scoped by a ground-truth audit**, not by the original brief'
 
 ## Ground truth (audit result — see `01-current-state.md`)
 
-The original brief assumed a live Glass/Liquid-Glass theme on the manager console
+The original brief assumed additional styling work on the manager console
 that needs a full rip-out + 16-doc SDD. The repo says otherwise:
 
 | Brief objective | Actual state |
