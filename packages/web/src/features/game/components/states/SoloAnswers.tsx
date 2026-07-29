@@ -258,8 +258,11 @@ const SoloAnswers = ({ quizzId, question }: Props) => {
       })
     } else if (selectedKey !== null) {
       void submitAnswer(quizzId, { answerId: selectedKey })
+    } else if (isWordCloud || isBrainstorm || isConfidence || isMicroLesson) {
+      // Unscored opinion types submit empty on timeout (no response expected)
+      void submitAnswer(quizzId, {})
     } else {
-      // No answer selected — submit empty (wrong)
+      // Fallback: type-specific branch not yet implemented
       void submitAnswer(quizzId, {})
     }
   }
