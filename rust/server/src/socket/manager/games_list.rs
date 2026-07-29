@@ -2,7 +2,7 @@
 //! Lists currently running games with summary info (id, pin, quiz subject, player count, phase, etc.)
 
 use super::super::HandlerCtx;
-use super::super::socket_role;
+use crate::state::socket_role;
 use crate::is_game_host;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
