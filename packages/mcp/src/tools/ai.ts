@@ -4,6 +4,7 @@
 // openai-compatible needs one unless the baseUrl is a local host). If no
 // provider is active the tool returns "errors:ai.notConfigured".
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { QUESTION_TYPES } from "@razzoozle/common/constants"
 import { z } from "zod"
 import {
   generateDistractors,
@@ -39,7 +40,7 @@ export function registerAiTools(server: McpServer): void {
     },
     async ({ topic, type, language }: { topic: string; type?: string; language?: string }) => {
       try {
-        return ok(await generateQuestion(topic, type as any, language))
+        return ok(await generateQuestion(topic, type as (typeof QUESTION_TYPES)[number], language))
       } catch (e) {
         return fail(e)
       }
