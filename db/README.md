@@ -1,71 +1,92 @@
 # Database Setup & Migrations
 
-This directory contains all database schema migrations for Razzoozle's shared Postgres database.
+This directory contains all database schema migrations for Razzoozle's shared Postgres database, managed by an embedded SQLx migrator in the Rust server.
 
 ## Overview
 
-**Phase 0**: Database foundation for dual-write integration between Node and Rust backends.
+**Current Architecture**: Single Postgres database (version 16) serving as single source of truth for all game state, quizzes, results, themes, and user data.
 
-- **Primary database**: PostgreSQL 16 (alpine container)
-- **Schema location**: `db/migrations/`
-- **Connection pool**: 10 connections per backend (Node + Rust), 5s acquire timeout
-- **SSOT**: All game state, quizzes, results, themes, etc. centralize in this database
+- **DBMS**: PostgreSQL 16 (alpine container)
+- **Migrations**: 22 SQL files in `db/migrations/`, applied by embedded SQLx migrator at server startup
+- **Ledger**: `_sqlx_migrations` table tracks applied migrations (automatically created by SQLx)
+- **Connection Pool**: 10 connections per Rust backend, 5s acquire timeout
+- **Connection String**: Set via `DATABASE_URL` environment variable
 
-## Quick Start
+## Environment Variables
 
-### 1. Set a Strong Password (Critical)
-
-Generate a strong random password for the Postgres user:
-
-```bash
-openssl rand -base64 32
-# Example output: aB3xY9kL2mN5pQrStUvWxYz0abc1dEfGhIjKlMnOpQrS=
-```
-
-### 2. Create `.env` File (if not exists)
-
-Create a `.env` file in the project root:
+All configuration is provided via environment variables (or `*_FILE` variants for secret mounts).
 
 ```bash
-# Postgres credentials (use the generated password above)
-POSTGRES_PASSWORD=aB3xY9kL2mN5pQrStUvWxYz0abc1dEfGhIjKlMnOpQrS=
+# Required: Postgres connection string
+# Format: postgresql://username:password@host:port/database
+DATABASE_URL=postgresql://razzoozle:<PASSWORD>@localhost:5432/razzoozle
 
-# Database URL for Node (node-postgres) and Rust (sqlx)
-DATABASE_URL=postgresql://razzoozle:aB3xY9kL2mN5pQrStUvWxYz0abc1dEfGhIjKlMnOpQrS=@localhost:5432/razzoozle
+# Optional: Bootstrap admin password for initial setup
+# If set, the Rust server uses this to create or update the manager password on startup
+# Used only once during initialization; afterwards ignored in favor of database-stored value
+BOOTSTRAP_ADMIN_PASSWORD=<ADMIN_PASSWORD>
 
-# Manager password (stored in DB after backfill)
-MANAGER_PASSWORD=YourTestPassword123
+# Server runtime configuration
+PORT=3020                                    # HTTP server port (default shown)
+CONFIG_PATH=/config                         # Path to config/ directory for quizzes, themes
+WEB_DIST=/app/web                          # Path to bundled web SPA assets
 ```
 
-### 3. Apply Migrations
+### Secret Resolution
 
-Apply the initial schema migration:
+For sensitive values, both direct and file-based resolution are supported:
+- If `<VAR>_FILE` is set, the value is read from that file (one trailing newline removed).
+- Otherwise, if `<VAR>` is set, its value is used directly.
+- Avoid setting both — the server will error if both are present.
 
+## Embedded Migrator
+
+The Rust server embeds all migrations at compile time using the SQLx `sqlx::migrate!()` macro:
+
+```rust
+// In rust/server/src/migrate.rs
+sqlx::migrate!("../../db/migrations/").run(&pool).await
+```
+
+**Behavior**:
+- Reads all `.sql` files from `db/migrations/` at build time
+- On server startup (or explicit `razzoozle-server migrate` invocation), applies pending migrations in order
+- Records each applied migration in the `_sqlx_migrations` table with timestamp and success status
+- Parallel runs are serialized via SQLx's advisory lock to prevent race conditions
+- Idempotency: Once a migration is recorded as `success = true`, it is never re-run
+
+## Running Migrations
+
+### Automatic (during server startup)
+The Rust server runs migrations automatically when the `Serve` command is executed:
 ```bash
-# Using psql directly
-psql ${DATABASE_URL} < db/migrations/001_initial_schema.sql
+razzoozle-server
 ```
 
-### 4. Verify Schema
-
+### Manual migration execution
+To run migrations without starting the server:
 ```bash
-# Connect to database and verify tables exist
-psql ${DATABASE_URL} -c "\dt"
-
-# Expected output should list these 12 tables:
-# - games_config
-# - quizzes
-# - game_results
-# - submissions
-# - solo_results
-# - themes
-# - theme_revisions
-# - achievements_config
-# - catalog_entries
-# - media_assets
-# - installed_plugins
-# - assignments
+razzoozle-server migrate
 ```
+
+This command:
+- Reads `DATABASE_URL` from environment
+- Applies all pending migrations
+- Exits with code 0 on success
+- Exits with code 1 on any error (connection failure, SQL error, etc.)
+
+## Ledger State: Pre-sqlx Databases
+
+**For existing production databases** that had migrations applied via bash scripts (before the embedded migrator was deployed):
+- The database schema is fully up-to-date with all 22 migrations
+- However, the `_sqlx_migrations` ledger table may not exist
+- This is a "pre-sqlx" state and **is not an error**
+
+The server detects this state and logs a warning but does **not** block startup or fail readiness checks.
+
+**Baseline initialization** (for existing environments): Before deploying the embedded migrator to production, manually insert the 22 applied migrations into the `_sqlx_migrations` table (without re-running them) to initialize the ledger. This is a one-time, manual operation to prevent migration 001 (which uses `CREATE DOMAIN`) from re-executing.
+
+See issue #796 for ongoing decision on when and how to perform this baseline initialization.
 
 ## Schema Overview
 
@@ -84,6 +105,13 @@ psql ${DATABASE_URL} -c "\dt"
 - **solo_results**: Solo quiz play results (tied to quiz via CASCADE)
 - **submissions**: User-submitted questions awaiting approval
 - **assignments**: Quiz assignments to players/teams
+
+### Users & Access Control
+- **users**: Teacher and admin user accounts with roles and authentication
+- **sessions**: Active user sessions (with expiry tracking)
+- **class_students_junction**: Many-to-many link between classes and students
+- **student_pins**: Student login PINs for class-based quizzes
+- **classes**: Class groups with teacher ownership
 
 ### Media & Plugins
 - **media_assets**: Metadata for images, audio, video files (files stored on disk)
@@ -119,90 +147,54 @@ If no rows are affected, a ConflictError is raised (update failed, retry).
 - `media_assets`: (category, source, uploaded_at DESC)
 - `assignments`: (quiz_id, assigned_to), (assigned_at DESC)
 - `theme_revisions`: (theme_id, revision_number DESC)
+- `users`: (email), (username)
+- `classes`: (teacher_id), (active)
+- `student_pins`: (pin)
 
-### Constraints
+### Domain & Check Constraints
 - **safe_id DOMAIN**: All IDs validate the pattern `^[A-Za-z0-9_-]+$` (alphanumeric, underscore, hyphen)
 - **games_config**: Enforced single row (id = 1)
 - **submissions.status**: Must be one of ('pending', 'approved', 'rejected')
 - **media_assets.type**: Must be one of ('image', 'audio', 'video')
 - **media_assets.source**: Must be one of ('upload', 'ai', 'theme')
 - **catalog_entries.source**: Must be one of ('upload', 'ai', 'submission')
-
-## Phase 1-3 Workflow (Future)
-
-### Phase 1: Read-Only Migration
-- Backfill script reads files from `config/` and populates database
-- Feature flag `DATABASE_MODE=file` (default) reads from file only
-- Deduplication logic prevents duplicate entries on re-run
-- Rollback: drop schema, restore tar backup
-
-### Phase 2: Dual-Write Testing
-- Set `DATABASE_MODE=dual-write`
-- Write operations: FILE FIRST, then POSTGRES
-- Audit logging captures every write outcome
-- Twin-parity harness runs on every commit
-- Staging test: monitor divergence logs for 3-5 days
-
-### Phase 3: Cutover
-- Set `DATABASE_MODE=pg-only`
-- Postgres becomes single source of truth (no more file writes)
-- Archive config bind-mount as read-only tarball
-- Monitor production for 1 week (zero failed operations)
-
-## Environment Variables
-
-```bash
-# Connection string (both Node and Rust backends)
-DATABASE_URL=postgresql://razzoozle:PASSWORD@localhost:5432/razzoozle
-
-# Database mode (Phase 0 → Phase 3 progression)
-DATABASE_MODE=file          # Phase 1: file-based (default)
-DATABASE_MODE=dual-write    # Phase 2: write both file + DB
-DATABASE_MODE=pg-only       # Phase 3: DB only
-
-# Manager password (stored in DB, env var is fallback during Phase 1)
-MANAGER_PASSWORD=YourPassword
-
-# Postgres container environment
-POSTGRES_PASSWORD=...       # Operator-set, from .env
-```
+- **users.role**: Must be one of ('teacher', 'admin')
 
 ## Troubleshooting
 
-### Schema application fails
+### Migrations fail to apply
 ```bash
-# Check if migration file is valid SQL
-psql -f db/migrations/001_initial_schema.sql --echo-all
+# Check if all migration files are valid SQL
+sqlx migrate add -r <name>  # (Optional) add a new migration
 
-# Check existing tables
-psql ${DATABASE_URL} -c "SELECT * FROM information_schema.tables WHERE table_schema='public';"
-```
+# Verify the database connection
+psql "$DATABASE_URL" -c "SELECT version();"
 
-### Rollback: Restore from Backup
-
-If migration fails or divergence detected:
-
-```bash
-# Drop all tables and restore from tar backup
-scripts/restore-from-backup.sh /path/to/backup.tar.gz
-
-# Or manually drop schema
-psql ${DATABASE_URL} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-
-# Then re-apply migration
-psql ${DATABASE_URL} < db/migrations/001_initial_schema.sql
+# Check migration ledger status (if ledger exists)
+psql "$DATABASE_URL" -c "SELECT * FROM _sqlx_migrations;"
 ```
 
 ### Connection refused
-
+Verify the Postgres container is running and accessible:
 ```bash
-# Test connection manually
-psql postgresql://razzoozle:PASSWORD@127.0.0.1:5432/razzoozle
+# Test connection directly
+psql postgresql://razzoozle:<PASSWORD>@localhost:5432/razzoozle -c "SELECT 1;"
 ```
+
+### "Migration table does not exist" warning
+This is expected for pre-sqlx databases (see "Ledger State" section). The database is fully migrated; only the ledger is missing. No action required unless you plan to manually initialize the ledger.
+
+## Development
+
+When adding a new migration:
+1. Create a new `.sql` file in `db/migrations/` with the next sequential number (e.g., `023_my_change.sql`)
+2. Write pure SQL (no Rust code)
+3. Build the Rust server — the SQLx macro will include the new file at compile time
+4. On next server startup, the migration will be applied automatically
 
 ## Notes
 
-- **Password storage**: Currently plaintext (mirrors legacy config.json behavior). Upgrade to bcrypt in Phase 4 (out of scope).
-- **Multi-tenancy**: Schema assumes single global game config. Per-game overrides deferred to future if needed.
+- **Single source of truth**: All game state, quiz definitions, results, and user data centralize in Postgres. The embedded migrator ensures schema consistency across all deployments.
 - **Archived quizzes**: Use soft-delete pattern (`archived=true`). Hard deletion removes all dependent results via CASCADE.
 - **Media files**: Database stores metadata only; actual files live on disk in `/media/` (bind-mount). Orphan detection job should periodically scan for untracked files.
+- **No manual SQL scripts needed**: The embedded migrator eliminates the need for separate migration apply scripts. Simply start the server or run `razzoozle-server migrate`.
