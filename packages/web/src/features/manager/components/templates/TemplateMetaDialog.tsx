@@ -4,7 +4,7 @@ import Button from "../../../../components/Button"
 import DialogPanel from "../../../../components/manager/DialogPanel"
 import Input from "../../../../components/Input"
 import Select from "../../../../components/Select"
-import { createTemplate, updateTemplate, type TemplateMeta } from "../../../../lib/templatesApi"
+import { createTemplate, updateTemplate, getTemplate, type TemplateMeta } from "../../../../lib/templatesApi"
 
 export interface TemplateMetaDialogProps {
   open: boolean
@@ -97,12 +97,14 @@ const TemplateMetaDialog = ({
 
       if (isEditMode && template) {
         // Edit mode: update existing template
+        // Fetch full template to get questions
+        const fullTemplate = await getTemplate(template.id)
         await updateTemplate(template.id, {
           name: form.name.trim(),
           category: form.category,
           description: form.description,
           tags,
-          questions: ((template as any)?.questions ?? []), // Pass through unchanged
+          questions: fullTemplate.questions, // Pass through unchanged
         })
       } else {
         // Create mode: create new template
