@@ -19,6 +19,7 @@ import TemplateMetaDialog from "@razzoozle/web/features/manager/components/templ
 import QuizzDialogs from "./QuizzDialogs"
 import QuizzList from "./QuizzList"
 import type { SortKey } from "./types"
+import type { TemplateMeta } from "@razzoozle/web/lib/templatesApi"
 import { useQuizzManager } from "./useQuizzManager"
 
 const ConfigManageQuizz = () => {
@@ -54,7 +55,7 @@ const ConfigManageQuizz = () => {
   const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [templateMetaOpen, setTemplateMetaOpen] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateMeta | undefined>(undefined)
 
   const { filteredActive, filteredArchived, hasFilteredMatches } = useMemo(() => {
     if (!klassenEnabled || activeFilterId === null) {
@@ -92,7 +93,7 @@ const ConfigManageQuizz = () => {
 
   const handleTemplateMetaSaved = () => {
     setTemplateMetaOpen(false)
-    setSelectedTemplate(null)
+    setSelectedTemplate(undefined)
   }
 
   return (

@@ -4,13 +4,13 @@ import Button from "../../../../components/Button"
 import DialogPanel from "../../../../components/manager/DialogPanel"
 import Input from "../../../../components/Input"
 import Select from "../../../../components/Select"
-import { createTemplate, updateTemplate, type TemplateFull } from "../../../../lib/templatesApi"
+import { createTemplate, updateTemplate, type TemplateMeta } from "../../../../lib/templatesApi"
 
 export interface TemplateMetaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** If set, this is an edit dialog; if undefined, this is a create dialog */
-  template?: TemplateFull
+  template?: TemplateMeta | undefined
   onSaved: () => void
 }
 
@@ -102,7 +102,7 @@ const TemplateMetaDialog = ({
           category: form.category,
           description: form.description,
           tags,
-          questions: template.questions, // Pass through unchanged
+          questions: ((template as any)?.questions ?? []), // Pass through unchanged
         })
       } else {
         // Create mode: create new template
