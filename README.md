@@ -75,9 +75,8 @@ The server runs on port `3020` and requires a PostgreSQL database. Open the app,
 
 | | Feature |
 | --- | --- |
-| 🎨 | **Theme cockpit** — a live manager "Design" tab: colours, per-view backgrounds, logo, radius and a **Flat ⇄ Glass** style toggle, with presets (a flat **cream** default + an optional violet **liquid-glass** preset) and contrast-aware colour pickers. |
+| 🎨 | **Theme cockpit** — a live manager "Design" tab with colours, per-view backgrounds, logo, radius, presets and contrast-aware colour pickers. |
 | ☕ | **Flat cream design** — a warm flat cream interface with a living animated backdrop (drifting blobs + floating school/knowledge icons), a flat wordmark/logo, and ink-on-cream answer tiles. |
-| 🧊 | **Liquid-glass UI** — an optional, legacy glassmorphism theme variant (frosted, blurred surfaces) that never touches the flat baseline. |
 | 🎯 | **Kahoot-faithful game screens** — answer tiles with the classic shape icons (triangle / diamond / circle / square), a circular countdown timer, an answers-received counter, and an animated podium. |
 | 🧑‍🎨 | **Player avatars** — each player gets a generated DiceBear avatar (pick a style + reroll, or upload your own); avatars float around the lobby and appear on leaderboards, the podium and the awards. |
 | 🏆 | **Gamification** — 14 achievements, medals, streaks, confetti and sound chimes, plus a personal trophy gallery. |

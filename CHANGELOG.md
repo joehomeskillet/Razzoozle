@@ -185,10 +185,6 @@ First public Razzoozle release — [github.com/joehomeskillet/Razzoozle](https:/
 
 ### Added
 
-- **Violet liquid-glass theme** — an opt-in glassmorphism style variant plus a
-  live manager "Design" cockpit (colours, per-view backgrounds, logo, a
-  Flat ⇄ Glass toggle, presets, contrast-aware pickers). The flat cream
-  preset stays the default and renders byte-identical to before.
 - **Kahoot-faithful game screens** — answer tiles with shape icons
   (triangle / diamond / circle / square), a circular countdown timer and an
   answers-received counter, on the presenter, player phone and desktop.
