@@ -78,7 +78,7 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
                 .map(|s| s.to_string());
             let registry = registry.clone();
             let io_handle = io_handle.clone();
-            let db_pool = db_pool.clone();
+            let _db_pool = db_pool.clone();
             let socket_id = socket_id.clone();
 
             tokio::spawn(async move {
