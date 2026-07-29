@@ -524,3 +524,5 @@ mod tests_security_headers {
         assert_security_headers("/api/does-not-exist").await;
     }
 }
+
+mod tests_login_global_throttle;

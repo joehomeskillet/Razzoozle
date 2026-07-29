@@ -510,21 +510,26 @@ fn test_per_ip_solo_rate_limit() {
 fn test_per_ip_auth_throttle() {
     let rate_limiter = RateLimiter::new();
 
-    // IP 1: 10 failures should trigger throttle on 11th attempt
-    for _ in 0..AUTH_RATE_MAX_PER_CLIENT {
-        assert!(
-            !rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"),
-            "Should not be throttled yet"
+    // IP 1: peek allowed while under threshold; the 10th recorded failure
+    // reaches the cap (throttle takes effect from the 11th attempt onward).
+    assert!(
+        !rate_limiter.is_auth_throttled_per_client("192.168.1.1"),
+        "Should not be throttled yet"
+    );
+    for i in 0..AUTH_RATE_MAX_PER_CLIENT {
+        rate_limiter.record_auth_failure_per_client("192.168.1.1");
+        let should_be_throttled = i + 1 >= AUTH_RATE_MAX_PER_CLIENT;
+        assert_eq!(
+            rate_limiter.is_auth_throttled_per_client("192.168.1.1"),
+            should_be_throttled,
+            "after {} failure(s), throttle state mismatch",
+            i + 1
         );
     }
-    assert!(
-        rate_limiter.record_auth_failure_and_check_throttle("192.168.1.1"),
-        "Should be throttled now"
-    );
 
-    // IP 2 should have independent limit
+    // IP 2 should have an independent limit (per-client, not global).
     assert!(
-        !rate_limiter.record_auth_failure_and_check_throttle("192.168.1.2"),
+        !rate_limiter.is_auth_throttled_per_client("192.168.1.2"),
         "IP2 should not be throttled"
     );
 }

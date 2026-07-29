@@ -1,12 +1,11 @@
 use super::HandlerCtx;
-use crate::state::socket_role;
+use crate::state::{client_throttle_key, socket_role};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::{GameSuccessRoom, RosterEntry};
 use razzoozle_protocol::status::{GameStatus, WaitData};
 use serde_json;
 use socketioxide::extract::{Data, SocketRef};
-use std::net::IpAddr;
 use tracing::{info, warn};
 
 /// Constant-shape error for all pre-dedup klassen failures (A7 oracle prevention).
@@ -16,20 +15,11 @@ const ALREADY_JOINED: &str = "errors:game.alreadyJoined";
 /// Free-text join: another connected player already uses this display name.
 const DUPLICATE_NAME: &str = "errors:game.duplicateName";
 
-/// Check if an IP address is a trusted proxy (loopback or private range).
-fn is_trusted_proxy(ip: IpAddr) -> bool {
-    if ip.is_loopback() {
-        return true;
-    }
-    match ip {
-        IpAddr::V4(ipv4) => ipv4.is_private(),
-        IpAddr::V6(_ipv6) => false,
-    }
-}
-
 /// Best-effort client IP for rate limiting (A9). Derives peer IP from axum ConnectInfo.
 /// SECURITY: Only trusts proxy headers (x-forwarded-for/x-real-ip) when the peer
-/// is a trusted proxy (loopback or private IP range). Untrusted peers: falls back to peer IP directly.
+/// is a trusted proxy (loopback or private IP range) — see
+/// `crate::state::client_throttle_key` (shared with the HTTP login throttle,
+/// issue #705/#706). Untrusted peers: falls back to peer IP directly.
 fn client_ip_key(socket: &SocketRef, client_id: &str) -> String {
     let parts = socket.req_parts();
 
@@ -38,36 +28,12 @@ fn client_ip_key(socket: &SocketRef, client_id: &str) -> String {
         .extensions
         .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
     {
-        let peer_ip = addr.0.ip();
-
-        // SECURITY: Only consult proxy headers if peer is a trusted proxy (loopback or private)
-        if is_trusted_proxy(peer_ip) {
-            // Check x-forwarded-for (multiple IPs, take first)
-            if let Some(xff) = parts
-                .headers
-                .get("x-forwarded-for")
-                .and_then(|v| v.to_str().ok())
-            {
-                if let Some(first) = xff.split(',').next() {
-                    let ip = first.trim();
-                    if !ip.is_empty() {
-                        return ip.to_string();
-                    }
-                }
-            }
-            // Check x-real-ip
-            if let Some(real) = parts.headers.get("x-real-ip").and_then(|v| v.to_str().ok()) {
-                let ip = real.trim();
-                if !ip.is_empty() {
-                    return ip.to_string();
-                }
-            }
-            // Trusted proxy but no usable header: use peer IP
-            return peer_ip.to_string();
-        } else {
-            // Untrusted peer: don't trust proxy headers, use the peer IP directly
-            return peer_ip.to_string();
-        }
+        let xff = parts
+            .headers
+            .get("x-forwarded-for")
+            .and_then(|v| v.to_str().ok());
+        let real_ip = parts.headers.get("x-real-ip").and_then(|v| v.to_str().ok());
+        return client_throttle_key(addr.0.ip(), xff, real_ip);
     }
 
     // No peer addr available: fall back to durable client_id so throttle still binds something stable

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::sync::Mutex;
 
 use super::{
@@ -88,16 +89,40 @@ impl RateLimiter {
         }
     }
 
-    /// Record a failed auth attempt and return true if throttled (for the given key).
-    /// Returns true if throttled, false if allowed.
-    pub fn record_auth_failure_and_check_throttle(&self, key: &str) -> bool {
+    // ── Login throttle (per-client, issue #705/#706) ──────────────────────────
+    // Node's submissionRateLimit.ts keeps isAuthThrottled() (pure read) and
+    // recordAuthFailure() (increments ONLY on an actual failed compare) as two
+    // separate primitives, so a throttled window rejects even a would-be-correct
+    // password without ever counting that rejection as a new failure. The two
+    // methods below restore that split. Unlike an earlier version of this
+    // limiter, the key is caller-supplied (client IP, or X-Forwarded-For/
+    // X-Real-IP behind a *trusted* proxy — see `client_throttle_key` below)
+    // instead of a hardcoded "global" bucket: a single hardcoded key let one
+    // attacker's failed attempts throttle every other client (DoS).
+
+    /// Peek whether the given client's auth-failure window has already crossed
+    /// the throttle threshold, WITHOUT recording a new failure. Mirrors Node's
+    /// isAuthThrottled().
+    pub fn is_auth_throttled_per_client(&self, key: &str) -> bool {
+        let now = get_now_ms();
+        if let Ok(map) = self.auth_by_key.lock() {
+            if let Some(entry) = map.get(key) {
+                return now.saturating_sub(entry.window_start_ms) <= SOLO_RATE_WINDOW_MS
+                    && entry.count >= AUTH_RATE_MAX_PER_CLIENT;
+            }
+        }
+        false
+    }
+
+    /// Record a failed login attempt for the given client key WITHOUT checking
+    /// throttle. Mirrors Node's recordAuthFailure() — call ONLY after an actual
+    /// failed password compare, never on success.
+    pub fn record_auth_failure_per_client(&self, key: &str) {
         let now = get_now_ms();
         if let Ok(mut map) = self.auth_by_key.lock() {
             let entry = map.entry(key.to_string()).or_insert_with(RateState::new);
             entry.maybe_reset(now);
             entry.count += 1;
-
-            let is_throttled = entry.count > AUTH_RATE_MAX_PER_CLIENT;
 
             // Evict stale keys to prevent unbounded growth
             if map.len() > 10000 {
@@ -106,50 +131,6 @@ impl RateLimiter {
                     now.saturating_sub(state.window_start_ms) <= SOLO_RATE_WINDOW_MS
                 });
             }
-
-            is_throttled
-        } else {
-            false // lock failed, allow in fail-open mode
-        }
-    }
-
-    // ── APPENDED for rust-auth-parity (manager:auth throttle fix) ────────────
-    // Node's submissionRateLimit.ts keeps isAuthThrottled() (pure read) and
-    // recordAuthFailure() (increments ONLY on an actual failed compare) as two
-    // separate primitives against a single global window, so a throttled
-    // window rejects even a would-be-correct password without ever counting
-    // that rejection as a new failure. The existing
-    // record_auth_failure_and_check_throttle() above conflates "record" and
-    // "check" into one call, which can't reproduce that pre-compare peek
-    // without also incrementing on success. These two thin wrappers restore
-    // that split, reusing the same "global" key + window/threshold as the
-    // existing method above (append-only — no existing method touched).
-
-    /// Peek whether the global auth-failure window has already crossed the
-    /// throttle threshold, WITHOUT recording a new failure. Mirrors Node's
-    /// isAuthThrottled().
-    pub fn is_auth_throttled_global(&self) -> bool {
-        let now = get_now_ms();
-        if let Ok(map) = self.auth_by_key.lock() {
-            if let Some(entry) = map.get("global") {
-                return now.saturating_sub(entry.window_start_ms) <= SOLO_RATE_WINDOW_MS
-                    && entry.count >= AUTH_RATE_MAX_PER_CLIENT;
-            }
-        }
-        false
-    }
-
-    /// Record a failed manager:auth attempt against the global window WITHOUT
-    /// checking throttle. Mirrors Node's recordAuthFailure() — call ONLY after
-    /// an actual failed password compare, never on success.
-    pub fn record_auth_failure_global(&self) {
-        let now = get_now_ms();
-        if let Ok(mut map) = self.auth_by_key.lock() {
-            let entry = map
-                .entry("global".to_string())
-                .or_insert_with(RateState::new);
-            entry.maybe_reset(now);
-            entry.count += 1;
         }
     }
 
@@ -345,6 +326,62 @@ impl RateLimiter {
     }
 }
 
+// ── Trusted-proxy client-key derivation (issue #705/#706) ────────────────────
+//
+// The server sits behind Caddy (reverse-proxying 127.0.0.1 -> the container),
+// so every request's *direct* peer address is the proxy, not the real client.
+// Caddy is configured to forward the real client IP via X-Real-IP (and adds
+// X-Forwarded-For itself); trusting those headers unconditionally would let
+// any attacker set them to a fresh value on every request, making a per-client
+// throttle worthless. These headers are therefore only consulted when the
+// direct peer is itself trustworthy (loopback or private-range) — i.e. when
+// the request plausibly came through the proxy rather than straight from the
+// internet. Reused by both the HTTP login handler and the klassen socket-join
+// PIN throttle (which had already solved this independently for its own key).
+
+/// Check if an IP address is a trusted proxy (loopback or private range).
+pub fn is_trusted_proxy(ip: IpAddr) -> bool {
+    if ip.is_loopback() {
+        return true;
+    }
+    match ip {
+        IpAddr::V4(ipv4) => ipv4.is_private(),
+        IpAddr::V6(_ipv6) => false,
+    }
+}
+
+/// Derive a per-client throttle key from the connection's direct peer IP and
+/// (already-extracted) proxy header values.
+///
+/// SECURITY: `x_forwarded_for`/`x_real_ip` are only trusted when `peer_ip` is
+/// itself a trusted proxy; an untrusted peer's headers are attacker-controlled
+/// and must never be allowed to pick the throttle key.
+pub fn client_throttle_key(
+    peer_ip: IpAddr,
+    x_forwarded_for: Option<&str>,
+    x_real_ip: Option<&str>,
+) -> String {
+    if is_trusted_proxy(peer_ip) {
+        // X-Forwarded-For can carry a chain of IPs; the first is the original client.
+        if let Some(xff) = x_forwarded_for {
+            if let Some(first) = xff.split(',').next() {
+                let ip = first.trim();
+                if !ip.is_empty() {
+                    return ip.to_string();
+                }
+            }
+        }
+        if let Some(real) = x_real_ip {
+            let ip = real.trim();
+            if !ip.is_empty() {
+                return ip.to_string();
+            }
+        }
+    }
+    // Untrusted peer, or trusted peer without a usable header: bind to the peer IP.
+    peer_ip.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -466,6 +503,67 @@ mod tests {
         assert!(
             limiter.check_game_create_rate(key),
             "Should allow after window expires"
+        );
+    }
+
+    // ── Trusted-proxy client-key derivation (issue #705/#706) ────────────────
+
+    #[test]
+    fn test_is_trusted_proxy_loopback_and_private() {
+        assert!(is_trusted_proxy("127.0.0.1".parse().unwrap()));
+        assert!(is_trusted_proxy("::1".parse().unwrap()));
+        assert!(is_trusted_proxy("10.0.0.5".parse().unwrap()));
+        assert!(is_trusted_proxy("172.23.0.1".parse().unwrap())); // docker bridge range
+        assert!(is_trusted_proxy("192.168.1.1".parse().unwrap()));
+
+        assert!(!is_trusted_proxy("203.0.113.5".parse().unwrap())); // public IPv4
+        assert!(!is_trusted_proxy("2001:db8::1".parse().unwrap())); // public IPv6
+    }
+
+    #[test]
+    fn test_client_throttle_key_trusts_headers_only_from_trusted_peer() {
+        let trusted_peer: IpAddr = "127.0.0.1".parse().unwrap();
+        let untrusted_peer: IpAddr = "203.0.113.5".parse().unwrap();
+
+        // Trusted peer (e.g. Caddy on loopback): X-Forwarded-For wins.
+        assert_eq!(
+            client_throttle_key(trusted_peer, Some("198.51.100.9, 10.0.0.1"), None),
+            "198.51.100.9"
+        );
+        // Trusted peer, no XFF: falls back to X-Real-IP.
+        assert_eq!(
+            client_throttle_key(trusted_peer, None, Some("198.51.100.9")),
+            "198.51.100.9"
+        );
+        // Trusted peer, no headers at all: falls back to the peer IP itself.
+        assert_eq!(client_throttle_key(trusted_peer, None, None), "127.0.0.1");
+
+        // SECURITY: an untrusted (public) peer's headers are attacker-controlled
+        // and must be ignored — always key on the real peer IP.
+        assert_eq!(
+            client_throttle_key(untrusted_peer, Some("1.2.3.4"), Some("5.6.7.8")),
+            "203.0.113.5"
+        );
+    }
+
+    #[test]
+    fn test_auth_throttle_keyed_per_client_not_global() {
+        // Regression guard for issue #705/#706: attacker traffic on one key
+        // must never affect the throttle state of a different key.
+        let limiter = RateLimiter::new();
+        let attacker_key = client_throttle_key("198.51.100.9".parse().unwrap(), None, None);
+        let victim_key = client_throttle_key("203.0.113.42".parse().unwrap(), None, None);
+
+        for _ in 0..(AUTH_RATE_MAX_PER_CLIENT + 1) {
+            limiter.record_auth_failure_per_client(&attacker_key);
+        }
+        assert!(
+            limiter.is_auth_throttled_per_client(&attacker_key),
+            "attacker should be throttled after exceeding the cap"
+        );
+        assert!(
+            !limiter.is_auth_throttled_per_client(&victim_key),
+            "victim's key must be unaffected by the attacker's failures"
         );
     }
 }

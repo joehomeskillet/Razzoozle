@@ -19,7 +19,7 @@ pub mod socket_role;
 mod tests;
 
 pub use game::Game;
-pub use rate_limit::{RateLimiter, RateState};
+pub use rate_limit::{client_throttle_key, RateLimiter, RateState};
 pub use registry::GameRegistry;
 
 // Resource caps (parity with Node)
