@@ -79,23 +79,19 @@ else
   say "warning: rustfmt not found (skip format check)"
 fi
 
-# 4b. clippy: count via PLAIN `cargo clippy --workspace --all-targets` (no
-# `-D warnings`) — measured 2026-07-29: 673 lines match '^warning|^error'.
-# `-D warnings` was considered and rejected: it promotes every lint to a hard
-# compiler error, so cargo aborts the FIRST crate that fails (razzoozle-engine,
-# 2 pre-existing deny-by-default lints) and never even reaches
-# razzoozle-server — the crate with almost all application logic — leaving
-# it completely unchecked (measured: only 2262/5973 output lines, i.e. <40%
-# of the plain run). Plain mode has no such cross-crate abort cascade, so its
-# count is the one with genuine full-workspace coverage; that is what a
-# regression gate needs to watch.
+# 4b. clippy: count via UNIQUE FINDINGS LOCATIONS (to eliminate cache-dependency).
+# Changed 2026-07-29 from counting raw lines ('^warning|^error') which
+# suffered from cache-dependent output formats (~400–600 vs ~17 count variance).
+# New method counts unique file:line locations from the '-->' markers.
+# This gives cache-invariant results while maintaining full-workspace coverage.
+#
 # CLIPPY_BASELINE freezes today's pre-existing debt (post cargo-fmt run) —
 # the gate blocks on a REGRESSION (new findings) only, not on retroactively
 # cleaning up the whole codebase in one PR.
 if command -v cargo-clippy >/dev/null 2>&1; then
-  CLIPPY_OUT=$(cargo clippy --workspace --all-targets 2>&1)
-  CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -cE '^warning|^error')
-  CLIPPY_BASELINE=673
+  CLIPPY_OUT=$(RUSTC_WRAPPER="" CARGO_TARGET_DIR="target/clippy" cargo clippy --workspace --all-targets 2>&1)
+  CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -E '^\s*-->' | sed 's/^\s*--> //' | sort -u | wc -l)
+  CLIPPY_BASELINE=260
   if [[ "$CLIPPY_N" -gt "$CLIPPY_BASELINE" ]]; then
     say "NO-GO: clippy findings ($CLIPPY_N) exceed baseline ($CLIPPY_BASELINE) — new lint debt introduced"
     fail=1
@@ -105,7 +101,6 @@ if command -v cargo-clippy >/dev/null 2>&1; then
 else
   say "warning: cargo-clippy not found (skip clippy check)"
 fi
-
 # --- 5. locale JSON validity (BLOCKING) — every web locale namespace must parse.
 # Added 2026-07-14 after a worker committed invalid zh/game.json and a textual
 # auto-merge mangled fr/it (see scripts/check-locales.sh header). Cheap (~1s),
