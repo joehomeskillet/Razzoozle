@@ -380,6 +380,16 @@ fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -
 }
 
 
+
+/// Count the number of scored (non-unscored) questions in a quiz.
+/// Used to calculate theoretical_max for score capping.
+pub fn count_scored_questions(quiz: &Quizz) -> i32 {
+    quiz.questions.iter()
+        .filter(|q| !q.r#type.as_ref().map_or(false, |t| t.is_unscored()))
+        .count() as i32
+}
+
+
 /// Study mode: return quiz questions WITH solutions for free-paced review.
 pub async fn handle_get_quiz_study(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -543,11 +553,9 @@ pub async fn handle_solo_score(
         }
     }
 
-    // Count only non-poll questions for theoretical_max
-    let non_poll_count = quiz.questions.iter()
-        .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
-        .count() as i32;
-    let theoretical_max = non_poll_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
+    // Count only scored questions for theoretical_max (exclude poll, word-cloud, brainstorm, etc.)
+    let scored_count = count_scored_questions(&quiz);
+    let theoretical_max = scored_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
 
     drop(registry);
 
@@ -868,8 +876,9 @@ mod tests {
         }
     }
 
-    /// 3-question fixture: [0] choice (solution=1), [1] wortarten (partial-credit
-    /// case mirrors eval.rs::wortarten_partial_correct), [2] poll (never scored).
+    /// 4-question fixture: [0] choice (solution=1), [1] wortarten (partial-credit
+    /// case mirrors eval.rs::wortarten_partial_correct), [2] word-cloud (unscored),
+    /// [3] poll (unscored). NEW: word-cloud added to test is_unscored() inclusion.
     fn test_quiz() -> Quizz {
         let mut choice = test_question(QuestionType::Choice);
         choice.solutions = Some(vec![1]);
@@ -883,11 +892,12 @@ mod tests {
         ]);
         wortarten.solutions = Some(vec![3, 0, 2]); // Artikel, Nomen, Adjektiv
 
+        let word_cloud = test_question(QuestionType::WordCloud);
         let poll = test_question(QuestionType::Poll);
 
         Quizz {
             subject: "Test".to_string(),
-            questions: vec![choice, wortarten, poll],
+            questions: vec![choice, wortarten, word_cloud, poll],
             archived: None,
             theme_id: None,
         }
@@ -946,15 +956,16 @@ mod tests {
     }
 
     #[test]
-    fn compute_solo_score_poll_scores_zero_and_excluded_from_max() {
+    fn compute_solo_score_unscored_questions_excluded_from_theoretical_max() {
+        // With new is_unscored() logic: [0] choice + [1] wortarten are scored,
+        // [2] word-cloud + [3] poll are unscored. count_scored_questions returns 2.
+        // With OLD logic (poll-only): would return 3. This test RED-vs-GREEN.
         let quiz = test_quiz();
-        let answers = vec![answer(2, Some(0))]; // poll question, any answer
-        assert_eq!(compute_solo_score(&quiz, Some(&answers)), 0);
 
-        let non_poll_count = quiz.questions.iter()
-            .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
-            .count();
-        assert_eq!(non_poll_count, 2); // poll excluded from theoretical_max
+        // Assert against literal: new logic = 2 (only scored questions)
+        assert_eq!(count_scored_questions(&quiz), 2);
+        
+        // This proves the behavior changed: old logic would have given 3.
     }
 
     #[test]
@@ -988,15 +999,13 @@ mod tests {
     #[test]
     fn compute_solo_score_never_exceeds_theoretical_max() {
         // Structural cap proof: every distinct question index contributes at
-        // most 1000, poll always contributes 0, so the sum over ALL questions
-        // answered honestly-correct equals exactly non_poll_count * 1000 and
+        // most 1000, unscored questions always contribute 0, so the sum over ALL questions
+        // answered honestly-correct equals exactly scored_count * 1000 and
         // can never exceed it (on top of the handler's explicit std::cmp::min
         // cap against theoretical_max).
         let quiz = test_quiz();
-        let non_poll_count = quiz.questions.iter()
-            .filter(|q| q.r#type.as_ref() != Some(&QuestionType::Poll))
-            .count() as i32;
-        let theoretical_max = non_poll_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
+        let scored_count = count_scored_questions(&quiz);
+        let theoretical_max = scored_count.saturating_mul(1000); // #49-Guard 3: prevent i32 overflow on absurdly large quizzes
 
         let answers = vec![
             answer(0, Some(1)), // choice correct
@@ -1007,7 +1016,8 @@ mod tests {
                 answer_ids: None,
                 answer_text: Some(r#"["Artikel","Nomen","Adjektiv"]"#.to_string()), // full correct
             },
-            answer(2, Some(0)), // poll, contributes 0
+            answer(2, Some(0)), // word-cloud, contributes 0
+            answer(3, Some(0)), // poll, contributes 0
         ];
 
         let score = compute_solo_score(&quiz, Some(&answers));
@@ -1061,17 +1071,18 @@ mod tests {
     #[test]
     fn solo_score_answer_count_never_exceeds_questions() {
         // This validates the logical check: answers.len() <= quiz.questions.len()
-        let quiz = test_quiz(); // [choice, wortarten, poll] = 3 questions
-        let non_poll = 2;
-        assert_eq!(quiz.questions.len(), 3);
-        assert!(3 >= non_poll, "Test quiz has expected structure");
+        let quiz = test_quiz(); // [choice, wortarten, word-cloud, poll] = 4 questions
+        let scored = 2;
+        assert_eq!(quiz.questions.len(), 4);
+        assert!(4 >= scored, "Test quiz has expected structure");
 
-        // If somehow an attacker submits 4 answers for a 3-question quiz,
+        // If somehow an attacker submits 5 answers for a 4-question quiz,
         // the handler should reject it. This test documents the invariant.
         let oversized_answers = vec![
             answer(0, Some(1)),
             answer(1, Some(0)),
             answer(2, Some(0)),
+            answer(3, Some(0)),
             answer(99, Some(0)), // Out of bounds index
         ];
         assert!(oversized_answers.len() > quiz.questions.len());
