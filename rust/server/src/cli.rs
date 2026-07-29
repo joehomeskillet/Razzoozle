@@ -89,6 +89,42 @@ NOTES:
     );
 }
 
+/// Execute healthcheck: probe the server's readiness endpoint and return exit code.
+/// Checks http://127.0.0.1:${PORT}/readyz (loopback only, no external network).
+/// Returns 0 if server is ready (HTTP 200), 1 otherwise.
+pub async fn execute_healthcheck() -> i32 {
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3020".into());
+    let url = format!("http://127.0.0.1:{}/readyz", port);
+
+    // Use a short timeout to fail fast if server is unreachable.
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("healthcheck: failed to build HTTP client: {}", e);
+            return 1;
+        }
+    };
+
+    match client.get(&url).send().await {
+        Ok(resp) => {
+            if resp.status() == 200 {
+                eprintln!("healthcheck: server is ready");
+                0
+            } else {
+                eprintln!("healthcheck: server returned status {}", resp.status());
+                1
+            }
+        }
+        Err(e) => {
+            eprintln!("healthcheck: failed to connect to server at {}: {}", url, e);
+            1
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
