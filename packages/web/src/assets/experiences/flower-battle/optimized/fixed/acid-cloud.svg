@@ -1,0 +1,41 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="acid-cloud-title">
+  <defs>
+    <style>
+      .cloud-base { fill: currentColor; opacity: 0.85; }
+      .acid-drop { fill: currentColor; opacity: 0.75; }
+    </style>
+  </defs>
+  <title id="acid-cloud-title">Acid Cloud Power-up</title>
+
+  <!-- Cloud base (three overlapping circles) -->
+  <g id="cloud-base">
+    <circle class="cloud-base" cx="20" cy="24" r="10"/>
+    <circle class="cloud-base" cx="32" cy="18" r="14"/>
+    <circle class="cloud-base" cx="44" cy="24" r="10"/>
+    <!-- Bottom curve for cloud silhouette -->
+    <rect class="cloud-base" x="16" y="28" width="32" height="8" rx="4"/>
+  </g>
+
+  <!-- Falling poison droplets (animated, staggered) -->
+  <g id="drop-1" opacity="0">
+    <path class="acid-drop" d="M 18 38 Q 16 42 18 48 Q 20 42 18 38 Z"/>
+  </g>
+  <g id="drop-2" opacity="0">
+    <path class="acid-drop" d="M 26 40 Q 24 44 26 50 Q 28 44 26 40 Z"/>
+  </g>
+  <g id="drop-3" opacity="0">
+    <path class="acid-drop" d="M 32 38 Q 30 42 32 48 Q 34 42 32 38 Z"/>
+  </g>
+  <g id="drop-4" opacity="0">
+    <path class="acid-drop" d="M 38 40 Q 36 44 38 50 Q 40 44 38 40 Z"/>
+  </g>
+  <g id="drop-5" opacity="0">
+    <path class="acid-drop" d="M 46 38 Q 44 42 46 48 Q 48 42 46 38 Z"/>
+  </g>
+  <g id="drop-6" opacity="0">
+    <path class="acid-drop" d="M 22 42 Q 20 46 22 52 Q 24 46 22 42 Z"/>
+  </g>
+  <g id="drop-7" opacity="0">
+    <path class="acid-drop" d="M 42 42 Q 40 46 42 52 Q 44 46 42 42 Z"/>
+  </g>
+</svg>

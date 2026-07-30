@@ -1,0 +1,32 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sunbeam-title">
+  <defs>
+    <style>
+      .sunbeam-glow { fill: currentColor; opacity: 0.95; }
+      .sunbeam-ray { fill: currentColor; opacity: 0.7; }
+    </style>
+  </defs>
+  <title id="sunbeam-title">Sunbeam Power-up</title>
+
+  <!-- Central glow -->
+  <g id="center-glow">
+    <circle class="sunbeam-glow" cx="32" cy="32" r="8"/>
+    <circle class="sunbeam-glow" cx="32" cy="32" r="12" opacity="0.4"/>
+  </g>
+
+  <!-- Five radiant rays (animated staggered) -->
+  <g id="ray-1">
+    <path class="sunbeam-ray" d="M 32 6 L 28 18 Q 32 20 36 18 Z"/>
+  </g>
+  <g id="ray-2">
+    <path class="sunbeam-ray" d="M 58 32 L 46 28 Q 44 32 46 36 Z"/>
+  </g>
+  <g id="ray-3">
+    <path class="sunbeam-ray" d="M 32 58 L 36 46 Q 32 44 28 46 Z"/>
+  </g>
+  <g id="ray-4">
+    <path class="sunbeam-ray" d="M 6 32 L 18 36 Q 20 32 18 28 Z"/>
+  </g>
+  <g id="ray-5">
+    <path class="sunbeam-ray" d="M 48 14 L 40 22 Q 42 28 48 26 Z"/>
+  </g>
+</svg>
