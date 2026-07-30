@@ -67,13 +67,13 @@ pub async fn after_reveal_tick(
         emit_flb_snapshot(io, game_id, &game);
 
         // Build team scores from current standings (existing rank logic).
-        let standings = compute_team_standings(&game.players);
+        let standings = compute_team_standings(&game.engine.players);
         let mut team_scores = HashMap::new();
         for s in &standings {
             team_scores.insert(s.team_id.clone(), s.points);
         }
         // Also fold player points without team standings edge cases.
-        for p in &game.players {
+        for p in &game.engine.players {
             if let Some(ref tid) = p.team_id {
                 let t = tid.trim();
                 if !t.is_empty() {
@@ -200,7 +200,7 @@ fn generate_offers_after_growth(io: &SocketIo, game: &mut Game, game_id: &str) {
     let team_ids: Vec<String> = game.flower_battle_sun_points.keys().cloned().collect();
     let has_multiple_teams = {
         let mut teams = std::collections::BTreeSet::new();
-        for p in &game.players {
+        for p in &game.engine.players {
             if let Some(ref t) = p.team_id {
                 let tt = t.trim();
                 if !tt.is_empty() {
@@ -276,4 +276,157 @@ pub async fn finish_once(
     db_pool: &Option<sqlx::PgPool>,
 ) {
     super::finish_and_broadcast(io, game_ref, game_id, db_pool).await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::socket::lifecycle::flower_battle_emit::build_player_status;
+    use razzoozle_protocol::game::ExperienceMode;
+    use razzoozle_protocol::player::Player;
+    use razzoozle_protocol::quizz::Quizz;
+
+    fn make_io() -> SocketIo {
+        let (_layer, io) = SocketIo::builder().build_layer();
+        // Room emits need the default namespace (main.rs / lifecycle tests).
+        io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+        io
+    }
+
+    fn flb_game() -> Game {
+        let mut game = Game::new(
+            "flb-win".into(),
+            "ABCD".into(),
+            "manager".into(),
+            "quiz".into(),
+            Quizz {
+                subject: "FlowerBattle".into(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
+        game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+        game
+    }
+
+    fn mk_player(socket_id: &str, client_id: &str, team_id: &str, points: i32) -> Player {
+        Player {
+            id: socket_id.into(),
+            client_id: client_id.into(),
+            connected: true,
+            username: client_id.into(),
+            points,
+            streak: 0,
+            player_token: None,
+            is_bot: None,
+            avatar: None,
+            achievements: None,
+            team_id: Some(team_id.into()),
+            identifier_hash: None,
+        }
+    }
+
+    /// Stage-10 multi-team finish with unequal engine scores → sole max-score winner.
+    ///
+    /// `game.players` is deliberately stale/inverted so ranking must read
+    /// `game.engine.players` (reveal awards points only on the engine list).
+    #[tokio::test]
+    async fn after_reveal_unequal_engine_scores_single_winner() {
+        let io = make_io();
+        let mut game = flb_game();
+        game.flower_battle_effects.set_stage("blue", 10);
+        game.flower_battle_effects.set_stage("red", 10);
+        game.flower_battle_effects.set_stage("green", 7);
+
+        // Authoritative scores (engine): blue wins on points among stage-10 teams.
+        game.engine.players = vec![
+            mk_player("s-blue", "c-blue", "blue", 120),
+            mk_player("s-red", "c-red", "red", 40),
+            mk_player("s-green", "c-green", "green", 999), // not at stage 10
+        ];
+        // Stale lobby mirror: would wrongly pick red if used for ranking.
+        game.players = vec![
+            mk_player("s-blue", "c-blue", "blue", 0),
+            mk_player("s-red", "c-red", "red", 500),
+            mk_player("s-green", "c-green", "green", 999),
+        ];
+
+        let game_id = game.game_id.clone();
+        let game_ref = Arc::new(Mutex::new(game));
+
+        let early = after_reveal_tick(&io, &game_ref, &game_id, &None).await;
+        assert!(early, "stage-10 finish must short-circuit lifecycle");
+
+        let game = game_ref.lock().unwrap();
+        assert!(game.flower_battle_effects.victory_resolved);
+        assert_eq!(game.engine.phase, GamePhase::Finished);
+        assert_eq!(
+            game.flower_battle_winner_team_ids.as_deref(),
+            Some(vec!["blue".to_string()].as_slice()),
+            "only max-score stage-10 team wins"
+        );
+
+        let blue =
+            build_player_status(&game_id, &game, &mk_player("s-blue", "c-blue", "blue", 120));
+        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 40));
+        let green = build_player_status(
+            &game_id,
+            &game,
+            &mk_player("s-green", "c-green", "green", 999),
+        );
+        assert!(blue.is_winner, "blue is sole winner");
+        assert!(!red.is_winner, "red at stage 10 but lower score");
+        assert!(!green.is_winner, "green not at stage 10");
+        assert_eq!(blue.winner_team_ids, vec!["blue"]);
+        assert_eq!(red.winner_team_ids, vec!["blue"]);
+    }
+
+    /// Equal engine scores among stage-10 teams → shared winners (lexicographic wire order).
+    #[tokio::test]
+    async fn after_reveal_equal_engine_scores_shared_winners() {
+        let io = make_io();
+        let mut game = flb_game();
+        game.flower_battle_effects.set_stage("blue", 10);
+        game.flower_battle_effects.set_stage("red", 10);
+        game.flower_battle_effects.set_stage("green", 3);
+
+        game.engine.players = vec![
+            mk_player("s-blue", "c-blue", "blue", 80),
+            mk_player("s-red", "c-red", "red", 80),
+            mk_player("s-green", "c-green", "green", 500),
+        ];
+        // Stale zeros on the lobby list must not force a wrong sole winner.
+        game.players = vec![
+            mk_player("s-blue", "c-blue", "blue", 0),
+            mk_player("s-red", "c-red", "red", 0),
+            mk_player("s-green", "c-green", "green", 0),
+        ];
+
+        let game_id = game.game_id.clone();
+        let game_ref = Arc::new(Mutex::new(game));
+
+        let early = after_reveal_tick(&io, &game_ref, &game_id, &None).await;
+        assert!(early);
+
+        let game = game_ref.lock().unwrap();
+        assert!(game.flower_battle_effects.victory_resolved);
+        assert_eq!(
+            game.flower_battle_winner_team_ids.as_deref(),
+            Some(vec!["blue".to_string(), "red".to_string()].as_slice()),
+            "equal top scores among stage-10 teams share the win"
+        );
+
+        let blue = build_player_status(&game_id, &game, &mk_player("s-blue", "c-blue", "blue", 80));
+        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 80));
+        let green = build_player_status(
+            &game_id,
+            &game,
+            &mk_player("s-green", "c-green", "green", 500),
+        );
+        assert!(blue.is_winner);
+        assert!(red.is_winner);
+        assert!(!green.is_winner);
+        assert_eq!(blue.winner_team_ids, vec!["blue", "red"]);
+    }
 }
