@@ -2,7 +2,7 @@
 
 **Status:** DECIDED (2026-07-30) · **Date:** 2026-07-30
 **Supersedes:** ADR-012 (partially, Canvas/WebGL presenter scope only)  
-**Decision:** Option (a) — Procedural puppet-rig PixiJS-native + GSAP (MIT Community, free). Research & alternatives: `docs/design/anim-runtime-research-2026-07-30.md`
+**Decision:** Option (a) — Procedural puppet-rig PixiJS-native + motion (MIT, already installed). GSAP (Webflow No-Charge, proprietär) as fallback only. Research & alternatives: `docs/design/anim-runtime-research-2026-07-30.md`
 **Architecture Board:** Approved
 
 ---
@@ -27,7 +27,7 @@ ADR-012 (2026-07-30) explicitly excluded PixiJS from the canonical animation sta
 |-----------|-----------|-------|-----------|
 |-----------|-----------|-------|-----------|
 | **Presenter Garden Scene** | PixiJS 8 | FlowerBattleCanvasHost + layers | 2D animation, 60 FPS, teams up to 4 |
-| **Plant Rigging & Animation** | Procedural Puppet-Rig + motion | Container hierarchy ≈ bones; tweens ≈ keyframes | MIT (already installed); `animate()` drives PixiJS properties; no new dependencies |
+| **Plant Rigging & Animation** | Procedural Puppet-Rig + motion | Container hierarchy ≈ bones; tweens ≈ keyframes | motion (MIT, installed); fallback: GSAP (Webflow No-Charge) if motion insufficient |
 | **Question/Answer UI** | React + motion/react | ExperienceStageOverlay | Existing web component patterns unchanged |
 | **Navigation & Dialogs** | React + radix-ui | HTML outside canvas | Content-free presenter principle |
 | **Mobile Player Scene** | Optional: PixiJS low-profile OR static fallback | ExperienceDisplay on phones | No impact on answer interaction |
@@ -36,9 +36,9 @@ ADR-012 (2026-07-30) explicitly excluded PixiJS from the canonical animation sta
 
 ---
 
-## 2. Animation Runtime: Procedural Puppet-Rig + motion
+## 2. Animation Runtime: Procedural Puppet-Rig + motion (Primary)
 
-### Decision: Option (a) — Procedural Puppet-Rig + GSAP
+### Decision: Option (a) — Procedural Puppet-Rig + motion
 
 **DECIDED (2026-07-30).** User decision: no Spine Runtime. Evaluated 4 alternatives; chose procedural puppet-rig for zero licensing overhead + native PixiJS integration. Rationale & rejected options documented in `docs/design/anim-runtime-research-2026-07-30.md`:
 

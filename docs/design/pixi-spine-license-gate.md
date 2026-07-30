@@ -11,7 +11,7 @@
 User decision (2026-07-30) resolved the licensing complexity: **No Spine Runtime.** Animation for Flower Battle presenter implemented via:
 
 - **PixiJS 8** (rendering) — MIT license
-- **GSAP** (tweening engine) — MIT Community License (free tier, unrestricted)
+- **GSAP (Webflow No-Charge, proprietär) License (free tier, unrestricted)
 - **Procedural puppet-rig** (plant rigging) — procedural code, no external tools
 
 This eliminates all external animation runtime licensing overhead and editor dependencies.
@@ -68,7 +68,7 @@ The following questions from the original license gate are **no longer applicabl
 ### Runtime Licenses
 - **File:** `licenses/pixijs-license.txt` (MIT)
 - **Status:** ✓ Present
-- **File:** `licenses/gsap-license-note.txt` (MIT, link to community version)
+- **File:** `licenses/GSAP (Webflow No-Charge, proprietär) version)
 - **Status:** ✓ Reference file
 
 ### No Spine License Files
@@ -114,6 +114,6 @@ test -f THIRD_PARTY_NOTICES.md || exit 1
 
 - **ADR-013:** `docs/adr/013-pixi-spine-hybrid-presenter.md` (procedural puppet + GSAP)
 - **SDD:** `docs/design/flower-battle-pixi-spine-sdd.md` (addendum block notes license gate resolution)
-- **GSAP License:** https://github.com/greensock/GSAP (MIT Community version)
+- **GSAP (Webflow No-Charge, proprietär) version)
 - **PixiJS License:** https://github.com/pixijs/pixijs (MIT)
 
