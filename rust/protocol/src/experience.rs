@@ -261,6 +261,38 @@ pub struct FlowerBattlePayload {
 }
 
 // ============================================================================
+// FlowerBattle power-up vote C2S (WP #931 / SEC-01)
+// ============================================================================
+
+/// C2S payload for `player:flowerBattle:submitPowerupVote`.
+///
+/// `player_token` is **required** on the wire (SEC-01): server matches it against
+/// the stored token for the socket's clientId before recording the vote.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerupVotePayload {
+    pub game_id: String,
+    /// Index into the active offer option list.
+    pub option_index: usize,
+    /// Server-minted per-player secret from `game:successJoin` / localStorage.
+    pub player_token: String,
+}
+
+/// C2S payload for `player:flowerBattle:submitPowerupTargetVote`.
+///
+/// `player_token` is **required** (SEC-01) — same gate as [`PowerupVotePayload`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetVotePayload {
+    pub game_id: String,
+    pub target_team_id: String,
+    /// Server-minted per-player secret from `game:successJoin` / localStorage.
+    pub player_token: String,
+}
+
+// ============================================================================
 // Mode-tagged payload union (pattern: status.rs GameStatus)
 // ============================================================================
 
@@ -499,6 +531,43 @@ mod tests {
         let v = serde_json::to_value(&t_without_progress).unwrap();
         assert!(v.get("answered").is_none());
         assert!(v.get("total").is_none());
+    }
+
+    #[test]
+    fn powerup_vote_payload_requires_player_token() {
+        let p = PowerupVotePayload {
+            game_id: "g1".into(),
+            option_index: 1,
+            player_token: "tok-a".into(),
+        };
+        let v = serde_json::to_value(&p).unwrap();
+        assert_eq!(v["gameId"], "g1");
+        assert_eq!(v["optionIndex"], 1);
+        assert_eq!(v["playerToken"], "tok-a");
+        let back: PowerupVotePayload = serde_json::from_value(v).unwrap();
+        assert_eq!(back, p);
+
+        // Missing playerToken must fail deserialize (SEC-01 required field).
+        let missing = json!({"gameId": "g1", "optionIndex": 0});
+        assert!(serde_json::from_value::<PowerupVotePayload>(missing).is_err());
+    }
+
+    #[test]
+    fn target_vote_payload_requires_player_token() {
+        let p = TargetVotePayload {
+            game_id: "g1".into(),
+            target_team_id: "blue".into(),
+            player_token: "tok-b".into(),
+        };
+        let v = serde_json::to_value(&p).unwrap();
+        assert_eq!(v["gameId"], "g1");
+        assert_eq!(v["targetTeamId"], "blue");
+        assert_eq!(v["playerToken"], "tok-b");
+        let back: TargetVotePayload = serde_json::from_value(v).unwrap();
+        assert_eq!(back, p);
+
+        let missing = json!({"gameId": "g1", "targetTeamId": "blue"});
+        assert!(serde_json::from_value::<TargetVotePayload>(missing).is_err());
     }
 
     #[test]
