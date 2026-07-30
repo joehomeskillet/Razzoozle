@@ -185,4 +185,35 @@ describe("FlowerBattleDisplay", () => {
     )
     expect(html).not.toContain("h-screen")
   })
+
+  it("stacks scene and HUD as flex-column flow children so the team-meter row can never render past the fold (WP-958C)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
+    )
+
+    // root becomes a flex column: scene + HUD share its box top-to-bottom
+    // instead of the HUD floating on an absolute inset-0 overlay whose
+    // height depended on an ancestor chain that .display-stage doesn't
+    // always get (root-caused live on /party/manager, WP-958C).
+    const rootMatch = html.match(/data-testid="flower-battle-display"[^>]*class="([^"]*)"/)
+    expect(rootMatch).not.toBeNull()
+    expect(rootMatch![1]).toContain("flex")
+    expect(rootMatch![1]).toContain("flex-col")
+
+    // the scene grows to fill whatever space the HUD's natural height
+    // leaves behind, and may shrink below its own content size (min-h-0)
+    // rather than push the HUD off-box.
+    const sceneMatch = html.match(/class="([^"]*)"[^>]*aria-label="Experience viewport"/)
+    expect(sceneMatch).not.toBeNull()
+    expect(sceneMatch![1]).toContain("flex-1")
+    expect(sceneMatch![1]).toContain("min-h-0")
+
+    // the HUD (and the team-meter row inside it) is a normal flow child,
+    // not an absolute overlay — that absolute positioning is exactly what
+    // let it escape the visible box when the ancestor height chain broke.
+    const hudMatch = html.match(/data-testid="flower-battle-display-hud"[^>]*class="([^"]*)"/)
+    expect(hudMatch).not.toBeNull()
+    expect(hudMatch![1]).not.toContain("absolute")
+    expect(hudMatch![1]).not.toContain("inset-0")
+  })
 })
