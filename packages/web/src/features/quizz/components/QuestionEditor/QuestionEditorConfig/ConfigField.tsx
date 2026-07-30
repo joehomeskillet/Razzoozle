@@ -7,15 +7,15 @@ interface LabelProps {
 }
 
 const Label = ({ icon, label, unit = "sec" }: LabelProps) => (
-  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+  <div className="flex items-center gap-2 text-sm font-semibold text-ink-muted">
     {icon}
     {label}
-    <span className="text-xs font-normal text-gray-500">({unit})</span>
+    <span className="text-xs font-normal text-ink-subtle">({unit})</span>
   </div>
 )
 
 const Description = ({ children }: { children: string }) => (
-  <p className="text-xs text-gray-500">{children}</p>
+  <p className="text-xs text-ink-subtle">{children}</p>
 )
 
 const ConfigField = ({ children }: PropsWithChildren) => (
