@@ -89,14 +89,21 @@ fi
 # the gate blocks on a REGRESSION (new findings) only, not on retroactively
 # cleaning up the whole codebase in one PR.
 if command -v cargo-clippy >/dev/null 2>&1; then
-  CLIPPY_OUT=$(RUSTC_WRAPPER="" CARGO_TARGET_DIR="target/clippy" cargo clippy --workspace --all-targets 2>&1)
-  CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -E '^\s*-->' | sed 's/^\s*--> //' | sort -u | wc -l)
-  CLIPPY_BASELINE=260
-  if [[ "$CLIPPY_N" -gt "$CLIPPY_BASELINE" ]]; then
-    say "NO-GO: clippy findings ($CLIPPY_N) exceed baseline ($CLIPPY_BASELINE) — new lint debt introduced"
+  CLIPPY_OUT=$(RUSTC_WRAPPER="" CARGO_TARGET_DIR="target/clippy" cargo clippy --workspace --all-targets -- --cap-lints=warn 2>&1)
+  CLIPPY_EXIT=$?
+  if [[ $CLIPPY_EXIT -ne 0 ]]; then
+    say "NO-GO: clippy sweep failed (exit $CLIPPY_EXIT) — cargo compilation error, not lint debt"
+    say "$(printf '%s\n' "$CLIPPY_OUT" | tail -10)"
     fail=1
   else
-    say "ok: clippy findings ($CLIPPY_N) within baseline ($CLIPPY_BASELINE)"
+    CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -E '^\s*-->' | sed 's/^\s*--> //' | sort -u | wc -l)
+    CLIPPY_BASELINE=185
+    if [[ "$CLIPPY_N" -gt "$CLIPPY_BASELINE" ]]; then
+      say "NO-GO: clippy findings ($CLIPPY_N) exceed baseline ($CLIPPY_BASELINE) — new lint debt introduced"
+      fail=1
+    else
+      say "ok: clippy findings ($CLIPPY_N) within baseline ($CLIPPY_BASELINE)"
+    fi
   fi
 else
   say "warning: cargo-clippy not found (skip clippy check)"
