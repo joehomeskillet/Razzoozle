@@ -1,0 +1,204 @@
+/**
+ * WP-PIX-05A GardenScene contract tests.
+ * Node env + real Pixi Containers/Graphics (no WebGL Application required).
+ */
+
+import { Container } from "pixi.js"
+import { describe, expect, it } from "vitest"
+
+import type { GardenPixiApplicationHandle } from "../../garden-pixi.types"
+import { createGardenScene, LAYER_LABELS } from "../GardenScene"
+import type { GardenPalette } from "../gardenPalette"
+import { computePlotAnchors } from "../plotAnchors"
+import {
+  ThemeTokenColorError,
+  THEME_TOKEN_COLOR_ERROR,
+} from "../resolveThemeColor"
+
+/** Deterministic palette — test-only injection, not production fallback. */
+const TEST_PALETTE: GardenPalette = {
+  sky: 0x87b5e0,
+  hillsFar: 0x4a8f4a,
+  hillsNear: 0x5aad5a,
+  clouds: 0xf5f5f5,
+  midground: 0x3d7a3d,
+  soil: 0xc4a574,
+  soilEdge: 0x8b6914,
+  foreground: 0x2f6b2f,
+  plantStem: 0x2d6a2d,
+  plantLeaf: 0x4caf50,
+  plantPetal: 0xe57373,
+}
+
+function fakeApp(
+  width = 1920,
+  height = 1080,
+): GardenPixiApplicationHandle & { stage: Container } {
+  const stage = new Container()
+  stage.label = "stage"
+  return {
+    canvas: {} as HTMLCanvasElement,
+    renderer: {
+      resize: () => {},
+      width,
+      height,
+    },
+    ticker: { start: () => {}, stop: () => {} },
+    destroy: () => {},
+    stage,
+  }
+}
+
+function team(name: string, growthStage: number) {
+  return { name, growthStage }
+}
+
+describe("createGardenScene", () => {
+  it("builds one root with stable ordered layers", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+
+    expect(scene.root.label).toBe("garden-root")
+    expect(scene.root.children.map((c) => c.label)).toEqual([...LAYER_LABELS])
+    expect(app.stage.children).toContain(scene.root)
+
+    // Layer set mirrors child order
+    expect(scene.layers.ordered.map((l) => l.label)).toEqual([...LAYER_LABELS])
+    scene.destroy()
+  })
+
+  it.each([
+    { teams: 2, w: 1920, h: 1080, label: "16:9" },
+    { teams: 3, w: 1600, h: 1200, label: "4:3" },
+    { teams: 4, w: 2560, h: 1080, label: "ultrawide" },
+  ] as const)(
+    "anchors $teams teams at $label without depending on growth",
+    ({ teams, w, h }) => {
+      const app = fakeApp(w, h)
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateLayout(w, h)
+
+      const roster = Array.from({ length: teams }, (_, i) =>
+        team(`T${i}`, 0),
+      )
+      scene.updateSnapshot({ teams: roster, phase: "question" })
+
+      const expected = computePlotAnchors(teams)
+      expect(scene.getPlotAnchors()).toEqual(expected)
+
+      // Letterbox applied to the single root
+      const box = scene.getLetterbox()
+      expect(box).not.toBeNull()
+      expect(scene.root.scale.x).toBeCloseTo(box!.scale, 8)
+      expect(scene.root.position.x).toBeCloseTo(box!.offsetX, 8)
+      expect(scene.root.position.y).toBeCloseTo(box!.offsetY, 8)
+
+      // Plants sit on anchors
+      expect(scene.layers.actors.children).toHaveLength(teams)
+      for (let i = 0; i < teams; i += 1) {
+        const plant = scene.layers.actors.children[i]!
+        expect(plant.position.x).toBe(expected[i]!.x)
+        expect(plant.position.y).toBe(expected[i]!.y)
+      }
+
+      scene.destroy()
+    },
+  )
+
+  it("keeps exact plot anchors across growth and phase updates", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    const rootRef = scene.root
+
+    scene.updateSnapshot({
+      teams: [team("A", 1), team("B", 2), team("C", 3)],
+      phase: "lobby",
+    })
+
+    const anchorsBefore = scene.getPlotAnchors().map((a) => ({ ...a }))
+    const plantRoots = scene.layers.actors.children.slice()
+    const soilBefore = scene.layers.plots.children.map((c) => ({
+      x: c.position.x,
+      y: c.position.y,
+    }))
+
+    scene.updateSnapshot({
+      teams: [team("A", 7), team("B", 8), team("C", 10)],
+      phase: "reveal",
+    })
+
+    expect(scene.root).toBe(rootRef)
+    expect(scene.getPlotAnchors()).toEqual(anchorsBefore)
+    expect(scene.layers.actors.children).toEqual(plantRoots)
+    expect(
+      scene.layers.plots.children.map((c) => ({
+        x: c.position.x,
+        y: c.position.y,
+      })),
+    ).toEqual(soilBefore)
+
+    for (let i = 0; i < 3; i += 1) {
+      const plant = scene.layers.actors.children[i]!
+      expect(plant.position.x).toBe(anchorsBefore[i]!.x)
+      expect(plant.position.y).toBe(anchorsBefore[i]!.y)
+    }
+
+    expect(scene.phase).toBe("reveal")
+    scene.destroy()
+  })
+
+  it("does not create a new root or Application on updateSnapshot", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    const root = scene.root
+    const stageChildCount = app.stage.children.length
+
+    scene.updateSnapshot({ teams: [team("A", 0), team("B", 0)] })
+    scene.updateSnapshot({ teams: [team("A", 5), team("B", 6)] })
+    scene.updateLayout(1280, 720)
+
+    expect(scene.root).toBe(root)
+    expect(app.stage.children.length).toBe(stageChildCount)
+    expect(app.stage.children[0]).toBe(root)
+    scene.destroy()
+  })
+
+  it("destroy is idempotent and detaches the root", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    scene.updateSnapshot({ teams: [team("A", 1), team("B", 2)] })
+
+    scene.destroy()
+    expect(app.stage.children).not.toContain(scene.root)
+    expect(() => scene.destroy()).not.toThrow()
+    expect(() => scene.destroy()).not.toThrow()
+
+    // Further updates are no-ops after destroy
+    expect(() =>
+      scene.updateSnapshot({ teams: [team("A", 9), team("B", 9)] }),
+    ).not.toThrow()
+    expect(() => scene.updateLayout(800, 600)).not.toThrow()
+  })
+
+  it("surfaces controlled palette errors for host static fallback", () => {
+    const app = fakeApp()
+    expect(() =>
+      createGardenScene(app, {
+        resolveColor: () => {
+          throw new ThemeTokenColorError("--surface-2", "empty computed value")
+        },
+      }),
+    ).toThrow(ThemeTokenColorError)
+
+    try {
+      createGardenScene(app, {
+        resolveColor: () => {
+          throw new ThemeTokenColorError("--surface-2", "empty computed value")
+        },
+      })
+    } catch (err) {
+      expect(err).toBeInstanceOf(ThemeTokenColorError)
+      expect((err as ThemeTokenColorError).code).toBe(THEME_TOKEN_COLOR_ERROR)
+    }
+  })
+})
