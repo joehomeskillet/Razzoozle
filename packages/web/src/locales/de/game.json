@@ -408,5 +408,34 @@
       "acidRain": "☁ Nächstes Wachstum −1",
       "sunbeam": "☀ Nächstes Wachstum +1"
     }
+  },
+  "flowerBattle": {
+    "powerupVote": {
+      "title": "Power-up wählen",
+      "description": "Stimme für ein Power-up, bevor die Zeit abläuft.",
+      "submit": "Abstimmen",
+      "status": {
+        "selected": "{{name}} ausgewählt",
+        "submitted": "Stimme abgegeben"
+      },
+      "options": {
+        "fertilizer": {
+          "name": "Dünger",
+          "effect": "Lässt deine Blume schneller wachsen"
+        },
+        "sunbeam": {
+          "name": "Sonnenstrahl",
+          "effect": "Gibt sofort einen Wachstumsschub"
+        },
+        "umbrella_shield": {
+          "name": "Schirm-Schild",
+          "effect": "Schützt dein Team vor dem nächsten Angriff"
+        },
+        "acid_rain": {
+          "name": "Saurer Regen",
+          "effect": "Bremst das gegnerische Team"
+        }
+      }
+    }
   }
 }

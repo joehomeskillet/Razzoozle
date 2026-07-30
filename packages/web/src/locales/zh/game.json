@@ -408,5 +408,34 @@
       "acidRain": "☁ 下次成长 −1",
       "sunbeam": "☀ 下次成长 +1"
     }
+  },
+  "flowerBattle": {
+    "powerupVote": {
+      "title": "选择一个道具",
+      "description": "在时间结束前为一个道具投票。",
+      "submit": "投票",
+      "status": {
+        "selected": "已选择{{name}}",
+        "submitted": "投票已提交"
+      },
+      "options": {
+        "fertilizer": {
+          "name": "肥料",
+          "effect": "让你的花朵长得更快"
+        },
+        "sunbeam": {
+          "name": "阳光",
+          "effect": "立即获得生长加成"
+        },
+        "umbrella_shield": {
+          "name": "雨伞护盾",
+          "effect": "保护你的队伍免受下一次攻击"
+        },
+        "acid_rain": {
+          "name": "酸雨",
+          "effect": "减慢对方队伍的速度"
+        }
+      }
+    }
   }
 }
