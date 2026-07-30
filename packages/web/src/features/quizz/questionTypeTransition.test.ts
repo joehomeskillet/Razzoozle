@@ -75,6 +75,26 @@ describe("buildTypePatch", () => {
     expect(patch.unit).toBeUndefined()
   })
 
+  it("should transition choice → boolean and default to [0] when filter is empty", () => {
+    const current = { type: "choice" as const, solutions: [5, 10] }
+    const patch = buildTypePatch(current, "boolean")
+
+    expect(patch.type).toBe("boolean")
+    expect(patch.answers).toEqual(["Wahr", "Falsch"])
+    // All solutions >= 2, so filter is empty; must default to [0]
+    expect(patch.solutions).toEqual([0])
+  })
+
+  it("should transition choice → boolean and default to [0] when solutions undefined", () => {
+    const current = { type: "choice" as const, question: "test" }
+    const patch = buildTypePatch(current, "boolean")
+
+    expect(patch.type).toBe("boolean")
+    expect(patch.answers).toEqual(["Wahr", "Falsch"])
+    // No solutions to filter; must default to [0]
+    expect(patch.solutions).toEqual([0])
+  })
+
   it("should transition choice → slider with defaults", () => {
     const current = fixtures.choice
     const patch = buildTypePatch(current, "slider")
