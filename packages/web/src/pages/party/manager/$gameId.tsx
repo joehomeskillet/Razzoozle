@@ -146,53 +146,70 @@ const ManagerGamePage = () => {
     ?.autoAdvanceMs
 
   return (
-    <GameWrapper
-      statusName={status.name}
-      onNext={handleSkip}
-      // Exit (LogOut) button opens the confirm dialog instead of leaving
-      // immediately; performExit runs after the host confirms.
-      onBack={() => setConfirmExit(true)}
-      manager
-    >
-      <AutoAdvanceCountdown ms={autoAdvanceMs} />
-      {/* E-11rev/E-12rev soft start gates (experience modes, WP #879). */}
-      <ExperienceStartWarning gameId={gameId} />
-      {experienceTransition ? (
-        <ExperienceDisplay data={experienceTransition} />
-      ) : (
-        CurrentComponent && <CurrentComponent data={status.data as never} />
-      )}
+    // WP-958D: this route mounts no display-kiosk-style ancestor (unlike
+    // /display/play.tsx, which gets a definite height from `.display-kiosk`
+    // in pages/display/layout.tsx), so GameWrapper's own `min-h-dvh` section
+    // only ever had a height *floor* to work with — never a definite one.
+    // With an experience scene inside, that let the whole h-full/flex-1
+    // chain fall back to content-driven sizing, overflowing the viewport
+    // (measured: constant +304px on both 1366x768 and 1920x1080, live
+    // deploy e4788ec04). A `flex h-dvh` wrapper here gives GameWrapper's
+    // section a definite cross-size to stretch into (align-items: stretch
+    // is the flex default, and the section's own height is otherwise
+    // `auto`), so its existing `flex-1 min-h-0 overflow-y-auto` content
+    // area can finally size against real available space instead of
+    // hugging its content — no change to GameWrapper itself, so the
+    // player route (which still needs to grow/scroll naturally) is
+    // unaffected.
+    <div className="flex h-dvh w-full">
+      <GameWrapper
+        statusName={status.name}
+        onNext={handleSkip}
+        // Exit (LogOut) button opens the confirm dialog instead of leaving
+        // immediately; performExit runs after the host confirms.
+        onBack={() => setConfirmExit(true)}
+        manager
+      >
+        <AutoAdvanceCountdown ms={autoAdvanceMs} />
+        {/* E-11rev/E-12rev soft start gates (experience modes, WP #879). */}
+        <ExperienceStartWarning gameId={gameId} />
+        {experienceTransition ? (
+          <ExperienceDisplay data={experienceTransition} />
+        ) : (
+          CurrentComponent && <CurrentComponent data={status.data as never} />
+        )}
 
-      <AlertDialog.Root open={confirmExit} onOpenChange={setConfirmExit}>
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-          <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-white p-6 shadow-xl">
-            <AlertDialog.Title className="text-xl font-bold text-gray-900">
-              {t("manager:exit.title", {
-                defaultValue: "Spiel wirklich beenden?",
-              })}
-            </AlertDialog.Title>
-            <AlertDialog.Description className="mt-2 text-base text-gray-600">
-              {t("manager:exit.description", {
-                defaultValue:
-                  "Alle Spieler werden benachrichtigt und das Spiel wird beendet.",
-              })}
-            </AlertDialog.Description>
-            <div className="mt-6 flex justify-end gap-3">
-              <AlertDialog.Cancel className="focus-visible:ring-primary/60 min-h-11 rounded-[var(--radius-theme)] px-4 py-2 text-base font-semibold text-gray-700 hover:bg-gray-100 focus-visible:ring-2 focus-visible:outline-none">
-                {t("common:cancel", { defaultValue: "Abbrechen" })}
-              </AlertDialog.Cancel>
-              <AlertDialog.Action
-                onClick={performExit}
-                className="focus-visible:ring-primary/60 min-h-11 rounded-[var(--radius-theme)] bg-red-600 px-4 py-2 text-base font-semibold text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none"
-              >
-                {t("manager:exit.confirm", { defaultValue: "Beenden" })}
-              </AlertDialog.Action>
-            </div>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
-    </GameWrapper>
+        <AlertDialog.Root open={confirmExit} onOpenChange={setConfirmExit}>
+          <AlertDialog.Portal>
+            <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+            <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] bg-white p-6 shadow-xl">
+              <AlertDialog.Title className="text-xl font-bold text-gray-900">
+                {t("manager:exit.title", {
+                  defaultValue: "Spiel wirklich beenden?",
+                })}
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-2 text-base text-gray-600">
+                {t("manager:exit.description", {
+                  defaultValue:
+                    "Alle Spieler werden benachrichtigt und das Spiel wird beendet.",
+                })}
+              </AlertDialog.Description>
+              <div className="mt-6 flex justify-end gap-3">
+                <AlertDialog.Cancel className="focus-visible:ring-primary/60 min-h-11 rounded-[var(--radius-theme)] px-4 py-2 text-base font-semibold text-gray-700 hover:bg-gray-100 focus-visible:ring-2 focus-visible:outline-none">
+                  {t("common:cancel", { defaultValue: "Abbrechen" })}
+                </AlertDialog.Cancel>
+                <AlertDialog.Action
+                  onClick={performExit}
+                  className="focus-visible:ring-primary/60 min-h-11 rounded-[var(--radius-theme)] bg-red-600 px-4 py-2 text-base font-semibold text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  {t("manager:exit.confirm", { defaultValue: "Beenden" })}
+                </AlertDialog.Action>
+              </div>
+            </AlertDialog.Content>
+          </AlertDialog.Portal>
+        </AlertDialog.Root>
+      </GameWrapper>
+    </div>
   )
 }
 
