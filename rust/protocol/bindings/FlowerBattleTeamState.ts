@@ -12,4 +12,10 @@ members: Array<string>, hp: number, shield: number, effects: Array<FlowerBattleE
 /**
  * Accumulated sun points for power-up triggers (WP #930).
  */
-sunPoints: number, };
+sunPoints: number, 
+/**
+ * Last team that successfully acid_rain-attacked this team (WP #931).
+ * Used to block back-to-back attacks from the same attacker team.
+ * `None` when never attacked (or after any reset policy lands later).
+ */
+previousAttackerTeamId?: string, };
