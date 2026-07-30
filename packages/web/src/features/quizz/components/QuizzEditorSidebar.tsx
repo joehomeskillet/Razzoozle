@@ -212,7 +212,7 @@ const QuizzEditorSidebar = () => {
 
   return (
     <>
-      <aside className="z-10 m-4 flex shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden rounded-2xl bg-white p-3 shadow-sm md:max-h-[unset] md:w-72 md:flex-col md:overflow-x-hidden md:overflow-y-auto">
+      <aside className="z-10 m-4 flex shrink-0 flex-row gap-2 overflow-x-auto overflow-y-hidden rounded-2xl bg-white p-3 shadow-sm md:max-h-[unset] md:w-72 md:flex-col md:overflow-x-hidden md:overflow-y-auto console-scroll">
         {selectionActive && (
           <div
             role="toolbar"
