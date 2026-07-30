@@ -2,12 +2,16 @@
 
 **Status:** Umsetzungsentwurf (User-Direktive 2026-07-30, verbatim)
 **Stand:** 30.07.2026
+
+> **ADDENDUM (ADR-013, 2026-07-30):** User-Entscheid — Umsetzung OHNE Spine Runtime. Animation: Procedurales Puppet-Rig (PixiJS Container-Hierarchie) + motion-Tweening (MIT, bereits installiert; Fallback: GSAP Webflow No-Charge). §2.1 Stackzeile (Skelettanimation: Spine Editor → Procedural/GSAP) + §6 Umsetzungstechnik ersetzt durch [ADR-013](../adr/013-pixi-spine-hybrid-presenter.md); Rig-/Animations-Verträge (§6.1 Bone-Semantik / §6.3 Pflichtanimationen / §6.5 Mischungsprofil / §6.6 Spine-Events → Audio-Marker) gelten weiter. Siehe [Forschung](anim-runtime-research-2026-07-30.md) für Begründung.
+
 **Zielsystem:** Razzoozle Web-Client, Presenter und bestehendes Multiplayer-Backend
 **Rendering:** PixiJS 8
-**Skelettanimation:** offizielles `@esotericsoftware/spine-pixi-v8` Runtime-Paket
+**Skelettanimation:** Procedurales Puppet-Rig + GSAP (MIT-lizenziert)
 **Visuelle Richtung:** hochwertiges, freundliches 2D-Cartoon-Spiel mit Tiefe, weichen Formen und lebendigen Figuren; inspiriert von modernen Casual-Webgames wie *Mergic Pets* und *Adventure Time Elemental*, jedoch ohne Übernahme geschützter Figuren, Assets, Layouts oder Markenmerkmale.
 
 ---
+
 
 ## 1. Auftrag
 
