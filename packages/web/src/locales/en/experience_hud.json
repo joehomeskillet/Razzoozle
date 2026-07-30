@@ -1,0 +1,29 @@
+{
+  "hud": {
+    "regionLabel": "Game status"
+  },
+  "roundProgress": {
+    "label": "Progress",
+    "unit": "%"
+  },
+  "answerCounter": {
+    "suffix": "answered"
+  },
+  "phaseIndicator": {
+    "defaultName": "Question",
+    "of": "of"
+  },
+  "countdown": {
+    "secondsLabel": "seconds",
+    "ariaLabel_one": "{{count}} second remaining",
+    "ariaLabel_other": "{{count}} seconds remaining"
+  },
+  "statusBanner": {
+    "type": {
+      "info": "Info",
+      "success": "Success",
+      "warning": "Warning",
+      "error": "Error"
+    }
+  }
+}

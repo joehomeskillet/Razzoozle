@@ -1,0 +1,29 @@
+{
+  "hud": {
+    "regionLabel": "游戏信息栏"
+  },
+  "roundProgress": {
+    "label": "进度",
+    "unit": "%"
+  },
+  "answerCounter": {
+    "suffix": "已作答"
+  },
+  "phaseIndicator": {
+    "defaultName": "问题",
+    "of": "/"
+  },
+  "countdown": {
+    "secondsLabel": "秒",
+    "ariaLabel_one": "还剩 {{count}} 秒",
+    "ariaLabel_other": "还剩 {{count}} 秒"
+  },
+  "statusBanner": {
+    "type": {
+      "info": "提示",
+      "success": "成功",
+      "warning": "警告",
+      "error": "错误"
+    }
+  }
+}
