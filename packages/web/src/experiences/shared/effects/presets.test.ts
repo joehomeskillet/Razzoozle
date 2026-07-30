@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { createSeededRandom } from "../random/createSeededRandom"
+import type { ExperienceEffectColorRole } from "../types/experience-effect"
 import {
   allPresetIds,
   bubbleBurst,
@@ -254,16 +255,3 @@ describe("Particle Presets: Type Safety", () => {
     })
   })
 })
-
-type ExperienceEffectColorRole =
-  | "primary"
-  | "secondary"
-  | "accent"
-  | "success"
-  | "warning"
-  | "error"
-  | "neutral"
-  | "correct"
-  | "wrong"
-  | "info"
-  | "muted"
