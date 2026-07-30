@@ -39,8 +39,8 @@ export type PresetGenerator = (params: PresetGeneratorParams) => ParticleEmissio
 function initBurstParticle(
   particle: Particle,
   random: ParticleRandom,
-  spread: number = 200,
-  lifetime: number = 800,
+  spread = 200,
+  lifetime = 800,
 ): void {
   const angle = random() * Math.PI * 2
   const speed = 100 + random() * spread
@@ -55,8 +55,8 @@ function initBurstParticle(
 function initFallingParticle(
   particle: Particle,
   random: ParticleRandom,
-  horizontalSpread: number = 80,
-  lifetime: number = 1200,
+  horizontalSpread = 80,
+  lifetime = 1200,
 ): void {
   particle.vx = (random() - 0.5) * horizontalSpread
   particle.vy = 50 + random() * 100
@@ -73,7 +73,7 @@ function initFallingParticle(
 export const dustBurst: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 15,
@@ -106,7 +106,7 @@ export const dustBurst: PresetGenerator = ({
 export const sandTrail: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 12,
@@ -143,7 +143,7 @@ export const sandTrail: PresetGenerator = ({
 export const bubbleTrail: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 10,
@@ -181,7 +181,7 @@ export const bubbleTrail: PresetGenerator = ({
 export const bubbleBurst: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 16,
@@ -214,7 +214,7 @@ export const bubbleBurst: PresetGenerator = ({
 export const speedLines: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 8,
@@ -252,7 +252,7 @@ export const speedLines: PresetGenerator = ({
 export const sparkleBurst: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 12,
@@ -284,7 +284,7 @@ export const sparkleBurst: PresetGenerator = ({
 export const rainShower: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 10,
@@ -317,7 +317,7 @@ export const rainShower: PresetGenerator = ({
 export const leafBurst: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 10,
@@ -351,7 +351,7 @@ export const leafBurst: PresetGenerator = ({
 export const granuleDrop: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 12,
@@ -387,7 +387,7 @@ export const granuleDrop: PresetGenerator = ({
 export const shieldDeflect: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 14,
@@ -425,7 +425,7 @@ export const shieldDeflect: PresetGenerator = ({
 export const softPoof: PresetGenerator = ({
   intensity,
   random,
-  colorRoles,
+  // colorRoles reserved for future renderer integration
 }) => {
   const intensityMap: Record<PresetIntensity, number> = {
     subtle: 8,
@@ -461,7 +461,7 @@ export const softPoof: PresetGenerator = ({
  * Catalog of all preset generators.
  * Each maps a presetId to its factory function.
  */
-export const presetCatalog: Record<string, PresetGenerator> = {
+export const presetCatalog = {
   "dust-burst": dustBurst,
   "sand-trail": sandTrail,
   "bubble-trail": bubbleTrail,
@@ -473,10 +473,9 @@ export const presetCatalog: Record<string, PresetGenerator> = {
   "granule-drop": granuleDrop,
   "shield-deflect": shieldDeflect,
   "soft-poof": softPoof,
-}
+} as const
 
 /**
  * Export all preset IDs for type safety and registration.
- * Update experience-effect.ts ExperienceEffectPresetId const with these values.
  */
-export const allPresetIds = Object.keys(presetCatalog) as const
+export const allPresetIds = Object.keys(presetCatalog)

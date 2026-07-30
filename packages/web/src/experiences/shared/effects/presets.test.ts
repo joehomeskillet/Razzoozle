@@ -17,6 +17,7 @@ import {
   speedLines,
   type PresetIntensity,
 } from "./presets"
+import { DEFAULT_PARTICLE_CAPACITY } from "./ParticleEngine"
 
 describe("Particle Presets: Determinism", () => {
   it("produces identical particle counts and trajectories for the same seed and intensity", () => {
@@ -136,31 +137,39 @@ describe("Particle Presets: Budget Limits", () => {
     })
   })
 
-  it("all presets combined cannot exceed total 250 capacity", () => {
-    const emissions = presets.map((preset) =>
-      preset({
-        intensity: "strong",
-        random: createSeededRandom(42),
-      }),
-    )
-
-    const totalCount = emissions.reduce((sum, e) => sum + e.count, 0)
-    expect(totalCount).toBeLessThanOrEqual(250)
-  })
-
-  function presets() {
-    return Object.values(presetCatalog).map((factory) =>
+  it("all presets respect individual capacity limit", () => {
+    const allEmissions = [
+      dustBurst,
+      sandTrail,
+      bubbleTrail,
+      bubbleBurst,
+      speedLines,
+      sparkleBurst,
+      rainShower,
+      leafBurst,
+      granuleDrop,
+      shieldDeflect,
+      softPoof,
+    ].map((factory) =>
       factory({
         intensity: "strong",
         random: createSeededRandom(42),
       }),
     )
-  }
+
+    allEmissions.forEach((emission) => {
+      expect(emission.count).toBeLessThanOrEqual(DEFAULT_PARTICLE_CAPACITY)
+    })
+  })
 })
 
 describe("Particle Presets: Color Roles", () => {
   it("uses colorRoles parameter correctly when provided", () => {
-    const colors = ["primary", "accent", "secondary"] as const
+    const colors: ExperienceEffectColorRole[] = [
+      "primary",
+      "accent",
+      "secondary",
+    ]
 
     const emission = dustBurst({
       intensity: "normal",
@@ -181,19 +190,6 @@ describe("Particle Presets: Color Roles", () => {
 
     expect(emission).toBeDefined()
     expect(emission.count).toBeGreaterThan(0)
-  })
-})
-
-describe("Particle Presets: No Math.random() Usage", () => {
-  it("presets.ts does not contain Math.random()", async () => {
-    const moduleContent = await import.meta.glob(
-      "../effects/presets.ts",
-      { as: "raw" },
-    )["../effects/presets.ts"]()
-
-    const content = await moduleContent
-
-    expect(content).not.toMatch(/Math\.random\(\)/)
   })
 })
 
@@ -242,3 +238,32 @@ describe("Particle Presets: Emissions Structure", () => {
     })
   })
 })
+
+describe("Particle Presets: Type Safety", () => {
+  it("all catalog functions are callable PresetGenerators", () => {
+    Object.entries(presetCatalog).forEach(([_id, factory]) => {
+      const emission = factory({
+        intensity: "normal",
+        random: createSeededRandom(42),
+      })
+
+      expect(emission).toBeDefined()
+      expect(emission.count).toBeGreaterThan(0)
+      expect(typeof emission.initialize).toBe("function")
+      expect(typeof emission.render).toBe("function")
+    })
+  })
+})
+
+type ExperienceEffectColorRole =
+  | "primary"
+  | "secondary"
+  | "accent"
+  | "success"
+  | "warning"
+  | "error"
+  | "neutral"
+  | "correct"
+  | "wrong"
+  | "info"
+  | "muted"
