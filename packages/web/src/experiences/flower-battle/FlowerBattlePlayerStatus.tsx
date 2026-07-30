@@ -78,6 +78,14 @@ const isLegacyProps = (
   props: FlowerBattlePlayerStatusProps,
 ): props is FlowerBattlePlayerStatusLegacyProps => !("status" in props)
 
+/** Human labels for known team colour keys — never display raw teamId. */
+const TEAM_LABEL_DEFAULTS: Record<TeamColorKey, string> = {
+  red: "Rot",
+  blue: "Blau",
+  green: "Grün",
+  yellow: "Gelb",
+}
+
 const clampSunPoints = (value: number): number => {
   if (!Number.isFinite(value)) return 0
   return Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(value)))
@@ -86,6 +94,18 @@ const clampSunPoints = (value: number): number => {
 const clampMaxGrowth = (value: number): number => {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.floor(value))
+}
+
+/** Clamp growth into [0, stage-max] then against this status's maxGrowthStage. */
+const clampGrowthAgainstMax = (
+  growthStage: number,
+  maxGrowthStage: number,
+): { growthStage: number; maxGrowthStage: number } => {
+  const max = clampMaxGrowth(maxGrowthStage)
+  return {
+    maxGrowthStage: max,
+    growthStage: Math.min(clampGrowthStage(growthStage), max),
+  }
 }
 
 /**
@@ -139,25 +159,35 @@ type ResolvedView = {
 
 const resolveFromStatus = (status: FlowerBattlePlayerStatusData): ResolvedView => {
   const teamId = status.teamId
+  const growth = clampGrowthAgainstMax(status.growthStage, status.maxGrowthStage)
   return {
     // Null team stays null — never invent a guessed team colour/name.
+    // teamName is resolved in render via i18n so raw teamId never shows.
     teamId,
-    teamName: teamId,
-    growthStage: clampGrowthStage(status.growthStage),
-    maxGrowthStage: clampMaxGrowth(status.maxGrowthStage),
+    teamName: null,
+    growthStage: growth.growthStage,
+    maxGrowthStage: growth.maxGrowthStage,
     sunPoints: clampSunPoints(status.sunPoints),
     effectKinds: normalizeEffectKinds(status.activeEffects),
   }
 }
 
-const resolveFromLegacy = (props: FlowerBattlePlayerStatusLegacyProps): ResolvedView => ({
-  teamId: props.team || null,
-  teamName: props.teamName || props.team || null,
-  growthStage: clampGrowthStage(props.growthStage),
-  maxGrowthStage: clampMaxGrowth(props.maxGrowthStage),
-  sunPoints: clampSunPoints(props.sunPoints),
-  effectKinds: normalizeEffectKinds(props.activeEffects),
-})
+const resolveFromLegacy = (props: FlowerBattlePlayerStatusLegacyProps): ResolvedView => {
+  const growth = clampGrowthAgainstMax(props.growthStage, props.maxGrowthStage)
+  // Prefer explicit human teamName; never fall back to raw team colour id.
+  const humanName =
+    typeof props.teamName === "string" && props.teamName.trim().length > 0
+      ? props.teamName.trim()
+      : null
+  return {
+    teamId: props.team || null,
+    teamName: humanName,
+    growthStage: growth.growthStage,
+    maxGrowthStage: growth.maxGrowthStage,
+    sunPoints: clampSunPoints(props.sunPoints),
+    effectKinds: normalizeEffectKinds(props.activeEffects),
+  }
+}
 
 /**
  * FlowerBattlePlayerStatus — compact team/plant/growth/sun-points status for
@@ -180,11 +210,21 @@ export function FlowerBattlePlayerStatus(props: FlowerBattlePlayerStatusProps) {
     : undefined
   const colors = view.teamId ? teamColor(view.teamId) : { bg: "", text: "text-ink" }
 
-  const header = view.teamName
+  // Human team label only: legacy explicit name, or i18n for known colour keys.
+  // Never surface raw wire teamId ("green") as the visible team name (WP-946-C3).
+  const displayTeamName = (() => {
+    if (view.teamName) return view.teamName
+    if (!isTeamColorKey(view.teamId)) return null
+    return t(`teams.${view.teamId}`, {
+      defaultValue: TEAM_LABEL_DEFAULTS[view.teamId],
+    })
+  })()
+
+  const header = displayTeamName
     ? t("flowerBattlePlayerStatus.header", {
         defaultValue:
           "Team {{teamName}} · Blüte {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
-        teamName: view.teamName,
+        teamName: displayTeamName,
         growthStage: view.growthStage,
         maxGrowthStage: view.maxGrowthStage,
         sunPoints: view.sunPoints,

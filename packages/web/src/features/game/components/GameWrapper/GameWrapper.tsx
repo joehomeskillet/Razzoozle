@@ -39,6 +39,12 @@ type Props = PropsWithChildren & {
   // scenes (Flower/Pixi) survive Question → Result → next Question. When omitted,
   // falls back to statusName (classic remount / re-animation behavior).
   contentTransitionKey?: string
+  /**
+   * WP-946-C3: hide the player top chrome (question progress + AV toggles)
+   * on Flower Battle gameplay. The compact FlowerBattlePlayerStatus HUD
+   * replaces it; classic/join/waiting keep the default top bar.
+   */
+  hidePlayerTopbar?: boolean
   onNext?: () => void
   onBack?: () => void
   manager?: boolean
@@ -49,6 +55,7 @@ const GameWrapper = ({
   children,
   statusName,
   contentTransitionKey,
+  hidePlayerTopbar = false,
   onNext,
   onBack,
   manager,
@@ -188,11 +195,13 @@ const GameWrapper = ({
                 </div>
               )}
 
-              {/* Player-Top-Bar (NEW): only when not manager */}
-              {!manager && (
+              {/* Player-Top-Bar: classic/join only. Flower Battle gameplay
+                  (hidePlayerTopbar) drops this white/surface chrome so the
+                  compact status HUD owns the top of the phone UI (WP-946-C3). */}
+              {!manager && !hidePlayerTopbar && (
                 <div
                   data-testid="game-topbar"
-                  className="flex w-full items-center justify-between gap-2 border-b border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+                  className="flex w-full items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
                 >
                   <div className="flex shrink-0 justify-start">
                     {questionStates && (
@@ -374,7 +383,12 @@ const GameWrapper = ({
               <div
                 aria-disabled={!isConnected}
                 className={clsx(
-                  "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-4",
+                  "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pb-4",
+                  // Without the player top bar, keep safe-area inset on the
+                  // content shell so notches do not clip the compact FLB HUD.
+                  hidePlayerTopbar && !manager
+                    ? "pt-[max(0.5rem,env(safe-area-inset-top))]"
+                    : "pt-2",
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
                   // pb-24 pad that cleared it is gone — manager and player share

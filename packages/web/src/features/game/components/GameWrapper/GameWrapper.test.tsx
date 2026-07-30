@@ -339,3 +339,136 @@ describe("GameWrapper content transition key (WP-958F-W)", () => {
     expect(contentKeyOf(html)).toBe("flowerBattle")
   })
 })
+
+describe("GameWrapper player Flower HUD chrome (WP-946-C3)", () => {
+  const contentKeyOf = (html: string) => {
+    const match = html.match(/data-content-transition-key="([^"]*)"/)
+    expect(match).not.toBeNull()
+    return match![1]
+  }
+
+  it("hides the player topbar when hidePlayerTopbar is set (Flower Battle gameplay)", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SELECT_ANSWER}
+        contentTransitionKey="flowerBattle"
+        hidePlayerTopbar
+      >
+        <div data-testid="flower-battle-player-hud-slot">hud</div>
+      </GameWrapper>,
+    )
+
+    expect(html).not.toContain('data-testid="game-topbar"')
+    expect(html).toContain('data-testid="flower-battle-player-hud-slot"')
+    expect(contentKeyOf(html)).toBe("flowerBattle")
+  })
+
+  it("keeps the player topbar on classic / join screens (hidePlayerTopbar off)", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_START}>
+        <div data-testid="join-screen">join</div>
+      </GameWrapper>,
+    )
+
+    expect(html).toContain('data-testid="game-topbar"')
+    // Topbar uses mapped semantic surface token (not bare white chrome).
+    const topbarMatch = html.match(
+      /data-testid="game-topbar"[^>]*class="([^"]*)"/,
+    )
+    expect(topbarMatch).not.toBeNull()
+    expect(topbarMatch![1]).toContain("bg-surface")
+    expect(topbarMatch![1]).not.toContain("bg-white")
+    expect(contentKeyOf(html)).toBe(STATUS.SHOW_START)
+  })
+
+  it("pins a stable player content key across answer/resolution/finish phases", () => {
+    const phases = [
+      STATUS.SELECT_ANSWER,
+      STATUS.SHOW_RESULT,
+      STATUS.FINISHED,
+      STATUS.SELECT_ANSWER,
+    ] as const
+
+    const keys = phases.map((statusName) =>
+      contentKeyOf(
+        renderToStaticMarkup(
+          <GameWrapper
+            statusName={statusName}
+            contentTransitionKey="flowerBattle"
+            hidePlayerTopbar
+          >
+            <div data-testid="plant-hud-answers">stable subtree</div>
+          </GameWrapper>,
+        ),
+      ),
+    )
+
+    expect(keys).toEqual([
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+    ])
+    expect(new Set(keys).size).toBe(1)
+  })
+
+  it("preserves classic player geometry (min-h-dvh, centered content shell)", () => {
+    const classic = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.WAIT}>
+        <div data-testid="wait-centered">waiting</div>
+      </GameWrapper>,
+    )
+    const flower = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SELECT_ANSWER}
+        contentTransitionKey="flowerBattle"
+        hidePlayerTopbar
+      >
+        <div data-testid="flower-battle-player-hud-slot">hud</div>
+      </GameWrapper>,
+    )
+
+    for (const html of [classic, flower]) {
+      const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+      expect(sectionMatch).not.toBeNull()
+      const sectionClass = sectionMatch![1]
+      // Player route keeps min-h-dvh growth (not presenter h-dvh).
+      expect(sectionClass).toMatch(/(^|\s)min-h-dvh(\s|$)/)
+      expect(sectionClass).toMatch(/(^|\s)w-full(\s|$)/)
+      expect(sectionClass).not.toMatch(/(^|\s)h-dvh(\s|$)/)
+      // Content shell stays vertically centered for join/wait and gameplay.
+      expect(html).toContain("justify-center")
+    }
+
+    expect(classic).toContain('data-testid="game-topbar"')
+    expect(flower).not.toContain('data-testid="game-topbar"')
+  })
+
+  it("portrait geometry invariants — compact HUD slot does not force full-bleed overflow chrome", () => {
+    // Contract for 375×667 / 390×844 / 440×956: no top chrome, stable key,
+    // shrink-0 HUD slot class lives on the route child (asserted here as
+    // class preservation through the content shell).
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SELECT_ANSWER}
+        contentTransitionKey="flowerBattle"
+        hidePlayerTopbar
+      >
+        <div
+          data-testid="flower-battle-player-hud-slot"
+          className="mx-auto mb-2 w-full max-w-md shrink-0"
+        >
+          compact hud
+        </div>
+      </GameWrapper>,
+    )
+
+    expect(html).not.toContain('data-testid="game-topbar"')
+    expect(html).toContain("max-w-md")
+    expect(html).toContain("shrink-0")
+    expect(html).toContain("justify-center")
+    expect(contentKeyOf(html)).toBe("flowerBattle")
+    // Player footer (username/points) remains for score continuity.
+    expect(html).toContain('data-testid="player-footer"')
+  })
+})

@@ -191,11 +191,13 @@ describe("FlowerBattlePlayerStatus", () => {
   })
 
   describe("typed status prop (preferred)", () => {
-    it("renders team label, growth/max, and sun points from status", () => {
+    it("renders human team label (not raw teamId), growth/max, and sun points", () => {
       const html = renderToStaticMarkup(
         <FlowerBattlePlayerStatus status={baseStatus({ teamId: "green", growthStage: 5, sunPoints: 1 })} />,
       )
-      expect(html).toContain("Team green · Blüte 5/10 · ☀ 1/3")
+      // WP-946-C3: never surface raw wire id "green" as the human team name.
+      expect(html).toContain("Team Grün · Blüte 5/10 · ☀ 1/3")
+      expect(html).not.toContain("Team green")
       expect(html).toContain('role="status"')
       expect(html).toContain('aria-live="polite"')
     })
@@ -278,6 +280,29 @@ describe("FlowerBattlePlayerStatus", () => {
       expect(low).toContain("Blüte 0/10")
       expect(low).toContain("☀ 0/3")
       expect(low).toContain('data-testid="flower-plant-stage-0"')
+    })
+
+    it("clamps growthStage against maxGrowthStage (not only global stage max)", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({ growthStage: 99, maxGrowthStage: 5, sunPoints: 0 })}
+        />,
+      )
+      expect(html).toContain("Blüte 5/5")
+      expect(html).toContain('data-testid="flower-plant-stage-5"')
+      expect(html).not.toContain("Blüte 10/5")
+      expect(html).not.toContain("Blüte 99/5")
+    })
+
+    it("unknown teamId stays neutral — never prints the raw id as a team name", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({ teamId: "team-uuid-abc" as unknown as string })}
+        />,
+      )
+      expect(html).toContain("Blüte 4/10 · ☀ 2/3")
+      expect(html).not.toContain("Team team-uuid-abc")
+      expect(html).not.toContain("team-uuid-abc")
     })
   })
 })

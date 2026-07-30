@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
+import { FlowerBattlePlayerStatus } from "@razzoozle/web/experiences/flower-battle/FlowerBattlePlayerStatus"
 import Ended from "@razzoozle/web/features/game/components/states/Ended"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import PluginRenderSlot from "@razzoozle/web/features/game/components/PluginRenderSlot"
@@ -24,7 +25,8 @@ import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-const PlayerGamePage = () => {
+/** Exported for focused route-integration tests (WP-946-C3). */
+export const PlayerGamePage = () => {
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
   const { gameId: gameIdParam } = useParams({ from: "/party/$gameId" })
@@ -34,6 +36,7 @@ const PlayerGamePage = () => {
     setGameId,
     setStatus,
     reset,
+    flowerBattlePlayerStatus,
     hydrateFlowerBattlePlayerStatus,
     receiveFlowerBattlePlayerStatus,
   } = usePlayerStore()
@@ -229,8 +232,28 @@ const PlayerGamePage = () => {
     return null
   }
 
+  // WP-946-C3: typed store presence IS Flower Battle gameplay for this player.
+  // Join/start/waiting leave the field null → classic chrome + statusName keys.
+  const isFlowerBattleGameplay = flowerBattlePlayerStatus != null
+
   return (
-    <GameWrapper statusName={status.name}>
+    <GameWrapper
+      statusName={status.name}
+      // Stable key keeps plant/HUD/answer subtree mounted across SELECT_ANSWER,
+      // answers_locked (SHOW_RESPONSES), resolution (SHOW_RESULT), and finish.
+      contentTransitionKey={
+        isFlowerBattleGameplay ? "flowerBattle" : undefined
+      }
+      hidePlayerTopbar={isFlowerBattleGameplay}
+    >
+      {isFlowerBattleGameplay && (
+        <div
+          data-testid="flower-battle-player-hud-slot"
+          className="mx-auto mb-2 w-full max-w-md shrink-0"
+        >
+          <FlowerBattlePlayerStatus status={flowerBattlePlayerStatus} />
+        </div>
+      )}
       {CurrentComponent && (
         <CurrentComponent
           {...(CurrentComponent === Result ? { audience: "player" } : {})}
