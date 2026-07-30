@@ -32,7 +32,7 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
       data-phase={data.phase}
       data-flower-battle-phase={state?.phase}
       data-phase-duration-ms={data.phaseDurationMs}
-      className="display-stage relative h-full w-full"
+      className="display-stage relative h-full w-full overflow-hidden"
     >
       <FlowerGardenScene
         seed={state?.background.seed ?? 0}
