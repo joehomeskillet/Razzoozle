@@ -400,5 +400,13 @@
     "addIdea": "Aggiungi idea",
     "emptyState": "Nessuna idea inviata ancora. Sii il primo!",
     "upvoteAria": "Sostieni l'idea '{{text}}' ({{count}} voti)"
+  },
+  "flowerBattlePlayerStatus": {
+    "header": "Squadra {{teamName}} · Fiore {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+    "effect": {
+      "umbrellaShield": "☂ Scudo attivo",
+      "acidRain": "☁ Prossima crescita −1",
+      "sunbeam": "☀ Prossima crescita +1"
+    }
   }
 }
