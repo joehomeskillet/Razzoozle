@@ -11,7 +11,8 @@ use crate::state::{get_now_ms, Game};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::experience::{
     ChaseState, DeepSeaPayload, ExperiencePayload, ExperiencePhase, ExperienceTransition,
-    PyramidPayload,
+    FlowerBattleBackground, FlowerBattlePayload, FlowerBattlePhase, FlowerBattleState,
+    PyramidPayload, FLOWER_BATTLE_RECIPE_VERSION,
 };
 use razzoozle_protocol::game::ExperienceMode;
 use razzoozle_protocol::status::GameStatus;
@@ -47,9 +48,11 @@ fn status_to_experience_phase(status: &GameStatus) -> Option<ExperiencePhase> {
 }
 
 /// Placeholder payload body for a mode until its mode-specific gameplay state
-/// exists (PyramidClimb team steps land in WP #904, DeepSeaEscape chase in
-/// WP #905, FlowerBattle body in WP #927). Keeps the envelope's `payload.mode`
-/// tag consistent with `envelope.mode` in the meantime.
+/// is actually tracked (PyramidClimb team steps land in WP #904, DeepSeaEscape
+/// chase in WP #905; FlowerBattle's wire contract exists as of WP #927 but its
+/// gameplay-driven state — phase/teams/background/powerups — is still future
+/// work). Keeps the envelope's `payload.mode` tag consistent with
+/// `envelope.mode` in the meantime.
 fn default_payload_for_mode(mode: ExperienceMode) -> ExperiencePayload {
     match mode {
         ExperienceMode::Classic => ExperiencePayload::Classic,
@@ -64,7 +67,17 @@ fn default_payload_for_mode(mode: ExperienceMode) -> ExperiencePayload {
                 correct_ratio: 0.0,
             },
         }),
-        ExperienceMode::FlowerBattle => ExperiencePayload::FlowerBattle,
+        ExperienceMode::FlowerBattle => ExperiencePayload::FlowerBattle(FlowerBattlePayload {
+            state: FlowerBattleState {
+                phase: FlowerBattlePhase::Start,
+                teams: vec![],
+                background: FlowerBattleBackground {
+                    seed: String::new(),
+                    recipe_version: FLOWER_BATTLE_RECIPE_VERSION,
+                },
+                powerups: vec![],
+            },
+        }),
     }
 }
 
@@ -425,9 +438,9 @@ mod tests {
             default_payload_for_mode(ExperienceMode::DeepSeaEscape),
             ExperiencePayload::DeepSea(_)
         ));
-        assert_eq!(
+        assert!(matches!(
             default_payload_for_mode(ExperienceMode::FlowerBattle),
-            ExperiencePayload::FlowerBattle
-        );
+            ExperiencePayload::FlowerBattle(_)
+        ));
     }
 }
