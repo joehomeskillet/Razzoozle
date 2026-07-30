@@ -103,19 +103,23 @@ export function createPixiAssetLoaderFn(
   assets: Record<string, string>,
   onProgress?: LoadProgressCallback,
 ) => Promise<Record<string, unknown>> {
+  // One-shot init shared by every call: concurrent loads await the same
+  // promise, and a rejected init stays rejected (deterministic degradation
+  // to fallback — no mid-match WebGL retry storms).
   let initPromise: Promise<void> | null = null
 
   return async (assets, onProgress) => {
     const { Assets: PixiAssets } = await import("pixi.js")
-    if (!initPromise) {
-      initPromise = PixiAssets.init({
-        basePath,
-        // Skip browser format detection in constrained environments.
-        skipDetections: true,
-      }).catch(() => {
-        // init may already have run; subsequent loads still work.
-      })
-    }
+    initPromise ??= PixiAssets.init({
+      basePath,
+      // Skip browser format detection in constrained environments.
+      skipDetections: true,
+    }).catch((err: unknown) => {
+      // Never swallow init failures: rethrow with the original error as
+      // `cause` so `loadBundle` converts it into a fallback result.
+      const cause = err instanceof Error ? err : new Error(String(err))
+      throw new Error(cause.message, { cause })
+    })
     await initPromise
 
     const aliases = Object.keys(assets)
@@ -252,7 +256,8 @@ export function createGardenAssetLoader(
             ? cause.message
             : `Failed to load bundle: ${name}`
         // Ensure progress observers see a terminal state without throwing.
-        onProgress?.(0, total)
+        // Report total/total (monotonic) to avoid resetting progress to 0.
+        onProgress?.(total, total)
         return fallbackResult(name, message, cause)
       }
     })()
@@ -266,6 +271,11 @@ export function createGardenAssetLoader(
   }
 
   async function unloadBundle(name: string): Promise<void> {
+    // Idempotent: if already unloaded or never loaded, return early.
+    const currentStatus = statusByName.get(name)
+    if (currentStatus === "unloaded" || currentStatus === "idle" || currentStatus === undefined) {
+      return
+    }
     const aliases = aliasesByName.get(name) ?? []
     try {
       await unloadAssets(aliases)
@@ -274,9 +284,7 @@ export function createGardenAssetLoader(
     }
     aliasesByName.delete(name)
     loadedByName.delete(name)
-    if (statusByName.get(name) === "loaded" || statusByName.get(name) === "error") {
-      setStatus(name, "unloaded")
-    }
+    setStatus(name, "unloaded")
   }
 
   function preloadBundle(name: string): void {

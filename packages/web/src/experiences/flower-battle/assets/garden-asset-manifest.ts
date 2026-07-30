@@ -43,6 +43,8 @@ export type GardenBundleName =
   | "garden-flower-green"
   | "garden-effects-low"
   | "garden-effects-high"
+  | "shared-ui"
+  | "garden-audio"
 
 /**
  * Default base path for garden assets. Overridable via loader `basePath` or
@@ -153,6 +155,28 @@ export const GARDEN_BUNDLES: Record<GardenBundleName, AssetBundle> = {
       "fx-high-bloom",
     ]),
   },
+  "shared-ui": {
+    name: "shared-ui",
+    priority: "eager",
+    size: 32_000,
+    assets: placeholderAssets([
+      "ui-button",
+      "ui-panel",
+      "ui-icon-sheet",
+      "ui-font-atlas",
+    ]),
+  },
+  "garden-audio": {
+    name: "garden-audio",
+    priority: "lazy",
+    size: 48_000,
+    assets: placeholderAssets([
+      "sfx-plant",
+      "sfx-harvest",
+      "sfx-water",
+      "amb-garden-loop",
+    ]),
+  },
 }
 
 /** Ordered list of all known garden bundle names. */
@@ -162,7 +186,7 @@ export const GARDEN_BUNDLE_NAMES: readonly GardenBundleName[] = Object.keys(
 
 /** Type guard for known garden bundle names. */
 export function isGardenBundleName(name: string): name is GardenBundleName {
-  return Object.prototype.hasOwnProperty.call(GARDEN_BUNDLES, name)
+  return Object.hasOwn(GARDEN_BUNDLES, name)
 }
 
 /** Look up a bundle definition, or `undefined` if the name is unknown. */

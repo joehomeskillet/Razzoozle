@@ -3,7 +3,7 @@
  * Pure unit tests with injected load adapters (no WebGL / network).
  */
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
   GARDEN_BUNDLE_NAMES,
@@ -14,6 +14,7 @@ import {
 } from "../garden-asset-manifest"
 import {
   createGardenAssetLoader,
+  createPixiAssetLoaderFn,
   createPlaceholderAssetLoaderFn,
   loadBundle as defaultLoadBundle,
   preloadBundle as defaultPreloadBundle,
@@ -23,24 +24,41 @@ import {
 } from "../garden-asset-loader"
 import type { LoadProgressCallback } from "../garden-asset-types"
 
+/**
+ * Deterministic pixi.js module mock — drives the real
+ * `createPixiAssetLoaderFn` seam (including Assets.init rejections) without
+ * WebGL. Per-test behavior is injected via one-shot `mock*Once` calls, so no
+ * state leaks between tests.
+ */
+const pixiAssetsMock = vi.hoisted(() => ({
+  init: vi.fn(),
+  add: vi.fn(),
+  load: vi.fn(),
+  unload: vi.fn(),
+}))
+
+vi.mock("pixi.js", () => ({ Assets: pixiAssetsMock }))
+
 afterEach(() => {
   resetDefaultGardenAssetLoader()
 })
 
 describe("garden-asset-manifest", () => {
-  it("defines exactly 9 garden bundles with priorities", () => {
-    expect(GARDEN_BUNDLE_NAMES).toHaveLength(9)
-    expect(Object.keys(GARDEN_BUNDLES)).toHaveLength(9)
+  it("defines exactly 11 garden bundles with priorities", () => {
+    expect(GARDEN_BUNDLE_NAMES).toHaveLength(11)
+    expect(Object.keys(GARDEN_BUNDLES)).toHaveLength(11)
 
     expect(GARDEN_BUNDLES.boot.priority).toBe("boot")
     expect(GARDEN_BUNDLES["garden-background"].priority).toBe("eager")
     expect(GARDEN_BUNDLES["garden-common"].priority).toBe("eager")
+    expect(GARDEN_BUNDLES["shared-ui"].priority).toBe("eager")
     expect(GARDEN_BUNDLES["garden-flower-violet"].priority).toBe("lazy")
     expect(GARDEN_BUNDLES["garden-flower-blue"].priority).toBe("lazy")
     expect(GARDEN_BUNDLES["garden-flower-orange"].priority).toBe("lazy")
     expect(GARDEN_BUNDLES["garden-flower-green"].priority).toBe("lazy")
     expect(GARDEN_BUNDLES["garden-effects-low"].priority).toBe("lazy")
     expect(GARDEN_BUNDLES["garden-effects-high"].priority).toBe("lazy")
+    expect(GARDEN_BUNDLES["garden-audio"].priority).toBe("lazy")
   })
 
   it("exposes AssetBundle shape (name, assets, priority, optional size)", () => {
@@ -63,7 +81,7 @@ describe("garden-asset-manifest", () => {
 
     const bootEager = listBundlesByPriority(["boot", "eager"])
     expect(bootEager.map((b) => b.name).sort()).toEqual(
-      ["boot", "garden-background", "garden-common"].sort(),
+      ["boot", "garden-background", "garden-common", "shared-ui"].sort(),
     )
   })
 })
@@ -315,6 +333,7 @@ describe("garden-asset-loader crash safety", () => {
     const loader = createGardenAssetLoader({
       loadAssets: async () => {
         // Non-Error throw must still become fallback, not a crash.
+        // eslint-disable-next-line no-throw-literal, @typescript-eslint/only-throw-error
         throw { code: "E_NET", detail: "upstream" }
       },
     })
@@ -328,5 +347,167 @@ describe("garden-asset-loader crash safety", () => {
     const loader = createGardenAssetLoader()
     await expect(loader.unloadBundle("boot")).resolves.toBeUndefined()
     expect(loader.getBundleStatus("boot")).toBe("idle")
+  })
+})
+
+describe("createPixiAssetLoaderFn with mocked pixi.js", () => {
+  beforeEach(() => {
+    pixiAssetsMock.init.mockReset()
+    pixiAssetsMock.add.mockReset()
+    pixiAssetsMock.load.mockReset()
+    pixiAssetsMock.unload.mockReset()
+  })
+
+  it("propagates Assets.init rejection as fallback (not swallowed)", async () => {
+    const initError = new Error("Pixi init failed: WebGL context lost")
+    pixiAssetsMock.init.mockRejectedValueOnce(initError)
+
+    const loader = createGardenAssetLoader({
+      loadAssets: createPixiAssetLoaderFn("/test-base"),
+    })
+
+    const result = await loader.loadBundle("boot")
+
+    // The real Pixi seam was exercised (not a generic loadAssets fake)...
+    expect(pixiAssetsMock.init).toHaveBeenCalledTimes(1)
+    expect(pixiAssetsMock.init).toHaveBeenCalledWith(
+      expect.objectContaining({ basePath: "/test-base" }),
+    )
+    // ...the init rejection became a fallback result, not a crash...
+    expect(result.fallback).toBe(true)
+    expect(result.error?.message).toMatch(/Pixi init failed/)
+    expect(loader.getBundleStatus("boot")).toBe("error")
+    // ...and the original rejection survives in the cause chain: loadBundle
+    // wraps the loader-thrown error whose own `cause` is the init error.
+    const thrown = result.error?.cause
+    expect(thrown).toBeInstanceOf(Error)
+    expect((thrown as Error).cause).toBe(initError)
+    // Asset loading must never be attempted after a failed init.
+    expect(pixiAssetsMock.add).not.toHaveBeenCalled()
+    expect(pixiAssetsMock.load).not.toHaveBeenCalled()
+  })
+
+  it("does not swallow Assets.init rejection at the loader seam", async () => {
+    const initError = new Error("init exploded")
+    pixiAssetsMock.init.mockRejectedValueOnce(initError)
+
+    const loadAssets = createPixiAssetLoaderFn("/test-base")
+    await expect(loadAssets({ a: "a.png" })).rejects.toThrow(/init exploded/)
+  })
+
+  it("shares one Assets.init across concurrent loads and caches the rejection", async () => {
+    const initError = new Error("init boom")
+    pixiAssetsMock.init.mockRejectedValueOnce(initError)
+
+    const loader = createGardenAssetLoader({
+      loadAssets: createPixiAssetLoaderFn("/test-base"),
+    })
+
+    const [a, b] = await Promise.all([
+      loader.loadBundle("boot"),
+      loader.loadBundle("garden-common"),
+    ])
+    expect(a.fallback).toBe(true)
+    expect(b.fallback).toBe(true)
+    // init ran exactly once even under concurrency.
+    expect(pixiAssetsMock.init).toHaveBeenCalledTimes(1)
+
+    // A later load reuses the cached rejection instead of re-running init.
+    const c = await loader.loadBundle("garden-flower-blue")
+    expect(c.fallback).toBe(true)
+    expect(c.error?.message).toMatch(/init boom/)
+    expect(pixiAssetsMock.init).toHaveBeenCalledTimes(1)
+  })
+
+  it("loads via Pixi Assets when init succeeds", async () => {
+    pixiAssetsMock.init.mockResolvedValueOnce(undefined)
+    pixiAssetsMock.load.mockResolvedValueOnce({ tex: { placeholder: true } })
+
+    const loader = createGardenAssetLoader({
+      loadAssets: createPixiAssetLoaderFn("/test-base"),
+    })
+
+    const result = await loader.loadBundle("boot")
+    expect(result.fallback).toBe(false)
+    expect(result.resources).toEqual({ tex: { placeholder: true } })
+    expect(pixiAssetsMock.add).toHaveBeenCalled()
+    expect(pixiAssetsMock.load).toHaveBeenCalledTimes(1)
+    expect(loader.getBundleStatus("boot")).toBe("loaded")
+  })
+})
+
+describe("garden-asset-loader monotonic progress on failure", () => {
+  it("does not reset progress to 0 on init failure (monotonic)", async () => {
+    const progress: Array<[number, number]> = []
+    const initError = new Error("init failed")
+
+    const loader = createGardenAssetLoader({
+      loadAssets: async (_, onProgress) => {
+        onProgress?.(0, 1)
+        throw initError
+      },
+    })
+
+    await loader.loadBundle("boot", (loaded, total) => {
+      progress.push([loaded, total])
+    })
+
+    // Progress should be monotonic: 0 -> 1 (not 0 -> 0)
+    expect(progress.length).toBeGreaterThanOrEqual(2)
+    const last = progress[progress.length - 1]!
+    expect(last[0]).toBe(last[1])
+    expect(last[1]).toBeGreaterThan(0)
+  })
+})
+
+describe("garden-asset-loader idempotent unload", () => {
+  it("multiple unload calls are idempotent (no-op after first)", async () => {
+    const unloaded: string[][] = []
+    const loader = createGardenAssetLoader({
+      loadAssets: createPlaceholderAssetLoaderFn(),
+      unloadAssets: async (aliases) => {
+        unloaded.push([...aliases])
+      },
+    })
+
+    await loader.loadBundle("garden-flower-blue")
+    expect(loader.getBundleStatus("garden-flower-blue")).toBe("loaded")
+
+    await loader.unloadBundle("garden-flower-blue")
+    expect(loader.getBundleStatus("garden-flower-blue")).toBe("unloaded")
+    expect(unloaded).toHaveLength(1)
+
+    // Second unload should be no-op
+    await loader.unloadBundle("garden-flower-blue")
+    expect(loader.getBundleStatus("garden-flower-blue")).toBe("unloaded")
+    expect(unloaded).toHaveLength(1) // No additional call
+
+    // Third unload should also be no-op
+    await loader.unloadBundle("garden-flower-blue")
+    expect(unloaded).toHaveLength(1)
+  })
+
+  it("unload of unknown bundle is no-op and leaves status idle", async () => {
+    const loader = createGardenAssetLoader()
+    await expect(loader.unloadBundle("unknown-bundle")).resolves.toBeUndefined()
+    expect(loader.getBundleStatus("unknown-bundle")).toBe("idle")
+  })
+
+  it("unload of error-state bundle is idempotent", async () => {
+    const loader = createGardenAssetLoader({
+      loadAssets: async () => {
+        throw new Error("load failed")
+      },
+    })
+
+    await loader.loadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("error")
+
+    await loader.unloadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
+
+    // Second unload should be no-op
+    await loader.unloadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
   })
 })
