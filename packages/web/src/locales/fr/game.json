@@ -450,5 +450,13 @@
         "recentlyAttacked": "Vient d'être attaquée — choisis une autre équipe"
       }
     }
+  },
+  "flowerPowerupEffects": {
+    "effect": {
+      "umbrellaShield": "☂ Protection active",
+      "acidRain": "☁ Prochaine croissance −1",
+      "sunbeam": "☀ Prochaine croissance +1",
+      "fertilizer": "🌱 Engrais"
+    }
   }
 }

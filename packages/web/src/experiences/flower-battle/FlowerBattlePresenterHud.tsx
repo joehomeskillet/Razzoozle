@@ -1,6 +1,6 @@
 import { TEAMS } from "@razzoozle/common/constants"
 import type { Team } from "@razzoozle/common/constants"
-import { CloudRain, Sprout, Sun, Umbrella } from "lucide-react"
+import { Sprout } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -12,8 +12,8 @@ import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 import { ExperienceHud, type ExperienceHudProps } from "../shared/hud/ExperienceHud"
 import { PhaseIndicator } from "../shared/hud/PhaseIndicator"
 import { RoundProgress } from "../shared/hud/RoundProgress"
+import { FlowerPowerupStatusIcons } from "./FlowerPowerupStatusIcons"
 import type {
-  FlowerBattleActiveEffect,
   FlowerBattleSunPointsByTeam,
   FlowerBattleTeamState,
   PowerUpData,
@@ -21,18 +21,6 @@ import type {
 
 const MAX_SUN_POINTS = 3
 const MAX_TEAMS = 4
-
-const EFFECT_ICONS: Record<FlowerBattleActiveEffect, typeof Sun> = {
-  sunbeam: Sun,
-  umbrella_shield: Umbrella,
-  acid_rain: CloudRain,
-}
-
-const EFFECT_LABEL_KEYS: Record<FlowerBattleActiveEffect, string> = {
-  sunbeam: "flowerBattlePresenter.effect.sunbeam",
-  umbrella_shield: "flowerBattlePresenter.effect.umbrellaShield",
-  acid_rain: "flowerBattlePresenter.effect.acidRain",
-}
 
 const POWERUP_LABEL_KEYS: Record<PowerupType, string> = {
   fertilizer: "flowerBattlePresenter.powerUp.fertilizer",
@@ -71,6 +59,7 @@ const sunPointsToPercent = (points: number): number =>
 /**
  * FlowerBattlePresenterHud — additive presenter HUD for Flower Battle (WP-937).
  * Composes ExperienceHud + kit primitives; never renders question/answer text.
+ * WP-938.2: Integrates FlowerPowerupStatusIcons for active effect display.
  */
 export const FlowerBattlePresenterHud = ({
   teams,
@@ -146,30 +135,9 @@ export const FlowerBattlePresenterHud = ({
                 variant={points >= MAX_SUN_POINTS ? "success" : "default"}
               />
 
-              {team.effects.length > 0 ? (
-                <ul
-                  data-testid={`flower-battle-team-effects-${index}`}
-                  className="flex flex-col gap-1"
-                >
-                  {team.effects.map((effect) => {
-                    const EffectIcon = EFFECT_ICONS[effect]
-                    return (
-                      <li
-                        key={effect}
-                        data-testid={`flower-battle-effect-${effect}-${index}`}
-                        className={`inline-flex items-center gap-2 text-xs ${colors.text}`}
-                      >
-                        <EffectIcon aria-hidden className="size-4 shrink-0" />
-                        <span>
-                          {t(EFFECT_LABEL_KEYS[effect], {
-                            defaultValue: effect,
-                          })}
-                        </span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              ) : null}
+              {team.effects && team.effects.length > 0 && (
+                <FlowerPowerupStatusIcons activeEffects={team.effects} />
+              )}
 
               {powerUp && powerUp.teamName === team.name ? (
                 <div
