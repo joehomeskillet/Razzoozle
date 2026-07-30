@@ -82,37 +82,164 @@ const STAGGER = {
 /** Default rise distance (px) for fade-up reveals. */
 const RISE = 16
 
-/* ----- Variant factories (pure; pair with the `reduced` flag from useReveal) ----- */
+// oxlint-disable-next-line @stylistic/multiline-comment-style -- SDD §26 requires a block policy table.
+// Reduced-Motion-Policy (SDD §26):
+// ├─ Sprungpfad       → Überblendung (fade only)
+// ├─ Parallax-Layer   → statisch
+// ├─ viele Partikel   → reduziert (50% decay)
+// ├─ Kamera-Zoom      → einfacher Wechsel (kein spring)
+// ├─ Schweben         → statisch
+// ├─ Confetti         → deaktiviert/minimal
+// └─ Screen-Shake     → immer deaktiviert
 
-export const fadeUp = (distance = RISE): Variants => ({
-  hidden: { opacity: 0, y: distance },
-  visible: { opacity: 1, y: 0 },
-})
+type VariantsFactory = (...args: never[]) => Variants
 
-export const scaleIn = (from = 0.92): Variants => ({
-  hidden: { opacity: 0, scale: from },
-  visible: { opacity: 1, scale: 1 },
-})
+type PresetFactory<TFactory extends VariantsFactory> = TFactory & {
+  reduced: (...args: Parameters<TFactory>) => Variants
+}
 
-/** Overshoot pop — for medals, result "moment of truth", reward badges. */
-const popIn = (from = 0.6): Variants => ({
-  hidden: { opacity: 0, scale: from },
-  visible: { opacity: 1, scale: [from, 1.08, 1] },
-})
-
-const staggerContainer = (
-  stagger: number = STAGGER.base,
-  delayChildren = 0,
-): Variants => ({
-  hidden: {},
-  visible: { transition: { staggerChildren: stagger, delayChildren } },
-})
+const definePreset = <TFactory extends VariantsFactory>(
+  variants: TFactory,
+  reduced: (...args: Parameters<TFactory>) => Variants,
+): PresetFactory<TFactory> => Object.assign(variants, { reduced })
 
 /** Opacity-only variants — the universal reduced-motion substitute. */
 export const reducedVariants: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
 }
+
+const staticVariants: Variants = {
+  hidden: {},
+  visible: {},
+}
+
+export const fadeUp = (distance: number = RISE) => ({
+  hidden: { opacity: 0, y: distance },
+  visible: { opacity: 1, y: 0 },
+})
+
+export const scaleIn = (from = 0.92) => ({
+  hidden: { opacity: 0, scale: from },
+  visible: { opacity: 1, scale: 1 },
+})
+
+export const fade = definePreset(
+  () => ({
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+  }),
+  () => ({
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+  }),
+)
+
+export const fadeSlideUp = definePreset(
+  (distance = RISE) => ({
+    hidden: { opacity: 0, y: distance },
+    visible: { opacity: 1, y: 0 },
+  }),
+  () => reducedVariants,
+)
+
+export const popIn = definePreset(
+  (from = 0.6) => ({
+    hidden: { opacity: 0, scale: from },
+    visible: { opacity: 1, scale: [from, 1.08, 1] },
+  }),
+  () => reducedVariants,
+)
+
+export const softBounce = definePreset(
+  (distance = RISE) => ({
+    hidden: { opacity: 0, y: distance },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 200, damping: 20 },
+    },
+  }),
+  () => reducedVariants,
+)
+
+export const statusPulse = definePreset(
+  () => ({
+    hidden: { opacity: 0, scale: 1 },
+    visible: {
+      opacity: 1,
+      scale: [1, 1.05, 1, 1.05, 1],
+      transition: { staggerChildren: STAGGER.fast },
+    },
+  }),
+  () => reducedVariants,
+)
+
+export const actorIdleFloat = definePreset(
+  () => ({
+    hidden: { y: 0 },
+    visible: {
+      y: [0, -8, 0, 8, 0],
+      transition: {
+        duration: DURATION.sheen * 4,
+        ease: EASE.inOut,
+        repeat: Infinity,
+      },
+    },
+  }),
+  () => staticVariants,
+)
+
+export const actorLand = definePreset(
+  () => ({
+    hidden: { opacity: 0, scale: 1 },
+    visible: {
+      opacity: 1,
+      scale: [1, 1.1, 1],
+      transition: SPRING_SNAP,
+    },
+  }),
+  () => scaleIn(),
+)
+
+export const successReveal = definePreset(
+  (distance = RISE, from = 0.94) => ({
+    hidden: { opacity: 0, y: distance, scale: from },
+    visible: { opacity: 1, y: 0, scale: 1 },
+  }),
+  () => reducedVariants,
+)
+
+export const failureReveal = definePreset(
+  (distance = RISE) => ({
+    hidden: { opacity: 0, y: -distance },
+    visible: { opacity: 1, y: 0 },
+  }),
+  () => reducedVariants,
+)
+
+export const winnerReveal = definePreset(
+  (from = 0.6) => ({
+    hidden: { opacity: 0, scale: from },
+    visible: {
+      opacity: 1,
+      scale: [from, 1.15, 1],
+      transition: {
+        staggerChildren: STAGGER.slow,
+        when: "beforeChildren",
+      },
+    },
+  }),
+  () => reducedVariants,
+)
+
+const staggerContainer = (
+  stagger: number = STAGGER.base,
+  delayChildren = 0,
+) => ({
+  hidden: {},
+  visible: { transition: { staggerChildren: stagger, delayChildren } },
+})
 
 /* ----- The hook every blind packet should reach for first ----- */
 
@@ -150,9 +277,7 @@ const FALLBACK_TOKENS: AnimationTokens = {
  * theme's `animation` tokens. Pass `override` (e.g. the manager preview's DRAFT
  * tokens) to tune the feel without committing the theme: `useReveal(draft.animation)`.
  */
-export const useReveal = (
-  override?: Partial<AnimationTokens>,
-): Reveal => {
+export const useReveal = (override?: Partial<AnimationTokens>): Reveal => {
   const reduced = useReducedMotion() ?? false
   const themeAnimation = useThemeStore((s) => s.theme.animation)
 
@@ -191,8 +316,9 @@ export const useReveal = (
         reduced ? 0 : stagger * staggerScale,
         reduced ? 0 : delayChildren,
       ),
-    item: (distance = RISE) => (reduced ? reducedVariants : fadeUp(distance)),
-    pop: (from = 0.6) => (reduced ? reducedVariants : popIn(from)),
+    item: (distance = RISE) =>
+      reduced ? fadeSlideUp.reduced(distance) : fadeSlideUp(distance),
+    pop: (from = 0.6) => (reduced ? popIn.reduced(from) : popIn(from)),
     tween: (duration = DURATION.base, ease = EASE.out) =>
       reduced ? instant : { duration: duration * durationScale, ease },
   }
