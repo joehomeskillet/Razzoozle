@@ -436,6 +436,19 @@
           "effect": "Ralentit l'équipe adverse"
         }
       }
+    },
+    "targetVote": {
+      "title": "Choisis une équipe cible",
+      "description": "Choisis l'équipe touchée par la pluie acide avant la fin du temps imparti.",
+      "submit": "Confirmer",
+      "status": {
+        "selected": "{{name}} sélectionnée",
+        "submitted": "Cible confirmée"
+      },
+      "shieldBadge": "Protégée",
+      "disabledReason": {
+        "recentlyAttacked": "Vient d'être attaquée — choisis une autre équipe"
+      }
     }
   }
 }

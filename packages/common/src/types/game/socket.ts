@@ -686,22 +686,35 @@ export interface ClientToServerEvents {
     }>,
   ) => void
 
-  // FlowerBattle mode (WP #927 domain contract). Types the wire contract for
-  // the player power-up vote UI (WP #941). The server handler lands in #931
-  // (grep-verified absent from rust/server/src/socket/** as of WP #941) — the
-  // actual socket.emit call in FlowerPowerupVote.tsx stays behind a documented
-  // no-op flag until then; this entry only unblocks typechecking the emit.
-  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE]: (
-    _message: MessageWithoutStatus<{
-      offerId: string
-      // One of the (up to) 3 PowerupType ids offered in this offer's
-      // `offerType` (packages/web .../player/flower-battle.types.ts).
-      choice: string
-      clientMessageId?: string
-      // SEC-04 — mirrors SELECTED_ANSWER's playerToken convention.
-      playerToken?: string
-    }>,
-  ) => void
+  // FlowerBattle power-up vote (WP #927 domain contract, UI: WP #941).
+  // Wire-verified against the real handler (rust/server/src/socket/player/
+  // powerup_vote.rs `PowerupVotePayload`, #[serde(rename_all = "camelCase")]):
+  // a FLAT `{ gameId, optionIndex }` — NOT wrapped in a `data` envelope, no
+  // offerId/choice/clientMessageId/playerToken (the handler doesn't read
+  // them). `optionIndex` is the index into the offer's 3-option list
+  // (VoteChoice::PowerupOption), not the PowerupType string. The handler
+  // itself is live (mutates Game::flower_battle_votes), but the S2C
+  // POWERUP_OFFERED/POWERUP_SELECTED broadcasts that would drive this UI in
+  // a real game are still unemitted anywhere in rust/server/src (grep-
+  // verified as of WP #942) — the emit in FlowerPowerupVote.tsx therefore
+  // stays behind a documented no-op flag regardless.
+  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE]: (_payload: {
+    gameId: string
+    optionIndex: number
+  }) => void
+
+  // FlowerBattle target-team vote (WP #931 handler, UI: WP #942), following
+  // an acid_rain POWERUP_SELECTED broadcast. Wire-verified against the real
+  // handler (rust/server/src/socket/player/powerup_vote.rs
+  // `TargetVotePayload`): a FLAT `{ gameId, targetTeamId }` — same caveats as
+  // SUBMIT_POWERUP_VOTE above (handler is live, S2C broadcast to trigger this
+  // UI is not; emit stays behind a documented no-op flag).
+  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_TARGET_VOTE]: (_payload: {
+    gameId: string
+    // The target team's `name` (packages/web .../player/flower-battle.types.ts
+    // FlowerTeamView) — one of the fixed TEAMS colors.
+    targetTeamId: string
+  }) => void
 
   // Low-latency mode: UI-only clock sync ping (client monotonic clock).
   [EVENTS.CLOCK.PING]: (_data: { clientSendMonoMs: number }) => void

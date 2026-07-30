@@ -436,6 +436,19 @@
           "effect": "Ralentiza al equipo contrario"
         }
       }
+    },
+    "targetVote": {
+      "title": "Elige un equipo objetivo",
+      "description": "Elige el equipo al que golpea la lluvia ácida antes de que se acabe el tiempo.",
+      "submit": "Confirmar",
+      "status": {
+        "selected": "{{name}} seleccionado",
+        "submitted": "Objetivo confirmado"
+      },
+      "shieldBadge": "Protegido",
+      "disabledReason": {
+        "recentlyAttacked": "Atacado recientemente — elige otro equipo"
+      }
     }
   }
 }

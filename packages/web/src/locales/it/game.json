@@ -436,6 +436,19 @@
           "effect": "Rallenta la squadra avversaria"
         }
       }
+    },
+    "targetVote": {
+      "title": "Scegli una squadra bersaglio",
+      "description": "Scegli la squadra colpita dalla pioggia acida prima che scada il tempo.",
+      "submit": "Conferma",
+      "status": {
+        "selected": "{{name}} selezionata",
+        "submitted": "Bersaglio confermato"
+      },
+      "shieldBadge": "Protetta",
+      "disabledReason": {
+        "recentlyAttacked": "Appena attaccata — scegli un'altra squadra"
+      }
     }
   }
 }

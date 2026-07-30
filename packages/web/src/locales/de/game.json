@@ -436,6 +436,19 @@
           "effect": "Bremst das gegnerische Team"
         }
       }
+    },
+    "targetVote": {
+      "title": "Ziel-Team wählen",
+      "description": "Wähle das Team, das der saure Regen trifft, bevor die Zeit abläuft.",
+      "submit": "Bestätigen",
+      "status": {
+        "selected": "{{name}} ausgewählt",
+        "submitted": "Ziel bestätigt"
+      },
+      "shieldBadge": "Geschützt",
+      "disabledReason": {
+        "recentlyAttacked": "Gerade angegriffen — wähle ein anderes Team"
+      }
     }
   }
 }
