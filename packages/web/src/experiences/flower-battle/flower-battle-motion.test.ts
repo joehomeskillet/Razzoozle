@@ -112,11 +112,8 @@ describe('flower-battle-motion', () => {
     })
 
     describe('reduced.rayStartMs', () => {
-      it('always returns 0 regardless of input', () => {
-        expect(SunbeamTiming.reduced.rayStartMs(0)).toBe(0)
-        expect(SunbeamTiming.reduced.rayStartMs(1)).toBe(0)
-        expect(SunbeamTiming.reduced.rayStartMs(999)).toBe(0)
-        expect(SunbeamTiming.reduced.rayStartMs(-5)).toBe(0)
+      it('returns 0 for reduced motion', () => {
+        expect(SunbeamTiming.reduced.rayStartMs()).toBe(0)
       })
     })
   })
@@ -166,12 +163,8 @@ describe('flower-battle-motion', () => {
     })
 
     describe('reduced.dropletStartMs', () => {
-      it('always returns 80 regardless of input', () => {
-        expect(AcidCloudTiming.reduced.dropletStartMs(0)).toBe(80)
-        expect(AcidCloudTiming.reduced.dropletStartMs(1)).toBe(80)
-        expect(AcidCloudTiming.reduced.dropletStartMs(6)).toBe(80)
-        expect(AcidCloudTiming.reduced.dropletStartMs(999)).toBe(80)
-        expect(AcidCloudTiming.reduced.dropletStartMs(-5)).toBe(80)
+      it('returns 80 for reduced motion', () => {
+        expect(AcidCloudTiming.reduced.dropletStartMs()).toBe(80)
       })
     })
   })
