@@ -19,26 +19,35 @@ vi.mock("motion/react", () => ({
       },
     }
   },
-  animate: vi.fn(() => Promise.resolve()),
+  animate: vi.fn(() => ({ stop: vi.fn(), then: (fn: () => void) => Promise.resolve().then(fn) })),
   motion: {
     g: ({
       children,
       id,
       transform,
       dangerouslySetInnerHTML,
+      ...rest
     }: {
       children?: React.ReactNode
       id?: string
       transform?: string
       dangerouslySetInnerHTML?: { __html: string }
+      [key: string]: unknown
     }) => (
-      <g id={id} transform={transform}>
+      <g id={id} transform={transform} {...rest}>
         {dangerouslySetInnerHTML ? (
           <g dangerouslySetInnerHTML={dangerouslySetInnerHTML} />
         ) : null}
         {children}
       </g>
     ),
+    circle: ({
+      children,
+      ...rest
+    }: {
+      children?: React.ReactNode
+      [key: string]: unknown
+    }) => <circle {...rest}>{children}</circle>,
   },
 }))
 

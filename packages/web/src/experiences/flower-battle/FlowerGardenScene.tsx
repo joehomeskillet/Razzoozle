@@ -9,6 +9,7 @@ import {
 import { createSeededRandom } from "../shared/random"
 import { GardenBackgroundLayer } from "./GardenBackgroundLayer"
 import { FlowerPlant } from "./FlowerPlant"
+import { FlowerPowerupEffects } from "./FlowerPowerupEffects"
 import type { FlowerVariant, TeamColorKey } from "./flower-plant.constants"
 import {
   GARDEN_SCENE_ACTORS_ZONE_WIDTH_PERCENT,
@@ -103,13 +104,14 @@ export const FlowerGardenScene = ({
                     key={`${team.name}-${index}`}
                     data-testid={`garden-team-slot-${index}`}
                     data-team-name={team.name}
-                    className="flex h-full min-w-0 flex-1 items-end justify-center"
+                    className="relative flex h-full min-w-0 flex-1 items-end justify-center"
                   >
                     <FlowerPlant
                       variant={variantForTeam(seed, index)}
                       teamColor={teamColorForIndex(index)}
                       growthStage={growthStageFromSunPoints(team.sunPoints)}
                     />
+                    <FlowerPowerupEffects activeEffects={team.effects} />
                   </div>
                 ))}
               </div>

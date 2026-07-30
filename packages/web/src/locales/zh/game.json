@@ -450,5 +450,13 @@
         "recentlyAttacked": "刚被攻击过——请选择其他队伍"
       }
     }
+  },
+  "flowerPowerupEffects": {
+    "effect": {
+      "umbrellaShield": "☂ 护盾生效",
+      "acidRain": "☁ 下次生长 −1",
+      "sunbeam": "☀ 下次生长 +1",
+      "fertilizer": "🌱 肥料"
+    }
   }
 }
