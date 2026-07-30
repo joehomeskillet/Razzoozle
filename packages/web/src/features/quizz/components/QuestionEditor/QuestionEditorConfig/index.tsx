@@ -62,7 +62,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 const QuestionEditorConfig = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const pendingTypeRef = useRef<QuestionTypeKey | null>(null)

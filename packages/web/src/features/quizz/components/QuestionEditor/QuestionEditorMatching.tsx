@@ -15,7 +15,7 @@ const defaultItem = (): MatchDraft => ({
 
 const QuestionEditorMatching = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const leftItems: MatchDraft[] =
     currentQuestion.leftItems?.length

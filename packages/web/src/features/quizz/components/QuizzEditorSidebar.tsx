@@ -45,7 +45,7 @@ const QuizzEditorSidebar = () => {
     themeId,
   } = useQuizzEditor()
   const { socket } = useSocket()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const { width } = useScreenSize()
   const globalTheme = useThemeStore((s) => s.theme)
   const [pickerOpen, setPickerOpen] = useState(false)

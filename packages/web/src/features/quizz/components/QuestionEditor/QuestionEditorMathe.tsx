@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 
 const QuestionEditorMathe = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   // oxlint-disable-next-line typescript/no-explicit-any -- generic field setter forwards any Question value to updateQuestion
   const updateField = (field: string, value: any) => {

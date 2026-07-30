@@ -9,7 +9,7 @@ const defaultSlot = (): SlotDraft => ({ options: ["", ""], correctIndex: 0 })
 
 const QuestionEditorFillBlank = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const slots: SlotDraft[] =
     currentQuestion.slots?.length

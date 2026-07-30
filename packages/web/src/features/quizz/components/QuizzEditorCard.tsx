@@ -63,7 +63,7 @@ const QuizzEditorCard = ({
   backgroundImage,
   backgroundGradient,
 }: Props) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 
 const QuestionEditorSequencing = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const items = currentQuestion.items ?? []
   const correctOrder = currentQuestion.correctOrder ?? []

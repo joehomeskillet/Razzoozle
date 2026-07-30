@@ -11,7 +11,7 @@ const MATCH_MODES: MatchMode[] = ["exact", "normalized", "fuzzy"]
 
 const QuestionEditorAcceptedAnswers = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const matchModeId = useId()
 
   const acceptedAnswers = currentQuestion.acceptedAnswers ?? []
