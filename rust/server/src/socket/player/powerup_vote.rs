@@ -364,66 +364,30 @@ async fn handle_powerup_target_vote_inner(
     }
 }
 
-/// Public entry used by tests / future call-sites (WP contract name).
-pub async fn handle_powerup_vote(
-    socket: SocketRef,
-    registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
-    payload: PowerupVotePayload,
-    client_id: String,
-) {
-    handle_powerup_vote_inner(
-        socket,
-        registry,
-        client_id,
-        payload.game_id,
-        payload.option_index,
-        payload.player_token,
-    )
-    .await;
-}
-
-/// Public entry used by tests / future call-sites (WP contract name).
-pub async fn handle_powerup_target_vote(
-    socket: SocketRef,
-    registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
-    payload: TargetVotePayload,
-    client_id: String,
-) {
-    handle_powerup_target_vote_inner(
-        socket,
-        registry,
-        client_id,
-        payload.game_id,
-        payload.target_team_id,
-        payload.player_token,
-    )
-    .await;
-}
-
 // ---------------------------------------------------------------------------
 // SEC-01 pure gate tests (socket-free; mirrors answer.rs token gate)
 // ---------------------------------------------------------------------------
 
-/// SEC-01 decision for a power-up vote: whether the supplied token may vote
-/// for the player identified by `client_id` (looked up → stored token).
-///
-/// Returns `Ok(())` if the vote may proceed past the token gate, `Err` with a
-/// stable reason string on deny (used by unit tests; handler uses warn!+emit).
-pub(crate) fn powerup_vote_token_check(
-    stored_token: Option<&str>,
-    supplied_token: &str,
-) -> Result<(), &'static str> {
-    if answer_token_gate(stored_token, Some(supplied_token)) {
-        Ok(())
-    } else {
-        Err("playerToken mismatch/missing")
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::powerup_vote_token_check;
+    use super::answer_token_gate;
     use razzoozle_engine::flower_battle::{VoteChoice, VoteState};
+
+    /// SEC-01 decision for a power-up vote: whether the supplied token may vote
+    /// for the player identified by `client_id` (looked up → stored token).
+    ///
+    /// Same predicate as the live handlers (`answer_token_gate`); Result form is
+    /// only for assert-friendly unit tests.
+    fn powerup_vote_token_check(
+        stored_token: Option<&str>,
+        supplied_token: &str,
+    ) -> Result<(), &'static str> {
+        if answer_token_gate(stored_token, Some(supplied_token)) {
+            Ok(())
+        } else {
+            Err("playerToken mismatch/missing")
+        }
+    }
 
     /// SEC-01 Negativ: team of 2 players with valid tokens.
     /// Vote with Player-A clientId but Player-B token → REJECT.
