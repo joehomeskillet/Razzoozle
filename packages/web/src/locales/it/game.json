@@ -403,6 +403,7 @@
   },
   "flowerBattlePlayerStatus": {
     "header": "Squadra {{teamName}} · Fiore {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+    "headerNeutral": "Fiore {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
     "effect": {
       "umbrellaShield": "☂ Scudo attivo",
       "acidRain": "☁ Prossima crescita −1",

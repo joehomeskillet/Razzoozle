@@ -10,6 +10,8 @@ import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 import { FlowerPlant } from "./FlowerPlant"
 import {
   clampGrowthStage,
+  GROWTH_STAGE_MAX,
+  GROWTH_STAGE_MIN,
   type TeamColorKey,
 } from "./flower-plant.constants"
 
@@ -23,7 +25,8 @@ import {
  * Kept exported for FlowerPowerupStatusIcons / FlowerPowerupEffects which
  * still consume the string-literal form until a later wave.
  */
-export type FlowerBattleActiveEffect = "umbrella_shield" | "acid_rain" | "sunbeam"
+export type FlowerBattleActiveEffect =
+  "umbrella_shield" | "acid_rain" | "sunbeam"
 
 /**
  * Sun-point threshold shown in the header ("☀ {sunPoints}/3"). UI-level
@@ -68,10 +71,11 @@ export interface FlowerBattlePlayerStatusTypedProps {
  * a temporary compile-compatibility bridge until C3 removes it.
  */
 export type FlowerBattlePlayerStatusProps =
-  | FlowerBattlePlayerStatusTypedProps
-  | FlowerBattlePlayerStatusLegacyProps
+  FlowerBattlePlayerStatusTypedProps | FlowerBattlePlayerStatusLegacyProps
 
-const isTeamColorKey = (value: string | null | undefined): value is TeamColorKey =>
+const isTeamColorKey = (
+  value: string | null | undefined,
+): value is TeamColorKey =>
   typeof value === "string" && (TEAMS as readonly string[]).includes(value)
 
 const isLegacyProps = (
@@ -91,9 +95,14 @@ const clampSunPoints = (value: number): number => {
   return Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(value)))
 }
 
+// #982 / wp-b813aed8d3fc: maxGrowthStage is a display bound too — clamp it
+// strictly into the plant's 0..10 stage range (never "Blüte 4/99").
 const clampMaxGrowth = (value: number): number => {
-  if (!Number.isFinite(value)) return 0
-  return Math.max(0, Math.floor(value))
+  if (!Number.isFinite(value)) return GROWTH_STAGE_MIN
+  return Math.min(
+    GROWTH_STAGE_MAX,
+    Math.max(GROWTH_STAGE_MIN, Math.floor(value)),
+  )
 }
 
 /** Clamp growth into [0, stage-max] then against this status's maxGrowthStage. */
@@ -157,9 +166,14 @@ type ResolvedView = {
   effectKinds: FlowerBattleActiveEffect[]
 }
 
-const resolveFromStatus = (status: FlowerBattlePlayerStatusData): ResolvedView => {
+const resolveFromStatus = (
+  status: FlowerBattlePlayerStatusData,
+): ResolvedView => {
   const teamId = status.teamId
-  const growth = clampGrowthAgainstMax(status.growthStage, status.maxGrowthStage)
+  const growth = clampGrowthAgainstMax(
+    status.growthStage,
+    status.maxGrowthStage,
+  )
   return {
     // Null team stays null — never invent a guessed team colour/name.
     // teamName is resolved in render via i18n so raw teamId never shows.
@@ -172,7 +186,9 @@ const resolveFromStatus = (status: FlowerBattlePlayerStatusData): ResolvedView =
   }
 }
 
-const resolveFromLegacy = (props: FlowerBattlePlayerStatusLegacyProps): ResolvedView => {
+const resolveFromLegacy = (
+  props: FlowerBattlePlayerStatusLegacyProps,
+): ResolvedView => {
   const growth = clampGrowthAgainstMax(props.growthStage, props.maxGrowthStage)
   // Prefer explicit human teamName; never fall back to raw team colour id.
   const humanName =
@@ -208,7 +224,12 @@ export function FlowerBattlePlayerStatus(props: FlowerBattlePlayerStatusProps) {
   const plantTeam: Team | undefined = isTeamColorKey(view.teamId)
     ? view.teamId
     : undefined
-  const colors = view.teamId ? teamColor(view.teamId) : { bg: "", text: "text-ink" }
+  // #982 / wp-b813aed8d3fc: teamColor() is only defined for known colour
+  // keys. An unknown team id stays semantically neutral (surface + ink) —
+  // never the raw gray teamColor fallback classes.
+  const colors = isTeamColorKey(view.teamId)
+    ? teamColor(view.teamId)
+    : { bg: "", text: "text-ink" }
 
   // Human team label only: legacy explicit name, or i18n for known colour keys.
   // Never surface raw wire teamId ("green") as the visible team name (WP-946-C3).
@@ -244,7 +265,7 @@ export function FlowerBattlePlayerStatus(props: FlowerBattlePlayerStatusProps) {
       data-testid="flower-battle-player-status"
       role="status"
       aria-live="polite"
-      className={`flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2 ${colors.bg}`.trim()}
+      className={`border-line bg-surface-2 flex items-center gap-2 rounded-2xl border px-3 py-2 ${colors.bg}`.trim()}
     >
       <div
         className="h-14 w-10 shrink-0"
@@ -265,7 +286,7 @@ export function FlowerBattlePlayerStatus(props: FlowerBattlePlayerStatusProps) {
               key={kind}
               data-testid={meta.testId}
               data-effect-kind={kind}
-              className="text-xs text-ink-subtle"
+              className="text-ink-subtle text-xs"
             >
               {t(meta.i18nKey, { defaultValue: meta.defaultValue })}
             </p>

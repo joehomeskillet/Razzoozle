@@ -403,6 +403,7 @@
   },
   "flowerBattlePlayerStatus": {
     "header": "队伍 {{teamName}} · 花朵 {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+    "headerNeutral": "花朵 {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
     "effect": {
       "umbrellaShield": "☂ 保护已启动",
       "acidRain": "☁ 下次成长 −1",

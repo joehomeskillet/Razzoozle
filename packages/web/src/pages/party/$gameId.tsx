@@ -1,5 +1,6 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
+import type { FlowerBattlePlayerStatus as FlowerBattlePlayerStatusData } from "@razzoozle/common/types/game/socket"
 import { FlowerBattlePlayerStatus } from "@razzoozle/web/experiences/flower-battle/FlowerBattlePlayerStatus"
 import Ended from "@razzoozle/web/features/game/components/states/Ended"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
@@ -24,6 +25,31 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+/**
+ * #982 / wp-b813aed8d3fc: pre-game choreography phases. A typed Flower status
+ * can already be hydrated (guarded reconnect hydrate, WP-946-C1-R1) while the
+ * game is still in start/wait/prepared — those phases must NOT flip into
+ * gameplay chrome: the start screen stays centered, the topbar stays visible,
+ * and the transition key stays the default per-status key.
+ */
+const FLOWER_BATTLE_PRE_GAMEPLAY_STATUSES: ReadonlySet<string> = new Set([
+  STATUS.SHOW_START,
+  STATUS.WAIT,
+  STATUS.SHOW_PREPARED,
+])
+
+/**
+ * Explicit Flower Battle gameplay predicate: typed store presence AND a real
+ * gameplay phase. Exported for focused route-integration tests (WP-946-C3).
+ */
+export const isFlowerBattleGameplay = (
+  statusName: string | null,
+  flowerBattlePlayerStatus: FlowerBattlePlayerStatusData | null,
+): boolean =>
+  flowerBattlePlayerStatus != null &&
+  statusName != null &&
+  !FLOWER_BATTLE_PRE_GAMEPLAY_STATUSES.has(statusName)
 
 /** Exported for focused route-integration tests (WP-946-C3). */
 export const PlayerGamePage = () => {
@@ -232,21 +258,25 @@ export const PlayerGamePage = () => {
     return null
   }
 
-  // WP-946-C3: typed store presence IS Flower Battle gameplay for this player.
-  // Join/start/waiting leave the field null → classic chrome + statusName keys.
-  const isFlowerBattleGameplay = flowerBattlePlayerStatus != null
+  // WP-946-C3 + #982: gameplay chrome only with typed store status AND a real
+  // gameplay phase. Join/start/wait/prepared keep classic chrome + statusName
+  // keys even when the store was already hydrated (WP-946-C1-R1).
+  const flowerBattleGameplay = isFlowerBattleGameplay(
+    status.name,
+    flowerBattlePlayerStatus,
+  )
 
   return (
     <GameWrapper
       statusName={status.name}
       // Stable key keeps plant/HUD/answer subtree mounted across SELECT_ANSWER,
       // answers_locked (SHOW_RESPONSES), resolution (SHOW_RESULT), and finish.
-      contentTransitionKey={
-        isFlowerBattleGameplay ? "flowerBattle" : undefined
-      }
-      hidePlayerTopbar={isFlowerBattleGameplay}
+      contentTransitionKey={flowerBattleGameplay ? "flowerBattle" : undefined}
+      hidePlayerTopbar={flowerBattleGameplay}
     >
-      {isFlowerBattleGameplay && (
+      {/* flowerBattleGameplay implies a hydrated store; the explicit non-null
+          check keeps TS narrowing without widening the predicate signature. */}
+      {flowerBattleGameplay && flowerBattlePlayerStatus && (
         <div
           data-testid="flower-battle-player-hud-slot"
           className="mx-auto mb-2 w-full max-w-md shrink-0"

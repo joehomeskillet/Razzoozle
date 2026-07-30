@@ -121,7 +121,9 @@ vi.mock("@razzoozle/web/features/game/contexts/socket-context", () => ({
 }))
 
 vi.mock("@razzoozle/web/features/game/stores/answer", () => ({
-  useAnswerStore: (sel?: (s: { setAlreadyAnswered: () => void }) => unknown) => {
+  useAnswerStore: (
+    sel?: (s: { setAlreadyAnswered: () => void }) => unknown,
+  ) => {
     const store = { setAlreadyAnswered: vi.fn() }
     return typeof sel === "function" ? sel(store) : store
   },
@@ -164,21 +166,18 @@ vi.mock("@razzoozle/web/components/Loader", () => ({
   default: () => <div data-testid="loader" />,
 }))
 
-vi.mock(
-  "@razzoozle/web/features/manager/components/DisplayControl",
-  () => ({ default: () => null }),
-)
-vi.mock(
-  "@razzoozle/web/features/manager/components/DisplayStatusCard",
-  () => ({ default: () => null }),
-)
+vi.mock("@razzoozle/web/features/manager/components/DisplayControl", () => ({
+  default: () => null,
+}))
+vi.mock("@razzoozle/web/features/manager/components/DisplayStatusCard", () => ({
+  default: () => null,
+}))
 vi.mock("@razzoozle/web/features/manager/components/SimControl", () => ({
   default: () => null,
 }))
-vi.mock(
-  "@razzoozle/web/features/game/components/LowLatencyHealth",
-  () => ({ default: () => null }),
-)
+vi.mock("@razzoozle/web/features/game/components/LowLatencyHealth", () => ({
+  default: () => null,
+}))
 vi.mock(
   "@razzoozle/web/features/game/components/GameWrapper/AvToggles",
   () => ({ default: () => null }),
@@ -230,7 +229,7 @@ vi.mock("@razzoozle/web/features/game/stores/manager", () => ({
   useManagerStore: () => ({ gameId: null, inviteCode: null }),
 }))
 
-import { PlayerGamePage } from "../$gameId"
+import { PlayerGamePage, isFlowerBattleGameplay } from "../$gameId"
 
 const makeFlowerStatus = (
   overrides: Partial<FlowerBattlePlayerStatusData> = {},
@@ -363,5 +362,88 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
     expect(html).toContain("justify-center")
     expect(contentKeyOf(html)).toBe("flowerBattle")
     expect(html).toContain('data-testid="player-footer"')
+  })
+
+  // #982 / wp-b813aed8d3fc: the guarded reconnect hydrate (WP-946-C1-R1) can
+  // fill the typed store BEFORE gameplay starts. Pre-game choreography phases
+  // must keep classic chrome — centered screen, visible topbar, default
+  // per-status transition key — despite the non-null flower status.
+  describe("pre-gameplay phases with hydrated flower status (#982)", () => {
+    const preGameplayPhases = [
+      { name: STATUS.SHOW_START, data: { time: 5, subject: "Quiz" } },
+      { name: STATUS.WAIT, data: { text: "waiting", teamMode: false } },
+      {
+        name: STATUS.SHOW_PREPARED,
+        data: { totalAnswers: 4, questionNumber: 1 },
+      },
+    ] as const
+
+    for (const phase of preGameplayPhases) {
+      it(`keeps classic chrome on ${phase.name} despite non-null flower status`, () => {
+        playerStore.flowerBattlePlayerStatus = makeFlowerStatus()
+        setGameStatus(phase.name, phase.data)
+
+        const html = renderToStaticMarkup(<PlayerGamePage />)
+
+        // The pre-game screen itself renders, vertically centered.
+        expect(html).toContain(`data-testid="state-${phase.name}"`)
+        expect(html).toContain("justify-center")
+        // Top chrome stays visible; the compact Flower HUD is NOT mounted.
+        expect(html).toContain('data-testid="game-topbar"')
+        expect(html).not.toContain(
+          'data-testid="flower-battle-player-hud-slot"',
+        )
+        expect(html).not.toContain('data-testid="flower-battle-player-status"')
+        // Default per-status transition key, not the pinned gameplay key.
+        expect(contentKeyOf(html)).toBe(phase.name)
+      })
+    }
+
+    it("flips to gameplay chrome only once a real gameplay phase arrives", () => {
+      playerStore.flowerBattlePlayerStatus = makeFlowerStatus()
+
+      setGameStatus(STATUS.SHOW_PREPARED, {
+        totalAnswers: 4,
+        questionNumber: 1,
+      })
+      const prepared = renderToStaticMarkup(<PlayerGamePage />)
+      expect(prepared).toContain('data-testid="game-topbar"')
+      expect(contentKeyOf(prepared)).toBe(STATUS.SHOW_PREPARED)
+
+      setGameStatus(STATUS.SELECT_ANSWER)
+      const gameplay = renderToStaticMarkup(<PlayerGamePage />)
+      expect(gameplay).toContain('data-testid="flower-battle-player-hud-slot"')
+      expect(gameplay).not.toContain('data-testid="game-topbar"')
+      expect(contentKeyOf(gameplay)).toBe("flowerBattle")
+    })
+  })
+
+  describe("isFlowerBattleGameplay predicate", () => {
+    it("is false for SHOW_START / WAIT / SHOW_PREPARED even with non-null status", () => {
+      for (const name of [
+        STATUS.SHOW_START,
+        STATUS.WAIT,
+        STATUS.SHOW_PREPARED,
+      ]) {
+        expect(isFlowerBattleGameplay(name, makeFlowerStatus())).toBe(false)
+      }
+    })
+
+    it("is true for gameplay phases when the typed store has status", () => {
+      for (const name of [
+        STATUS.SHOW_QUESTION,
+        STATUS.SELECT_ANSWER,
+        STATUS.SHOW_RESULT,
+        STATUS.FINISHED,
+      ]) {
+        expect(isFlowerBattleGameplay(name, makeFlowerStatus())).toBe(true)
+      }
+    })
+
+    it("is false whenever the typed store or the phase is empty", () => {
+      expect(isFlowerBattleGameplay(STATUS.SELECT_ANSWER, null)).toBe(false)
+      expect(isFlowerBattleGameplay(null, makeFlowerStatus())).toBe(false)
+      expect(isFlowerBattleGameplay(null, null)).toBe(false)
+    })
   })
 })

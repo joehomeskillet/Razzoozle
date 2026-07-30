@@ -403,6 +403,7 @@
   },
   "flowerBattlePlayerStatus": {
     "header": "Equipo {{teamName}} · Flor {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+    "headerNeutral": "Flor {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
     "effect": {
       "umbrellaShield": "☂ Escudo activo",
       "acidRain": "☁ Próximo crecimiento −1",
