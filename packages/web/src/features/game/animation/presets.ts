@@ -83,14 +83,16 @@ const STAGGER = {
 const RISE = 16
 
 // oxlint-disable-next-line @stylistic/multiline-comment-style -- SDD §26 requires a block policy table.
-// Reduced-Motion-Policy (SDD §26):
-// ├─ Sprungpfad       → Überblendung (fade only)
-// ├─ Parallax-Layer   → statisch
-// ├─ viele Partikel   → reduziert (50% decay)
-// ├─ Kamera-Zoom      → einfacher Wechsel (kein spring)
-// ├─ Schweben         → statisch
-// ├─ Confetti         → deaktiviert/minimal
-// └─ Screen-Shake     → immer deaktiviert
+/*
+ * Reduced-Motion-Policy (SDD §26):
+ * ├─ Sprungpfad       → Überblendung (fade only)
+ * ├─ Parallax-Layer   → statisch
+ * ├─ viele Partikel   → reduziert (50% decay)
+ * ├─ Kamera-Zoom      → einfacher Wechsel (kein spring)
+ * ├─ Schweben         → statisch
+ * ├─ Confetti         → deaktiviert/minimal
+ * └─ Screen-Shake     → immer deaktiviert
+ */
 
 type VariantsFactory = (...args: never[]) => Variants
 
