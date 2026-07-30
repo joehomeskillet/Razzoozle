@@ -44,7 +44,7 @@ pub enum ExperiencePhase {
 
 /// S2C envelope for `game:experience` transitions.
 ///
-/// Five structural fields + mode-tagged `payload`. No free-text / media / solution
+/// Seven structural fields + mode-tagged `payload`. No free-text / media / solution
 /// fields — anti-cheat and separation from `game:status`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -57,6 +57,12 @@ pub struct ExperienceTransition {
     #[ts(optional)]
     pub phase_duration_ms: Option<i64>,
     pub revision: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub answered: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub total: Option<i32>,
     pub payload: ExperiencePayload,
 }
 
@@ -351,7 +357,11 @@ mod tests {
             phase_started_at_server_ms: 1_700_000_000_000,
             phase_duration_ms: Some(20_000),
             revision: 3,
-            payload: ExperiencePayload::Pyramid(PyramidPayload { team_steps: vec![] }),
+            answered: Some(7),
+            total: Some(12),
+            payload: ExperiencePayload::Pyramid(PyramidPayload {
+                team_steps: vec![],
+            }),
         };
         let v = serde_json::to_value(&t).unwrap();
         assert_eq!(v["mode"], "pyramidClimb");
@@ -359,6 +369,8 @@ mod tests {
         assert_eq!(v["phaseStartedAtServerMs"], 1_700_000_000_000_i64);
         assert_eq!(v["phaseDurationMs"], 20_000);
         assert_eq!(v["revision"], 3);
+        assert_eq!(v["answered"], 7);
+        assert_eq!(v["total"], 12);
         assert!(v["payload"].is_object());
         // No question/answer/media/solution free-text keys on the envelope.
         for forbidden in [
@@ -375,6 +387,15 @@ mod tests {
                 "forbidden key present: {forbidden}"
             );
         }
+
+        let t_without_progress = ExperienceTransition {
+            answered: None,
+            total: None,
+            ..t
+        };
+        let v = serde_json::to_value(&t_without_progress).unwrap();
+        assert!(v.get("answered").is_none());
+        assert!(v.get("total").is_none());
     }
 
     #[test]
