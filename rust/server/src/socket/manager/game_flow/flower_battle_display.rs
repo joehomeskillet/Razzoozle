@@ -18,8 +18,11 @@ pub fn build_flower_battle_payload_from_game(game: &Game) -> ExperiencePayload {
         state: FlowerBattleState {
             phase: project_phase(game),
             teams: project_team_rosters(&game.players, game),
+            // WP #939A: persisted CSPRNG seed (Game::new()), NOT game_id — a
+            // real random value that is stable for the session's lifetime and
+            // survives snapshot restore (see state/snapshot.rs flowerBattleSeed).
             background: FlowerBattleBackground {
-                seed: game.game_id.clone(),
+                seed: game.flower_battle_seed.to_string(),
                 recipe_version: FLOWER_BATTLE_RECIPE_VERSION,
             },
             // Active open offers from offer cache (values only; sorted for stable wire).
@@ -221,6 +224,40 @@ mod tests {
                 assert_eq!(p.state.phase, FlowerBattlePhase::Start);
                 assert!(p.state.teams.is_empty());
                 assert!(p.state.powerups.is_empty());
+            }
+            other => panic!("expected FlowerBattle payload, got {other:?}"),
+        }
+    }
+
+    /// WP #939A — build_flower_battle_payload_from_game (the production path,
+    /// unlike the game_id-only legacy test helper above) MUST project the
+    /// persisted `Game::flower_battle_seed`, not `game_id`.
+    #[test]
+    fn build_flower_battle_payload_from_game_uses_persisted_seed() {
+        use razzoozle_protocol::quizz::Quizz;
+
+        let mut game = Game::new(
+            "game-persisted-seed".to_string(),
+            "INVSEED".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            Quizz {
+                subject: "Seed".to_string(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
+        game.flower_battle_seed = 424_242;
+
+        let payload = build_flower_battle_payload_from_game(&game);
+        match payload {
+            ExperiencePayload::FlowerBattle(p) => {
+                assert_eq!(p.state.background.seed, "424242");
+                assert_ne!(
+                    p.state.background.seed, game.game_id,
+                    "seed must come from the persisted CSPRNG value, not game_id"
+                );
             }
             other => panic!("expected FlowerBattle payload, got {other:?}"),
         }
