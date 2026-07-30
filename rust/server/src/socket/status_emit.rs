@@ -9,6 +9,7 @@
 
 use crate::state::Game;
 use razzoozle_protocol::constants;
+use razzoozle_protocol::experience::ExperienceTransition;
 use razzoozle_protocol::status::GameStatus;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::{Arc, Mutex};
@@ -25,6 +26,24 @@ pub fn broadcast_status(
     game.record_last_manager_status(status);
     io.to(game_id.to_string())
         .emit(constants::game::STATUS, status)
+        .ok();
+}
+
+/// Emit an experience transition only to the game's display room.
+pub fn broadcast_experience_to_display(
+    io: &SocketIo,
+    game_ref: &Arc<Mutex<Game>>,
+    game_id: &str,
+    experience: &ExperienceTransition,
+    answered: i32,
+    total: i32,
+) {
+    let _game = game_ref.lock().unwrap();
+    let mut payload = experience.clone();
+    payload.answered = Some(answered);
+    payload.total = Some(total);
+    io.to(format!("display:{game_id}"))
+        .emit(constants::experience::TRANSITION, &payload)
         .ok();
 }
 
