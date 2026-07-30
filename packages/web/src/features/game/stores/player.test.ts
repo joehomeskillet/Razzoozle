@@ -106,15 +106,56 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     expect(current?.sunPoints).toBe(3)
   })
 
-  it("clears Flower status when Classic reconnect omits the field", () => {
-    // Page path: SUCCESS_RECONNECT without flowerBattlePlayerStatus → clear.
+  it("hydrate sets the status on a full gameId match (payload ↔ expected ↔ store)", () => {
+    // SUCCESS_RECONNECT carrying a Flower payload for the current game.
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+
+    const payload = makeStatus({ questionIndex: 4, sunPoints: 2 })
+    store.hydrateFlowerBattlePlayerStatus(payload, GAME_A)
+
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(payload)
+  })
+
+  it("hydrate clears when the reconnect payload omits the field (Classic)", () => {
+    // SUCCESS_RECONNECT without flowerBattlePlayerStatus → clear, so a prior
+    // Flower session cannot leak into Classic.
     const store = usePlayerStore.getState()
     store.setGameId(GAME_A)
     store.setFlowerBattlePlayerStatus(makeStatus({ questionIndex: 4 }))
     expect(usePlayerStore.getState().flowerBattlePlayerStatus).not.toBeNull()
 
-    // Classic / non-Flower reconnect: field missing → explicit clear.
-    store.clearFlowerBattlePlayerStatus()
+    store.hydrateFlowerBattlePlayerStatus(undefined, GAME_A)
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toBeNull()
+  })
+
+  it("hydrate clears on gameId mismatch (payload vs expected or store)", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+    store.setFlowerBattlePlayerStatus(makeStatus({ questionIndex: 4 }))
+
+    // Payload belongs to a foreign game → cleared, not applied.
+    store.hydrateFlowerBattlePlayerStatus(makeStatus({ gameId: GAME_B }), GAME_A)
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toBeNull()
+
+    // Payload matches the store but not the expected (reconnect) gameId.
+    store.setFlowerBattlePlayerStatus(makeStatus({ questionIndex: 4 }))
+    store.hydrateFlowerBattlePlayerStatus(makeStatus(), GAME_B)
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toBeNull()
+  })
+
+  it("setGameId clears Flower status when the game id changes", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+    store.setFlowerBattlePlayerStatus(makeStatus({ questionIndex: 3 }))
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).not.toBeNull()
+
+    // Same id → status survives (reconnect keeps state until hydrate runs).
+    store.setGameId(GAME_A)
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).not.toBeNull()
+
+    // Different id → cleared so the new game cannot inherit Flower state.
+    store.setGameId(GAME_B)
     expect(usePlayerStore.getState().flowerBattlePlayerStatus).toBeNull()
   })
 

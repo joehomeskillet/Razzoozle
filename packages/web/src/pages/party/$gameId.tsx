@@ -33,8 +33,7 @@ const PlayerGamePage = () => {
     setGameId,
     setStatus,
     reset,
-    setFlowerBattlePlayerStatus,
-    clearFlowerBattlePlayerStatus,
+    hydrateFlowerBattlePlayerStatus,
     receiveFlowerBattlePlayerStatus,
   } = usePlayerStore()
   const { setQuestionStates, setDisplayOrder } = useQuestionStore()
@@ -109,11 +108,10 @@ const PlayerGamePage = () => {
       // buttons. ?? false keeps normal-mode behaviour untouched.
       setAlreadyAnswered(reconnectGameId, alreadyAnswered ?? false)
 
-      if (flowerBattlePlayerStatus) {
-        setFlowerBattlePlayerStatus(flowerBattlePlayerStatus)
-      } else {
-        clearFlowerBattlePlayerStatus()
-      }
+      // Guarded hydrate (WP-946-C1-R1): sets only when the payload's gameId
+      // matches the reconnect/store game; clears on absent (Classic) or
+      // mismatch so no stale/foreign Flower state can survive.
+      hydrateFlowerBattlePlayerStatus(flowerBattlePlayerStatus, reconnectGameId)
     },
   )
 

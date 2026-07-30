@@ -35,6 +35,7 @@ interface PlayerStore<T> {
    */
   flowerBattlePlayerStatus: FlowerBattlePlayerStatus | null
 
+  /** Changing the game id also drops Flower status (no cross-game leak). */
   setGameId: (_gameId: string | null) => void
 
   setPlayer: (_state: PlayerState) => void
@@ -51,10 +52,20 @@ interface PlayerStore<T> {
 
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
 
-  /** Unconditional write (reconnect hydrate). */
+  /** Unconditional write. Guarded paths prefer hydrate/receive. */
   setFlowerBattlePlayerStatus: (_status: FlowerBattlePlayerStatus) => void
   /** Drop Flower status so Classic/next game cannot retain it. */
   clearFlowerBattlePlayerStatus: () => void
+  /**
+   * Reconnect hydrate (WP-946-C1-R1). Sets only when the payload's gameId
+   * matches both expectedGameId and the store gameId; clears on absent or
+   * mismatch so a Classic reconnect or stale foreign payload can never
+   * retain/leak Flower state.
+   */
+  hydrateFlowerBattlePlayerStatus: (
+    _status: FlowerBattlePlayerStatus | undefined,
+    _expectedGameId: string,
+  ) => void
   /**
    * Live `game:flowerBattle:playerStatus` path.
    * Accepts only when payload.gameId equals both routeGameId and store gameId.
@@ -80,7 +91,13 @@ const initialState = {
 export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
   ...initialState,
 
-  setGameId: (gameId) => set({ gameId }),
+  setGameId: (gameId) =>
+    set((state) =>
+      // A different game must not inherit Flower status from the prior one.
+      state.gameId === gameId
+        ? { gameId }
+        : { gameId, flowerBattlePlayerStatus: null },
+    ),
 
   setPlayer: (player: PlayerState) => set({ player }),
   login: (username) =>
@@ -125,6 +142,21 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
 
   clearFlowerBattlePlayerStatus: () =>
     set({ flowerBattlePlayerStatus: null }),
+
+  hydrateFlowerBattlePlayerStatus: (status, expectedGameId) =>
+    set((state) => {
+      // Set only on a full match (payload ↔ expected ↔ store); otherwise
+      // clear so absent (Classic) or mismatched state cannot survive.
+      if (
+        !status ||
+        status.gameId !== expectedGameId ||
+        status.gameId !== state.gameId
+      ) {
+        return { flowerBattlePlayerStatus: null }
+      }
+
+      return { flowerBattlePlayerStatus: status }
+    }),
 
   receiveFlowerBattlePlayerStatus: (status, routeGameId) =>
     set((state) => {
