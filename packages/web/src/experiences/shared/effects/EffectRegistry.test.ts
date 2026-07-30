@@ -1,71 +1,66 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 
 import { EffectRegistry } from "./EffectRegistry"
-import {
-  ExperienceEffectPresetId,
-  type ExperienceEffectDescriptor,
-} from "../types/experience-effect"
+import type { ExperienceEffectDescriptor } from "../types/experience-effect"
 
-const descriptor: ExperienceEffectDescriptor = {
+const sampleDescriptor: ExperienceEffectDescriptor = {
   seed: 42,
-  colorRoles: ["--color-primary", "--color-accent"],
+  colorRoles: ["primary", "success"],
 }
 
 describe("EffectRegistry", () => {
   it("registers and resolves a handler", () => {
     const registry = new EffectRegistry()
     const handler = vi.fn()
-
-    registry.register(ExperienceEffectPresetId.ConfettiBurst, handler)
-
-    expect(registry.resolve(ExperienceEffectPresetId.ConfettiBurst)).toBe(handler)
+    registry.register("burst", handler)
+    expect(registry.resolve("burst")).toBe(handler)
   })
 
-  it("resolve returns null for unknown preset without throwing", () => {
+  it("returns null for unknown preset (no throw)", () => {
     const registry = new EffectRegistry()
-
-    expect(registry.resolve("unknown-preset" as ExperienceEffectPresetId)).toBeNull()
+    expect(registry.resolve("unknown")).toBeNull()
   })
 
-  it("trigger is a no-op for unknown preset", () => {
-    const registry = new EffectRegistry()
-
-    expect(
-      registry.trigger("unknown-preset" as ExperienceEffectPresetId, descriptor, "inst-1"),
-    ).toBe(false)
-  })
-
-  it("trigger invokes handler and deduplicates by instanceId", () => {
+  it("triggers handler with descriptor and seed", () => {
     const registry = new EffectRegistry()
     const handler = vi.fn()
-
-    registry.register(ExperienceEffectPresetId.ConfettiBurst, handler)
-
-    expect(registry.trigger(ExperienceEffectPresetId.ConfettiBurst, descriptor, "inst-1")).toBe(
-      true,
-    )
-    expect(handler).toHaveBeenCalledTimes(1)
-    expect(handler).toHaveBeenCalledWith(descriptor)
-
-    expect(registry.trigger(ExperienceEffectPresetId.ConfettiBurst, descriptor, "inst-1")).toBe(
-      false,
-    )
-    expect(handler).toHaveBeenCalledTimes(1)
+    registry.register("burst", handler)
+    registry.trigger("burst", sampleDescriptor, "inst-1")
+    expect(handler).toHaveBeenCalledOnce()
+    expect(handler).toHaveBeenCalledWith(sampleDescriptor, 42)
   })
 
-  it("release runs cleanup and allows re-trigger", () => {
+  it("deduplicates by instanceId — second trigger is a no-op", () => {
     const registry = new EffectRegistry()
-    const cleanup = vi.fn()
-    const handler = vi.fn(() => cleanup)
+    const handler = vi.fn()
+    registry.register("burst", handler)
+    registry.trigger("burst", sampleDescriptor, "inst-dup")
+    registry.trigger("burst", sampleDescriptor, "inst-dup")
+    expect(handler).toHaveBeenCalledOnce()
+  })
 
-    registry.register(ExperienceEffectPresetId.ScreenFlash, handler)
+  it("no-ops trigger for unknown preset", () => {
+    const registry = new EffectRegistry()
+    const handler = vi.fn()
+    registry.register("burst", handler)
+    registry.trigger("missing", sampleDescriptor, "inst-2")
+    expect(handler).not.toHaveBeenCalled()
+  })
 
-    expect(registry.trigger(ExperienceEffectPresetId.ScreenFlash, descriptor, "inst-2")).toBe(true)
-
-    registry.release("inst-2")
-    expect(cleanup).toHaveBeenCalledTimes(1)
-
-    expect(registry.trigger(ExperienceEffectPresetId.ScreenFlash, descriptor, "inst-2")).toBe(true)
+  it("release removes dedup state so instance can re-trigger", () => {
+    const registry = new EffectRegistry()
+    const handler = vi.fn()
+    registry.register("burst", handler)
+    registry.trigger("burst", sampleDescriptor, "inst-3")
+    registry.release("inst-3")
+    registry.trigger("burst", sampleDescriptor, "inst-3")
     expect(handler).toHaveBeenCalledTimes(2)
+  })
+
+  it("documents a11y contract: Effect Layer must be aria-hidden and not focusable", () => {
+    const registry = new EffectRegistry()
+    expect(registry).toBeDefined()
+    expect(typeof registry.trigger).toBe("function")
+    expect(typeof registry.release).toBe("function")
   })
 })

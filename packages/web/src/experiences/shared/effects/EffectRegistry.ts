@@ -1,71 +1,66 @@
-import type {
-  ExperienceEffectDescriptor,
-  ExperienceEffectPresetId,
-} from "../types/experience-effect"
-
-export type ExperienceEffectHandler = (
-  descriptor: ExperienceEffectDescriptor,
-) => (() => void) | undefined
+import type { ExperienceEffectDescriptor } from "../types/experience-effect"
 
 /**
- * Registry for experience-layer visual effect presets.
+ * Handler invoked when an effect preset is triggered.
  *
- * Effect implementations rendered on the `effects` stage layer must be
- * `aria-hidden` and not focusable (`tabIndex={-1}` / no interactive children)
- * so HUD and overlay layers retain keyboard and screen-reader access.
+ * @param descriptor - Declarative effect payload (anchor, colorRoles, seed).
+ * @param seed - Deterministic seed extracted from the descriptor for PRNG init.
+ */
+export type EffectHandler = (
+  descriptor: ExperienceEffectDescriptor,
+  seed: number | string,
+) => void
+
+/**
+ * Pure data/handler mapping layer for declarative experience effects (SDD §16).
+ *
+ * @remarks
+ * **Not a renderer** — this registry maps preset IDs to handlers and tracks
+ * trigger deduplication. Canvas/DOM rendering lives in the Effect Layer
+ * (WP-KIT-10).
+ *
+ * **Accessibility contract** — the Effect Layer that consumes this registry
+ * must render with aria-hidden="true" and must not be focusable
+ * (tabIndex={-1} or equivalent). The registry documents this contract;
+ * enforcement is the consumer's responsibility.
+ *
+ * **No lifecycle timers** — the registry does not schedule cleanup. Consumers
+ * call EffectRegistry.release when an effect instance is done.
  */
 export class EffectRegistry {
-  private readonly handlers = new Map<ExperienceEffectPresetId, ExperienceEffectHandler>()
-  private readonly activeInstances = new Set<string>()
-  private readonly cleanups = new Map<string, () => void>()
+  private readonly handlers = new Map<string, EffectHandler>()
+  private readonly triggeredInstances = new Map<string, boolean>()
 
-  register(presetId: ExperienceEffectPresetId, handler: ExperienceEffectHandler): void {
+  register(presetId: string, handler: EffectHandler): void {
     this.handlers.set(presetId, handler)
   }
 
-  resolve(presetId: ExperienceEffectPresetId): ExperienceEffectHandler | null {
+  resolve(presetId: string): EffectHandler | null {
     return this.handlers.get(presetId) ?? null
   }
 
-  /**
-   * Invokes the handler for `presetId` when `instanceId` is not already active.
-   * Unknown presets are a no-op (no throw). Returns whether a handler ran.
-   */
   trigger(
-    presetId: ExperienceEffectPresetId,
+    presetId: string,
     descriptor: ExperienceEffectDescriptor,
     instanceId: string,
-  ): boolean {
-    if (this.activeInstances.has(instanceId)) {
-      return false
+  ): void {
+    if (this.triggeredInstances.has(instanceId)) {
+      return
     }
 
     const handler = this.resolve(presetId)
     if (!handler) {
-      return false
+      return
     }
 
-    this.activeInstances.add(instanceId)
-
-    const cleanup = handler(descriptor)
-    if (typeof cleanup === "function") {
-      this.cleanups.set(instanceId, cleanup)
-    }
-
-    return true
+    this.triggeredInstances.set(instanceId, true)
+    handler(descriptor, descriptor.seed)
   }
 
-  /** Releases an active instance and runs any handler cleanup callback. */
   release(instanceId: string): void {
-    this.activeInstances.delete(instanceId)
-
-    const cleanup = this.cleanups.get(instanceId)
-    if (cleanup) {
-      cleanup()
-      this.cleanups.delete(instanceId)
-    }
+    this.triggeredInstances.delete(instanceId)
   }
 }
 
-/** Shared singleton registry for production wiring. */
+/** Shared singleton registry for app-wide effect preset resolution. */
 export const effectRegistry = new EffectRegistry()

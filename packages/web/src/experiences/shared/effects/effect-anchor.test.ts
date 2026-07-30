@@ -1,153 +1,98 @@
-import { describe, expect, it } from "vitest"
+import { describe, it, expect } from "vitest"
 
-import { resolveEffectAnchor } from "./effect-anchor"
-import type { ExperienceEffectAnchor } from "../types/experience-effect"
+import {
+  clampNormalized,
+  resolveEffectAnchorToPixels,
+  type EffectAnchorViewportContext,
+} from "./effect-anchor"
+import type {
+  ExperienceEffectAnchor,
+  ExperienceEffectDomRefAnchor,
+  ExperienceEffectNormalizedAnchor,
+  ExperienceEffectSvgElementAnchor,
+} from "../types/experience-effect"
 
-describe("resolveEffectAnchor", () => {
-  describe("normalized", () => {
-    it("returns coordinates unchanged when in range", () => {
-      expect(resolveEffectAnchor({ kind: "normalized", x: 0.25, y: 0.75 })).toEqual({
-        x: 0.25,
-        y: 0.75,
-      })
-    })
+const viewport: EffectAnchorViewportContext = { width: 800, height: 600 }
 
-    it("clamps out-of-range values to [0, 1]", () => {
-      expect(resolveEffectAnchor({ kind: "normalized", x: -0.5, y: 1.5 })).toEqual({
-        x: 0,
-        y: 1,
-      })
-    })
+describe("clampNormalized", () => {
+  it("clamps below 0 to 0", () => expect(clampNormalized(-0.5)).toBe(0))
+  it("clamps above 1 to 1", () => expect(clampNormalized(1.5)).toBe(1))
+  it("passes through values in [0, 1]", () => expect(clampNormalized(0.5)).toBe(0.5))
+})
+
+describe("resolveEffectAnchorToPixels — normalized", () => {
+  it("maps [0.5, 0.5] to stage center", () => {
+    const anchor: ExperienceEffectNormalizedAnchor = { type: "normalized", x: 0.5, y: 0.5 }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 400, y: 300 })
   })
 
-  describe("svg-element", () => {
-    it("returns bbox center in user units", () => {
-      const element = {
-        getBBox: () => ({ x: 10, y: 20, width: 100, height: 50 }),
-      } as SVGGraphicsElement
+  it("clamps out-of-range normalized coords", () => {
+    const anchor: ExperienceEffectNormalizedAnchor = { type: "normalized", x: -1, y: 2 }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 0, y: 600 })
+  })
+})
 
-      expect(resolveEffectAnchor({ kind: "svg-element", element })).toEqual({
-        x: 60,
-        y: 45,
-      })
-    })
-
-    it("falls back to {0,0} when getBBox is missing", () => {
-      const element = {} as SVGGraphicsElement
-
-      expect(resolveEffectAnchor({ kind: "svg-element", element })).toEqual({ x: 0, y: 0 })
-    })
-
-    it("falls back to {0,0} when getBBox throws", () => {
-      const element = {
-        getBBox: () => {
-          throw new Error("detached")
-        },
-      } as unknown as SVGGraphicsElement
-
-      expect(resolveEffectAnchor({ kind: "svg-element", element })).toEqual({ x: 0, y: 0 })
-    })
-
-    it("handles zero-size bbox without crashing", () => {
-      const element = {
-        getBBox: () => ({ x: 5, y: 5, width: 0, height: 0 }),
-      } as SVGGraphicsElement
-
-      expect(resolveEffectAnchor({ kind: "svg-element", element })).toEqual({ x: 5, y: 5 })
-    })
+describe("resolveEffectAnchorToPixels — svg-element", () => {
+  it("resolves getBBox center", () => {
+    const fakeSvg = { getBBox: () => ({ x: 10, y: 20, width: 100, height: 50 }) } as unknown as SVGGraphicsElement
+    const anchor: ExperienceEffectSvgElementAnchor = { type: "svg-element", element: fakeSvg }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 60, y: 45 })
   })
 
-  describe("dom-ref", () => {
-    it("returns bounding-rect center in viewport pixels", () => {
-      const element = {
-        getBoundingClientRect: () => ({
-          x: 100,
-          y: 200,
-          width: 80,
-          height: 40,
-          top: 200,
-          left: 100,
-          right: 180,
-          bottom: 240,
-          toJSON: () => ({}),
-        }),
-      } as HTMLElement
-
-      expect(resolveEffectAnchor({ kind: "dom-ref", element })).toEqual({ x: 140, y: 220 })
-    })
-
-    it("falls back to {0,0} for null ref", () => {
-      expect(resolveEffectAnchor({ kind: "dom-ref", element: null })).toEqual({ x: 0, y: 0 })
-    })
-
-    it("falls back to {0,0} when getBoundingClientRect throws", () => {
-      const element = {
-        getBoundingClientRect: () => {
-          throw new Error("layout thrash")
-        },
-      } as unknown as HTMLElement
-
-      expect(resolveEffectAnchor({ kind: "dom-ref", element })).toEqual({ x: 0, y: 0 })
-    })
-
-    it("handles zero-size rect without crashing", () => {
-      const element = {
-        getBoundingClientRect: () => ({
-          x: 50,
-          y: 60,
-          width: 0,
-          height: 0,
-          top: 60,
-          left: 50,
-          right: 50,
-          bottom: 60,
-          toJSON: () => ({}),
-        }),
-      } as HTMLElement
-
-      expect(resolveEffectAnchor({ kind: "dom-ref", element })).toEqual({ x: 50, y: 60 })
-    })
+  it("returns center for zero-size bbox without crash", () => {
+    const fakeSvg = { getBBox: () => ({ x: 30, y: 40, width: 0, height: 0 }) } as unknown as SVGGraphicsElement
+    const anchor: ExperienceEffectSvgElementAnchor = { type: "svg-element", element: fakeSvg }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 30, y: 40 })
   })
 
-  describe("discriminated union", () => {
-    it("narrows on kind for each anchor variant", () => {
-      const anchors: ExperienceEffectAnchor[] = [
-        { kind: "normalized", x: 0.5, y: 0.5 },
-        {
-          kind: "svg-element",
-          element: { getBBox: () => ({ x: 0, y: 0, width: 10, height: 10 }) } as SVGGraphicsElement,
-        },
-        {
-          kind: "dom-ref",
-          element: {
-            getBoundingClientRect: () => ({
-              x: 0,
-              y: 0,
-              width: 20,
-              height: 20,
-              top: 0,
-              left: 0,
-              right: 20,
-              bottom: 20,
-              toJSON: () => ({}),
-            }),
-          } as HTMLElement,
-        },
-      ]
+  it("falls back to {0,0} when element is missing", () => {
+    const anchor: ExperienceEffectSvgElementAnchor = { type: "svg-element", element: null }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 0, y: 0 })
+  })
 
-      for (const anchor of anchors) {
-        const point = resolveEffectAnchor(anchor)
-        expect(point).toHaveProperty("x")
-        expect(point).toHaveProperty("y")
-        expect(Number.isFinite(point.x)).toBe(true)
-        expect(Number.isFinite(point.y)).toBe(true)
-      }
-    })
+  it("resolves via ref.current", () => {
+    const fakeSvg = { getBBox: () => ({ x: 0, y: 0, width: 200, height: 100 }) } as unknown as SVGGraphicsElement
+    const anchor: ExperienceEffectSvgElementAnchor = { type: "svg-element", ref: { current: fakeSvg } }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 100, y: 50 })
+  })
+})
 
-    it("rejects invalid kind at compile time", () => {
-      // @ts-expect-error — invalid discriminator not in union
-      const bad: ExperienceEffectAnchor = { kind: "canvas", x: 0, y: 0 }
-      expect(bad).toBeDefined()
-    })
+describe("resolveEffectAnchorToPixels — dom-ref", () => {
+  it("resolves getBoundingClientRect center", () => {
+    const fakeEl = {
+      getBoundingClientRect: () => ({ left: 100, top: 200, width: 80, height: 40, right: 180, bottom: 240, x: 100, y: 200, toJSON: () => ({}) }),
+    } as unknown as HTMLElement
+    const anchor: ExperienceEffectDomRefAnchor = { type: "dom-ref", element: fakeEl }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 140, y: 220 })
+  })
+
+  it("returns center for zero-size rect without crash", () => {
+    const fakeEl = {
+      getBoundingClientRect: () => ({ left: 50, top: 60, width: 0, height: 0, right: 50, bottom: 60, x: 50, y: 60, toJSON: () => ({}) }),
+    } as unknown as HTMLElement
+    const anchor: ExperienceEffectDomRefAnchor = { type: "dom-ref", element: fakeEl }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 50, y: 60 })
+  })
+
+  it("falls back to {0,0} when element is missing", () => {
+    const anchor: ExperienceEffectDomRefAnchor = { type: "dom-ref" }
+    expect(resolveEffectAnchorToPixels(anchor, viewport)).toEqual({ x: 0, y: 0 })
+  })
+})
+
+describe("ExperienceEffectAnchor discriminated union", () => {
+  it("accepts all three anchor types", () => {
+    const anchors: ExperienceEffectAnchor[] = [
+      { type: "normalized", x: 0.5, y: 0.5 },
+      { type: "svg-element", element: null },
+      { type: "dom-ref", element: null },
+    ]
+    expect(anchors).toHaveLength(3)
+  })
+
+  it("rejects invalid type at compile time", () => {
+  // @ts-expect-error — invalid discriminator not in union
+    const bad: ExperienceEffectAnchor = { type: "canvas", x: 0, y: 0 }
+    expect(bad).toBeDefined()
   })
 })
