@@ -1,6 +1,14 @@
-import { describe, expect, it, vi } from "vitest"
+import { EVENTS } from "@razzoozle/common/constants"
+import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { act, createElement, type ReactNode } from "react"
+import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
-import { FlowerPowerupVote, FlowerPowerupVoteCards } from "../FlowerPowerupVote"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  FlowerPowerupVote,
+  FlowerPowerupVoteCards,
+  type FlowerPowerupVoteCardsProps,
+} from "../FlowerPowerupVote"
 import { parsePowerupOptions, type PowerupOfferView } from "../flower-battle.types"
 
 vi.mock("react-i18next", () => ({
@@ -9,12 +17,35 @@ vi.mock("react-i18next", () => ({
   }),
 }))
 
+const { emitMock, cardsElementRef } = vi.hoisted(() => ({
+  emitMock: vi.fn(),
+  // The Content mock stashes the <FlowerPowerupVoteCards …/> element so the
+  // emit tests can drive the real component's onSelect/onSubmit handlers.
+  cardsElementRef: {
+    current: null as { props: FlowerPowerupVoteCardsProps } | null,
+  },
+}))
+
 // The default socket-context value creates a real io() client on module
-// import; stub useSocket so the test suite never opens a real connection
-// (the emit path is also gated behind POWERUP_VOTE_HANDLER_LIVE=false and
-// unreachable from a static render anyway).
+// import; stub useSocket with a shared emitMock so the suite never opens a
+// real connection and the live emit path is assertable.
 vi.mock("@razzoozle/web/features/game/contexts/socket-context", () => ({
-  useSocket: () => ({ socket: { emit: vi.fn() } }),
+  useSocket: () => ({ socket: { emit: emitMock } }),
+}))
+
+// Portal-free pass-through: Content captures its Cards child element instead
+// of rendering it, so the whole mounted tree produces no DOM nodes (vitest
+// env is node) while the handlers stay reachable via the element's props.
+vi.mock("@radix-ui/react-alert-dialog", () => ({
+  Root: ({ children }: { children?: ReactNode }) => children,
+  Portal: ({ children }: { children?: ReactNode }) => children,
+  Overlay: () => null,
+  Content: ({ children }: { children?: ReactNode }) => {
+    cardsElementRef.current = children as {
+      props: FlowerPowerupVoteCardsProps
+    }
+    return null
+  },
 }))
 
 const futureOffer = (offerType: string): PowerupOfferView => ({
@@ -136,5 +167,194 @@ describe("FlowerPowerupVote (Player Client, WP-FLB-16) — mode/offer gating", (
     const html = renderToStaticMarkup(<FlowerPowerupVote mode="flowerBattle" offer={null} />)
 
     expect(html).toBe("")
+  })
+})
+
+// --- Minimal DOM shim for createRoot in the node env (same proven pattern as
+// features/experience/timeline/useExperienceTimeline.test.ts) ----------------
+
+type DomElement = {
+  nodeType: number
+  nodeName: string
+  tagName: string
+  parentNode: DomElement | null
+  ownerDocument: DomDocument
+  children: unknown[]
+  appendChild: (child: unknown) => unknown
+  removeChild: (child: unknown) => unknown
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+  remove: () => void
+}
+
+type DomDocument = {
+  visibilityState: string
+  activeElement: DomElement | null
+  body: DomElement
+  defaultView: DomWindow
+  createElement: (tag: string) => DomElement
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+}
+
+type DomWindow = {
+  document: DomDocument
+  HTMLIFrameElement: new () => object
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+}
+
+function createDomDocument(): DomDocument {
+  const eventListeners = new Map<string, Set<() => void>>()
+  const win: DomWindow = {
+    document: null as unknown as DomDocument,
+    HTMLIFrameElement: class HTMLIFrameElement { readonly tagName = "IFRAME" },
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }
+  const doc: DomDocument = {
+    visibilityState: "visible",
+    activeElement: null,
+    body: null as unknown as DomElement,
+    defaultView: win,
+    createElement: (tag: string) => createDomElement(tag, doc),
+    addEventListener(event: string, listener: () => void) {
+      const listeners = eventListeners.get(event) ?? new Set<() => void>()
+      listeners.add(listener)
+      eventListeners.set(event, listeners)
+    },
+    removeEventListener(event: string, listener: () => void) {
+      eventListeners.get(event)?.delete(listener)
+    },
+  }
+  win.document = doc
+  doc.body = createDomElement("body", doc)
+  return doc
+}
+
+function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
+  const children: unknown[] = []
+  const eventListeners = new Map<string, Set<() => void>>()
+  const element: DomElement = {
+    nodeType: 1,
+    nodeName: tag.toUpperCase(),
+    tagName: tag.toUpperCase(),
+    parentNode: null,
+    ownerDocument,
+    children,
+    appendChild(child: unknown) {
+      if (
+        child &&
+        typeof child === "object" &&
+        "parentNode" in child &&
+        typeof child.parentNode !== "undefined"
+      ) {
+        ;(child as DomElement).parentNode = element
+      }
+      children.push(child)
+      return child
+    },
+    removeChild(child: unknown) {
+      const index = children.indexOf(child)
+      if (index >= 0) {
+        children.splice(index, 1)
+      }
+      return child
+    },
+    addEventListener(event: string, listener: () => void) {
+      const listeners = eventListeners.get(event) ?? new Set<() => void>()
+      listeners.add(listener)
+      eventListeners.set(event, listeners)
+    },
+    removeEventListener(event: string, listener: () => void) {
+      eventListeners.get(event)?.delete(listener)
+    },
+    remove() {
+      const parent = element.parentNode as DomElement | null
+      parent?.removeChild(element)
+    },
+  }
+  return element
+}
+
+describe("FlowerPowerupVote (Player Client) — live vote emit", () => {
+  const getItemMock = vi.fn<(_key: string) => string | null>()
+  let domDocument: DomDocument
+
+  const mountVote = () => {
+    const container = domDocument.createElement("div")
+    domDocument.body.appendChild(container)
+    const root = createRoot(container as unknown as HTMLElement)
+    act(() => {
+      root.render(
+        createElement(FlowerPowerupVote, {
+          mode: "flowerBattle",
+          offer: futureOffer("fertilizer,sunbeam,umbrella_shield"),
+        }),
+      )
+    })
+    return {
+      cards: (): FlowerPowerupVoteCardsProps => {
+        const element = cardsElementRef.current
+        if (!element) throw new Error("Cards element was not captured")
+        return element.props
+      },
+      unmount: () => {
+        act(() => {
+          root.unmount()
+        })
+        container.remove()
+      },
+    }
+  }
+
+  beforeEach(() => {
+    domDocument = createDomDocument()
+    vi.stubGlobal("document", domDocument)
+    vi.stubGlobal("window", domDocument.defaultView)
+    vi.stubGlobal("HTMLElement", class HTMLElement { readonly tagName = "HTMLElement" })
+    vi.stubGlobal("HTMLDivElement", class HTMLDivElement { readonly tagName = "DIV" })
+    vi.stubGlobal("Node", class Node { readonly nodeType = 1 })
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+    getItemMock.mockReturnValue("tok-abc")
+    vi.stubGlobal("localStorage", { getItem: getItemMock })
+    usePlayerStore.getState().reset()
+    usePlayerStore.setState({ gameId: "game-1" })
+    cardsElementRef.current = null
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  it("emits exactly one SUBMIT_POWERUP_VOTE with { gameId, optionIndex, playerToken }", () => {
+    const mounted = mountVote()
+
+    act(() => mounted.cards().onSelect("sunbeam"))
+    act(() => mounted.cards().onSubmit())
+    // Exactly-once: a second submit for the same offer is a guarded no-op.
+    act(() => mounted.cards().onSubmit())
+
+    expect(emitMock).toHaveBeenCalledTimes(1)
+    expect(emitMock).toHaveBeenCalledWith(EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE, {
+      gameId: "game-1",
+      optionIndex: 1,
+      playerToken: "tok-abc",
+    })
+    expect(mounted.cards().locked).toBe(true)
+    mounted.unmount()
+  })
+
+  it("emits nothing without a stored playerToken (SEC-01) and stays unlocked", () => {
+    getItemMock.mockReturnValue(null)
+    const mounted = mountVote()
+
+    act(() => mounted.cards().onSelect("sunbeam"))
+    act(() => mounted.cards().onSubmit())
+
+    expect(emitMock).not.toHaveBeenCalled()
+    expect(mounted.cards().locked).toBe(false)
+    mounted.unmount()
   })
 })
