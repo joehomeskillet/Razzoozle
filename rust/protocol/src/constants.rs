@@ -37,6 +37,8 @@ pub mod flower_battle {
     pub const POWERUP_APPLIED: &str = "game:flowerBattle:powerupApplied";
     /// Mode finished (results available).
     pub const GAME_COMPLETED: &str = "game:flowerBattle:gameCompleted";
+    /// Personalized authoritative state for the receiving player.
+    pub const PLAYER_STATUS: &str = "game:flowerBattle:playerStatus";
 
     // --- C2S (2 player commands) ---
     /// Vote for a power-up offer id.

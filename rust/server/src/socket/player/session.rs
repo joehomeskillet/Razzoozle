@@ -398,6 +398,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     total: total_questions,
                                 },
                                 already_answered,
+                                flower_battle_player_status: None,
                             };
                             socket
                                 .emit(constants::player::SUCCESS_RECONNECT, &reconnect_payload)

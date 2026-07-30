@@ -4,8 +4,9 @@
 use crate::state::Game;
 use razzoozle_engine::flower_battle::AppliedEffect;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::experience::PowerupOffer;
+use razzoozle_protocol::experience::{FlowerBattlePlayerStatus, PowerupOffer};
 use razzoozle_protocol::game::ExperienceMode;
+use razzoozle_protocol::player::Player;
 use socketioxide::SocketIo;
 
 /// True when this game is FlowerBattle experience mode.
@@ -26,6 +27,76 @@ pub fn emit_flb_snapshot(io: &SocketIo, game_id: &str, game: &Game) {
     io.to(game_id.to_string())
         .emit(constants::flower_battle::SNAPSHOT, &payload)
         .ok();
+}
+
+pub fn build_player_status(
+    game_id: &str,
+    game: &Game,
+    player: &Player,
+) -> FlowerBattlePlayerStatus {
+    let team_id = player
+        .team_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|team| !team.is_empty())
+        .map(str::to_owned);
+    let growth_stage = team_id
+        .as_deref()
+        .map(|team| game.flower_battle_effects.stage_of(team))
+        .unwrap_or(0);
+    let sun_points = team_id
+        .as_deref()
+        .and_then(|team| game.flower_battle_sun_points.get(team).copied())
+        .unwrap_or(0);
+    let active_effects = team_id
+        .as_deref()
+        .map(|team| game.flower_battle_effects.effects_for(team).to_vec())
+        .unwrap_or_default();
+    let winner_team_ids = game
+        .flower_battle_winner_team_ids
+        .clone()
+        .unwrap_or_default();
+    let is_winner = team_id
+        .as_ref()
+        .is_some_and(|team| winner_team_ids.contains(team));
+
+    FlowerBattlePlayerStatus {
+        game_id: game_id.to_string(),
+        question_index: game.engine.current_question_index as i32,
+        team_id,
+        growth_stage,
+        max_growth_stage: game.flower_battle_effects.max_growth_stage,
+        sun_points,
+        active_effects,
+        victory_resolved: game.flower_battle_effects.victory_resolved,
+        winner_team_ids,
+        is_winner,
+    }
+}
+
+/// Emit personalized status to each connected player's current socket.
+///
+/// Deliberately not room-broadcast: each payload contains the authoritative
+/// team assignment for exactly one player.
+pub fn emit_player_statuses(io: &SocketIo, game_id: &str, game: &Game) {
+    if !is_flower_battle(game) {
+        return;
+    }
+
+    for player in game.players.iter().filter(|player| player.connected) {
+        let Ok(socket_id) = player.id.parse() else {
+            continue;
+        };
+        let Some(socket) = io.get_socket(socket_id) else {
+            continue;
+        };
+        socket
+            .emit(
+                constants::flower_battle::PLAYER_STATUS,
+                &build_player_status(game_id, game, player),
+            )
+            .ok();
+    }
 }
 
 pub fn emit_round_resolved(io: &SocketIo, game_id: &str, game: &Game) {
@@ -95,4 +166,88 @@ pub fn emit_game_completed(io: &SocketIo, game_id: &str, winner_team_ids: &[Stri
     io.to(game_id.to_string())
         .emit(constants::flower_battle::GAME_COMPLETED, &payload)
         .ok();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use razzoozle_protocol::experience::FlowerBattleEffect;
+    use razzoozle_protocol::quizz::Quizz;
+
+    fn game() -> Game {
+        let mut game = Game::new(
+            "game-1".into(),
+            "ABCD".into(),
+            "manager".into(),
+            "quiz".into(),
+            Quizz {
+                subject: "FlowerBattle".into(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
+        game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+        game
+    }
+
+    fn player(team_id: Option<&str>) -> Player {
+        Player {
+            id: "socket-1".into(),
+            client_id: "client-1".into(),
+            connected: true,
+            username: "Alice".into(),
+            points: 0,
+            streak: 0,
+            player_token: None,
+            is_bot: None,
+            avatar: None,
+            achievements: None,
+            team_id: team_id.map(str::to_owned),
+            identifier_hash: None,
+        }
+    }
+
+    #[test]
+    fn player_status_maps_authoritative_team_effects_and_tied_winner() {
+        let mut game = game();
+        game.engine.current_question_index = 2;
+        game.flower_battle_effects.set_stage("blue", 8);
+        game.flower_battle_effects
+            .push_effect("blue", FlowerBattleEffect::umbrella_shield(1));
+        game.flower_battle_sun_points.insert("blue".into(), 3);
+        game.flower_battle_effects.victory_resolved = true;
+        game.flower_battle_winner_team_ids = Some(vec!["blue".into(), "green".into()]);
+
+        let status = build_player_status("game-1", &game, &player(Some("blue")));
+
+        assert_eq!(status.team_id.as_deref(), Some("blue"));
+        assert_eq!(status.question_index, 2);
+        assert_eq!(status.growth_stage, 8);
+        assert_eq!(status.max_growth_stage, 10);
+        assert_eq!(status.sun_points, 3);
+        assert_eq!(
+            status.active_effects,
+            vec![FlowerBattleEffect::umbrella_shield(1)]
+        );
+        assert_eq!(status.winner_team_ids, vec!["blue", "green"]);
+        assert!(status.victory_resolved);
+        assert!(status.is_winner);
+    }
+
+    #[test]
+    fn player_status_never_guesses_missing_team() {
+        let mut game = game();
+        game.flower_battle_effects.set_stage("blue", 8);
+        game.flower_battle_sun_points.insert("blue".into(), 3);
+        game.flower_battle_winner_team_ids = Some(vec!["blue".into()]);
+
+        let status = build_player_status("game-1", &game, &player(None));
+
+        assert_eq!(status.team_id, None);
+        assert_eq!(status.growth_stage, 0);
+        assert_eq!(status.sun_points, 0);
+        assert!(status.active_effects.is_empty());
+        assert!(!status.is_winner);
+    }
 }

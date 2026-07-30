@@ -262,6 +262,27 @@ pub struct FlowerBattlePayload {
     pub state: FlowerBattleState,
 }
 
+/// Personalized FlowerBattle state for one player.
+///
+/// Emitted only to the player's current socket on
+/// `game:flowerBattle:playerStatus`. Team assignment and all battle values are
+/// server-authoritative; clients must not infer a team from the public snapshot.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct FlowerBattlePlayerStatus {
+    pub game_id: String,
+    pub question_index: i32,
+    pub team_id: Option<String>,
+    pub growth_stage: u8,
+    pub max_growth_stage: u8,
+    pub sun_points: u8,
+    pub active_effects: Vec<FlowerBattleEffect>,
+    pub victory_resolved: bool,
+    pub winner_team_ids: Vec<String>,
+    pub is_winner: bool,
+}
+
 // ============================================================================
 // FlowerBattle power-up vote C2S (WP #931 / SEC-01)
 // ============================================================================
@@ -452,6 +473,38 @@ mod tests {
         // Round-trip
         let back: ExperiencePayload = serde_json::from_value(v).unwrap();
         assert_eq!(back, p);
+    }
+
+    #[test]
+    fn flower_battle_player_status_serialization_is_camel_case_and_structured() {
+        let status = FlowerBattlePlayerStatus {
+            game_id: "game-1".into(),
+            question_index: 2,
+            team_id: Some("blue".into()),
+            growth_stage: 7,
+            max_growth_stage: 10,
+            sun_points: 3,
+            active_effects: vec![
+                FlowerBattleEffect::umbrella_shield(1),
+                FlowerBattleEffect::acid_rain("red", 0),
+            ],
+            victory_resolved: true,
+            winner_team_ids: vec!["blue".into(), "green".into()],
+            is_winner: true,
+        };
+
+        let value = serde_json::to_value(status).unwrap();
+        assert_eq!(value["gameId"], "game-1");
+        assert_eq!(value["questionIndex"], 2);
+        assert_eq!(value["teamId"], "blue");
+        assert_eq!(value["growthStage"], 7);
+        assert_eq!(value["maxGrowthStage"], 10);
+        assert_eq!(value["sunPoints"], 3);
+        assert_eq!(value["activeEffects"][0]["kind"], "umbrella_shield");
+        assert_eq!(value["activeEffects"][1]["sourceTeamId"], "red");
+        assert_eq!(value["winnerTeamIds"], json!(["blue", "green"]));
+        assert_eq!(value["isWinner"], true);
+        assert!(value.get("game_id").is_none());
     }
 
     #[test]

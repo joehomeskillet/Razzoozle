@@ -324,6 +324,20 @@ export interface FlowerBattleState {
   powerups: PowerupOffer[]
 }
 
+/** Personalized authoritative FlowerBattle state for one player socket. */
+export interface FlowerBattlePlayerStatus {
+  gameId: string
+  questionIndex: number
+  teamId: string | null
+  growthStage: number
+  maxGrowthStage: number
+  sunPoints: number
+  activeEffects: FlowerBattleEffect[]
+  victoryResolved: boolean
+  winnerTeamIds: string[]
+  isWinner: boolean
+}
+
 /** C2S `player:flowerBattle:submitPowerupVote` — mirrors PowerupVotePayload. */
 export interface FlowerBattlePowerupVote {
   gameId: string
@@ -391,6 +405,7 @@ export interface ServerToClientEvents {
   [EVENTS.FLOWER_BATTLE.GAME_COMPLETED]: (_data: {
     teams: FlowerBattleTeamState[]
   }) => void
+  [EVENTS.FLOWER_BATTLE.PLAYER_STATUS]: (_data: FlowerBattlePlayerStatus) => void
 
   // Player events
   [EVENTS.PLAYER.SUCCESS_RECONNECT]: (_data: {
@@ -402,6 +417,8 @@ export interface ServerToClientEvents {
     // question (resume shows "answered" instead of re-enabling buttons).
     // OPTIONAL — absent in normal mode; client must default to false.
     alreadyAnswered?: boolean
+    /** Optional personalized FlowerBattle state for reconnect-capable clients. */
+    flowerBattlePlayerStatus?: FlowerBattlePlayerStatus
   }) => void
   [EVENTS.PLAYER.UPDATE_LEADERBOARD]: (_data: { leaderboard: Player[] }) => void
   // Low-latency mode: optional ack for a submitted answer.
