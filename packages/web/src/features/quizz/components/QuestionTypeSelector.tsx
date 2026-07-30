@@ -227,7 +227,7 @@ export function QuestionTypeSelector({
             data-testid="question-type-list"
             style={style}
             onKeyDown={handleKeyDown}
-            className="max-h-96 w-80 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-lg"
+            className="console-shell console-scroll max-h-96 w-80 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-lg"
           >
             {typesByCategory.map((category) => (
               <div key={category.id}>
