@@ -50,13 +50,9 @@ pub fn resolve_majority<T: Eq + Hash + Clone>(votes: Vec<T>, tie_break_order: Ve
 
     // Tie-break via the provided order: first match in order wins.
     // If no match found, return None (caller must provide complete order).
-    for candidate in tie_break_order {
-        if top.contains(&candidate) {
-            return Some(candidate);
-        }
-    }
-
-    None
+    tie_break_order
+        .into_iter()
+        .find(|candidate| top.contains(candidate))
 }
 
 /// Group submitted answers by team → answer key → vote count.
