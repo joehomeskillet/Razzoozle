@@ -25,5 +25,27 @@
       "warning": "警告",
       "error": "错误"
     }
+  },
+  "flowerBattlePresenter": {
+    "sunPoints": {
+      "label": "阳光点数"
+    },
+    "powerUpChoice": "队伍 {{teamName}} 选择了 {{powerUp}}",
+    "powerUp": {
+      "fertilizer": "肥料",
+      "sunbeam": "阳光束",
+      "umbrella_shield": "雨伞护盾",
+      "acid_rain": "酸雨"
+    },
+    "effect": {
+      "sunbeam": "阳光束生效中",
+      "umbrellaShield": "护盾生效中",
+      "acidRain": "下次成长 −1"
+    }
+  },
+  "flowerPlant": {
+    "ariaStage": "花朵植物阶段 {{stage}}",
+    "ariaGrowth": "成长阶段 {{stage}}",
+    "growthDelta": "+{{count}} 成长"
   }
 }

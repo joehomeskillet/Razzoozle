@@ -25,5 +25,27 @@
       "warning": "Avviso",
       "error": "Errore"
     }
+  },
+  "flowerBattlePresenter": {
+    "sunPoints": {
+      "label": "Punti sole"
+    },
+    "powerUpChoice": "La squadra {{teamName}} sceglie {{powerUp}}",
+    "powerUp": {
+      "fertilizer": "Fertilizzante",
+      "sunbeam": "Raggio di sole",
+      "umbrella_shield": "Ombrello",
+      "acid_rain": "Pioggia acida"
+    },
+    "effect": {
+      "sunbeam": "Raggio di sole attivo",
+      "umbrellaShield": "Scudo attivo",
+      "acidRain": "Prossima crescita −1"
+    }
+  },
+  "flowerPlant": {
+    "ariaStage": "Pianta fiore stadio {{stage}}",
+    "ariaGrowth": "Stadio di crescita {{stage}}",
+    "growthDelta": "+{{count}} crescita"
   }
 }
