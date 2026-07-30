@@ -127,6 +127,22 @@ describe("dispatchCelebration", () => {
     expect(getTokenCanvasRgba).not.toHaveBeenCalled()
   })
 
+  it("fires the same full-screen burst for 'game-win' (issue 918: Podium's semantic kind, additive alongside 'award-reveal')", async () => {
+    await dispatchCelebration(
+      { id: "podium-game-win", kind: "game-win" },
+      false,
+    )
+
+    expect(fireFullScreenBurst).toHaveBeenCalledOnce()
+    expect(fireFullScreenBurst).toHaveBeenCalledWith(false, {
+      colors: undefined,
+      zIndex: undefined,
+    })
+    expect(fireTierConfetti).not.toHaveBeenCalled()
+    expect(fireCenterSalvo).not.toHaveBeenCalled()
+    expect(getTokenCanvasRgba).not.toHaveBeenCalled()
+  })
+
   it("ignores unknown celebration kinds", async () => {
     await expect(
       dispatchCelebration({ id: "future-1", kind: "future-effect" }, false),

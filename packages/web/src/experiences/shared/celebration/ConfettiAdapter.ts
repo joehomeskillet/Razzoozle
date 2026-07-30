@@ -43,7 +43,10 @@ const centerSalvoAdapter: CelebrationAdapter = async (request, reduced) => {
   await fireCenterSalvo(reduced, resolveColors(request.colorRoles))
 }
 
-const legacyAwardRevealAdapter: CelebrationAdapter = async (
+// Shared full-window burst for both "award-reveal" (SharePage) and "game-win"
+// (Podium, issue 918) — both want the same full-screen, non-recycling
+// canvas-confetti pass; only the semantic kind name differs per caller.
+const fullScreenBurstAdapter: CelebrationAdapter = async (
   request,
   reduced,
 ) => {
@@ -56,7 +59,8 @@ const legacyAwardRevealAdapter: CelebrationAdapter = async (
 const ADAPTERS = new Map<string, CelebrationAdapter>([
   ["achievement", achievementAdapter],
   ["center-salvo", centerSalvoAdapter],
-  ["award-reveal", legacyAwardRevealAdapter],
+  ["award-reveal", fullScreenBurstAdapter],
+  ["game-win", fullScreenBurstAdapter],
 ])
 
 export async function dispatchCelebration(
