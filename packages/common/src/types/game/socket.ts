@@ -327,6 +327,8 @@ export interface FlowerBattleState {
 /** Personalized authoritative FlowerBattle state for one player socket. */
 export interface FlowerBattlePlayerStatus {
   gameId: string
+  /** Server-issued monotonic LWW ticket encoded as a canonical u64 decimal. */
+  revision: string
   questionIndex: number
   teamId: string | null
   growthStage: number

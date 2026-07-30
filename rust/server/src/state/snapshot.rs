@@ -13,7 +13,9 @@ use tracing::{info, warn};
 // v6: flowerBattleOffers + sunPoints + winnerTeamIds (WP #933). v1–v5 omit → empty.
 // v7: flowerBattleSeed persisted CSPRNG garden-background seed (WP #939A).
 //     v1–v6 omit → default 0 (safe fallback, does not crash restore).
-const SNAPSHOT_VERSION: u32 = 7;
+// v8: personalized FlowerBattle status revision (WP #978).
+//     v1–v7 omit → default 0; the next status reserves revision 1.
+const SNAPSHOT_VERSION: u32 = 8;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -163,6 +165,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         // WP #933: offer cache + sun meter + early-finish winners (v6)
         "flowerBattleOffers": flower_battle_offers_to_json(&game.flower_battle_offers),
         "flowerBattleSunPoints": flower_battle_sun_points_to_json(&game.flower_battle_sun_points),
+        "flowerBattlePlayerStatusRevision": game.flower_battle_player_status_revision,
         "flowerBattleWinnerTeamIds": game.flower_battle_winner_team_ids.clone(),
         "finishBroadcastDone": game.finish_broadcast_done,
         // WP #939A: garden-background CSPRNG seed (v7)
@@ -679,6 +682,11 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         flower_battle_sun_points: flower_battle_sun_points_from_json(
             snap.get("flowerBattleSunPoints"),
         ),
+        // WP #978: v8 persisted LWW counter; v1–v7 snapshots start at zero.
+        flower_battle_player_status_revision: snap
+            .get("flowerBattlePlayerStatusRevision")
+            .and_then(|value| value.as_u64())
+            .unwrap_or(0),
         flower_battle_winner_team_ids: snap
             .get("flowerBattleWinnerTeamIds")
             .and_then(|v| serde_json::from_value(v.clone()).ok()),
@@ -860,8 +868,8 @@ pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
         }
     };
 
-    // Accept version 1–5. Older snapshots restore with defaults for newer fields
-    // (v2: in-flight answers; v3: experienceMode; v4: teamAssignment; v5: activeEffects).
+    // Accept every published schema through the current version. Older
+    // snapshots restore with defensive defaults for fields added later.
     let version = parsed.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     if !(1..=SNAPSHOT_VERSION).contains(&version) {
         warn!(
@@ -1393,10 +1401,51 @@ mod tests {
         );
     }
 
-    /// WP #939A: SNAPSHOT_VERSION is 7 (flowerBattleSeed; #933 was 6).
+    /// WP #978: SNAPSHOT_VERSION is 8 (FlowerBattle player-status revision).
     #[test]
-    fn test_snapshot_version_is_7() {
-        assert_eq!(SNAPSHOT_VERSION, 7, "SNAPSHOT_VERSION must be 7");
+    fn test_snapshot_version_is_8() {
+        assert_eq!(SNAPSHOT_VERSION, 8, "SNAPSHOT_VERSION must be 8");
+    }
+
+    #[test]
+    fn test_flower_battle_player_status_revision_roundtrip_and_v7_default() {
+        use razzoozle_protocol::quizz::Quizz;
+
+        let empty_quiz = Quizz {
+            subject: "Revision".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut game = Game::new(
+            "game-revision-rt".to_string(),
+            "INVREV".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz,
+        );
+        game.flower_battle_player_status_revision = 9_007_199_254_740_993;
+
+        let snap = game_to_snapshot(&game);
+        assert_eq!(
+            snap.get("flowerBattlePlayerStatusRevision")
+                .and_then(|value| value.as_u64()),
+            Some(9_007_199_254_740_993),
+        );
+
+        let restored = game_from_snapshot(&snap).expect("restore v8");
+        assert_eq!(
+            restored.flower_battle_player_status_revision,
+            9_007_199_254_740_993,
+        );
+
+        let mut v7_like = snap;
+        v7_like
+            .as_object_mut()
+            .expect("snapshot object")
+            .remove("flowerBattlePlayerStatusRevision");
+        let restored_v7 = game_from_snapshot(&v7_like).expect("restore v7-like");
+        assert_eq!(restored_v7.flower_battle_player_status_revision, 0);
     }
 
     /// WP #939A: flowerBattleSeed survives snapshot roundtrip; v6-shaped

@@ -142,6 +142,9 @@ pub struct Game {
     pub flower_battle_offers: HashMap<OfferCacheKey, PowerupOffer>,
     /// Accumulated sun points per team (WP #930/#933 L-05/L-06).
     pub flower_battle_sun_points: HashMap<String, u8>,
+    /// Last issued personalized status revision. Incremented under the game
+    /// mutex and persisted so reconnect LWW ordering survives server restarts.
+    pub flower_battle_player_status_revision: u64,
     /// Early-finish winners (WP #933). Set once when ModeOutcome::Completed fires.
     pub flower_battle_winner_team_ids: Option<Vec<String>>,
     /// Idempotency: `finish_and_broadcast` must run at most once per game.
@@ -244,6 +247,7 @@ impl Game {
             flower_battle_effects: EffectsState::new(),
             flower_battle_offers: HashMap::new(),
             flower_battle_sun_points: HashMap::new(),
+            flower_battle_player_status_revision: 0,
             flower_battle_winner_team_ids: None,
             finish_broadcast_done: false,
             flower_battle_seed,

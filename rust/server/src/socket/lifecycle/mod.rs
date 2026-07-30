@@ -300,8 +300,8 @@ async fn run_lifecycle_from(
         // was spawned. Personalized FlowerBattle status is the next domain
         // event, before START_COOLDOWN opens the question flow.
         {
-            let game = game_ref.lock().unwrap();
-            flower_battle_emit::emit_player_statuses(&io, &game_id, &game);
+            let mut game = game_ref.lock().unwrap();
+            flower_battle_emit::emit_player_statuses(&io, &game_id, &mut game);
         }
 
         // Pre-Q1 3-2-1 intro (node: game:startCooldown then cooldown.start(3)).

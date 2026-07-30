@@ -7,5 +7,7 @@ import type { FlowerBattleEffect } from "./FlowerBattleEffect";
  * Emitted only to the player's current socket on
  * `game:flowerBattle:playerStatus`. Team assignment and all battle values are
  * server-authoritative; clients must not infer a team from the public snapshot.
+ * `revision` is a server-issued monotonic LWW ticket encoded as a canonical
+ * decimal string so the full persisted `u64` range stays exact in JavaScript.
  */
-export type FlowerBattlePlayerStatus = { gameId: string, questionIndex: number, teamId: string | null, growthStage: number, maxGrowthStage: number, sunPoints: number, activeEffects: Array<FlowerBattleEffect>, victoryResolved: boolean, winnerTeamIds: Array<string>, isWinner: boolean, };
+export type FlowerBattlePlayerStatus = { gameId: string, revision: string, questionIndex: number, teamId: string | null, growthStage: number, maxGrowthStage: number, sunPoints: number, activeEffects: Array<FlowerBattleEffect>, victoryResolved: boolean, winnerTeamIds: Array<string>, isWinner: boolean, };

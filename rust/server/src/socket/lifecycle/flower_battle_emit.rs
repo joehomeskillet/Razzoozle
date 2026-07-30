@@ -8,6 +8,24 @@ use razzoozle_protocol::experience::{FlowerBattlePlayerStatus, PowerupOffer};
 use razzoozle_protocol::game::ExperienceMode;
 use razzoozle_protocol::player::Player;
 use socketioxide::SocketIo;
+use tracing::error;
+
+/// Reserve the next per-game revision while the caller holds the game mutex.
+///
+/// Exhaustion is reported and leaves the counter unchanged. A wrapped or
+/// duplicate revision would violate the LWW contract, so callers emit nothing.
+fn reserve_player_status_revision(game: &mut Game) -> Option<u64> {
+    let Some(revision) = game.flower_battle_player_status_revision.checked_add(1) else {
+        error!(
+            game_id = %game.game_id,
+            revision = game.flower_battle_player_status_revision,
+            "FlowerBattle player-status revision exhausted; suppressing stale emit"
+        );
+        return None;
+    };
+    game.flower_battle_player_status_revision = revision;
+    Some(revision)
+}
 
 /// True when this game is FlowerBattle experience mode.
 #[inline]
@@ -33,6 +51,7 @@ pub fn build_player_status(
     game_id: &str,
     game: &Game,
     player: &Player,
+    revision: u64,
 ) -> FlowerBattlePlayerStatus {
     let team_id = player
         .team_id
@@ -62,6 +81,7 @@ pub fn build_player_status(
 
     FlowerBattlePlayerStatus {
         game_id: game_id.to_string(),
+        revision: revision.to_string(),
         question_index: game.engine.current_question_index as i32,
         team_id,
         growth_stage,
@@ -82,13 +102,14 @@ pub fn build_player_status(
 ///   and zeroed team values — never the first map key, never a guessed team.
 pub fn player_status_for_reconnect(
     game_id: &str,
-    game: &Game,
+    game: &mut Game,
     player: &Player,
 ) -> Option<FlowerBattlePlayerStatus> {
     if !is_flower_battle(game) {
         return None;
     }
-    Some(build_player_status(game_id, game, player))
+    let revision = reserve_player_status_revision(game)?;
+    Some(build_player_status(game_id, game, player, revision))
 }
 
 /// Re-key a game-local socket-keyed cache when a player reconnects with a new
@@ -111,11 +132,15 @@ pub fn migrate_socket_keyed_cache<V>(
 ///
 /// Deliberately not room-broadcast: each payload contains the authoritative
 /// team assignment for exactly one player.
-pub fn emit_player_statuses(io: &SocketIo, game_id: &str, game: &Game) {
+pub fn emit_player_statuses(io: &SocketIo, game_id: &str, game: &mut Game) {
     if !is_flower_battle(game) {
         return;
     }
 
+    // One authoritative state snapshot, one revision shared by the batch.
+    let Some(revision) = reserve_player_status_revision(game) else {
+        return;
+    };
     for player in game.players.iter().filter(|player| player.connected) {
         let Ok(socket_id) = player.id.parse() else {
             continue;
@@ -126,7 +151,7 @@ pub fn emit_player_statuses(io: &SocketIo, game_id: &str, game: &Game) {
         socket
             .emit(
                 constants::flower_battle::PLAYER_STATUS,
-                &build_player_status(game_id, game, player),
+                &build_player_status(game_id, game, player, revision),
             )
             .ok();
     }
@@ -252,8 +277,9 @@ mod tests {
         game.flower_battle_effects.victory_resolved = true;
         game.flower_battle_winner_team_ids = Some(vec!["blue".into(), "green".into()]);
 
-        let status = build_player_status("game-1", &game, &player(Some("blue")));
+        let status = build_player_status("game-1", &game, &player(Some("blue")), 7);
 
+        assert_eq!(status.revision, "7");
         assert_eq!(status.team_id.as_deref(), Some("blue"));
         assert_eq!(status.question_index, 2);
         assert_eq!(status.growth_stage, 8);
@@ -275,7 +301,7 @@ mod tests {
         game.flower_battle_sun_points.insert("blue".into(), 3);
         game.flower_battle_winner_team_ids = Some(vec!["blue".into()]);
 
-        let status = build_player_status("game-1", &game, &player(None));
+        let status = build_player_status("game-1", &game, &player(None), 8);
 
         assert_eq!(status.team_id, None);
         assert_eq!(status.growth_stage, 0);
@@ -295,7 +321,7 @@ mod tests {
         game.engine.current_question_index = 1;
 
         let status =
-            player_status_for_reconnect("game-1", &game, &player(Some("green"))).expect("Some");
+            player_status_for_reconnect("game-1", &mut game, &player(Some("green"))).expect("Some");
 
         assert_eq!(status.team_id.as_deref(), Some("green"));
         assert_eq!(status.growth_stage, 4);
@@ -311,10 +337,10 @@ mod tests {
         game.flower_battle_effects.set_stage("blue", 8);
         game.flower_battle_sun_points.insert("blue".into(), 3);
 
-        assert!(player_status_for_reconnect("game-1", &game, &player(Some("blue"))).is_none());
+        assert!(player_status_for_reconnect("game-1", &mut game, &player(Some("blue"))).is_none());
 
         game.selected_modes.experience_mode = Some(ExperienceMode::Classic);
-        assert!(player_status_for_reconnect("game-1", &game, &player(Some("blue"))).is_none());
+        assert!(player_status_for_reconnect("game-1", &mut game, &player(Some("blue"))).is_none());
     }
 
     #[test]
@@ -324,13 +350,69 @@ mod tests {
         game.flower_battle_sun_points.insert("blue".into(), 3);
         game.flower_battle_winner_team_ids = Some(vec!["blue".into()]);
 
-        let status = player_status_for_reconnect("game-1", &game, &player(None)).expect("Some");
+        let status = player_status_for_reconnect("game-1", &mut game, &player(None)).expect("Some");
 
         assert_eq!(status.team_id, None);
         assert_eq!(status.growth_stage, 0);
         assert_eq!(status.sun_points, 0);
         assert!(status.active_effects.is_empty());
         assert!(!status.is_winner);
+    }
+
+    #[test]
+    fn reconnect_snapshot_revision_precedes_later_same_question_live_status() {
+        let mut game = game();
+        game.engine.current_question_index = 2;
+        game.flower_battle_sun_points.insert("blue".into(), 1);
+
+        let reconnect = player_status_for_reconnect("game-1", &mut game, &player(Some("blue")))
+            .expect("FlowerBattle reconnect status");
+
+        game.flower_battle_sun_points.insert("blue".into(), 5);
+        game.flower_battle_effects
+            .push_effect("blue", FlowerBattleEffect::sunbeam(4));
+        game.flower_battle_effects.victory_resolved = true;
+        game.flower_battle_winner_team_ids = Some(vec!["blue".into()]);
+        let live_revision = reserve_player_status_revision(&mut game).expect("later live revision");
+        let live = build_player_status("game-1", &game, &player(Some("blue")), live_revision);
+
+        assert_eq!(reconnect.question_index, live.question_index);
+        assert!(
+            live.revision.parse::<u64>().expect("live decimal")
+                > reconnect
+                    .revision
+                    .parse::<u64>()
+                    .expect("reconnect decimal")
+        );
+        assert_eq!(live.sun_points, 5);
+        assert!(live.victory_resolved);
+        assert!(live.is_winner);
+    }
+
+    #[test]
+    fn revision_exhaustion_is_non_panicking_and_does_not_wrap() {
+        let mut game = game();
+        game.flower_battle_player_status_revision = u64::MAX;
+
+        let status = player_status_for_reconnect("game-1", &mut game, &player(Some("blue")));
+
+        assert!(status.is_none());
+        assert_eq!(game.flower_battle_player_status_revision, u64::MAX);
+    }
+
+    #[test]
+    fn restored_game_reserves_after_persisted_revision() {
+        let mut game = game();
+        game.flower_battle_player_status_revision = 41;
+        let snapshot = crate::state::snapshot::game_to_snapshot(&game);
+        let mut restored =
+            crate::state::snapshot::game_from_snapshot(&snapshot).expect("restore game");
+
+        let status = player_status_for_reconnect("game-1", &mut restored, &player(Some("blue")))
+            .expect("FlowerBattle reconnect status");
+
+        assert_eq!(status.revision, "42");
+        assert_eq!(restored.flower_battle_player_status_revision, 42);
     }
 
     #[test]

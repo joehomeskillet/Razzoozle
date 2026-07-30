@@ -13,6 +13,7 @@ function makeStatus(
 ): FlowerBattlePlayerStatus {
   return {
     gameId: GAME_A,
+    revision: "1",
     questionIndex: 2,
     teamId: "blue",
     growthStage: 3,

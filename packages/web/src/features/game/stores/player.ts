@@ -59,8 +59,8 @@ interface PlayerStore<T> {
   /**
    * Reconnect hydrate (WP-946-C1-R1). Sets only when the payload's gameId
    * matches both expectedGameId and the store gameId; clears on absent or
-   * mismatch so a Classic reconnect or stale foreign payload can never
-   * retain/leak Flower state.
+   * mismatch so a Classic reconnect or foreign payload cannot retain/leak
+   * Flower state. Same-game non-increasing revisions are ignored.
    */
   hydrateFlowerBattlePlayerStatus: (
     _status: FlowerBattlePlayerStatus | undefined,
@@ -69,8 +69,7 @@ interface PlayerStore<T> {
   /**
    * Live `game:flowerBattle:playerStatus` path.
    * Accepts only when payload.gameId equals both routeGameId and store gameId.
-   * Ignores lower questionIndex within the same game; same index refreshes
-   * effects; higher index advances.
+   * Same-game non-increasing revisions are ignored.
    */
   receiveFlowerBattlePlayerStatus: (
     _status: FlowerBattlePlayerStatus,
@@ -86,6 +85,34 @@ const initialState = {
   status: null as Status<StatusDataMap> | null,
   pendingRoom: null as PendingRoom | null,
   flowerBattlePlayerStatus: null as FlowerBattlePlayerStatus | null,
+}
+
+const CANONICAL_REVISION = /^(0|[1-9]\d*)$/
+
+function parseRevision(revision: string): bigint | null {
+  if (
+    typeof revision !== "string" ||
+    !CANONICAL_REVISION.test(revision)
+  ) {
+    return null
+  }
+  return BigInt(revision)
+}
+
+function shouldIgnoreRevision(
+  current: FlowerBattlePlayerStatus | null,
+  incoming: FlowerBattlePlayerStatus,
+): boolean {
+  const incomingRevision = parseRevision(incoming.revision)
+  if (incomingRevision === null) {
+    return true
+  }
+  if (!current || current.gameId !== incoming.gameId) {
+    return false
+  }
+
+  const currentRevision = parseRevision(current.revision)
+  return currentRevision !== null && incomingRevision <= currentRevision
 }
 
 export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
@@ -155,6 +182,10 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
         return { flowerBattlePlayerStatus: null }
       }
 
+      if (shouldIgnoreRevision(state.flowerBattlePlayerStatus, status)) {
+        return state
+      }
+
       return { flowerBattlePlayerStatus: status }
     }),
 
@@ -165,14 +196,7 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
         return state
       }
 
-      const current = state.flowerBattlePlayerStatus
-      // Stale: lower questionIndex within the same game is ignored.
-      // Same index is accepted so mid-round effect refreshes land.
-      if (
-        current &&
-        current.gameId === status.gameId &&
-        status.questionIndex < current.questionIndex
-      ) {
+      if (shouldIgnoreRevision(state.flowerBattlePlayerStatus, status)) {
         return state
       }
 

@@ -267,11 +267,14 @@ pub struct FlowerBattlePayload {
 /// Emitted only to the player's current socket on
 /// `game:flowerBattle:playerStatus`. Team assignment and all battle values are
 /// server-authoritative; clients must not infer a team from the public snapshot.
+/// `revision` is a server-issued monotonic LWW ticket encoded as a canonical
+/// decimal string so the full persisted `u64` range stays exact in JavaScript.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct FlowerBattlePlayerStatus {
     pub game_id: String,
+    pub revision: String,
     pub question_index: i32,
     pub team_id: Option<String>,
     pub growth_stage: u8,
@@ -479,6 +482,7 @@ mod tests {
     fn flower_battle_player_status_serialization_is_camel_case_and_structured() {
         let status = FlowerBattlePlayerStatus {
             game_id: "game-1".into(),
+            revision: "42".into(),
             question_index: 2,
             team_id: Some("blue".into()),
             growth_stage: 7,
@@ -494,6 +498,7 @@ mod tests {
         };
 
         let value = serde_json::to_value(status).unwrap();
+        assert_eq!(value["revision"], "42");
         assert_eq!(value["gameId"], "game-1");
         assert_eq!(value["questionIndex"], 2);
         assert_eq!(value["teamId"], "blue");

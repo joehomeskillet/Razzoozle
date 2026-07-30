@@ -104,7 +104,7 @@ pub async fn after_reveal_tick(
         }
         // Emit only after the full outcome mutation. The payload must observe
         // consumed sun, current effects, victory, and every tied winner.
-        emit_player_statuses(io, game_id, &game);
+        emit_player_statuses(io, game_id, &mut game);
         outcome
     };
 

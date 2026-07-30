@@ -11,6 +11,7 @@ function makeStatus(
 ): FlowerBattlePlayerStatus {
   return {
     gameId: GAME_A,
+    revision: "1",
     questionIndex: 2,
     teamId: "blue",
     growthStage: 3,
@@ -64,15 +65,19 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     expect(usePlayerStore.getState().flowerBattlePlayerStatus?.sunPoints).toBe(1)
   })
 
-  it("ignores a lower questionIndex within the same game", () => {
+  it("ignores older and equal live revisions within the same game", () => {
     const store = usePlayerStore.getState()
     store.setGameId(GAME_A)
     store.setFlowerBattlePlayerStatus(
-      makeStatus({ questionIndex: 5, sunPoints: 7 }),
+      makeStatus({ revision: "9", questionIndex: 5, sunPoints: 7 }),
     )
 
     store.receiveFlowerBattlePlayerStatus(
-      makeStatus({ questionIndex: 4, sunPoints: 0 }),
+      makeStatus({ revision: "8", questionIndex: 6, sunPoints: 0 }),
+      GAME_A,
+    )
+    store.receiveFlowerBattlePlayerStatus(
+      makeStatus({ revision: "9", questionIndex: 6, sunPoints: 0 }),
       GAME_A,
     )
 
@@ -81,17 +86,19 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     expect(current?.sunPoints).toBe(7)
   })
 
-  it("accepts the same questionIndex to refresh activeEffects", () => {
+  it("accepts a higher revision at the same questionIndex to refresh activeEffects", () => {
     const store = usePlayerStore.getState()
     store.setGameId(GAME_A)
     store.setFlowerBattlePlayerStatus(
       makeStatus({
+        revision: "10",
         questionIndex: 2,
         activeEffects: [],
       }),
     )
 
     const refreshed = makeStatus({
+      revision: "11",
       questionIndex: 2,
       activeEffects: [{ kind: "sunbeam", expiresAfterQuestionId: 4 }],
       sunPoints: 3,
@@ -106,6 +113,59 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     expect(current?.sunPoints).toBe(3)
   })
 
+  it("uses revision rather than questionIndex to order matching live state", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+    store.setFlowerBattlePlayerStatus(
+      makeStatus({ revision: "9", questionIndex: 5, sunPoints: 1 }),
+    )
+
+    const newer = makeStatus({
+      revision: "10",
+      questionIndex: 4,
+      sunPoints: 6,
+    })
+    store.receiveFlowerBattlePlayerStatus(newer, GAME_A)
+
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(newer)
+  })
+
+  it("orders decimal revisions exactly beyond Number.MAX_SAFE_INTEGER", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+    store.setFlowerBattlePlayerStatus(
+      makeStatus({
+        revision: "9007199254740992",
+        questionIndex: 5,
+        sunPoints: 1,
+      }),
+    )
+
+    const newer = makeStatus({
+      revision: "9007199254740993",
+      questionIndex: 4,
+      sunPoints: 6,
+    })
+    store.receiveFlowerBattlePlayerStatus(newer, GAME_A)
+
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(newer)
+  })
+
+  it("rejects a non-canonical incoming revision without throwing", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+    const current = makeStatus({ revision: "7", sunPoints: 4 })
+    store.setFlowerBattlePlayerStatus(current)
+
+    expect(() =>
+      store.receiveFlowerBattlePlayerStatus(
+        makeStatus({ revision: "07", sunPoints: 0 }),
+        GAME_A,
+      ),
+    ).not.toThrow()
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(current)
+  })
+
   it("hydrate sets the status on a full gameId match (payload ↔ expected ↔ store)", () => {
     // SUCCESS_RECONNECT carrying a Flower payload for the current game.
     const store = usePlayerStore.getState()
@@ -115,6 +175,50 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     store.hydrateFlowerBattlePlayerStatus(payload, GAME_A)
 
     expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(payload)
+  })
+
+  it("hydrate ignores a delayed reconnect snapshot after newer same-question live state", () => {
+    const store = usePlayerStore.getState()
+    store.setGameId(GAME_A)
+
+    const staleReconnect = makeStatus({
+      revision: "20",
+      questionIndex: 2,
+      sunPoints: 1,
+      activeEffects: [],
+      victoryResolved: false,
+      winnerTeamIds: [],
+      isWinner: false,
+    })
+    const newerLive = makeStatus({
+      revision: "21",
+      questionIndex: 2,
+      sunPoints: 5,
+      activeEffects: [{ kind: "sunbeam", expiresAfterQuestionId: 4 }],
+      victoryResolved: true,
+      winnerTeamIds: ["blue"],
+      isWinner: true,
+    })
+
+    store.receiveFlowerBattlePlayerStatus(newerLive, GAME_A)
+    store.hydrateFlowerBattlePlayerStatus(staleReconnect, GAME_A)
+
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(
+      newerLive,
+    )
+
+    store.hydrateFlowerBattlePlayerStatus(
+      makeStatus({
+        revision: "21",
+        questionIndex: 2,
+        sunPoints: 0,
+        victoryResolved: false,
+      }),
+      GAME_A,
+    )
+    expect(usePlayerStore.getState().flowerBattlePlayerStatus).toEqual(
+      newerLive,
+    )
   })
 
   it("hydrate clears when the reconnect payload omits the field (Classic)", () => {

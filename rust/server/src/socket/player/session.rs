@@ -359,10 +359,11 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
 
                                 // Authoritative FlowerBattle status for this player only
                                 // (team from player record — never first map key / guess).
+                                let reconnecting_player = game.players[pos].clone();
                                 let flower_battle_player_status = player_status_for_reconnect(
                                     &game_id_ret,
-                                    &game,
-                                    &game.players[pos],
+                                    &mut game,
+                                    &reconnecting_player,
                                 );
 
                                 let total_players = game.players.len() as i32;
