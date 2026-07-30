@@ -81,7 +81,7 @@ export function FlowerBattlePlayerStatus({
   return (
     <div
       data-testid="flower-battle-player-status"
-      className={`flex flex-col gap-1 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-2 ${colors.bg}`}
+      className={`flex flex-col gap-1 rounded-2xl border border-line bg-surface-2 px-4 py-2 ${colors.bg}`}
     >
       <p className={`text-sm font-semibold ${colors.text}`}>
         {t("flowerBattlePlayerStatus.header", {
