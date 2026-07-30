@@ -12,15 +12,9 @@ import {
   type TargetTeamVoteProps,
 } from "../flower-battle.types"
 
-// PENDING(WP-932/933): the SUBMIT_POWERUP_TARGET_VOTE server handler is live
-// (rust/server/src/socket/player/powerup_vote.rs, verified as of WP-942 —
-// see the WP-942 report), but the S2C POWERUP_SELECTED broadcast that would
-// drive this UI from a real game is still unemitted anywhere in
-// rust/server/src (grep-verified). Flip this once that broadcast lands and
-// the full round-trip is proven end-to-end; until then the emit below is a
-// documented no-op so this UI ships without depending on unfinished server
-// wiring.
-const TARGET_VOTE_HANDLER_LIVE = false
+// Live: server handler rust/server/src/socket/player/powerup_vote.rs requires
+// the SEC-01 playerToken on the wire (TargetVotePayload).
+const TARGET_VOTE_HANDLER_LIVE = true
 
 // Reconstructs the remaining ms to an absolute server-clock deadline, using
 // the same monoNow() + clockOffsetMs anchor as WP #941's FlowerPowerupVote
@@ -57,8 +51,8 @@ export interface UseTargetTeamVoteResult {
  *
  * Mirrors WP #941's FlowerPowerupVote countdown/exactly-once-submit pattern,
  * but the 5s deadline is DERIVED (`selectedAtServerMs + TARGET_VOTE_WINDOW_MS`)
- * rather than server-carried, since FLOWER_BATTLE.POWERUP_SELECTED has no
- * typed wire contract yet.
+ * rather than server-carried — the typed POWERUP_SELECTED contract (common
+ * socket.ts) carries no deadline field.
  */
 export function useTargetTeamVote({
   mode,
@@ -166,18 +160,22 @@ export function useTargetTeamVote({
     if (!selectedTeam || chipsDisabled || !selection || !gameId) return
     if (votedOfferIdRef.current === selection.offerId) return
 
+    // SEC-01: required on the wire — same successJoin/localStorage pattern as
+    // Answers.tsx. No token → no doomed emit, chips stay unlocked.
+    const playerToken = localStorage.getItem(`player_token:${gameId}`)
+    if (!playerToken) return
+
     votedOfferIdRef.current = selection.offerId
     setLocked(true)
     setStatusMessage(t("game:flowerBattle.targetVote.status.submitted"))
 
     if (TARGET_VOTE_HANDLER_LIVE) {
-      // Wire-verified payload shape: TargetVotePayload in
-      // rust/server/src/socket/player/powerup_vote.rs — flat { gameId,
-      // targetTeamId }, no offerId/clientMessageId (the handler doesn't read
-      // them; it re-derives the attacker team from the socket's own player).
+      // Flat { gameId, targetTeamId, playerToken } — TargetVotePayload; the
+      // server re-derives the attacker team from the socket's own player.
       socket.emit(EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_TARGET_VOTE, {
         gameId,
         targetTeamId: selectedTeam,
+        playerToken,
       })
     }
   }

@@ -16,15 +16,9 @@ import {
   type PowerupType,
 } from "./flower-battle.types"
 
-// PENDING(WP-931/942): the SUBMIT_POWERUP_VOTE server handler is live
-// (rust/server/src/socket/player/powerup_vote.rs, verified as of WP-942 —
-// see the WP-942 report), but the S2C POWERUP_OFFERED/POWERUP_SELECTED
-// broadcasts that would drive this UI from a real game are still unemitted
-// anywhere in rust/server/src (grep-verified). Flip this once that broadcast
-// lands and the full round-trip is proven end-to-end; until then the emit
-// below is a documented no-op so this UI ships without depending on
-// unfinished server wiring.
-const POWERUP_VOTE_HANDLER_LIVE = false
+// Live: server handler rust/server/src/socket/player/powerup_vote.rs requires
+// the SEC-01 playerToken on the wire (PowerupVotePayload).
+const POWERUP_VOTE_HANDLER_LIVE = true
 
 // Reconstructs the remaining ms to `expiresAt` on the server clock, using the
 // same monoNow() + clockOffsetMs anchor as Answers.tsx's low-latency
@@ -258,17 +252,22 @@ export function FlowerPowerupVote({ mode, offer }: FlowerPowerupVoteProps) {
     if (!selected || cardsDisabled || !gameId) return
     if (votedOfferIdRef.current === offer.id) return
 
+    // SEC-01: required on the wire — same successJoin/localStorage pattern as
+    // Answers.tsx. No token → no doomed emit, cards stay unlocked.
+    const playerToken = localStorage.getItem(`player_token:${gameId}`)
+    if (!playerToken) return
+
     votedOfferIdRef.current = offer.id
     setLocked(true)
     setStatusMessage(t("game:flowerBattle.powerupVote.status.submitted"))
 
     if (POWERUP_VOTE_HANDLER_LIVE) {
-      // Wire-verified payload shape: PowerupVotePayload in
-      // rust/server/src/socket/player/powerup_vote.rs — flat { gameId,
-      // optionIndex }, index into `options`, not the PowerupType string.
+      // Flat { gameId, optionIndex, playerToken } — PowerupVotePayload;
+      // optionIndex is the index into `options`, not the PowerupType string.
       socket.emit(EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE, {
         gameId,
         optionIndex: options.indexOf(selected),
+        playerToken,
       })
     }
   }

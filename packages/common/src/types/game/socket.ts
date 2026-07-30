@@ -272,6 +272,76 @@ export interface MetricsHealthSnapshot {
   rejected: Record<string, number>
 }
 
+// ---- FlowerBattle mode (WP #927 domain contract, SEC-01 vote gate) ---------
+
+// Hand-mirrored from rust/protocol/bindings (ts-rs) — the repo pattern is
+// hand-mirrored TS types, never direct bindings imports. Rust u64 fields are
+// plain numbers on the JSON wire (same convention as answerDeadlineAtServerMs).
+export type FlowerBattlePhase =
+  | "start"
+  | "greeting"
+  | "role_assignment"
+  | "preparation"
+  | "round1"
+  | "round2"
+  | "round3"
+  | "voting"
+  | "results"
+  | "end"
+
+export type FlowerBattleEffect =
+  | { kind: "sunbeam"; expiresAfterQuestionId: number }
+  | { kind: "umbrella_shield"; remainingQuestions: number }
+  | { kind: "acid_rain"; sourceTeamId: string; expiresAfterQuestionId: number }
+
+export interface FlowerBattleBackground {
+  seed: string
+  recipeVersion: number
+}
+
+export interface FlowerBattleTeamState {
+  name: string
+  members: string[]
+  hp: number
+  shield: number
+  effects: FlowerBattleEffect[]
+  sunPoints: number
+  previousAttackerTeamId?: string
+}
+
+export interface PowerupOffer {
+  id: string
+  /** Comma-joined string of exactly 3 power-up ids — never an array. */
+  offerType: string
+  /** Server epoch ms. */
+  expiresAt: number
+}
+
+export interface FlowerBattleState {
+  phase: FlowerBattlePhase
+  teams: FlowerBattleTeamState[]
+  background: FlowerBattleBackground
+  powerups: PowerupOffer[]
+}
+
+/** C2S `player:flowerBattle:submitPowerupVote` — mirrors PowerupVotePayload. */
+export interface FlowerBattlePowerupVote {
+  gameId: string
+  /** Index into the active offer's option list, not the power-up id string. */
+  optionIndex: number
+  /** Server-minted per-player secret from game:successJoin / localStorage (SEC-01). */
+  playerToken: string
+}
+
+/** C2S `player:flowerBattle:submitPowerupTargetVote` — mirrors TargetVotePayload. */
+export interface FlowerBattleTargetVote {
+  gameId: string
+  /** The target team's `name` — one of the fixed team colors. */
+  targetTeamId: string
+  /** SEC-01, same gate as FlowerBattlePowerupVote. */
+  playerToken: string
+}
+
 export interface ServerToClientEvents {
   connect: () => void
 
@@ -295,6 +365,32 @@ export interface ServerToClientEvents {
   // Experience-mode event family (WP #876/#877). Own envelope, not GAME.STATUS
   // — content-free phase/progress only, broadcast to the display room.
   [EVENTS.EXPERIENCE.TRANSITION]: (_data: ExperienceTransition) => void
+
+  // FlowerBattle mode events (WP #927). SNAPSHOT/POWERUP_OFFERED mirror the
+  // protocol bindings directly; the rest are composed from the mirrored types
+  // above — no server emitter exists yet to pin them further.
+  [EVENTS.FLOWER_BATTLE.SNAPSHOT]: (_data: FlowerBattleState) => void
+  [EVENTS.FLOWER_BATTLE.ROUND_RESOLVED]: (_data: {
+    round: number
+    teams: FlowerBattleTeamState[]
+  }) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_OFFERED]: (_data: PowerupOffer) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_SELECTED]: (_data: {
+    offerId: string
+    optionIndex: number
+    optionId: string
+    /** Server epoch ms — anchors the derived target-vote window client-side. */
+    selectedAtServerMs: number
+  }) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_APPLIED]: (_data: {
+    optionId: string
+    sourceTeamId: string
+    /** Absent for self-buffs (fertilizer/sunbeam/umbrella_shield). */
+    targetTeamId?: string
+  }) => void
+  [EVENTS.FLOWER_BATTLE.GAME_COMPLETED]: (_data: {
+    teams: FlowerBattleTeamState[]
+  }) => void
 
   // Player events
   [EVENTS.PLAYER.SUCCESS_RECONNECT]: (_data: {
@@ -706,35 +802,18 @@ export interface ClientToServerEvents {
     }>,
   ) => void
 
-  // FlowerBattle power-up vote (WP #927 domain contract, UI: WP #941).
-  // Wire-verified against the real handler (rust/server/src/socket/player/
-  // powerup_vote.rs `PowerupVotePayload`, #[serde(rename_all = "camelCase")]):
-  // a FLAT `{ gameId, optionIndex }` — NOT wrapped in a `data` envelope, no
-  // offerId/choice/clientMessageId/playerToken (the handler doesn't read
-  // them). `optionIndex` is the index into the offer's 3-option list
-  // (VoteChoice::PowerupOption), not the PowerupType string. The handler
-  // itself is live (mutates Game::flower_battle_votes), but the S2C
-  // POWERUP_OFFERED/POWERUP_SELECTED broadcasts that would drive this UI in
-  // a real game are still unemitted anywhere in rust/server/src (grep-
-  // verified as of WP #942) — the emit in FlowerPowerupVote.tsx therefore
-  // stays behind a documented no-op flag regardless.
-  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE]: (_payload: {
-    gameId: string
-    optionIndex: number
-  }) => void
+  // FlowerBattle power-up vote (WP #931 handler, UI: WP #941). FLAT payload,
+  // no `data` envelope — mirrors rust/protocol PowerupVotePayload; playerToken
+  // is required on the wire (SEC-01).
+  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE]: (
+    _payload: FlowerBattlePowerupVote,
+  ) => void
 
-  // FlowerBattle target-team vote (WP #931 handler, UI: WP #942), following
-  // an acid_rain POWERUP_SELECTED broadcast. Wire-verified against the real
-  // handler (rust/server/src/socket/player/powerup_vote.rs
-  // `TargetVotePayload`): a FLAT `{ gameId, targetTeamId }` — same caveats as
-  // SUBMIT_POWERUP_VOTE above (handler is live, S2C broadcast to trigger this
-  // UI is not; emit stays behind a documented no-op flag).
-  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_TARGET_VOTE]: (_payload: {
-    gameId: string
-    // The target team's `name` (packages/web .../player/flower-battle.types.ts
-    // FlowerTeamView) — one of the fixed TEAMS colors.
-    targetTeamId: string
-  }) => void
+  // FlowerBattle target-team vote after an acid_rain POWERUP_SELECTED (WP #931
+  // handler, UI: WP #942) — mirrors rust/protocol TargetVotePayload.
+  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_TARGET_VOTE]: (
+    _payload: FlowerBattleTargetVote,
+  ) => void
 
   // Low-latency mode: UI-only clock sync ping (client monotonic clock).
   [EVENTS.CLOCK.PING]: (_data: { clientSendMonoMs: number }) => void
