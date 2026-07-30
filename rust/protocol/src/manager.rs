@@ -356,6 +356,9 @@ pub struct ManagerConfig {
     pub klassen_enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub end_screen_modes: Option<String>,
+    /// CSV allow-list of experience modes (classic,pyramidclimb,...). Empty = none unlocked.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experience_modes_enabled: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

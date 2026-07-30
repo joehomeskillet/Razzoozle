@@ -1,5 +1,6 @@
 //! Game lifecycle handlers: CREATE and DISCONNECT
 use super::HandlerCtx;
+use crate::socket::manager::game_flow::experience;
 use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::EndScreen;
@@ -58,13 +59,13 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Read global config for availability gates
                 let (team_mode_avail, low_latency_enabled, _, randomize_answers, _,
-                     low_latency_config, klassen_enabled, end_screen_modes) =
+                     low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled) =
                     crate::db::get_game_config(&ctx.db_pool).await;
 
                 let low_latency = low_latency_enabled.unwrap_or(false);
 
                 // Validate + snapshot modes against availability
-                let (validated_scoring_mode, validated_team_mode, validated_klassen, validated_end_screen) = {
+                let (validated_scoring_mode, validated_team_mode, validated_klassen, validated_end_screen, validated_experience_mode) = {
                     let req_scoring = selected_modes.as_ref()
                         .and_then(|m| m.scoring_mode.as_ref())
                         .and_then(|s| if s == "speed" { Some(ScoringMode::Speed) } else if s == "accuracy" { Some(ScoringMode::Accuracy) } else { None });
@@ -72,6 +73,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                     let req_team = selected_modes.as_ref().and_then(|m| m.team_mode).unwrap_or(false);
                     let req_klassen = selected_modes.as_ref().and_then(|m| m.klassen).unwrap_or(false);
                     let req_end_screen = selected_modes.as_ref().and_then(|m| m.end_screen);
+                    let req_experience_mode = selected_modes.as_ref().and_then(|m| m.experience_mode);
 
                     // Drop unavailable modes: only keep if both requested AND enabled
                     let team = req_team && team_mode_avail.unwrap_or(false);
@@ -109,7 +111,13 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                         EndScreen::Full
                     };
 
-                    (scoring, team, klassen, end_screen)
+                    // Experience mode: clamp not-enabled → None (no error). Empty CSV = none unlocked.
+                    let allowed_modes_str =
+                        experience_modes_enabled.unwrap_or_else(|| "".to_string());
+                    let experience_mode =
+                        experience::validate_experience_mode(req_experience_mode, &allowed_modes_str);
+
+                    (scoring, team, klassen, end_screen, experience_mode)
                 };
 
                 // Wave-1 §B / A10: klassen games MUST bind a class_id.
@@ -222,6 +230,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                                 klassen: Some(validated_klassen),
                                 end_screen: Some(validated_end_screen),
                                 participant_cap: g.player_cap.map(|u| u as i64),
+                                experience_mode: validated_experience_mode,
                             };
                         }
 

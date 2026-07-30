@@ -265,7 +265,8 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 }
 
 /// Load game configuration from the database.
-/// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config, klassen_enabled, end_screen_modes).
+/// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode,
+/// low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled).
 /// low_latency_config is the full jsonb object that should be merged with low_latency_enabled into lowLatencyMode.
 /// Returns Nones if pool is None or DB query fails.
 pub async fn get_game_config(
@@ -279,28 +280,39 @@ pub async fn get_game_config(
     Option<serde_json::Value>,
     Option<bool>,
     Option<String>,
+    Option<String>,
 ) {
     let pool = match pool {
         Some(p) => p,
-        None => return (None, None, None, None, None, None, None, None),
+        None => return (None, None, None, None, None, None, None, None, None),
     };
 
-    let row: Option<(Option<bool>, Option<bool>, Option<bool>, Option<bool>, Option<String>, Option<serde_json::Value>, Option<bool>, Option<String>)> =
-        sqlx::query_as(
-            "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, low_latency_config, klassen_enabled, end_screen_modes \
-             FROM games_config WHERE id = 1"
-        )
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten();
+    let row: Option<(
+        Option<bool>,
+        Option<bool>,
+        Option<bool>,
+        Option<bool>,
+        Option<String>,
+        Option<serde_json::Value>,
+        Option<bool>,
+        Option<String>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, \
+         low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled \
+         FROM games_config WHERE id = 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
 
-    row.unwrap_or((None, None, None, None, None, None, None, None))
+    row.unwrap_or((None, None, None, None, None, None, None, None, None))
 }
 
 /// Update game config with a partial patch. Deep-merges into existing row.
 /// Fields: team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode,
-/// managerPassword, lowLatencyMode, klassenEnabled, endScreenModes.
+/// managerPassword, lowLatencyMode, klassenEnabled, endScreenModes, experienceModesEnabled.
 /// Only updates fields that are present in the patch; omitted fields are left unchanged.
 /// Always bumps version = version + 1 and updated_at = now().
 pub async fn update_game_config(
@@ -321,6 +333,7 @@ pub async fn update_game_config(
     let manager_password = patch.get("managerPassword").and_then(|v| v.as_str());
     let klassen_enabled = patch.get("klassenEnabled").and_then(|v| v.as_bool());
     let end_screen_modes = patch.get("endScreenModes").and_then(|v| v.as_str());
+    let experience_modes_enabled = patch.get("experienceModesEnabled").and_then(|v| v.as_str());
     let low_latency_mode =
         patch.get("lowLatencyMode").and_then(
             |v| {
@@ -376,6 +389,10 @@ pub async fn update_game_config(
         updates.push(format!("end_screen_modes = ${}", idx));
         idx += 1;
     }
+    if experience_modes_enabled.is_some() {
+        updates.push(format!("experience_modes_enabled = ${}", idx));
+        idx += 1;
+    }
 
     // Always bump version and update timestamp
     updates.push("version = version + 1".to_string());
@@ -386,6 +403,9 @@ pub async fn update_game_config(
         // Only version and updated_at, no user-facing changes — silent no-op (consistent with Node)
         return Ok(());
     }
+
+    // Silence unused-assignment when the last optional field set `idx`.
+    let _ = idx;
 
     query_str.push_str(&updates.join(", "));
     query_str.push_str(" WHERE id = 1");
@@ -418,6 +438,9 @@ pub async fn update_game_config(
     }
     if let Some(esm) = end_screen_modes {
         query = query.bind(esm);
+    }
+    if let Some(eme) = experience_modes_enabled {
+        query = query.bind(eme);
     }
 
     query

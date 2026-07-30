@@ -47,6 +47,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         _low_latency_config,
         klassen_enabled,
         end_screen_modes,
+        experience_modes_enabled,
     ) = db::get_game_config(&ctx.db_pool).await;
 
     let dev_mode_on = std::env::var("RAZZOOLE_DEV").as_deref() == Ok("1");
@@ -100,6 +101,7 @@ pub async fn build_and_emit_config(socket: &SocketRef, ctx: &HandlerCtx) {
         submit_token,
         klassen_enabled,
         end_screen_modes,
+        experience_modes_enabled,
     };
 
     socket.emit(constants::manager::CONFIG, &payload).ok();

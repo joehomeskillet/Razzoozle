@@ -71,4 +71,7 @@ export interface ManagerConfig {
   // Persisted end-screen display modes (CSV: "full", "top3", "private" in any combination).
   // Optional for back-compat; absent in old payloads → defaults to "full,top3,private".
   endScreenModes?: string
+  // CSV allow-list of experience modes (classic,pyramidclimb,deepseaescape,flowerbattle).
+  // Empty string = none unlocked. Optional for back-compat.
+  experienceModesEnabled?: string
 }

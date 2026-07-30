@@ -42,6 +42,9 @@ export const gameConfigValidator = z.object({
   randomizeAnswers: z.boolean().optional(),
   scoringMode: z.enum(["speed", "accuracy"]).optional(),
   requireIdentifier: z.boolean().optional(),
+  // CSV allow-list of experience presentation modes (classic,pyramidclimb,...).
+  // Empty string = none unlocked. Mirrors Rust games_config.experience_modes_enabled.
+  experienceModesEnabled: z.string().default(""),
 })
 
 export type GameConfig = z.infer<typeof gameConfigValidator>
