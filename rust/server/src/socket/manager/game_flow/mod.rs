@@ -25,6 +25,7 @@ use tracing::{info, warn};
 const AUTO_RESULT_MS: i32 = 6000;
 
 pub mod experience;
+pub mod flower_battle_display;
 mod pacing;
 pub use pacing::{register_adjust_timer, register_pause_game, register_resume_game};
 
