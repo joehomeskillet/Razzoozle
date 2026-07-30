@@ -27,16 +27,26 @@ export type ExperienceEffectColorRole =
  * EffectRegistry use these string IDs for registration and resolution.
  */
 export const ExperienceEffectPresetId = {
-  // Populated by WP-KIT-11 — no concrete presets in WP-912.
+  "dust-burst": "dust-burst",
+  "sand-trail": "sand-trail",
+  "bubble-trail": "bubble-trail",
+  "bubble-burst": "bubble-burst",
+  "speed-lines": "speed-lines",
+  "sparkle-burst": "sparkle-burst",
+  "rain-shower": "rain-shower",
+  "leaf-burst": "leaf-burst",
+  "granule-drop": "granule-drop",
+  "shield-deflect": "shield-deflect",
+  "soft-poof": "soft-poof",
 } as const
 
 /**
  * Union of all known preset ID string literals.
  *
  * Extends to arbitrary `string` so externally registered presets remain valid
- * until the catalog is updated in WP-KIT-11.
+ * until the catalog is updated.
  */
-export type ExperienceEffectPresetId = string
+export type ExperienceEffectPresetId = (typeof ExperienceEffectPresetId)[keyof typeof ExperienceEffectPresetId] | (string & {})
 
 /**
  * Normalized anchor — coordinates in [0, 1] relative to the stage viewbox
