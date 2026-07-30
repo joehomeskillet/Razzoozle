@@ -27,7 +27,16 @@ const PlayerGamePage = () => {
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
   const { gameId: gameIdParam } = useParams({ from: "/party/$gameId" })
-  const { status, setPlayer, setGameId, setStatus, reset } = usePlayerStore()
+  const {
+    status,
+    setPlayer,
+    setGameId,
+    setStatus,
+    reset,
+    setFlowerBattlePlayerStatus,
+    clearFlowerBattlePlayerStatus,
+    receiveFlowerBattlePlayerStatus,
+  } = usePlayerStore()
   const { setQuestionStates, setDisplayOrder } = useQuestionStore()
   const setLowLatencyActive = useLowLatencyStore((s) => s.setActive)
   const setAlreadyAnswered = useAnswerStore((s) => s.setAlreadyAnswered)
@@ -81,6 +90,9 @@ const PlayerGamePage = () => {
       // OPTIONAL — absent in normal mode; default to false so we never crash and
       // never wrongly lock a player out of answering.
       alreadyAnswered,
+      // Flower Battle only (WP-946 R2). Classic/other modes omit the field —
+      // clear explicitly so a prior Flower session cannot leak into Classic.
+      flowerBattlePlayerStatus,
     }) => {
       // Reconnect succeeded; clear the timeout.
       if (reconnectTimeoutRef.current !== undefined) {
@@ -96,8 +108,23 @@ const PlayerGamePage = () => {
       // so the answer screen renders the answered/locked state instead of fresh
       // buttons. ?? false keeps normal-mode behaviour untouched.
       setAlreadyAnswered(reconnectGameId, alreadyAnswered ?? false)
+
+      if (flowerBattlePlayerStatus) {
+        setFlowerBattlePlayerStatus(flowerBattlePlayerStatus)
+      } else {
+        clearFlowerBattlePlayerStatus()
+      }
     },
   )
+
+  // Personalized FlowerBattle status (WP-946-C1). Store applies gameId +
+  // questionIndex guards; route gameId is the expected match key.
+  useEvent(EVENTS.FLOWER_BATTLE.PLAYER_STATUS, (payload) => {
+    if (!gameIdParam) {
+      return
+    }
+    receiveFlowerBattlePlayerStatus(payload, gameIdParam)
+  })
 
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
     if (name in GAME_STATE_COMPONENTS) {
@@ -203,5 +230,8 @@ export const Route = createFileRoute("/party/$gameId")({
   component: PlayerGamePage,
   onLeave: ({ params: { gameId } }) => {
     socketClient.emit(EVENTS.PLAYER.LEAVE, { gameId })
+    // Drop Flower status on route leave so a sequential Classic game cannot
+    // retain prior Flower Battle state (WP-946-C1).
+    usePlayerStore.getState().clearFlowerBattlePlayerStatus()
   },
 })

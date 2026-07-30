@@ -1,5 +1,8 @@
 import type { StatusDataMap } from "@razzoozle/common/types/game/status"
-import type { RosterEntry } from "@razzoozle/common/types/game/socket"
+import type {
+  FlowerBattlePlayerStatus,
+  RosterEntry,
+} from "@razzoozle/common/types/game/socket"
 import {
   createStatus,
   type Status,
@@ -26,6 +29,11 @@ interface PlayerStore<T> {
   status: Status<T> | null
   /** Last SUCCESS_ROOM payload (consumed by Username on mount). */
   pendingRoom: PendingRoom | null
+  /**
+   * Personalized FlowerBattle status for this player socket (WP-946-C1).
+   * Null outside Flower Battle or after clear/reset/join/route leave.
+   */
+  flowerBattlePlayerStatus: FlowerBattlePlayerStatus | null
 
   setGameId: (_gameId: string | null) => void
 
@@ -43,6 +51,21 @@ interface PlayerStore<T> {
 
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
 
+  /** Unconditional write (reconnect hydrate). */
+  setFlowerBattlePlayerStatus: (_status: FlowerBattlePlayerStatus) => void
+  /** Drop Flower status so Classic/next game cannot retain it. */
+  clearFlowerBattlePlayerStatus: () => void
+  /**
+   * Live `game:flowerBattle:playerStatus` path.
+   * Accepts only when payload.gameId equals both routeGameId and store gameId.
+   * Ignores lower questionIndex within the same game; same index refreshes
+   * effects; higher index advances.
+   */
+  receiveFlowerBattlePlayerStatus: (
+    _status: FlowerBattlePlayerStatus,
+    _routeGameId: string,
+  ) => void
+
   reset: () => void
 }
 
@@ -51,6 +74,7 @@ const initialState = {
   player: null as PlayerState | null,
   status: null as Status<StatusDataMap> | null,
   pendingRoom: null as PendingRoom | null,
+  flowerBattlePlayerStatus: null as FlowerBattlePlayerStatus | null,
 }
 
 export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
@@ -77,6 +101,8 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
       gameId,
       player: { ...state.player, points: 0 },
       pendingRoom,
+      // New game must not inherit Flower status from a prior session.
+      flowerBattlePlayerStatus: null,
     }))
   },
 
@@ -93,6 +119,33 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
     })),
 
   setStatus: (name, data) => set({ status: createStatus(name, data) }),
+
+  setFlowerBattlePlayerStatus: (status) =>
+    set({ flowerBattlePlayerStatus: status }),
+
+  clearFlowerBattlePlayerStatus: () =>
+    set({ flowerBattlePlayerStatus: null }),
+
+  receiveFlowerBattlePlayerStatus: (status, routeGameId) =>
+    set((state) => {
+      // Live path: payload must match both the active route and store gameId.
+      if (status.gameId !== routeGameId || status.gameId !== state.gameId) {
+        return state
+      }
+
+      const current = state.flowerBattlePlayerStatus
+      // Stale: lower questionIndex within the same game is ignored.
+      // Same index is accepted so mid-round effect refreshes land.
+      if (
+        current &&
+        current.gameId === status.gameId &&
+        status.questionIndex < current.questionIndex
+      ) {
+        return state
+      }
+
+      return { flowerBattlePlayerStatus: status }
+    }),
 
   reset: () => set(initialState),
 }))
