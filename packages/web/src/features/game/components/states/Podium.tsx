@@ -2,13 +2,17 @@ import type { ManagerRecap } from "@razzoozle/common/types/game"
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Avatar from "@razzoozle/web/components/Avatar"
 import { dispatchCelebration } from "@razzoozle/web/experiences/shared/celebration/ConfettiAdapter"
+import { fireFeedback } from "@razzoozle/web/features/experience-kit/feedback/experienceFeedbackService"
+import { useExperienceTimeline } from "@razzoozle/web/features/experience/timeline/useExperienceTimeline"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence"
 import TeamLeaderboard from "@razzoozle/web/features/game/components/TeamLeaderboard"
 import TrophySticker from "@razzoozle/web/features/game/components/TrophySticker"
+import { useLowLatencyStore } from "@razzoozle/web/features/game/stores/lowLatency"
 import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
 import { ACHIEVEMENT_META } from "@razzoozle/web/features/game/utils/achievements"
+import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
@@ -21,13 +25,13 @@ import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
 /**
- * Full-screen award-reveal condition — kept as a named export so the SSR
+ * Game-win celebration condition — kept as a named export so the SSR
  * regression suite (Podium.test.tsx) can assert it directly: `apparition`
  * never advances past its initial state under renderToStaticMarkup (the
  * effect below never runs during SSR), so the trigger can't be exercised via
  * a component render.
  */
-export function shouldFireAwardReveal(
+export function shouldFireGameWinCelebration(
   apparition: number,
   reduced: boolean,
 ): boolean {
@@ -49,9 +53,28 @@ function isManagerRecap(
   )
 }
 
+// Podium reveal cadence — same 4x2000ms cadence the old setInterval counter
+// used (Three → Second → SnearRoll → First, one step per PODIUM_REVEAL_STEP_MS).
+const PODIUM_REVEAL_STEP_MS = 2000
+const PODIUM_REVEAL_STEPS = 4
+
+/**
+ * Maps elapsed phase time into the podium's 4 discrete reveal steps. Pure and
+ * exported for the logic-test suite (Podium.test.tsx) — no timers involved.
+ * Clamped to [0, PODIUM_REVEAL_STEPS] and NaN/negative-safe (a defensive
+ * guard for clock-skew edge cases at phase start).
+ */
+export function deriveApparitionFromElapsed(elapsedMs: number): number {
+  if (!Number.isFinite(elapsedMs)) return 0
+  return Math.max(
+    0,
+    Math.min(PODIUM_REVEAL_STEPS, Math.floor(elapsedMs / PODIUM_REVEAL_STEP_MS)),
+  )
+}
+
 const usePodiumAnimation = (topLength: number, enabled: boolean) => {
-  const [apparition, setApparition] = useState(0)
   const muted = useSoundStore((s) => s.muted)
+  const clockOffsetMs = useLowLatencyStore((s) => s.offsetMs)
 
   const threeUrl = useSoundUrl("podiumThree")
   const secondUrl = useSoundUrl("podiumSecond")
@@ -74,11 +97,50 @@ const usePodiumAnimation = (topLength: number, enabled: boolean) => {
     soundEnabled: !muted,
   })
 
+  // Kit-Timeline (issue 910) replaces the old raw setInterval counter — same
+  // 4x2000ms cadence, now measured as elapsed time instead of a manually-
+  // ticked step count. `phaseStartedAt` is captured once, the moment the
+  // reveal is armed, in the SAME monoNow()+clockOffset domain
+  // useExperienceTimeline reads back internally on its own 250ms tick — NOT a
+  // wall-clock Date(), which would desync whenever low-latency clock-sync is
+  // inactive (clockOffsetMs === 0, the common case: offsetMs only becomes
+  // nonzero once a real clock-sync handshake has completed).
+  const [phaseStartedAt, setPhaseStartedAt] = useState<string | null>(null)
+  useEffect(() => {
+    if (enabled && phaseStartedAt === null) {
+      setPhaseStartedAt(new Date(monoNow() + clockOffsetMs).toISOString())
+    }
+  }, [enabled, phaseStartedAt, clockOffsetMs])
+
+  // Fewer than 3 players: no timed reveal at all (matches the pre-Kit-Timeline
+  // behaviour, which jumped straight to the final step).
+  const skipToEnd = topLength < 3
+
+  const timeline = useExperienceTimeline(
+    enabled && !skipToEnd && phaseStartedAt
+      ? {
+          revision: 0,
+          phaseStartedAt,
+          phaseDurationMs: PODIUM_REVEAL_STEPS * PODIUM_REVEAL_STEP_MS,
+        }
+      : null,
+  )
+
+  const apparition = !enabled
+    ? 0
+    : skipToEnd
+      ? PODIUM_REVEAL_STEPS
+      : deriveApparitionFromElapsed(timeline?.elapsedMs ?? 0)
+
   useEffect(() => {
     const actions: Partial<Record<number, () => void>> = {
       4: () => {
         sfxRoolStop()
         sfxFirst()
+        // issue 916 feedback cue — haptic-only addition (podiumFirst is
+        // already the "game-win" cue's sound slot, so this doesn't double up
+        // audio, only adds the haptic that Podium never had before).
+        fireFeedback("game-win")
       },
       3: sfxRool,
       2: sfxSecond,
@@ -87,29 +149,6 @@ const usePodiumAnimation = (topLength: number, enabled: boolean) => {
 
     actions[apparition]?.()
   }, [apparition, sfxFirst, sfxSecond, sfxtThree, sfxRool, sfxRoolStop])
-
-  useEffect(() => {
-    // Hold the podium hidden while the recap sequence is still playing.
-    if (!enabled) {
-      return
-    }
-
-    if (topLength < 3) {
-      setApparition(4)
-
-      return
-    }
-
-    if (apparition >= 4) {
-      return
-    }
-
-    const interval = setInterval(() => {
-      setApparition((value) => value + 1)
-    }, 2000)
-
-    return () => clearInterval(interval)
-  }, [apparition, topLength, enabled])
 
   return apparition
 }
@@ -408,13 +447,16 @@ const Podium = ({
 
   const reveal = useReveal()
 
-  // Award-reveal confetti — fires once via the shared celebration adapter
-  // instead of mounting a persistent react-confetti canvas. `apparition`
-  // only ever rises to 4 and stays there, so this effect runs exactly once.
+  // Game-win confetti (issue 918: raised from the generic "award-reveal"
+  // placeholder to the semantic "game-win" kind — see ConfettiAdapter.ts,
+  // additive mapping, same fireFullScreenBurst visual). Fires once via the
+  // shared celebration adapter instead of mounting a persistent
+  // react-confetti canvas. `apparition` only ever rises to 4 and stays
+  // there, so this effect runs exactly once.
   useEffect(() => {
-    if (shouldFireAwardReveal(apparition, reveal.reduced)) {
+    if (shouldFireGameWinCelebration(apparition, reveal.reduced)) {
       void dispatchCelebration(
-        { id: "podium-award-reveal", kind: "award-reveal" },
+        { id: "podium-game-win", kind: "game-win" },
         reveal.reduced,
       )
     }
