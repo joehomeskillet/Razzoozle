@@ -92,9 +92,9 @@ export const useManagerGameSession = (
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayers(players)
       setQuestionStates(currentQuestion)
-      // MANAGER.RECONNECT doesn't (yet) replay the last experience transition
-      // — drop any stale one rather than show a phase that predates the drop.
-      // The next broadcast_status re-syncs it.
+      // Drop any pre-reconnect envelope; WP #939B/#959 server resends the
+      // current game:experience to THIS socket right after SUCCESS_RECONNECT
+      // (single-socket, no revision bump). Live transitions keep the room.
       setExperienceTransition(null)
     },
   )

@@ -39,11 +39,10 @@ interface SatelliteAuth {
   enabled: boolean
 }
 
-// Detect a satellite boot from the URL and resolve its token. The satellite
-// endpoint loads this app with `?satellite=true` and an optional `?token=...`
-// (baked into the Pi's kiosk URL); the token is then persisted to localStorage
-// so reconnects and in-app navigation keep authenticating. Normal clients have
-// no `satellite` flag and therefore no token — they keep using password auth.
+// Detect a satellite boot from the URL and resolve its token. The kiosk boots
+// on `/satellite/$gameId` (optionally `?satellite=true&token=...`); the token
+// is persisted to localStorage so reconnects keep authenticating. Normal
+// clients have neither the path nor the flag and send no token.
 const resolveSatelliteAuth = (): SatelliteAuth => {
   try {
     if (typeof window === "undefined") {
@@ -51,7 +50,11 @@ const resolveSatelliteAuth = (): SatelliteAuth => {
     }
 
     const params = new URLSearchParams(window.location.search)
-    const enabled = params.get("satellite") === "true"
+    // WP #959 — path alone is enough; `?satellite=true` remains for legacy
+    // kiosk URLs that boot outside /satellite/*.
+    const enabled =
+      params.get("satellite") === "true" ||
+      window.location.pathname.startsWith("/satellite/")
 
     if (!enabled) {
       return { enabled: false }

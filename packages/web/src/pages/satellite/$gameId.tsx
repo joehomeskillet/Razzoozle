@@ -49,8 +49,13 @@ const SatelliteManagerPage = () => {
   // manager privileges to this display without a typed password. We expose the
   // token both as a handshake `auth` field and as a transport header so the
   // server-side validator (separate WP) can read whichever it prefers.
+  // WP #959 — mirror /display/play: fire MANAGER.RECONNECT on SPA mount when
+  // the socket is already connected (manager→satellite nav never re-fires
+  // `connect`, so without this the 939B envelope resend never runs and the
+  // garden stays empty). Server joins display:{gameId} + resends experience.
   const { status, CurrentComponent, experienceTransition } =
     useManagerGameSession(gameIdParam, {
+    reconnectIfConnected: true,
     onConnect: () => {
       socket.auth = {
         ...(socket.auth as Record<string, unknown>),
