@@ -347,7 +347,10 @@ mod tests {
 
     #[test]
     fn growth_pipeline_overflow_clamps_to_max() {
-        assert_eq!(apply_growth_pipeline(3, 100, 0, DEFAULT_MAX_GROWTH_STAGE), 3);
+        assert_eq!(
+            apply_growth_pipeline(3, 100, 0, DEFAULT_MAX_GROWTH_STAGE),
+            3
+        );
         assert_eq!(apply_growth_pipeline(3, 100, 0, 5), 5);
         assert_eq!(apply_growth_pipeline(0, 0, 99, 5), 0);
     }
