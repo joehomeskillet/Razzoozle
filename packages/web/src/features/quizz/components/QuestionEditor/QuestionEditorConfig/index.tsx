@@ -60,7 +60,11 @@ const FIELD_LABELS: Record<string, string> = {
   decimals: "quizz:typechange.fieldLabels.decimals",
 }
 
-const QuestionEditorConfig = () => {
+interface QuestionEditorConfigProps {
+  excludeTypes?: QuestionTypeKey[]
+}
+
+const QuestionEditorConfig = ({ excludeTypes }: QuestionEditorConfigProps) => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const { t } = useTranslation("quizz")
 
@@ -169,6 +173,7 @@ const QuestionEditorConfig = () => {
         <QuestionTypeSelector
           currentType={currentType}
           onTypeChange={handleTypeChange}
+          excludeTypes={excludeTypes}
         />
       </ConfigSection>
 

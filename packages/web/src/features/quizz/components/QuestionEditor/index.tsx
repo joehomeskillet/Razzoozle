@@ -61,11 +61,11 @@ interface QuestionEditorProps {
  * The shared sub-components (Title/Type/Media/Answers/Config) are reused as-is —
  * /submit wraps the same components, so their markup stays untouched here.
  *
- * Note: Question type selection is handled exclusively by QuestionEditorConfig
- * in the right panel (per SDD FR-01/FR-05). The excludeTypes prop is retained
- * for future per-context filtering and is ignored here.
+ * The `excludeTypes` prop is passed through to QuestionEditorConfig, which
+ * delegates it to QuestionTypeSelector to filter unavailable question types
+ * from selection (e.g., hide vokabelliste in catalog context).
  */
-const QuestionEditor = ({ excludeTypes: _excludeTypes }: QuestionEditorProps) => {
+const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const { currentQuestion } = useQuizzEditor()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
@@ -154,7 +154,7 @@ const QuestionEditor = ({ excludeTypes: _excludeTypes }: QuestionEditorProps) =>
         )}
       </main>
 
-      <QuestionEditorConfig />
+      <QuestionEditorConfig excludeTypes={excludeTypes} />
     </div>
   )
 }
