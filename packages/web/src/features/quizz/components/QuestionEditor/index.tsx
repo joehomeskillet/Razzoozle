@@ -10,7 +10,6 @@ import QuestionEditorFillBlank from "@razzoozle/web/features/quizz/components/Qu
 import QuestionEditorMatching from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMatching"
 import QuestionEditorSequencing from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSequencing"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
-import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
 import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import QuestionEditorVokabel from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorVokabel"
@@ -61,8 +60,12 @@ interface QuestionEditorProps {
  *
  * The shared sub-components (Title/Type/Media/Answers/Config) are reused as-is —
  * /submit wraps the same components, so their markup stays untouched here.
+ *
+ * Note: Question type selection is handled exclusively by QuestionEditorConfig
+ * in the right panel (per SDD FR-01/FR-05). The excludeTypes prop is retained
+ * for future per-context filtering and is ignored here.
  */
-const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
+const QuestionEditor = ({ excludeTypes: _excludeTypes }: QuestionEditorProps) => {
   const { currentQuestion } = useQuizzEditor()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
@@ -149,12 +152,6 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
             <QuestionEditorVokabel />
           </Reveal>
         )}
-
-        <Reveal index={3}>
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <QuestionEditorType excludeTypes={excludeTypes} />
-          </div>
-        </Reveal>
       </main>
 
       <QuestionEditorConfig />

@@ -16,7 +16,6 @@ import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/Quest
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
-import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
 import {
   QuizzEditorProvider,
   useQuizzEditor,
@@ -261,9 +260,6 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
               label={t("submit:form.section.question")}
             >
               <QuestionEditorTitle />
-              <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
-                <QuestionEditorType />
-              </div>
             </RevealSection>
 
             {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
