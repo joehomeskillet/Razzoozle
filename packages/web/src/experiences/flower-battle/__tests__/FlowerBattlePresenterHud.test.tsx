@@ -64,7 +64,7 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).toContain('aria-valuenow="33"')
   })
 
-  it("renders power-up effect icons with visible labels", () => {
+  it("renders active powerup status icons (WP-938.2 wiring) via FlowerPowerupStatusIcons", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -72,10 +72,24 @@ describe("FlowerBattlePresenterHud", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="flower-battle-effect-sunbeam-0"')
-    expect(html).toContain('data-testid="flower-battle-effect-umbrella_shield-1"')
-    expect(html).toContain("sunbeam")
-    expect(html).toContain("umbrella_shield")
+    // FlowerPowerupStatusIcons mounts the icon container
+    expect(html).toContain('data-testid="flower-powerup-status-icons"')
+    // sunbeam and umbrella_shield effects are rendered with their status text
+    expect(html).toContain('data-testid="flower-powerup-status-sunbeam"')
+    expect(html).toContain('data-testid="flower-powerup-status-umbrella-shield"')
+  })
+
+  it("renders icon + text label pairs (no icon-only per a11y)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattlePresenterHud
+        teams={baseTeams}
+        sunPoints={{ red: 2, blue: 1 }}
+      />,
+    )
+
+    // Verify text labels are present (Icon + Text together)
+    expect(html).toContain("Schutz aktiv")
+    expect(html).toContain("Nächstes Wachstum +1")
   })
 
   it("announces an active power-up choice via StatusBanner", () => {
@@ -102,5 +116,18 @@ describe("FlowerBattlePresenterHud", () => {
     )
 
     expect(html).not.toContain('data-testid="question-text"')
+  })
+
+  it("renders no status icons when team has no active effects", () => {
+    const noEffectsTeams = [makeTeam("Grün", 0, [])]
+    const html = renderToStaticMarkup(
+      <FlowerBattlePresenterHud
+        teams={noEffectsTeams}
+        sunPoints={{ green: 0 }}
+      />,
+    )
+
+    // FlowerPowerupStatusIcons returns null when activeEffects is empty
+    expect(html).not.toContain('data-testid="flower-powerup-status-icons"')
   })
 })
