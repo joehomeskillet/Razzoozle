@@ -105,7 +105,10 @@ export async function fireTierConfetti(
  * Fire a generic center burst — used for a correct answer in solo mode where
  * there is no achievement tier to key off of.
  */
-export async function fireCenterSalvo(reduced: boolean): Promise<void> {
+export async function fireCenterSalvo(
+  reduced: boolean,
+  colors?: string[],
+): Promise<void> {
   if (shouldSkipBurst(reduced)) return
 
   const fire = await createWorkerConfetti()
@@ -113,6 +116,7 @@ export async function fireCenterSalvo(reduced: boolean): Promise<void> {
     particleCount: 45,
     spread: 70,
     origin: { x: 0.5, y: 0.6 },
+    colors,
     zIndex: CONFETTI_Z_INDEX,
     disableForReducedMotion: true,
   })
