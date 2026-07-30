@@ -146,6 +146,15 @@ pub struct Game {
     pub flower_battle_winner_team_ids: Option<Vec<String>>,
     /// Idempotency: `finish_and_broadcast` must run at most once per game.
     pub finish_broadcast_done: bool,
+    /// Garden-background PRNG seed (WP #939A). Generated ONCE via a real CSPRNG
+    /// (`rand::thread_rng()`, same source as `add_player`'s token generation)
+    /// at game creation and never re-rolled — unlike the pre-#939A behavior of
+    /// deriving `background.seed` from `game_id` on every projection, which was
+    /// deterministic-but-guessable and NOT re-randomized on rematch. Persisted
+    /// (Snapshotted as `flowerBattleSeed`, SNAPSHOT_VERSION ≥ 7) so reconnect /
+    /// crash-restore and every Display/Presenter/Satellite client project the
+    /// identical `FlowerGardenScene` background for the life of the session.
+    pub flower_battle_seed: u64,
 }
 
 impl Game {
@@ -175,6 +184,11 @@ impl Game {
 
         // P2a — generate random host_token using uuid v4 (CSPRNG)
         let host_token = Uuid::new_v4().to_string();
+
+        // WP #939A — generate the FlowerBattle garden-background seed exactly
+        // once per session (always, regardless of experience_mode: unused for
+        // non-FlowerBattle games, but cheap and keeps Game::new() branch-free).
+        let flower_battle_seed: u64 = rand::thread_rng().gen();
 
         Self {
             game_id,
@@ -232,6 +246,7 @@ impl Game {
             flower_battle_sun_points: HashMap::new(),
             flower_battle_winner_team_ids: None,
             finish_broadcast_done: false,
+            flower_battle_seed,
         }
     }
 
@@ -449,5 +464,57 @@ impl Game {
         self.engine.players.push(player.clone());
         self.touch();
         Ok(player)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use razzoozle_protocol::quizz::Quizz;
+
+    fn empty_quiz(subject: &str) -> Quizz {
+        Quizz {
+            subject: subject.to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        }
+    }
+
+    /// WP #939A — Game::new() always mints a real random seed, never a
+    /// hardcoded/zero placeholder (regression guard for the old
+    /// game_id-as-seed behavior this WP replaces).
+    #[test]
+    fn new_game_gets_a_nonzero_flower_battle_seed() {
+        let game = Game::new(
+            "game-seed-1".to_string(),
+            "INV1".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz("Seed"),
+        );
+        assert_ne!(game.flower_battle_seed, 0);
+    }
+
+    /// WP #939A — two sessions never share a seed (rematch/new-session
+    /// acceptance: "erhält nachweislich neuen, anderen Seed"). u64 space
+    /// makes an accidental collision here astronomically unlikely.
+    #[test]
+    fn each_new_game_gets_a_distinct_flower_battle_seed() {
+        let game_a = Game::new(
+            "game-seed-a".to_string(),
+            "INVA".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz("SeedA"),
+        );
+        let game_b = Game::new(
+            "game-seed-b".to_string(),
+            "INVB".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz("SeedB"),
+        );
+        assert_ne!(game_a.flower_battle_seed, game_b.flower_battle_seed);
     }
 }

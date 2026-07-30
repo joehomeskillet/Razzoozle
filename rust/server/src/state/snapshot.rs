@@ -11,7 +11,9 @@ use tracing::{info, warn};
 // v4: selectedModes.teamAssignment (WP #952). v3 snaps omit it → SelfAssign default.
 // v5: activeEffects FlowerBattle power-up status (WP #932). v1–v4 omit → empty.
 // v6: flowerBattleOffers + sunPoints + winnerTeamIds (WP #933). v1–v5 omit → empty.
-const SNAPSHOT_VERSION: u32 = 6;
+// v7: flowerBattleSeed persisted CSPRNG garden-background seed (WP #939A).
+//     v1–v6 omit → default 0 (safe fallback, does not crash restore).
+const SNAPSHOT_VERSION: u32 = 7;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -163,6 +165,8 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "flowerBattleSunPoints": flower_battle_sun_points_to_json(&game.flower_battle_sun_points),
         "flowerBattleWinnerTeamIds": game.flower_battle_winner_team_ids.clone(),
         "finishBroadcastDone": game.finish_broadcast_done,
+        // WP #939A: garden-background CSPRNG seed (v7)
+        "flowerBattleSeed": game.flower_battle_seed,
     })
 }
 
@@ -682,6 +686,13 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
             .get("finishBroadcastDone")
             .and_then(|v| v.as_bool())
             .unwrap_or(false),
+        // WP #939A: garden-background seed (v7); v1–v6 snapshots omit it →
+        // safe static default (0), never re-rolled at restore time so a
+        // restore stays idempotent/deterministic given the same raw snapshot.
+        flower_battle_seed: snap
+            .get("flowerBattleSeed")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
     };
 
     // Restore last manager status if present
@@ -1382,10 +1393,57 @@ mod tests {
         );
     }
 
-    /// WP #933: SNAPSHOT_VERSION is 6 (offers + sun + winners; #932 was 5).
+    /// WP #939A: SNAPSHOT_VERSION is 7 (flowerBattleSeed; #933 was 6).
     #[test]
-    fn test_snapshot_version_is_6() {
-        assert_eq!(SNAPSHOT_VERSION, 6, "SNAPSHOT_VERSION must be 6");
+    fn test_snapshot_version_is_7() {
+        assert_eq!(SNAPSHOT_VERSION, 7, "SNAPSHOT_VERSION must be 7");
+    }
+
+    /// WP #939A: flowerBattleSeed survives snapshot roundtrip; v6-shaped
+    /// snaps (pre-#939A) restore to the safe default (0), never crash, and
+    /// never re-roll a fresh random value at restore time.
+    #[test]
+    fn test_flower_battle_seed_snapshot_roundtrip() {
+        use razzoozle_protocol::quizz::Quizz;
+
+        let empty_quiz = Quizz {
+            subject: "Seed".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut game = Game::new(
+            "game-seed-rt".to_string(),
+            "INVSEEDRT".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz,
+        );
+        game.flower_battle_seed = 987_654_321;
+
+        let snap = game_to_snapshot(&game);
+        assert_eq!(
+            snap.get("flowerBattleSeed").and_then(|v| v.as_u64()),
+            Some(987_654_321),
+            "flowerBattleSeed must be present in v7 snapshot"
+        );
+
+        let restored = game_from_snapshot(&snap).expect("restore");
+        assert_eq!(
+            restored.flower_battle_seed, 987_654_321,
+            "reconnect/restore must yield the identical seed (FlowerGardenScene determinism)"
+        );
+
+        // Defensive: drop flowerBattleSeed (simulates v6 snapshot) → default 0.
+        let mut v6_like = snap.clone();
+        v6_like
+            .as_object_mut()
+            .map(|o| o.remove("flowerBattleSeed"));
+        let restored_v6 = game_from_snapshot(&v6_like).expect("restore v6-like");
+        assert_eq!(
+            restored_v6.flower_battle_seed, 0,
+            "v6 snap must restore the safe static default, not a crash or fresh reroll"
+        );
     }
 
     /// WP #932: activeEffects survive roundtrip; v4-shaped snaps restore empty.
