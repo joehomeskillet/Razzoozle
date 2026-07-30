@@ -3,23 +3,33 @@ import type { SharedResult } from "@razzoozle/common/types/game"
 import Background from "@razzoozle/web/components/Background"
 import Button from "@razzoozle/web/components/Button"
 import Loader from "@razzoozle/web/components/Loader"
+import { dispatchCelebration } from "@razzoozle/web/experiences/shared/celebration/ConfettiAdapter"
 import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence"
 import TrophySticker from "@razzoozle/web/features/game/components/TrophySticker"
 import { useEvent, useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { safeHex } from "@razzoozle/web/features/game/utils/color"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
-import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { Share2, Sparkles } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-// react-confetti is lazy-loaded into its own chunk so it stays out of the eager
-// bundle: it only fires once the shared result has loaded, never on first paint.
-const ReactConfetti = lazy(() => import("react-confetti"))
+/**
+ * Full-screen award-reveal condition — kept as a named export so the SSR
+ * regression suite (SharePage.test.tsx) can assert it directly: `result`
+ * only ever becomes non-null via a socket event, which never fires during
+ * renderToStaticMarkup, so the trigger can't be exercised via a component
+ * render.
+ */
+export function shouldFireAwardReveal(
+  hasResult: boolean,
+  reducedMotion: boolean | null | undefined,
+): boolean {
+  return hasResult && !reducedMotion
+}
 
 interface Props {
   id: string
@@ -133,7 +143,6 @@ const SharePage = ({ id }: Props) => {
   const { connect, isConnected, socket } = useSocket()
   const { t, i18n } = useTranslation()
   const reducedMotion = useReducedMotion()
-  const { width, height } = useScreenSize()
 
   const [result, setResult] = useState<SharedResult | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -173,6 +182,18 @@ const SharePage = ({ id }: Props) => {
   )
 
   useEvent(EVENTS.RESULTS.SHARED_DATA, handleSharedData)
+
+  // Award-reveal confetti — fires once via the shared celebration adapter
+  // instead of mounting a persistent react-confetti canvas. `result` only
+  // ever transitions null → object once per share-page load.
+  useEffect(() => {
+    if (shouldFireAwardReveal(!!result, reducedMotion)) {
+      void dispatchCelebration(
+        { id: "share-award-reveal", kind: "award-reveal", zIndex: 50 },
+        !!reducedMotion,
+      )
+    }
+  }, [result, reducedMotion])
 
   useEffect(() => {
     // Only arm the not-found timer once we're actually connected and still have
@@ -258,18 +279,6 @@ const SharePage = ({ id }: Props) => {
 
   return (
     <Background field="cream" align="top">
-      {result && !reducedMotion && (
-        <Suspense fallback={null}>
-          <ReactConfetti
-            width={width}
-            height={height}
-            recycle={false}
-            numberOfPieces={300}
-            className="pointer-events-none fixed inset-0 z-50"
-          />
-        </Suspense>
-      )}
-
       {/* Superlative recap reveal — overlays the podium until it completes,
           mirroring the live Podium. RecapSequence supplies its own absolute
           inset-0 z-40 placement; we only mount it (never edit it). */}
