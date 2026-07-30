@@ -206,6 +206,25 @@ describe("GameWrapper route-level height chain (WP-958D)", () => {
     expect(html).not.toContain("h-screen")
   })
 
+  it("spans the full route width inside the manager's row-flex wrapper (WP-958E)", () => {
+    // /party/manager mounts GameWrapper inside `flex h-dvh w-full` — a row
+    // flex container, so the section is a flex item whose main-axis (width)
+    // shrink-fits to content without an explicit width. That horizontal
+    // shrink shifted SHOW_START and the Flower Battle presenter HUD off the
+    // route center. w-full pins the section to the route width while the
+    // WP-958D h-dvh/overflow-hidden no-scroll contract stays intact.
+    const html = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_START} manager>
+        <div>stage content</div>
+      </GameWrapper>,
+    )
+
+    const sectionClass = sectionClassOf(html)
+    expect(sectionClass).toMatch(/(^|\s)w-full(\s|$)/)
+    expect(sectionClass).toMatch(/(^|\s)h-dvh(\s|$)/)
+    expect(sectionClass).toMatch(/(^|\s)overflow-hidden(\s|$)/)
+  })
+
   it("keeps the player client on the legacy min-h-dvh growth chain (non-presenter surfaces unchanged)", () => {
     const html = renderToStaticMarkup(
       <GameWrapper statusName={STATUS.SHOW_QUESTION}>
