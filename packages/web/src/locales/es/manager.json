@@ -273,119 +273,13 @@
     }
   },
   "theme": {
-    "branding": "Identidad de marca",
-    "appTitle": "Título de la app",
-    "logo": "Logotipo",
-    "default": "Estándar",
-    "showFooter": "Mostrar el pie de página «Razzoozle»",
-    "upload": "Imagen",
-    "preview": {
-      "title": "Vista previa",
-      "join": "Unirse",
-      "question": "Pregunta",
-      "leaderboard": "Clasificación",
-      "openWindow": "Abrir vista previa en vivo"
-    },
-    "contrast": {
-      "hint": "Contraste",
-      "fail": "Contraste bajo"
-    },
-    "uiColors": "Colores de la interfaz",
-    "colors": {
-      "primary": "Primario",
-      "background": "Fondo",
-      "accent": "Acento",
-      "text": "Texto"
-    },
-    "answerColors": "Colores de las respuestas",
-    "contrastNote": "Los colores primarios claros se oscurecen automáticamente para el texto y los iconos para que sigan siendo legibles.",
-    "scrim": "Oscurecer el fondo ({{value}}%)",
-    "backgrounds": "Fondos",
-    "save": "Guardar",
-    "reset": "Restablecer",
-    "toast": {
-      "imageUploaded": "Imagen subida",
-      "saved": "Diseño guardado"
-    },
-    "templates": {
-      "title": "Plantillas",
-      "save": "Guardar como plantilla",
-      "saved": "Plantilla guardada",
-      "namePrompt": "Nombre de la plantilla",
-      "apply": "Aplicar",
-      "delete": "Eliminar",
-      "deleteConfirm": "¿Seguro que quieres eliminar la plantilla «{{name}}»",
-      "emptyHeadline": "Aún no hay plantillas",
-      "none": "Aún no hay plantillas guardadas",
-      "edit": "Editar",
-      "importError": "Archivo de plantilla no válido",
-      "readError": "No se pudo leer el archivo",
-      "import": "Importar plantilla",
-      "export": "Exportar plantilla"
-    },
-    "animation": {
-      "title": "Animación",
-      "description": "Ajusta la sensación del juego: fuerza del resorte, duración y desfase de aparición.",
-      "springStiffness": "Rigidez del resorte",
-      "springDamping": "Amortiguación del resorte",
-      "durationScale": "Factor de duración",
-      "staggerScale": "Factor de desfase",
-      "previewLabel": "Vista previa",
-      "replay": "Reproducir"
-    },
-    "animatedBg": {
-      "title": "Fondo animado",
-      "slot": {
-        "auth": "Inicio y unirse",
-        "managerGame": "Pantalla del anfitrión",
-        "playerGame": "Móvil del jugador"
-      },
-      "speed": "Velocidad",
-      "intensity": "Intensidad",
-      "iconCount": "Iconos",
-      "color": "Color",
-      "wallpaper": "Imagen de fondo",
-      "toggle": "Fondo animado",
-      "mode": {
-        "animated": "Animado",
-        "wallpaper": "Fondo de pantalla"
-      },
-      "css": {
-        "title": "Editor CSS",
-        "description": "CSS personalizado para el fondo animado (p. ej. sobrescribir .cb-blob, keyframes).",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "Fondo animado activo"
-    },
     "sounds": {
-      "title": "Sonidos",
-      "description": "Sube un sonido propio por ranura. Vacío = sonido predeterminado.",
-      "default": "Predeterminado",
-      "custom": "Personalizado",
-      "upload": "Subir",
-      "test": "Reproducir",
-      "reset": "Restablecer",
-      "toast": {
-        "uploaded": "Sonido subido"
-      },
       "slots": {
-        "answersMusic": "Música (pregunta activa)",
-        "answersSound": "Sonido (pregunta activa)",
-        "podiumThree": "Podio – 3.er puesto",
-        "podiumSecond": "Podio – 2.º puesto",
-        "podiumFirst": "Podio – 1.er puesto",
-        "podiumSnearRoll": "Podio – redoble de tambor",
-        "results": "Resultados",
-        "show": "Revelación",
-        "boump": "Tic / Boump",
-        "tierBronze": "Logro – Bronce",
-        "tierSilver": "Logro – Plata",
-        "tierGold": "Logro – Oro",
-        "tierDiamant": "Logro – Diamante"
+        "flowerFertilizer": "Sonido de Fertilizante (Batalla Floral)",
+        "flowerSunbeam": "Sonido de Rayo Solar (Batalla Floral)",
+        "flowerAcidRain": "Sonido de Lluvia Ácida (Batalla Floral)"
       }
-    },
-    "title": "Diseño",
-    "intro": "Adapta colores, logo y apariencia a tu escuela."
+    }
   },
   "submissions": {
     "empty": "No hay sugerencias pendientes.",

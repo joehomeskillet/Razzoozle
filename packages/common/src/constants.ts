@@ -642,6 +642,8 @@ export const SOUND_SLOTS = [
   "tierSilver",
   "tierGold",
   "tierDiamant",
+  // WP #944: Flower Battle sound slots. flowerBloom intentionally not imported;
+  // tierGold.mp3 (existing chime) reused for final bloom moment (#944 Audit).
   "flowerFertilizer",
   "flowerSunbeam",
   "flowerAcidRain",

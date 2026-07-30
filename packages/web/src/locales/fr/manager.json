@@ -273,119 +273,13 @@
     }
   },
   "theme": {
-    "branding": "Image de marque",
-    "appTitle": "Titre de l'application",
-    "logo": "Logo",
-    "default": "Par défaut",
-    "showFooter": "Afficher le pied de page « Razzoozle »",
-    "upload": "Image",
-    "preview": {
-      "title": "Aperçu",
-      "join": "Rejoindre",
-      "question": "Question",
-      "leaderboard": "Classement",
-      "openWindow": "Ouvrir l’aperçu en direct"
-    },
-    "contrast": {
-      "hint": "Contraste",
-      "fail": "Contraste faible"
-    },
-    "uiColors": "Couleurs de l'interface",
-    "colors": {
-      "primary": "Primaire",
-      "background": "Arrière-plan",
-      "accent": "Accent",
-      "text": "Texte"
-    },
-    "answerColors": "Couleurs des réponses",
-    "contrastNote": "Les couleurs primaires claires sont automatiquement assombries pour le texte et les icônes afin de rester lisibles.",
-    "scrim": "Assombrir l'arrière-plan ({{value}} %)",
-    "backgrounds": "Arrière-plans",
-    "save": "Enregistrer",
-    "reset": "Réinitialiser",
-    "toast": {
-      "imageUploaded": "Image envoyée",
-      "saved": "Apparence enregistrée"
-    },
-    "templates": {
-      "title": "Modèles",
-      "save": "Enregistrer comme modèle",
-      "saved": "Modèle enregistré",
-      "namePrompt": "Nom du modèle",
-      "apply": "Appliquer",
-      "delete": "Supprimer",
-      "deleteConfirm": "Veux-tu vraiment supprimer le modèle « {{name}} »",
-      "emptyHeadline": "Aucun modèle pour l’instant",
-      "none": "Aucun modèle enregistré pour l'instant",
-      "edit": "Modifier",
-      "importError": "Fichier de modèle non valide",
-      "readError": "Impossible de lire le fichier",
-      "import": "Importer un modèle",
-      "export": "Exporter le modèle"
-    },
-    "animation": {
-      "title": "Animation",
-      "description": "Affinez le ressenti en jeu — force du ressort, durée et décalage des apparitions.",
-      "springStiffness": "Rigidité du ressort",
-      "springDamping": "Amortissement du ressort",
-      "durationScale": "Facteur de durée",
-      "staggerScale": "Facteur de décalage",
-      "previewLabel": "Aperçu",
-      "replay": "Rejouer"
-    },
-    "animatedBg": {
-      "title": "Arrière-plan animé",
-      "slot": {
-        "auth": "Démarrer et rejoindre",
-        "managerGame": "Écran hôte",
-        "playerGame": "Téléphone du joueur"
-      },
-      "speed": "Vitesse",
-      "intensity": "Intensité",
-      "iconCount": "Icônes",
-      "color": "Couleur",
-      "wallpaper": "Image d'arrière-plan",
-      "toggle": "Arrière-plan animé",
-      "mode": {
-        "animated": "Animé",
-        "wallpaper": "Fond d'écran"
-      },
-      "css": {
-        "title": "Éditeur CSS",
-        "description": "CSS personnalisé pour l'arrière-plan animé (p. ex. remplacer .cb-blob, keyframes).",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "Arrière-plan animé actif"
-    },
     "sounds": {
-      "title": "Sons",
-      "description": "Téléverse un son personnalisé par emplacement. Vide = son par défaut.",
-      "default": "Par défaut",
-      "custom": "Personnalisé",
-      "upload": "Téléverser",
-      "test": "Écouter",
-      "reset": "Réinitialiser",
-      "toast": {
-        "uploaded": "Son téléversé"
-      },
       "slots": {
-        "answersMusic": "Musique (question en cours)",
-        "answersSound": "Son (question en cours)",
-        "podiumThree": "Podium – 3e place",
-        "podiumSecond": "Podium – 2e place",
-        "podiumFirst": "Podium – 1re place",
-        "podiumSnearRoll": "Podium – roulement de tambour",
-        "results": "Résultats",
-        "show": "Révélation",
-        "boump": "Tic / Boump",
-        "tierBronze": "Succès – Bronze",
-        "tierSilver": "Succès – Argent",
-        "tierGold": "Succès – Or",
-        "tierDiamant": "Succès – Diamant"
+        "flowerFertilizer": "Son d'Engrais (Bataille Florale)",
+        "flowerSunbeam": "Son de Rayon Solaire (Bataille Florale)",
+        "flowerAcidRain": "Son de Pluie Acide (Bataille Florale)"
       }
-    },
-    "title": "Design",
-    "intro": "Adapte les couleurs, le logo et l'identité à ton école."
+    }
   },
   "submissions": {
     "empty": "Aucune proposition en attente.",
