@@ -46,7 +46,7 @@ const doReload = (): void => {
 // Triggered when a freshly-activated SW takes control. Reload immediately when
 // safe; otherwise arm a one-shot store subscription that fires the reload the
 // moment the game leaves an active-question phase.
-const handleActivatedUpdate = (): void => {
+export const handleSwUpdateActivated = (): void => {
   if (refreshing) {
     return
   }
@@ -74,6 +74,13 @@ const handleActivatedUpdate = (): void => {
   const unsubManager = useManagerStore.subscribe(tryReload)
 }
 
+
+const probeSwUpdate = (): void => {
+  void navigator.serviceWorker.getRegistration().then((registration) => {
+    registration?.update()
+  })
+}
+
 // Wire up the controllerchange listener for the auto-injected (registerType:
 // "autoUpdate") service worker. A new deploy -> new SW installs, skipWaiting +
 // clientsClaim activate it -> `controllerchange` fires -> guarded reload.
@@ -87,12 +94,13 @@ export const initSwAutoReload = (): void => {
     return
   }
   const hadControllerAtStartup = !!navigator.serviceWorker.controller
+  probeSwUpdate()
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadControllerAtStartup) {
       // First-ever SW taking control of this client — not an update.
       return
     }
-    handleActivatedUpdate()
+    handleSwUpdateActivated()
   })
 }

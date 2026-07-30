@@ -48,11 +48,13 @@ const RELOAD_ONCE_KEY = "rzl_sw_reloaded"
 
 let ccListeners: Array<() => void>
 let reloadMock: ReturnType<typeof vi.fn>
+let updateMock: ReturnType<typeof vi.fn>
 let sessionStore: Map<string, string>
 
 const setupGlobals = (controller: object | null): void => {
   ccListeners = []
   reloadMock = vi.fn()
+  updateMock = vi.fn()
   sessionStore = new Map<string, string>()
 
   vi.stubGlobal("navigator", {
@@ -63,6 +65,7 @@ const setupGlobals = (controller: object | null): void => {
           ccListeners.push(cb)
         }
       },
+      getRegistration: vi.fn().mockResolvedValue({ update: updateMock }),
     },
   })
 
@@ -152,4 +155,14 @@ describe("initSwAutoReload", () => {
 
     expect(reloadMock).toHaveBeenCalledTimes(1)
   })
+  it("probes for SW updates on init", async () => {
+    setupGlobals({})
+    const { initSwAutoReload } = await import("./swAutoReload")
+
+    initSwAutoReload()
+    await vi.waitFor(() => {
+      expect(updateMock).toHaveBeenCalledTimes(1)
+    })
+  })
+
 })
