@@ -3,7 +3,6 @@ import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
 import { TYPE_META, TYPE_CATEGORIES } from "@razzoozle/web/lib/questionTypeMeta"
 import { useTranslation } from "react-i18next"
 import {
-  rowShellBase,
   rowRestState,
   rowHoverState,
   rowSelectedState,
@@ -17,6 +16,13 @@ export interface QuestionTypeDropdownListProps {
   excludeTypes?: QuestionTypeKey[]
   klassenEnabled?: boolean
 }
+
+/**
+ * Dropdown-spezifische Basis-Klasse: rowShellBase mit überschriebenem Radius (8px statt 16px).
+ * Verhindert Spezifitäts-Kollisionen durch separate Konstante (nicht additives Stacking).
+ * Grund: Dropdown-Einträge sollen sanftere Radii haben als Manager-Listen-Zeilen.
+ */
+const dropdownRowShell = "rounded-lg outline-2 -outline-offset-2 transition-colors"
 
 /**
  * QuestionTypeDropdownList — Pure listbox content (portal-free, SSR-testable).
@@ -75,7 +81,7 @@ export function QuestionTypeDropdownList({
                   data-testid={`question-type-option-${type.id}`}
                   onClick={() => onSelect(type.id)}
                   className={clsx(
-                    rowShellBase,
+                    dropdownRowShell,
                     "w-full",
                     rowShellDensity.compact,
                     "flex items-center gap-3 text-left px-4 py-2",
