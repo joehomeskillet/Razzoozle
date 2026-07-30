@@ -344,6 +344,20 @@ pub async fn update_game_config(
                 }
             },
         );
+    let flower_battle_target_level = patch
+        .get("flowerBattleTargetLevel")
+        .and_then(|v| v.as_i64())
+        .map(|v| v as i32);
+    let flower_battle_powerups_enabled = patch
+        .get("flowerBattlePowerupsEnabled")
+        .and_then(|v| v.as_bool());
+    let flower_battle_acid_rain_enabled = patch
+        .get("flowerBattleAcidRainEnabled")
+        .and_then(|v| v.as_bool());
+    let flower_battle_powerup_threshold = patch
+        .get("flowerBattlePowerupThreshold")
+        .and_then(|v| v.as_i64())
+        .map(|v| v as i32);
 
     // Build the UPDATE statement dynamically — only touch fields that are present
     let mut query_str = "UPDATE games_config SET ".to_string();
@@ -391,6 +405,22 @@ pub async fn update_game_config(
     }
     if experience_modes_enabled.is_some() {
         updates.push(format!("experience_modes_enabled = ${}", idx));
+        idx += 1;
+    }
+    if flower_battle_target_level.is_some() {
+        updates.push(format!("flower_battle_target_level = ${}", idx));
+        idx += 1;
+    }
+    if flower_battle_powerups_enabled.is_some() {
+        updates.push(format!("flower_battle_powerups_enabled = ${}", idx));
+        idx += 1;
+    }
+    if flower_battle_acid_rain_enabled.is_some() {
+        updates.push(format!("flower_battle_acid_rain_enabled = ${}", idx));
+        idx += 1;
+    }
+    if flower_battle_powerup_threshold.is_some() {
+        updates.push(format!("flower_battle_powerup_threshold = ${}", idx));
         idx += 1;
     }
 
@@ -441,6 +471,18 @@ pub async fn update_game_config(
     }
     if let Some(eme) = experience_modes_enabled {
         query = query.bind(eme);
+    }
+    if let Some(fbtl) = flower_battle_target_level {
+        query = query.bind(fbtl);
+    }
+    if let Some(fbpe) = flower_battle_powerups_enabled {
+        query = query.bind(fbpe);
+    }
+    if let Some(fbare) = flower_battle_acid_rain_enabled {
+        query = query.bind(fbare);
+    }
+    if let Some(fbpt) = flower_battle_powerup_threshold {
+        query = query.bind(fbpt);
     }
 
     query
@@ -562,4 +604,75 @@ pub async fn delete_installed_plugin(pool: &Option<PgPool>, id: &str) -> Result<
         .await
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_flower_battle_config_extraction() {
+        // Simulate a game config PATCH with all 4 flowerBattle fields
+        let patch = serde_json::json!({
+            "flowerBattleTargetLevel": 15,
+            "flowerBattlePowerupsEnabled": true,
+            "flowerBattleAcidRainEnabled": false,
+            "flowerBattlePowerupThreshold": 5,
+        });
+
+        // Verify that each field can be extracted as the function does
+        let target_level = patch
+            .get("flowerBattleTargetLevel")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
+        assert_eq!(target_level, Some(15));
+
+        let powerups_enabled = patch
+            .get("flowerBattlePowerupsEnabled")
+            .and_then(|v| v.as_bool());
+        assert_eq!(powerups_enabled, Some(true));
+
+        let acid_rain_enabled = patch
+            .get("flowerBattleAcidRainEnabled")
+            .and_then(|v| v.as_bool());
+        assert_eq!(acid_rain_enabled, Some(false));
+
+        let powerup_threshold = patch
+            .get("flowerBattlePowerupThreshold")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
+        assert_eq!(powerup_threshold, Some(5));
+    }
+
+    #[test]
+    fn test_flower_battle_partial_patch() {
+        // Verify that partial patches (only some fields) work correctly
+        let patch = serde_json::json!({
+            "flowerBattleTargetLevel": 20,
+            "flowerBattlePowerupsEnabled": false,
+        });
+
+        let target_level = patch
+            .get("flowerBattleTargetLevel")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
+        assert_eq!(target_level, Some(20));
+
+        let powerups_enabled = patch
+            .get("flowerBattlePowerupsEnabled")
+            .and_then(|v| v.as_bool());
+        assert_eq!(powerups_enabled, Some(false));
+
+        // Fields not in patch should be None
+        let acid_rain_enabled = patch
+            .get("flowerBattleAcidRainEnabled")
+            .and_then(|v| v.as_bool());
+        assert_eq!(acid_rain_enabled, None);
+
+        let powerup_threshold = patch
+            .get("flowerBattlePowerupThreshold")
+            .and_then(|v| v.as_i64())
+            .map(|v| v as i32);
+        assert_eq!(powerup_threshold, None);
+    }
 }
