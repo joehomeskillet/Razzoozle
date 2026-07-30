@@ -1,4 +1,4 @@
-//! Player event handlers: JOIN, LOGIN, SELECTED_ANSWER, LEAVE, SELECT_TEAM, SET_AVATAR, RECONNECT
+//! Player event handlers: JOIN, LOGIN, SELECTED_ANSWER, SELECT_CONFIDENCE, LEAVE, SELECT_TEAM, SET_AVATAR, RECONNECT
 use super::lifecycle;
 use super::HandlerCtx;
 use razzoozle_protocol::constants;
@@ -6,16 +6,19 @@ use socketioxide::extract::SocketRef;
 
 mod answer;
 mod login;
+mod select_confidence;
 mod session;
 
 use answer::register_selected_answer;
 use login::{register_join, register_login};
+use select_confidence::register_select_confidence;
 use session::{register_leave, register_reconnect, register_select_team, register_set_avatar};
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_join(socket, ctx.clone());
     register_login(socket, ctx.clone());
     register_selected_answer(socket, ctx.clone());
+    register_select_confidence(socket, ctx.clone());
     register_leave(socket, ctx.clone());
     register_select_team(socket, ctx.clone());
     register_set_avatar(socket, ctx.clone());

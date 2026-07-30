@@ -236,6 +236,26 @@ pub struct PlayerSelectedAnswer {
     pub data: PlayerSelectedAnswerData,
 }
 
+/// Optional pyramid confidence vote after the regular answer (ShowResult window).
+/// Distinct from the exclusive `confidence` question type (`ConfidenceLevel` in TS).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "lowercase")]
+pub enum PyramidConfidenceLevel {
+    Low,
+    Medium,
+    High,
+}
+
+/// C2S payload for `player:selectConfidence`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerSelectConfidence {
+    pub game_id: String,
+    pub confidence: PyramidConfidenceLevel,
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -402,5 +422,33 @@ mod tests {
             .as_object()
             .unwrap()
             .contains_key("playerToken"));
+    }
+
+    #[test]
+    fn test_player_select_confidence_roundtrip() {
+        let payload = PlayerSelectConfidence {
+            game_id: "g-pyramid".to_string(),
+            confidence: PyramidConfidenceLevel::High,
+        };
+
+        let json_str = serde_json::to_string(&payload).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+        assert_eq!(json["gameId"], "g-pyramid");
+        assert_eq!(json["confidence"], "high");
+
+        let restored: PlayerSelectConfidence = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(payload, restored);
+    }
+
+    #[test]
+    fn test_pyramid_confidence_level_lowercase_wire() {
+        let json = json!({
+            "gameId": "g1",
+            "confidence": "medium"
+        });
+
+        let payload: PlayerSelectConfidence = serde_json::from_value(json).unwrap();
+        assert_eq!(payload.confidence, PyramidConfidenceLevel::Medium);
     }
 }
