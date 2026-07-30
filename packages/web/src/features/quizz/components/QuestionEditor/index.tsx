@@ -10,14 +10,16 @@ import QuestionEditorFillBlank from "@razzoozle/web/features/quizz/components/Qu
 import QuestionEditorMatching from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMatching"
 import QuestionEditorSequencing from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSequencing"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
-import QuestionEditorType from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorType"
+import { QuestionTypeSelector } from "@razzoozle/web/features/quizz/components/QuestionTypeSelector"
 import QuestionEditorMathe from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMathe"
 import QuestionEditorWortarten from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorWortarten"
 import QuestionEditorVokabel from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorVokabel"
+import { buildTypePatch } from "@razzoozle/web/features/quizz/questionTypeTransition"
 import { motion, useReducedMotion } from "motion/react"
 import { type ReactNode } from "react"
+import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
 
-type QuestionTypeKey = QuestionType | "vokabelliste"
+type QuestionTypeKeyLocal = QuestionType | "vokabelliste"
 
 interface RevealProps {
   children: ReactNode
@@ -47,7 +49,7 @@ const Reveal = ({ children, index }: RevealProps) => {
 }
 
 interface QuestionEditorProps {
-  excludeTypes?: QuestionTypeKey[]
+  excludeTypes?: QuestionTypeKeyLocal[]
 }
 
 /**
@@ -63,7 +65,7 @@ interface QuestionEditorProps {
  * /submit wraps the same components, so their markup stays untouched here.
  */
 const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
-  const { currentQuestion } = useQuizzEditor()
+  const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
   const isSlider = currentQuestion.type === "slider"
   const isTypeAnswer = currentQuestion.type === "type-answer"
   const isSentenceBuilder = currentQuestion.type === "sentence-builder"
@@ -74,6 +76,12 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isMathematik = currentQuestion.type === "mathematik"
   const isWortarten = currentQuestion.type === "wortarten"
   const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
+
+  const handleTypeChange = (next: QuestionTypeKey) => {
+    updateQuestion(currentIndex, buildTypePatch(currentQuestion, next))
+  }
+
+  const currentType = (currentQuestion.type ?? "choice") as QuestionTypeKey
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
@@ -152,7 +160,11 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
 
         <Reveal index={3}>
           <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <QuestionEditorType excludeTypes={excludeTypes} />
+            <QuestionTypeSelector
+              currentType={currentType}
+              onTypeChange={handleTypeChange}
+              excludeTypes={excludeTypes}
+            />
           </div>
         </Reveal>
       </main>
