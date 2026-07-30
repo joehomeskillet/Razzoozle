@@ -95,7 +95,8 @@
     "confidence": "信心评级",
     "confidenceDesc": "玩家表明对自己答案的把握程度",
     "microLesson": "微课",
-    "microLessonDesc": "简短可翻阅的教学内容，不计分"
+    "microLessonDesc": "简短可翻阅的教学内容，不计分",
+    "selectType": "选择题目类型"
   },
   "multipleSelect": {
     "minSolutionsHint": "至少标记 2 个正确答案",

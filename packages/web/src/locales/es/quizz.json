@@ -95,7 +95,8 @@
     "confidence": "Nivel de confianza",
     "confidenceDesc": "Los jugadores indican qué tan seguros están de su respuesta",
     "microLesson": "Microlección",
-    "microLessonDesc": "Contenido breve para repasar, sin puntuación"
+    "microLessonDesc": "Contenido breve para repasar, sin puntuación",
+    "selectType": "Seleccionar tipo de pregunta"
   },
   "multipleSelect": {
     "minSolutionsHint": "Marcar al menos 2 respuestas correctas",
