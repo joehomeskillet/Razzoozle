@@ -266,7 +266,9 @@ pub async fn hydrate_plugins_from_pg(pool: &Option<sqlx::PgPool>, config_base: &
 
 /// Load game configuration from the database.
 /// Returns (team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode,
-/// low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled).
+/// low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled,
+/// flower_battle_target_level, flower_battle_powerups_enabled, flower_battle_acid_rain_enabled,
+/// flower_battle_powerup_threshold).
 /// low_latency_config is the full jsonb object that should be merged with low_latency_enabled into lowLatencyMode.
 /// Returns Nones if pool is None or DB query fails.
 pub async fn get_game_config(
@@ -281,10 +283,18 @@ pub async fn get_game_config(
     Option<bool>,
     Option<String>,
     Option<String>,
+    Option<i32>,
+    Option<bool>,
+    Option<bool>,
+    Option<i32>,
 ) {
     let pool = match pool {
         Some(p) => p,
-        None => return (None, None, None, None, None, None, None, None, None),
+        None => {
+            return (
+                None, None, None, None, None, None, None, None, None, None, None, None, None,
+            )
+        }
     };
 
     let row: Option<(
@@ -297,9 +307,15 @@ pub async fn get_game_config(
         Option<bool>,
         Option<String>,
         Option<String>,
+        Option<i32>,
+        Option<bool>,
+        Option<bool>,
+        Option<i32>,
     )> = sqlx::query_as(
         "SELECT team_mode, low_latency_enabled, join_locked, randomize_answers, scoring_mode, \
-         low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled \
+         low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled, \
+         flower_battle_target_level, flower_battle_powerups_enabled, \
+         flower_battle_acid_rain_enabled, flower_battle_powerup_threshold \
          FROM games_config WHERE id = 1",
     )
     .fetch_optional(pool)
@@ -307,7 +323,9 @@ pub async fn get_game_config(
     .ok()
     .flatten();
 
-    row.unwrap_or((None, None, None, None, None, None, None, None, None))
+    row.unwrap_or((
+        None, None, None, None, None, None, None, None, None, None, None, None, None,
+    ))
 }
 
 /// Update game config with a partial patch. Deep-merges into existing row.
@@ -610,69 +628,64 @@ pub async fn delete_installed_plugin(pool: &Option<PgPool>, id: &str) -> Result<
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_flower_battle_config_extraction() {
-        // Simulate a game config PATCH with all 4 flowerBattle fields
+    // Pattern mirrors rust/server/src/db/classes.rs (`mutations_without_pool_return_err`
+    // / `get_queries_without_pool_return_empty`): exercise the REAL functions'
+    // no-pool early-return branch. A live Postgres round-trip (the dynamic UPDATE
+    // actually persisting flower_battle_* and get_game_config's SELECT reading
+    // them back) needs a real database and is not covered by this in-process
+    // suite (no Ephemeral-PG in this gate) — verified post-deploy instead.
+
+    #[tokio::test]
+    async fn get_game_config_without_pool_returns_all_none() {
+        // 13-tuple exceeds the arity std implements Debug/PartialEq for
+        // (max 12), so destructure and assert each field individually.
+        let (
+            team_mode,
+            low_latency_enabled,
+            join_locked,
+            randomize_answers,
+            scoring_mode,
+            low_latency_config,
+            klassen_enabled,
+            end_screen_modes,
+            experience_modes_enabled,
+            flower_battle_target_level,
+            flower_battle_powerups_enabled,
+            flower_battle_acid_rain_enabled,
+            flower_battle_powerup_threshold,
+        ) = get_game_config(&None).await;
+        assert!(team_mode.is_none());
+        assert!(low_latency_enabled.is_none());
+        assert!(join_locked.is_none());
+        assert!(randomize_answers.is_none());
+        assert!(scoring_mode.is_none());
+        assert!(low_latency_config.is_none());
+        assert!(klassen_enabled.is_none());
+        assert!(end_screen_modes.is_none());
+        assert!(experience_modes_enabled.is_none());
+        assert!(flower_battle_target_level.is_none());
+        assert!(flower_battle_powerups_enabled.is_none());
+        assert!(flower_battle_acid_rain_enabled.is_none());
+        assert!(flower_battle_powerup_threshold.is_none());
+    }
+
+    #[tokio::test]
+    async fn update_game_config_without_pool_errs_even_with_flower_battle_patch() {
         let patch = serde_json::json!({
             "flowerBattleTargetLevel": 15,
             "flowerBattlePowerupsEnabled": true,
             "flowerBattleAcidRainEnabled": false,
             "flowerBattlePowerupThreshold": 5,
         });
-
-        // Verify that each field can be extracted as the function does
-        let target_level = patch
-            .get("flowerBattleTargetLevel")
-            .and_then(|v| v.as_i64())
-            .map(|v| v as i32);
-        assert_eq!(target_level, Some(15));
-
-        let powerups_enabled = patch
-            .get("flowerBattlePowerupsEnabled")
-            .and_then(|v| v.as_bool());
-        assert_eq!(powerups_enabled, Some(true));
-
-        let acid_rain_enabled = patch
-            .get("flowerBattleAcidRainEnabled")
-            .and_then(|v| v.as_bool());
-        assert_eq!(acid_rain_enabled, Some(false));
-
-        let powerup_threshold = patch
-            .get("flowerBattlePowerupThreshold")
-            .and_then(|v| v.as_i64())
-            .map(|v| v as i32);
-        assert_eq!(powerup_threshold, Some(5));
+        assert!(update_game_config(&None, &patch).await.is_err());
     }
 
-    #[test]
-    fn test_flower_battle_partial_patch() {
-        // Verify that partial patches (only some fields) work correctly
+    #[tokio::test]
+    async fn update_game_config_without_pool_errs_on_partial_flower_battle_patch() {
         let patch = serde_json::json!({
             "flowerBattleTargetLevel": 20,
             "flowerBattlePowerupsEnabled": false,
         });
-
-        let target_level = patch
-            .get("flowerBattleTargetLevel")
-            .and_then(|v| v.as_i64())
-            .map(|v| v as i32);
-        assert_eq!(target_level, Some(20));
-
-        let powerups_enabled = patch
-            .get("flowerBattlePowerupsEnabled")
-            .and_then(|v| v.as_bool());
-        assert_eq!(powerups_enabled, Some(false));
-
-        // Fields not in patch should be None
-        let acid_rain_enabled = patch
-            .get("flowerBattleAcidRainEnabled")
-            .and_then(|v| v.as_bool());
-        assert_eq!(acid_rain_enabled, None);
-
-        let powerup_threshold = patch
-            .get("flowerBattlePowerupThreshold")
-            .and_then(|v| v.as_i64())
-            .map(|v| v as i32);
-        assert_eq!(powerup_threshold, None);
+        assert!(update_game_config(&None, &patch).await.is_err());
     }
 }

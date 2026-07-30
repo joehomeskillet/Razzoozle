@@ -58,7 +58,8 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                 // Read global config for availability gates
                 let (team_mode_avail, low_latency_enabled, _, randomize_answers, _,
-                     low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled) =
+                     low_latency_config, klassen_enabled, end_screen_modes, experience_modes_enabled,
+                     _, _, _, _) =
                     crate::db::get_game_config(&ctx.db_pool).await;
 
                 let low_latency = low_latency_enabled.unwrap_or(false);

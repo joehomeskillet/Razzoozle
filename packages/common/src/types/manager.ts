@@ -76,11 +76,10 @@ export interface ManagerConfig {
   experienceModesEnabled?: string
   // Blüten-Battle (flower_battle) MVP options — WP-FLB-18. Optional, teamMode?-
   // style back-compat: absent in old/current payloads reads as the UI default.
-  // PENDING SERVER PERSISTENCE: manager:setGameConfig's field whitelist
-  // (rust/server/src/socket/manager/config.rs) does not read these four keys
-  // yet (#933-chain lands that), so the server silently drops them today — the
-  // client emits them anyway (harmless, whitelist ignores unknown keys) and
-  // keeps the choice in local optimistic state until persistence lands.
+  // Server persistence (WP #960): manager:setGameConfig's field whitelist
+  // (rust/server/src/socket/manager/config.rs) now reads all four keys and
+  // db::update_game_config persists them to games_config; get_game_config /
+  // emitConfig round-trip them back on the ManagerConfig payload.
   //
   // Target growth level a team must reach to win the round. UI-only concept
   // today (no matching engine constant); default 10 if absent.

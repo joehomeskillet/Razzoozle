@@ -435,7 +435,8 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                 // once at Game construction (this.joinLocked); Rust's Game
                                 // doesn't cache config, so a per-login DB read is the
                                 // cheapest correct source available today.
-                                let (_, _, join_locked_opt, _, _, _, _, _, _) =
+                                let (_, _, join_locked_opt, _, _, _, _, _, _,
+                                         _, _, _, _) =
                                     crate::db::get_game_config(&db_pool).await;
                                 let join_locked = join_locked_opt.unwrap_or(false);
 
