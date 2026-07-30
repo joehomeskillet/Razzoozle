@@ -25,5 +25,27 @@
       "warning": "Warning",
       "error": "Error"
     }
+  },
+  "flowerBattlePresenter": {
+    "sunPoints": {
+      "label": "Sun points"
+    },
+    "powerUpChoice": "Team {{teamName}} chose {{powerUp}}",
+    "powerUp": {
+      "fertilizer": "Fertilizer",
+      "sunbeam": "Sunbeam",
+      "umbrella_shield": "Umbrella shield",
+      "acid_rain": "Acid rain"
+    },
+    "effect": {
+      "sunbeam": "Sunbeam active",
+      "umbrellaShield": "Shield active",
+      "acidRain": "Next growth −1"
+    }
+  },
+  "flowerPlant": {
+    "ariaStage": "Flower plant stage {{stage}}",
+    "ariaGrowth": "Growth stage {{stage}}",
+    "growthDelta": "+{{count}} growth"
   }
 }
