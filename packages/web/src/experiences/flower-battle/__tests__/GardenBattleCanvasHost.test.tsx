@@ -3,8 +3,10 @@
  * Follows ParticleCanvas attach-fake pattern (node env, no jsdom/WebGL).
  */
 
+import { act, createElement } from "react"
+import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("motion/react", () => ({
   useReducedMotion: () => true,
@@ -69,6 +71,7 @@ import {
   GardenBattleCanvasHost,
   resolveGardenRenderQuality,
   useGardenPixiApplication,
+  type GardenBattleCanvasHostInternalProps,
 } from "../GardenBattleCanvasHost"
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 import type {
@@ -187,6 +190,151 @@ function createSceneFake() {
   const destroy = vi.fn()
   const scene: GardenScene = { updateLayout, destroy }
   return { scene, updateLayout, destroy }
+}
+
+// --- Minimal DOM shim for createRoot in the node env (same proven pattern as
+// TargetTeamVote.test.tsx / useExperienceTimeline.test.ts) -------------------
+
+type DomElement = {
+  nodeType: number
+  nodeName: string
+  tagName: string
+  parentNode: DomElement | null
+  ownerDocument: DomDocument
+  children: unknown[]
+  clientWidth?: number
+  clientHeight?: number
+  className: string
+  appendChild: (child: unknown) => unknown
+  removeChild: (child: unknown) => unknown
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+  setAttribute: (name: string, value: string) => void
+  getAttribute: (name: string) => string | null
+  removeAttribute: (name: string) => void
+  hasAttribute: (name: string) => boolean
+  remove: () => void
+}
+
+type DomDocument = {
+  visibilityState: string
+  activeElement: DomElement | null
+  body: DomElement
+  defaultView: DomWindow
+  createElement: (tag: string) => DomElement
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+}
+
+type DomWindow = {
+  document: DomDocument
+  HTMLIFrameElement: new () => object
+  addEventListener: (event: string, listener: () => void) => void
+  removeEventListener: (event: string, listener: () => void) => void
+}
+
+function createDomDocument(): DomDocument {
+  const eventListeners = new Map<string, Set<() => void>>()
+  const win: DomWindow = {
+    document: null as unknown as DomDocument,
+    HTMLIFrameElement: class HTMLIFrameElement {
+      readonly tagName = "IFRAME"
+    },
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }
+  const doc: DomDocument = {
+    visibilityState: "visible",
+    activeElement: null,
+    body: null as unknown as DomElement,
+    defaultView: win,
+    createElement: (tag: string) => createDomElement(tag, doc),
+    addEventListener(event: string, listener: () => void) {
+      const listeners = eventListeners.get(event) ?? new Set<() => void>()
+      listeners.add(listener)
+      eventListeners.set(event, listeners)
+    },
+    removeEventListener(event: string, listener: () => void) {
+      eventListeners.get(event)?.delete(listener)
+    },
+  }
+  win.document = doc
+  doc.body = createDomElement("body", doc)
+  return doc
+}
+
+function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
+  const children: unknown[] = []
+  const eventListeners = new Map<string, Set<() => void>>()
+  const attributes = new Map<string, string>()
+  const element: DomElement = {
+    nodeType: 1,
+    nodeName: tag.toUpperCase(),
+    tagName: tag.toUpperCase(),
+    parentNode: null,
+    ownerDocument,
+    children,
+    className: "",
+    appendChild(child: unknown) {
+      if (
+        child &&
+        typeof child === "object" &&
+        "parentNode" in child &&
+        typeof child.parentNode !== "undefined"
+      ) {
+        ;(child as DomElement).parentNode = element
+      }
+      children.push(child)
+      return child
+    },
+    removeChild(child: unknown) {
+      const index = children.indexOf(child)
+      if (index >= 0) {
+        children.splice(index, 1)
+      }
+      return child
+    },
+    addEventListener(event: string, listener: () => void) {
+      const listeners = eventListeners.get(event) ?? new Set<() => void>()
+      listeners.add(listener)
+      eventListeners.set(event, listeners)
+    },
+    removeEventListener(event: string, listener: () => void) {
+      eventListeners.get(event)?.delete(listener)
+    },
+    setAttribute(name: string, value: string) {
+      attributes.set(name, value)
+    },
+    getAttribute(name: string) {
+      return attributes.get(name) ?? null
+    },
+    removeAttribute(name: string) {
+      attributes.delete(name)
+    },
+    hasAttribute(name: string) {
+      return attributes.has(name)
+    },
+    remove() {
+      const parent = element.parentNode as DomElement | null
+      parent?.removeChild(element)
+    },
+  }
+  if (tag.toLowerCase() === "canvas") {
+    element.clientWidth = 640
+    element.clientHeight = 360
+  }
+  return element
+}
+
+async function flushAct(run?: () => void | Promise<void>): Promise<void> {
+  await act(async () => {
+    await run?.()
+  })
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve)
+    })
+  })
 }
 
 const makeTeam = (name: string): FlowerBattleTeamState => ({
@@ -399,16 +547,15 @@ describe("attachGardenPixiApplication", () => {
     const browser = createBrowserFake({ reducedMotion: true })
     const createApplication = vi.fn(async () => createAppFake().app)
 
-    const { prefersReducedMotion, dispose } =
-      await attachGardenPixiApplication(
-        createCanvasFake(),
-        {
-          createApplication,
-          // Lifecycle-only fake — avoid token-resolved production scene in node.
-          createScene: () => createEmptyGardenScene(),
-        },
-        browser.environment,
-      )
+    const { prefersReducedMotion, dispose } = await attachGardenPixiApplication(
+      createCanvasFake(),
+      {
+        createApplication,
+        // Lifecycle-only fake — avoid token-resolved production scene in node.
+        createScene: () => createEmptyGardenScene(),
+      },
+      browser.environment,
+    )
 
     expect(prefersReducedMotion).toBe(true)
     expect(browser.environment.matchMedia).toHaveBeenCalledWith(
@@ -486,9 +633,7 @@ describe("GardenBattleCanvasHost error fallback contract", () => {
       <GardenBattleCanvasHost
         teams={TEAMS}
         quality="static"
-        fallback={
-          <div data-testid="custom-static-fallback">static ok</div>
-        }
+        fallback={<div data-testid="custom-static-fallback">static ok</div>}
       />,
     )
     expect(html).toContain('data-testid="custom-static-fallback"')
@@ -580,12 +725,15 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       createGardenScene(handle, { palette: TEST_PALETTE }),
     )
 
-    const { scene, app: attachedApp, dispose } =
-      await attachGardenPixiApplication(
-        createCanvasFake(),
-        { createApplication, createScene },
-        browser.environment,
-      )
+    const {
+      scene,
+      app: attachedApp,
+      dispose,
+    } = await attachGardenPixiApplication(
+      createCanvasFake(),
+      { createApplication, createScene },
+      browser.environment,
+    )
 
     const procedural = scene as ReturnType<typeof createGardenScene>
     const rootBefore = procedural.root
@@ -620,84 +768,149 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
     dispose()
   })
 
-  it("rerender-style team/phase updates attach once and only snapshot", async () => {
-    // Models host behavior: one attach, then repeated updateSnapshot as
-    // teams/phase change. attachOptions object identity must not reattach
-    // (host keeps injectables in refs; effect deps = effectiveQuality only).
-    const browser = createBrowserFake()
-    const createApplication = vi.fn(async () => {
-      const { app } = createAppFake()
-      return Object.assign(app, { stage: new Container() })
-    })
-    const updateSnapshot = vi.fn()
-    const updateLayout = vi.fn()
-    const destroy = vi.fn()
-    const scene: GardenScene = {
-      updateLayout,
-      destroy,
-      updateSnapshot,
+  describe("mounted host rerender", () => {
+    let domDocument: DomDocument
+
+    function findDomCanvas(root: DomElement): DomElement {
+      if (root.tagName === "CANVAS") return root
+      for (const child of root.children) {
+        if (child && typeof child === "object" && "tagName" in child) {
+          const found = findDomCanvas(child as DomElement)
+          if (found) return found
+        }
+      }
+      throw new Error("canvas element not found in DOM shim")
     }
-    const createScene = vi.fn(() => scene)
 
-    // Fresh options object each "render" — identity must not matter once attached.
-    const attachWithFreshOptions = () =>
-      attachGardenPixiApplication(
-        createCanvasFake(),
-        {
-          createApplication,
-          createScene,
-          // fresh object literal each call (parent re-render pattern)
-        },
-        browser.environment,
-      )
-
-    const first = await attachWithFreshOptions()
-    expect(createApplication).toHaveBeenCalledTimes(1)
-    expect(createScene).toHaveBeenCalledTimes(1)
-
-    // Host snapshot effect: map teams + phase into the live scene.
-    const pushSnapshot = (
-      teams: FlowerBattleTeamState[],
-      phase: string,
-    ) => {
-      scene.updateSnapshot?.({
-        teams: teams.map((t) => ({
-          name: t.name,
-          growthStage: t.growthStage,
-        })),
-        phase,
+    beforeEach(() => {
+      const browser = createBrowserFake()
+      domDocument = createDomDocument()
+      vi.stubGlobal("document", domDocument)
+      vi.stubGlobal("window", {
+        ...domDocument.defaultView,
+        matchMedia: browser.environment.matchMedia,
+        devicePixelRatio: browser.environment.devicePixelRatio,
       })
-    }
-
-    pushSnapshot(TEAMS, "question")
-    pushSnapshot(
-      [
-        { ...makeTeam("Violet"), growthStage: 5 },
-        { ...makeTeam("Orange"), growthStage: 6 },
-      ],
-      "reveal",
-    )
-
-    expect(createApplication).toHaveBeenCalledTimes(1)
-    expect(createScene).toHaveBeenCalledTimes(1)
-    expect(updateSnapshot).toHaveBeenCalledTimes(2)
-    expect(updateSnapshot.mock.calls[0]?.[0]).toMatchObject({
-      phase: "question",
-      teams: [
-        { name: "Violet", growthStage: 0 },
-        { name: "Orange", growthStage: 0 },
-      ],
+      vi.stubGlobal(
+        "HTMLElement",
+        class HTMLElement {
+          readonly tagName = "HTMLElement"
+        },
+      )
+      vi.stubGlobal(
+        "HTMLDivElement",
+        class HTMLDivElement {
+          readonly tagName = "DIV"
+        },
+      )
+      vi.stubGlobal(
+        "HTMLCanvasElement",
+        class HTMLCanvasElement {
+          readonly tagName = "CANVAS"
+        },
+      )
+      vi.stubGlobal(
+        "Node",
+        class Node {
+          readonly nodeType = 1
+        },
+      )
+      vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
     })
-    expect(updateSnapshot.mock.calls[1]?.[0]).toMatchObject({
-      phase: "reveal",
-      teams: [
-        { name: "Violet", growthStage: 5 },
-        { name: "Orange", growthStage: 6 },
-      ],
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
     })
-    expect(destroy).not.toHaveBeenCalled()
-    first.dispose()
-    expect(destroy).toHaveBeenCalledTimes(1)
+
+    it("mounted rerender with fresh teams/phase/options/env identities attaches once and snapshots only", async () => {
+      const browser = createBrowserFake()
+      const updateSnapshot = vi.fn()
+      const updateLayout = vi.fn()
+      const sceneDestroy = vi.fn()
+      const scene: GardenScene = {
+        updateLayout,
+        destroy: sceneDestroy,
+        updateSnapshot,
+      }
+      const createScene = vi.fn(() => scene)
+      let attachedApp: GardenPixiApplicationHandle | undefined
+      const createApplication = vi.fn(async () => {
+        const { app } = createAppFake()
+        attachedApp = app
+        return Object.assign(app, { stage: new Container() })
+      })
+
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      let props: GardenBattleCanvasHostInternalProps = {
+        teams: TEAMS.map((team) => ({ ...team })),
+        quality: "high",
+        phase: "question",
+        attachOptions: { createApplication, createScene },
+        environment: { ...browser.environment },
+      }
+
+      await flushAct(() => {
+        root.render(createElement(GardenBattleCanvasHost, props))
+      })
+
+      const canvasBefore = findDomCanvas(container)
+      const appBefore = attachedApp
+      const sceneBefore = scene
+
+      expect(createApplication).toHaveBeenCalledTimes(1)
+      expect(createScene).toHaveBeenCalledTimes(1)
+      expect(updateSnapshot).toHaveBeenCalledTimes(1)
+      expect(updateSnapshot.mock.calls[0]?.[0]).toMatchObject({
+        phase: "question",
+        teams: [
+          { name: "Violet", growthStage: 0 },
+          { name: "Orange", growthStage: 0 },
+        ],
+      })
+      expect(appBefore?.destroy).not.toHaveBeenCalled()
+      expect(sceneDestroy).not.toHaveBeenCalled()
+
+      props = {
+        teams: [
+          { ...makeTeam("Violet"), growthStage: 5 },
+          { ...makeTeam("Orange"), growthStage: 6 },
+        ],
+        quality: "high",
+        phase: "reveal",
+        attachOptions: { createApplication, createScene },
+        environment: { ...browser.environment },
+      }
+
+      await flushAct(() => {
+        root.render(createElement(GardenBattleCanvasHost, props))
+      })
+
+      expect(createApplication).toHaveBeenCalledTimes(1)
+      expect(createScene).toHaveBeenCalledTimes(1)
+      expect(updateSnapshot).toHaveBeenCalledTimes(2)
+      expect(updateSnapshot.mock.calls[1]?.[0]).toMatchObject({
+        phase: "reveal",
+        teams: [
+          { name: "Violet", growthStage: 5 },
+          { name: "Orange", growthStage: 6 },
+        ],
+      })
+      expect(findDomCanvas(container)).toBe(canvasBefore)
+      expect(attachedApp).toBe(appBefore)
+      expect(scene).toBe(sceneBefore)
+      expect(appBefore?.destroy).not.toHaveBeenCalled()
+      expect(sceneDestroy).not.toHaveBeenCalled()
+
+      await flushAct(() => {
+        root.unmount()
+      })
+
+      expect(appBefore?.destroy).toHaveBeenCalledTimes(1)
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+    })
   })
 
   it("host static fallback still renders FlowerGardenScene with seed/recipe", () => {
