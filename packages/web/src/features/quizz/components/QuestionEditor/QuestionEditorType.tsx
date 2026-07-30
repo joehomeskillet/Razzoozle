@@ -144,16 +144,6 @@ const TYPES: Array<{
   },
 ]
 
-const SLIDER_FIELDS: Array<{
-  field: "min" | "max" | "correct" | "step"
-  labelKey: string
-}> = [
-  { field: "min", labelKey: "quizz:slider.min" },
-  { field: "max", labelKey: "quizz:slider.max" },
-  { field: "correct", labelKey: "quizz:slider.correct" },
-  { field: "step", labelKey: "quizz:slider.step" },
-]
-
 interface QuestionEditorTypeProps {
   excludeTypes?: QuestionTypeKey[]
 }
@@ -195,30 +185,6 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
     setType(availableTypes[nextIdx].key)
   }
 
-  const toggleBonus = () =>
-    updateQuestion(currentIndex, {
-      bonus: !currentQuestion.bonus,
-      practice: false,
-    })
-
-  const togglePractice = () =>
-    updateQuestion(currentIndex, {
-      practice: !currentQuestion.practice,
-      bonus: false,
-    })
-
-  const setNum =
-    (field: "min" | "max" | "correct" | "step") =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      updateQuestion(currentIndex, {
-        [field]: value === "" ? undefined : Number.parseFloat(value),
-      })
-    }
-
-  const setUnit = (e: React.ChangeEvent<HTMLInputElement>) =>
-    updateQuestion(currentIndex, { unit: e.target.value })
-
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -254,61 +220,6 @@ const QuestionEditorType = ({ excludeTypes = [] }: QuestionEditorTypeProps) => {
             )
           })}
         </div>
-      </div>
-
-      {type === "slider" && (
-        <div className="grid gap-4 grid-cols-2">
-          {SLIDER_FIELDS.map(({ field, labelKey }) => (
-            <label key={field} className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-gray-700">
-                {t(labelKey)}
-              </span>
-              <input
-                type="number"
-                value={currentQuestion[field] ?? ""}
-                onChange={setNum(field)}
-                className="h-8 rounded-md border border-gray-300 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-              />
-            </label>
-          ))}
-          <label className="flex flex-col gap-2 col-span-2">
-            <span className="text-xs font-semibold text-gray-700">
-              {t("quizz:slider.unit")}
-            </span>
-            <input
-              type="text"
-              value={currentQuestion.unit ?? ""}
-              onChange={setUnit}
-              placeholder={t("quizz:slider.unitPlaceholder")}
-              className="h-8 rounded-md border border-gray-300 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-            />
-          </label>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentQuestion.bonus ?? false}
-            onChange={toggleBonus}
-            className="h-4 w-4 rounded border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-          />
-          <span className="text-sm font-semibold text-gray-700">
-            {t("quizz:type.bonusQuestion")}
-          </span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={currentQuestion.practice ?? false}
-            onChange={togglePractice}
-            className="h-4 w-4 rounded border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
-          />
-          <span className="text-sm font-semibold text-gray-700">
-            {t("quizz:type.practiceQuestion")}
-          </span>
-        </label>
       </div>
     </div>
   )
