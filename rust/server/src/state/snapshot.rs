@@ -9,7 +9,8 @@ use tracing::{info, warn};
 /// v3: Added selectedModes.experienceMode (WP #878)
 /// (backward-compatible via serde defaults / defensive restore for old snapshots)
 // v4: selectedModes.teamAssignment (WP #952). v3 snaps omit it → SelfAssign default.
-const SNAPSHOT_VERSION: u32 = 4;
+// v5: activeEffects FlowerBattle power-up status (WP #932). v1–v4 omit → empty.
+const SNAPSHOT_VERSION: u32 = 5;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -154,7 +155,95 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "recapStats": recap_stats,
         "questionStats": question_stats,
         "questionsHistory": &game.engine.questions_history,
+        // WP #932: active FlowerBattle effects + growth (v5)
+        "activeEffects": active_effects_to_json(&game.flower_battle_effects),
     })
+}
+
+/// Serialize [`EffectsState`] for crash recovery (team → effects + growth + applied ids).
+fn active_effects_to_json(
+    effects: &razzoozle_engine::flower_battle::EffectsState,
+) -> serde_json::Value {
+    let teams: serde_json::Map<String, serde_json::Value> = effects
+        .active
+        .iter()
+        .map(|(team_id, list)| {
+            let arr: Vec<serde_json::Value> = list
+                .iter()
+                .filter_map(|e| serde_json::to_value(e).ok())
+                .collect();
+            (team_id.clone(), serde_json::Value::Array(arr))
+        })
+        .collect();
+    let growth: serde_json::Map<String, serde_json::Value> = effects
+        .growth_stage
+        .iter()
+        .map(|(team_id, stage)| (team_id.clone(), serde_json::json!(stage)))
+        .collect();
+    // Sorted for deterministic snapshot bytes.
+    let mut applied: Vec<String> = effects.applied_offers.keys().cloned().collect();
+    applied.sort();
+    serde_json::json!({
+        "teams": teams,
+        "growthStage": growth,
+        "appliedIds": applied,
+        "victoryResolved": effects.victory_resolved,
+    })
+}
+
+/// Restore effects from snapshot; missing/malformed → empty (defensive for v1–v4).
+fn active_effects_from_json(
+    value: Option<&serde_json::Value>,
+) -> razzoozle_engine::flower_battle::EffectsState {
+    use razzoozle_engine::flower_battle::{AppliedEffect, EffectsState};
+    use razzoozle_protocol::experience::FlowerBattleEffect;
+    use std::collections::HashMap;
+
+    let mut state = EffectsState::new();
+    let Some(v) = value else {
+        return state;
+    };
+    if let Some(teams) = v.get("teams").and_then(|t| t.as_object()) {
+        for (team_id, arr) in teams {
+            let Some(list) = arr.as_array() else {
+                continue;
+            };
+            let parsed: Vec<FlowerBattleEffect> = list
+                .iter()
+                .filter_map(|item| serde_json::from_value(item.clone()).ok())
+                .collect();
+            if !parsed.is_empty() {
+                state.active.insert(team_id.clone(), parsed);
+            }
+        }
+    }
+    if let Some(growth) = v.get("growthStage").and_then(|g| g.as_object()) {
+        let mut map = HashMap::new();
+        for (team_id, stage_val) in growth {
+            if let Some(stage) = stage_val.as_u64() {
+                map.insert(team_id.clone(), stage.min(u64::from(u8::MAX)) as u8);
+            }
+        }
+        state.growth_stage = map;
+    }
+    // Idempotency keys only — full AppliedEffect payload is process-local.
+    // Replays after restore short-circuit without re-mutating growth/status.
+    if let Some(ids) = v.get("appliedIds").and_then(|a| a.as_array()) {
+        for id in ids {
+            if let Some(s) = id.as_str() {
+                state
+                    .applied_offers
+                    .entry(s.to_string())
+                    .or_insert(AppliedEffect::RestoredIdempotent);
+            }
+        }
+    }
+    state.victory_resolved = v
+        .get("victoryResolved")
+        .or_else(|| v.get("victoryResolutionStarted")) // legacy key tolerance
+        .and_then(|b| b.as_bool())
+        .unwrap_or(false);
+    state
 }
 
 /// Phase restoration: map saved phase strings back to GamePhase.
@@ -476,6 +565,8 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         // WP #931: vote maps are process-local only — never restored from snapshot.
         flower_battle_votes: std::collections::HashMap::new(),
         flower_battle_previous_attacker: std::collections::HashMap::new(),
+        // WP #932: activeEffects roundtrip (v5); missing key → empty (v1–v4).
+        flower_battle_effects: active_effects_from_json(snap.get("activeEffects")),
     };
 
     // Restore last manager status if present
@@ -643,13 +734,13 @@ pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
         }
     };
 
-    // Accept version 1–4. Older snapshots restore with defaults for newer fields
-    // (v2: in-flight answers; v3: experienceMode; v4: teamAssignment).
+    // Accept version 1–5. Older snapshots restore with defaults for newer fields
+    // (v2: in-flight answers; v3: experienceMode; v4: teamAssignment; v5: activeEffects).
     let version = parsed.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    if version != 1 && version != 2 && version != 3 && version != 4 {
+    if !(1..=SNAPSHOT_VERSION).contains(&version) {
         warn!(
-            "Unrecognized snapshot version {} (expected 1, 2, 3, or 4), ignoring",
-            version
+            "Unrecognized snapshot version {} (expected 1..={}), ignoring",
+            version, SNAPSHOT_VERSION
         );
         return Vec::new();
     }
@@ -1176,10 +1267,85 @@ mod tests {
         );
     }
 
-    /// WP #952: SNAPSHOT_VERSION is 4 (teamAssignment field).
+    /// WP #932: SNAPSHOT_VERSION is 5 (activeEffects field).
     #[test]
-    fn test_snapshot_version_is_4() {
-        assert_eq!(SNAPSHOT_VERSION, 4, "SNAPSHOT_VERSION must be 4");
+    fn test_snapshot_version_is_5() {
+        assert_eq!(SNAPSHOT_VERSION, 5, "SNAPSHOT_VERSION must be 5");
+    }
+
+    /// WP #932: activeEffects survive roundtrip; v4-shaped snaps restore empty.
+    #[test]
+    fn test_active_effects_snapshot_roundtrip() {
+        use razzoozle_engine::flower_battle::{apply_effects, EffectsState, OfferedEffect};
+        use razzoozle_protocol::quizz::Quizz;
+
+        let empty_quiz = Quizz {
+            subject: "Fx".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut game = Game::new(
+            "game-fx-rt".to_string(),
+            "INVFX".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz,
+        );
+        let mut fx = EffectsState::new();
+        apply_effects(&mut fx, "red", OfferedEffect::Sunbeam, "o1").unwrap();
+        apply_effects(&mut fx, "blue", OfferedEffect::UmbrellaShield, "o2").unwrap();
+        apply_effects(
+            &mut fx,
+            "red",
+            OfferedEffect::AcidRain {
+                target_team_id: "blue".into(),
+            },
+            "o3",
+        )
+        .unwrap();
+        fx.growth_stage.insert("red".into(), 4);
+        game.flower_battle_effects = fx;
+
+        let snap = game_to_snapshot(&game);
+        assert!(
+            snap.get("activeEffects").is_some(),
+            "activeEffects must be present in v5 snapshot"
+        );
+        let restored = game_from_snapshot(&snap).expect("restore");
+        assert_eq!(
+            restored
+                .flower_battle_effects
+                .active
+                .get("red")
+                .map(|v| v.len()),
+            Some(1),
+            "sunbeam on red"
+        );
+        assert_eq!(
+            restored
+                .flower_battle_effects
+                .active
+                .get("blue")
+                .map(|v| v.len()),
+            Some(2),
+            "umbrella + acid on blue"
+        );
+        assert_eq!(restored.flower_battle_effects.growth_of("red"), 4);
+        assert!(restored
+            .flower_battle_effects
+            .applied_offers
+            .contains_key("o1"));
+
+        // Defensive: drop activeEffects (simulates v4 snapshot) → empty
+        let mut v4_like = snap.clone();
+        v4_like.as_object_mut().map(|o| o.remove("activeEffects"));
+        let restored_v4 = game_from_snapshot(&v4_like).expect("restore v4-like");
+        assert!(
+            restored_v4.flower_battle_effects.active.is_empty(),
+            "v4 snap must restore empty activeEffects"
+        );
+        assert!(restored_v4.flower_battle_effects.growth_stage.is_empty());
     }
 
     /// WP #878: experience_mode survives snapshot roundtrip; v2-shaped snaps restore as None.

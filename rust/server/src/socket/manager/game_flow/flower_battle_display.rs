@@ -228,6 +228,11 @@ mod tests {
             "hp",
             "shield",
             "effects",
+            // WP #932: stateful effect fields (tag = "kind")
+            "kind",
+            "expiresAfterQuestionId",
+            "remainingQuestions",
+            "sourceTeamId",
             "sunPoints",
             "previousAttackerTeamId",
             "background",
@@ -247,7 +252,10 @@ mod tests {
                     members: vec!["p1".into(), "p2".into()],
                     hp: 3.0,
                     shield: 1,
-                    effects: vec![FlowerBattleEffect::Sunbeam, FlowerBattleEffect::AcidRain],
+                    effects: vec![
+                        FlowerBattleEffect::sunbeam(3),
+                        FlowerBattleEffect::acid_rain("blue", 3),
+                    ],
                     sun_points: 2,
                     previous_attacker_team_id: Some("blue".into()),
                 }],

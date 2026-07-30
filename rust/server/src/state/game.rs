@@ -1,6 +1,6 @@
 use crate::bot::BotManager;
 use rand::Rng;
-use razzoozle_engine::flower_battle::VoteState;
+use razzoozle_engine::flower_battle::{EffectsState, VoteState};
 use razzoozle_engine::state::{GamePhase, GameState};
 use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::player::Player;
@@ -133,6 +133,9 @@ pub struct Game {
     /// Victim team_id → last successful acid_rain attacker team_id (WP #931).
     /// Mirrors `FlowerBattleTeamState.previous_attacker_team_id` in-memory.
     pub flower_battle_previous_attacker: HashMap<String, Option<String>>,
+    /// Active FlowerBattle power-up statuses + growth stages (WP #932).
+    /// Snapshotted as `activeEffects` (SNAPSHOT_VERSION ≥ 5).
+    pub flower_battle_effects: EffectsState,
 }
 
 impl Game {
@@ -214,6 +217,7 @@ impl Game {
             player_cap: None,
             flower_battle_votes: HashMap::new(),
             flower_battle_previous_attacker: HashMap::new(),
+            flower_battle_effects: EffectsState::new(),
         }
     }
 

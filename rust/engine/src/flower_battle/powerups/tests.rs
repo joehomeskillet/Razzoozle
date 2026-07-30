@@ -62,7 +62,7 @@ fn generate_offer_deterministic_id_and_type() {
 
 #[test]
 fn sunbeam_excludes_umbrella_shield() {
-    let effects = [FlowerBattleEffect::Sunbeam];
+    let effects = [FlowerBattleEffect::sunbeam(0)];
     for q in 0..32 {
         let offer = generate_powerup_offer("g", "t", q, &effects, 1, true).expect("ok");
         let opts = parse_offer_options(&offer.offer_type);
@@ -76,7 +76,7 @@ fn sunbeam_excludes_umbrella_shield() {
 
 #[test]
 fn umbrella_excludes_sunbeam() {
-    let effects = [FlowerBattleEffect::UmbrellaShield];
+    let effects = [FlowerBattleEffect::umbrella_shield(2)];
     for q in 0..32 {
         let offer = generate_powerup_offer("g", "t", q, &effects, 1, true).expect("ok");
         let opts = parse_offer_options(&offer.offer_type);
@@ -138,8 +138,8 @@ fn all_options_excluded_uses_fertilizer_fallback() {
     // empty available simulation: call select when effects + no target leave
     // only fertilizer → valid_option_sets empty → FALLBACK triple.
     let effects = [
-        FlowerBattleEffect::Sunbeam,
-        FlowerBattleEffect::UmbrellaShield,
+        FlowerBattleEffect::sunbeam(0),
+        FlowerBattleEffect::umbrella_shield(2),
     ];
     let seed = offer_seed("solo", "only", 0);
     let opts = select_offer_options(seed, &effects, false);

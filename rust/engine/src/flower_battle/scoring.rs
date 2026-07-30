@@ -154,8 +154,12 @@ pub fn base_growth_to_sunpoints(base_growth: u8) -> u8 {
     }
 }
 
-/// SDD §9 growth order (WP #929 stub; power-ups remain no-ops until WP-FLB-07):
+/// SDD §9 growth order (WP #929 / WP #932):
 /// base → positive modifiers → negative modifiers → floor 0 → clamp `max_growth_stage`.
+///
+/// Status resolution (sunbeam / umbrella / acid_rain) is handled by
+/// [`super::effects::apply_question_growth`], which derives the modifier pair
+/// then calls this pure pipeline.
 pub fn apply_growth_pipeline(
     base_growth: u8,
     positive_modifiers: i32,

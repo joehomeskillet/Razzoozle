@@ -160,6 +160,19 @@ fn is_negative(id: &str) -> bool {
     id == OPTION_ACID_RAIN
 }
 
+/// Kind-match helpers (method predicates — not PartialEq equality / manual_contains).
+#[inline]
+fn has_sunbeam(active_effects: &[FlowerBattleEffect]) -> bool {
+    active_effects.iter().any(FlowerBattleEffect::is_sunbeam)
+}
+
+#[inline]
+fn has_umbrella(active_effects: &[FlowerBattleEffect]) -> bool {
+    active_effects
+        .iter()
+        .any(FlowerBattleEffect::is_umbrella_shield)
+}
+
 //< Whether `option_id` is allowed given active effects + target availability.
 fn is_option_available(
     option_id: &str,
@@ -167,20 +180,8 @@ fn is_option_available(
     has_target_team: bool,
 ) -> bool {
     match option_id {
-        OPTION_UMBRELLA_SHIELD
-            if active_effects
-                .iter()
-                .any(|e| *e == FlowerBattleEffect::Sunbeam) =>
-        {
-            false
-        }
-        OPTION_SUNBEAM
-            if active_effects
-                .iter()
-                .any(|e| *e == FlowerBattleEffect::UmbrellaShield) =>
-        {
-            false
-        }
+        OPTION_UMBRELLA_SHIELD if has_sunbeam(active_effects) => false,
+        OPTION_SUNBEAM if has_umbrella(active_effects) => false,
         OPTION_ACID_RAIN if !has_target_team => false,
         _ => true,
     }
