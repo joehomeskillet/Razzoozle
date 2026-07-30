@@ -18,6 +18,10 @@ pub enum ConfidenceLevel {
 
 /// Count votes and return the strict majority winner (> 50%).
 /// On tie or split without majority, `tie_break_order` decides (first match wins).
+///
+/// **Determinism guarantee**: If a tie occurs but no candidate from `tie_break_order`
+/// has any votes in the tie set, returns `None` (unresolved). Callers MUST provide
+/// a complete tie-break order that covers all vote possibilities to ensure a result.
 pub fn resolve_majority<T: Eq + Hash + Clone>(votes: Vec<T>, tie_break_order: Vec<T>) -> Option<T> {
     if votes.is_empty() {
         return None;
@@ -44,13 +48,15 @@ pub fn resolve_majority<T: Eq + Hash + Clone>(votes: Vec<T>, tie_break_order: Ve
         .map(|(key, _)| key.clone())
         .collect();
 
+    // Tie-break via the provided order: first match in order wins.
+    // If no match found, return None (caller must provide complete order).
     for candidate in tie_break_order {
         if top.contains(&candidate) {
             return Some(candidate);
         }
     }
 
-    top.into_iter().next()
+    None
 }
 
 /// Group submitted answers by team → answer key → vote count.
@@ -229,6 +235,14 @@ mod tests {
     fn resolve_majority_three_way_tie_uses_first_tie_break_match() {
         let result = resolve_majority(vec![1, 2, 3], vec![3, 1, 2]);
         assert_eq!(result, Some(3));
+    }
+
+    #[test]
+    fn resolve_majority_tie_without_tie_break_coverage_returns_none() {
+        // 3-way tie (1, 2, 3 each have 1 vote), but tie_break_order only includes [4, 5].
+        // None of the top candidates are in the order → deterministic None, not random.
+        let result = resolve_majority(vec![1, 2, 3], vec![4, 5]);
+        assert_eq!(result, None);
     }
 
     #[test]
