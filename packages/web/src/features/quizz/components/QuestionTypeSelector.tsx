@@ -26,14 +26,20 @@ export interface QuestionTypeSelectorProps {
 
 const POPOVER_GAP = 8
 const POPOVER_VIEWPORT_PAD = 8
+const OVERLAY_MIN_WIDTH = 240 // px: Mindestbreite damit Inhalte lesbar bleiben (ca. 20 chars @ 12px)
 
 /**
  * Calculate fixed position for the dropdown overlay, with flip-above logic.
+ * Overlay-Breite wird an triggerRect.width gekoppelt (mit MIN_WIDTH-Constraint).
  */
 function positionDropdown(
   triggerRect: DOMRect,
   contentRect: { width: number; height: number },
 ): CSSProperties {
+  // Berechne Overlay-Breite: min von Trigger-Breite, ansonsten Mindestbreite
+  // Dadurch passt sich das Overlay an die verfügbare Leisten-Breite an.
+  const overlayWidth = Math.max(triggerRect.width, OVERLAY_MIN_WIDTH)
+
   const spaceBelow = window.innerHeight - triggerRect.bottom - POPOVER_GAP
   const placeAbove =
     spaceBelow < contentRect.height && triggerRect.top > spaceBelow
@@ -43,13 +49,13 @@ function positionDropdown(
     : triggerRect.bottom + POPOVER_GAP
 
   let left = triggerRect.left
-  const maxLeft = window.innerWidth - contentRect.width - POPOVER_VIEWPORT_PAD
+  const maxLeft = window.innerWidth - overlayWidth - POPOVER_VIEWPORT_PAD
   left = Math.max(POPOVER_VIEWPORT_PAD, Math.min(left, maxLeft))
 
   const maxTop = window.innerHeight - contentRect.height - POPOVER_VIEWPORT_PAD
   top = Math.max(POPOVER_VIEWPORT_PAD, Math.min(top, maxTop))
 
-  return { position: "fixed", top, left, zIndex: 50 }
+  return { position: "fixed", top, left, zIndex: 50, width: overlayWidth }
 }
 
 /**
@@ -190,7 +196,7 @@ export function QuestionTypeSelector({
             data-testid="question-type-list"
             style={style}
             onKeyDown={handleKeyDown}
-            className="console-shell console-scroll max-h-96 w-80 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-lg"
+            className="console-shell console-scroll max-h-96 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-lg"
           >
             <QuestionTypeDropdownList
               currentType={currentType}
