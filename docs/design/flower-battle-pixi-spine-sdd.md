@@ -3,7 +3,7 @@
 **Status:** Umsetzungsentwurf (User-Direktive 2026-07-30, verbatim)
 **Stand:** 30.07.2026
 
-> **ADDENDUM (ADR-013, 2026-07-30):** User-Entscheid — Umsetzung OHNE Spine Runtime. Animation: Procedurales Puppet-Rig (PixiJS Container-Hierarchie) + motion-Tweening (MIT, bereits installiert; Fallback: GSAP Webflow No-Charge). §2.1 Stackzeile (Skelettanimation: Spine Editor → Procedural/GSAP) + §6 Umsetzungstechnik ersetzt durch [ADR-013](../adr/013-pixi-spine-hybrid-presenter.md); Rig-/Animations-Verträge (§6.1 Bone-Semantik / §6.3 Pflichtanimationen / §6.5 Mischungsprofil / §6.6 Spine-Events → Audio-Marker) gelten weiter. Siehe [Forschung](anim-runtime-research-2026-07-30.md) für Begründung.
+> **ADDENDUM (ADR-013, 2026-07-30):** User-Entscheid — Umsetzung OHNE Spine Runtime. Animation: Procedurales Puppet-Rig (PixiJS Container-Hierarchie) + motion-Tweening (MIT, bereits installiert; Fallback: GSAP Webflow No-Charge). §2.1 Stackzeile (Skelettanimation: Spine Editor → Procedural/motion) + §6 Umsetzungstechnik ersetzt durch [ADR-013](../adr/013-pixi-spine-hybrid-presenter.md); Rig-/Animations-Verträge (§6.1 Bone-Semantik / §6.3 Pflichtanimationen / §6.5 Mischungsprofil / §6.6 Spine-Events → Audio-Marker) gelten weiter. Siehe [Forschung](anim-runtime-research-2026-07-30.md) für Begründung.
 
 **Zielsystem:** Razzoozle Web-Client, Presenter und bestehendes Multiplayer-Backend
 **Rendering:** PixiJS 8
