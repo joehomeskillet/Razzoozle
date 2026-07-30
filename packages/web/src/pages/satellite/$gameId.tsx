@@ -3,10 +3,9 @@ import { ExperienceDisplay } from "@razzoozle/web/features/game/components/displ
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
-  useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
-import { createFileRoute, useParams, useSearch } from "@tanstack/react-router"
+import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"
 
@@ -16,25 +15,27 @@ import { z } from "zod"
 // intentionally outside the (auth) layout); instead the satellite authenticates
 // over socket.io using a token carried in the handshake (the canonical
 // `SATELLITE_TOKEN_HEADER`/storage-key live in socket-context).
+//
+// WP #959 — satellite auth now works via two paths:
+// 1. If the manager is logged in on a different tab, the sessionToken is shared
+//    via localStorage and automatically included in the socket handshake by
+//    socket-context.tsx. The satellite then authenticates as a manager and joins
+//    display:{gameId} to receive the experience envelope.
+// 2. If a satelliteToken is configured (Prod kiosk), it is also passed in the
+//    handshake and provides a fallback authentication path.
 
 const searchSchema = z.object({
   // `?satellite=true` signals that route-level auth is intentionally skipped;
   // the socket.io token is the only credential.
   satellite: z.coerce.boolean().optional(),
-  // Token may be supplied via the URL (kiosk URL baked into the Pi image) or
-  // fall back to a build-time env var.
+  // Bleibt im Schema: dokumentiert den Kiosk-URL-Contract (?token=...) und
+  // verhindert, dass der Router den Param strippt — GELESEN wird der Token
+  // modulglobal in socket-context.tsx (resolveSatelliteAuth), nicht hier.
   token: z.coerce.string().optional(),
 })
 
-const resolveSatelliteToken = (tokenParam?: string): string =>
-  tokenParam ?? import.meta.env.VITE_SATELLITE_TOKEN ?? ""
-
 const SatelliteManagerPage = () => {
   const { gameId: gameIdParam } = useParams({ from: "/satellite/$gameId" })
-  const { token } = useSearch({ from: "/satellite/$gameId" })
-  const { socket } = useSocket()
-
-  const satelliteToken = resolveSatelliteToken(token)
 
   // Drive the TV into fullscreen on the Pi's kiosk browser. Best-effort: some
   // browsers require a user gesture, but Chromium kiosk mode (--kiosk) already
@@ -45,26 +46,15 @@ const SatelliteManagerPage = () => {
     })
   }, [])
 
-  // Attach the satellite token to the socket handshake so the server can grant
-  // manager privileges to this display without a typed password. We expose the
-  // token both as a handshake `auth` field and as a transport header so the
-  // server-side validator (separate WP) can read whichever it prefers.
-  // WP #959 — mirror /display/play: fire MANAGER.RECONNECT on SPA mount when
-  // the socket is already connected (manager→satellite nav never re-fires
-  // `connect`, so without this the 939B envelope resend never runs and the
-  // garden stays empty). Server joins display:{gameId} + resends experience.
+  // WP #959 — fire MANAGER.RECONNECT on SPA mount when the socket is already
+  // connected (manager→satellite nav never re-fires `connect`, so without this
+  // the 939B envelope resend never runs and the garden stays empty). Server joins
+  // display:{gameId} + resends experience. Auth is now handled by the global
+  // socket-context.tsx handshake (sessionToken via localStorage for cross-tab
+  // scenarios, plus optional satelliteToken fallback).
   const { status, CurrentComponent, experienceTransition } =
     useManagerGameSession(gameIdParam, {
     reconnectIfConnected: true,
-    onConnect: () => {
-      socket.auth = {
-        ...(socket.auth as Record<string, unknown>),
-        satelliteToken,
-      }
-
-      // Authenticate this socket as a manager-equivalent display using the token.
-      socket.emit(EVENTS.MANAGER.AUTH, satelliteToken)
-    },
   })
 
   // Render the manager presentation chrome (background + question counter +

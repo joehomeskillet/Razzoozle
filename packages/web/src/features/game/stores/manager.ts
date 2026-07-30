@@ -65,17 +65,14 @@ const loadAuthState = (): StoredAuthState => {
     if (typeof window === "undefined") {
       return { token: null, role: null, username: null }
     }
-    // Check sessionStorage first
+    // Check sessionStorage first (per-tab storage for primary consistency)
     let stored = window.sessionStorage.getItem(AUTH_STORAGE_KEY)
 
-    // Migration: if not in sessionStorage but exists in localStorage, move it
+    // WP #959 — if not in sessionStorage, check localStorage for cross-tab access
+    // (e.g. satellite display in a different tab reading the manager's session).
+    // Do NOT delete from localStorage; keep both in sync for dual-tab scenarios.
     if (!stored) {
-      const oldStored = window.localStorage.getItem(AUTH_STORAGE_KEY)
-      if (oldStored) {
-        window.sessionStorage.setItem(AUTH_STORAGE_KEY, oldStored)
-        window.localStorage.removeItem(AUTH_STORAGE_KEY)
-        stored = oldStored
-      }
+      stored = window.localStorage.getItem(AUTH_STORAGE_KEY)
     }
 
     if (!stored) {
@@ -92,10 +89,21 @@ const loadAuthState = (): StoredAuthState => {
   }
 }
 
+// SECURITY LIMIT (qw-Review #959B): localStorage ist Domain-global. Zwei
+// VERSCHIEDENE Logins in zwei Tabs desselben Browsers überschreiben sich
+// gegenseitig — nach Reload kann ein Tab den Token des anderen laden
+// (Privilege-Confusion). Akzeptiert für den Single-Manager-Betrieb;
+// Hardening-Option bei Bedarf: Storage-Key per userId prefixen.
+
+// WP #959 — persist auth state to BOTH sessionStorage (per-tab) and localStorage
+// (cross-tab) so the satellite display tab can access the manager's session token
+// in the socket handshake, even when loaded as a separate browser tab.
 const persistAuthState = (state: StoredAuthState) => {
   try {
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
+      const serialized = JSON.stringify(state)
+      window.sessionStorage.setItem(AUTH_STORAGE_KEY, serialized)
+      window.localStorage.setItem(AUTH_STORAGE_KEY, serialized)
     }
   } catch {
     // Ignore storage errors (private mode / quota)
