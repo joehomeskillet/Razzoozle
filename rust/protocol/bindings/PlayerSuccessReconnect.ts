@@ -6,7 +6,8 @@ import type { PlayerReconnectInfo } from "./PlayerReconnectInfo";
 /**
  * Player reconnect payload emitted on `player:successReconnect`.
  *
- * FlowerBattle status is optional for backward compatibility and absent until
- * reconnect-specific lifecycle wiring supplies it.
+ * `flower_battle_player_status` is present only for FlowerBattle games and is
+ * built from live game state + the reconnecting player's own team (never a
+ * guessed/first-map team). Absent for other experience modes.
  */
 export type PlayerSuccessReconnect = { gameId: string, status: any, player: PlayerReconnectInfo, currentQuestion: GameUpdateQuestion, alreadyAnswered?: boolean, flowerBattlePlayerStatus?: FlowerBattlePlayerStatus, };

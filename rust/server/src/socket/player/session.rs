@@ -1,5 +1,8 @@
 use super::broadcast_player_update;
 use super::HandlerCtx;
+use crate::socket::lifecycle::flower_battle_emit::{
+    migrate_socket_keyed_cache, player_status_for_reconnect,
+};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::player::{GameUpdateQuestion, PlayerReconnectInfo, PlayerSuccessReconnect};
 use serde_json;
@@ -305,6 +308,14 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     game.engine.players[engine_pos].connected = true;
                                 }
 
+                                // Game-scoped: re-key cached SHOW_RESULT so setAuto
+                                // mid-result still reaches this player after socket change.
+                                migrate_socket_keyed_cache(
+                                    &mut game.last_show_result_data,
+                                    &old_socket_id,
+                                    &socket_id,
+                                );
+
                                 // Read points from engine.players (where scoring happens)
                                 let username = if let Some(engine_pos) = game
                                     .engine
@@ -346,6 +357,14 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     None
                                 };
 
+                                // Authoritative FlowerBattle status for this player only
+                                // (team from player record — never first map key / guess).
+                                let flower_battle_player_status = player_status_for_reconnect(
+                                    &game_id_ret,
+                                    &game,
+                                    &game.players[pos],
+                                );
+
                                 let total_players = game.players.len() as i32;
 
                                 (
@@ -359,6 +378,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     status,
                                     already_answered,
                                     total_players,
+                                    flower_battle_player_status,
                                 )
                             })
                         };
@@ -374,6 +394,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                             status,
                             already_answered,
                             total_players,
+                            flower_battle_player_status,
                         )) = update_result
                         {
                             // Keep the O(1) socket_id -> game_id index (state.rs)
@@ -398,7 +419,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                     total: total_questions,
                                 },
                                 already_answered,
-                                flower_battle_player_status: None,
+                                flower_battle_player_status,
                             };
                             socket
                                 .emit(constants::player::SUCCESS_RECONNECT, &reconnect_payload)
