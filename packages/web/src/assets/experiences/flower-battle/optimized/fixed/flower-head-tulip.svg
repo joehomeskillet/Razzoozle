@@ -1,0 +1,17 @@
+<!--
+  flower-head-tulip.svg  tulip blossom (petals + face only).
+  IDs: flower-petals, flower-face
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 80 80" aria-hidden="true">
+  <g id="flower-petals">
+    <path d="M0 -22 C-10 -8 -14 8 0 18 C14 8 10 -8 0 -22 Z" fill="currentColor" />
+    <path d="M-16 -6 C-22 6 -12 18 -2 14 C-6 2 -10 -4 -16 -6 Z" fill="currentColor" />
+    <path d="M16 -6 C22 6 12 18 2 14 C6 2 10 -4 16 -6 Z" fill="currentColor" />
+    <ellipse cx="0" cy="6" rx="8" ry="10" fill="var(--status-pending-bg)" />
+  </g>
+  <g id="flower-face">
+    <circle cx="-3" cy="2" r="1.8" fill="var(--status-online-text)" />
+    <circle cx="3" cy="2" r="1.8" fill="var(--status-online-text)" />
+    <path d="M-4 8 Q0 11 4 8" fill="none" stroke="var(--status-online-text)" stroke-width="1.2" stroke-linecap="round" />
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<!--
+  garden-bed.svg  decorative pot rim for Flower Battle plants.
+  Anchors (fixed):
+    - soil-anchor: (100, 210)  aligns with garden-ground
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" aria-hidden="true">
+  <g id="garden-bed-rim">
+    <ellipse cx="100" cy="206" rx="50" ry="9" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.5" />
+    <ellipse cx="100" cy="204" rx="46" ry="6" fill="none" stroke="var(--surface-5)" stroke-width="1" />
+  </g>
+  <circle id="soil-anchor" cx="100" cy="210" r="1" fill="none" data-anchor="soil-anchor" />
+</svg>

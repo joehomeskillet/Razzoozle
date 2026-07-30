@@ -1,0 +1,12 @@
+--- a/packages/web/src/experiences/flower-battle/flower-plant.constants.ts
++++ b/packages/web/src/experiences/flower-battle/flower-plant.constants.ts
+@@ -262,8 +262,8 @@ export const FLOWER_HEAD_SVGS: Record<FlowerVariant, string> = {
+ }
+ 
+ /** Strip outer <svg> wrapper so inner groups can be mounted at an anchor. */
+ export const extractSvgInner = (svgMarkup: string): string => {
+-  const match = svgMarkup.match(/<svg[^>]*>([\s\S]*)<\/svg>/i)
++  const match = /<svg[^>]*>([\s\S]*)<\/svg>/i.exec(svgMarkup)
+   return match?.[1]?.trim() ?? svgMarkup
+ }
+ 
