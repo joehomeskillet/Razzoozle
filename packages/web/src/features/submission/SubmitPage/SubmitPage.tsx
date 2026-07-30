@@ -16,12 +16,10 @@ import QuestionEditorConfig from "@razzoozle/web/features/quizz/components/Quest
 import QuestionEditorMedia from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorMedia"
 import QuestionEditorSentence from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorSentence"
 import QuestionEditorTitle from "@razzoozle/web/features/quizz/components/QuestionEditor/QuestionEditorTitle"
-import { QuestionTypeSelector } from "@razzoozle/web/features/quizz/components/QuestionTypeSelector"
 import {
   QuizzEditorProvider,
   useQuizzEditor,
 } from "@razzoozle/web/features/quizz/contexts/quizz-editor-context"
-import { buildTypePatch } from "@razzoozle/web/features/quizz/questionTypeTransition"
 import QuestionMarksField from "@razzoozle/web/features/submission/QuestionMarksField"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import defaultLogo from "@razzoozle/web/assets/logo.svg"
@@ -29,7 +27,6 @@ import { motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
-import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
 
 import RevealSection from "./RevealSection"
 import SubmitSuccessCard from "./SubmitSuccessCard"
@@ -69,7 +66,7 @@ const SubmitBrand = () => {
 }
 
 const SubmitInner = ({ onReset }: SubmitInnerProps) => {
-  const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
+  const { currentQuestion } = useQuizzEditor()
   const { socket } = useSocket()
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -169,11 +166,6 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
     }
   }
 
-  const handleTypeChange = (next: QuestionTypeKey) => {
-    updateQuestion(currentIndex, buildTypePatch(currentQuestion, next))
-  }
-
-  const currentType = (currentQuestion.type ?? "choice") as QuestionTypeKey
   const nameInvalid = invalidTarget === "name"
 
   if (status === "success") {
@@ -268,12 +260,6 @@ const SubmitInner = ({ onReset }: SubmitInnerProps) => {
               label={t("submit:form.section.question")}
             >
               <QuestionEditorTitle />
-              <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
-                <QuestionTypeSelector
-                  currentType={currentType}
-                  onTypeChange={handleTypeChange}
-                />
-              </div>
             </RevealSection>
 
             {!isSlider && !isTypeAnswer && !isSentenceBuilder && (
