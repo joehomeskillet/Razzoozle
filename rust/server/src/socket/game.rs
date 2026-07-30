@@ -200,6 +200,16 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Join socket to the game room
                         socket.join(game_id.clone()).ok();
+                        // WP #877 follow-up (wire-level leak fix) — the manager
+                        // socket also joins the display room from creation
+                        // onward (not just on a later manager:reconnect, see
+                        // auth.rs), so status_emit::broadcast_status's
+                        // `.except(display_room)` during Experience modes has
+                        // a deterministic, always-a-member manager socket to
+                        // exclude-then-backfill via direct emit — no gap
+                        // where content briefly leaks or briefly hides before
+                        // the first reconnect.
+                        socket.join(format!("display:{}", game_id)).ok();
 
                         // Inject achievements config and mode snapshots via setters (inside the write guard)
                         let overrides = razzoozle_engine::achievements::rows_to_overrides(&ach_rows);
