@@ -27,6 +27,7 @@ const makeTeam = (
   hp: 0,
   shield: 0,
   effects,
+  growthStage: sunPoints,
   sunPoints,
 })
 

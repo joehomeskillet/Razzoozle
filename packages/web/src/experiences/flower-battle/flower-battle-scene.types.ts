@@ -15,6 +15,12 @@ export interface FlowerBattleTeamState {
   hp: number
   shield: number
   effects: FlowerBattleActiveEffect[]
+  /**
+   * Cumulative plant growth stage (0..=10); win at 10 (WP #933). Wire field
+   * since #933/L-08 — feeds FlowerPlant directly (WP #939C), never derived
+   * from sunPoints.
+   */
+  growthStage: number
   sunPoints: number
   previousAttackerTeamId?: string
 }
