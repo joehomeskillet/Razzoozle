@@ -35,7 +35,7 @@ interface CurrentQuestion {
 
 /**
  * Helper constants for clearing type-specific fields.
- * Mirrors the SLIDER_CLEAR and CHOICE_CLEAR objects from QuestionEditorType.tsx.
+ * Mirrors the SLIDER_CLEAR and CHOICE_CLEAR objects originally from QuestionEditorType.tsx (removed in WP-QEI-08).
  */
 const SLIDER_CLEAR = {
   min: undefined,
@@ -55,7 +55,7 @@ const CHOICE_CLEAR = {
  * Behavior is neutral: orphaned-field inconsistencies from the original if/else chain
  * are preserved exactly as-is. No normalization or repairs are applied here.
  *
- * Each type branch follows the original logic from QuestionEditorType.tsx setType()
+ * Each type branch follows the original logic from the former QuestionEditorType.tsx setType() (removed in WP-QEI-08)
  * and maintains the same field-clearing behavior and defaults.
  *
  * ORPHANED-FIELD NOTE: Some types like wortarten, mathematik, etc. clear fields
