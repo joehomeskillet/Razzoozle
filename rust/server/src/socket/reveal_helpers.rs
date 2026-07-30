@@ -661,21 +661,14 @@ pub async fn perform_reveal_and_broadcast(
         }
         emit_plugin_lifecycle(&io_handle, &game_id, "onResult", "SHOW_RESULT");
 
-        let manager_responses = {
+        // Manager SHOW_RESPONSES + content-free answers_locked display.
+        // Works without a connected manager socket (display room still gets
+        // game:experience). Resolution is owned by lifecycle post after_reveal_tick.
+        let manager_status = {
             let game = game_ref.lock().unwrap();
-            (
-                game.manager_socket_id.clone(),
-                build_manager_show_responses(&game),
-            )
+            build_manager_show_responses(&game)
         };
-
-        let (manager_socket_id, manager_status) = manager_responses;
-
-        if let Ok(sid) = manager_socket_id.parse() {
-            if let Some(manager_socket) = io_handle.get_socket(sid) {
-                send_status_to_manager(&manager_socket, &game_ref, &manager_status);
-            }
-        }
+        send_status_to_manager(&io_handle, &game_ref, &game_id, &manager_status);
     }
 }
 

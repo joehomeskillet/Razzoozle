@@ -37,7 +37,7 @@ use uuid::Uuid;
 use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
 use super::status_emit::emit_plugin_lifecycle;
-use super::status_emit::{broadcast_status, send_status_to_manager};
+use super::status_emit::{broadcast_status, emit_post_reveal_resolution, send_status_to_manager};
 
 pub(crate) mod flower_battle_emit;
 pub(crate) mod flower_battle_tick;
@@ -398,9 +398,14 @@ async fn run_lifecycle_from(
         // Early-finish hook (generic ModeOutcome — coordination for #884 Pyramid
         // and #892 DeepSea; flower-specific growth/win lives in flower_battle_tick).
         // AFTER perform_reveal_and_broadcast, BEFORE result dwell / leaderboard.
+        // Order (WP-958F-R): player SHOW_RESULT + manager SHOW_RESPONSES/answers_locked
+        // already emitted; tick mutates Growth/Sun/Offers/Victory + player status;
+        // then resolution from post-tick state. If tick finishes, game_complete is
+        // final (finish path) — do not emit resolution after.
         if flower_battle_tick::after_reveal_tick(&io, &game_ref, &game_id, &db_pool).await {
             return;
         }
+        emit_post_reveal_resolution(&io, &game_ref, &game_id);
 
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
         // before the leaderboard. The abort Notify was armed BEFORE the reveal
@@ -423,27 +428,23 @@ async fn run_lifecycle_from(
             // Arm abort for the recap dwell
             let abort_recap = { game_ref.lock().unwrap().arm_abort() };
 
-            // Set phase to ShowRoundRecap and emit to manager
+            // Set phase to ShowRoundRecap and emit to manager (+ experience mirror)
             {
                 let mut game = game_ref.lock().unwrap();
                 game.engine.phase = GamePhase::ShowRoundRecap;
                 game.last_show_result_data.clear();
                 game.last_show_result_data.clear();
                 let recap_data = game.temp_round_recap.clone().unwrap_or_default();
-                let manager_socket_id = game.manager_socket_id.clone();
                 drop(game);
 
-                if let Ok(sid) = manager_socket_id.parse() {
-                    if let Some(sock) = io.get_socket(sid) {
-                        send_status_to_manager(
-                            &sock,
-                            &game_ref,
-                            &GameStatus::ShowRoundRecap(ShowRoundRecapData {
-                                round_recap: recap_data,
-                            }),
-                        );
-                    }
-                }
+                send_status_to_manager(
+                    &io,
+                    &game_ref,
+                    &game_id,
+                    &GameStatus::ShowRoundRecap(ShowRoundRecapData {
+                        round_recap: recap_data,
+                    }),
+                );
             }
 
             // Dwell on the recap screen (manual or auto mode)
@@ -518,16 +519,12 @@ async fn run_lifecycle_from(
             round_recap: round_recap_opt,
         };
 
-        let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-        if let Ok(sid) = manager_socket_id.parse() {
-            if let Some(sock) = io.get_socket(sid) {
-                send_status_to_manager(
-                    &sock,
-                    &game_ref,
-                    &GameStatus::ShowLeaderboard(augmented_leaderboard_data),
-                );
-            }
-        }
+        send_status_to_manager(
+            &io,
+            &game_ref,
+            &game_id,
+            &GameStatus::ShowLeaderboard(augmented_leaderboard_data),
+        );
         emit_plugin_lifecycle(&io, &game_id, "onLeaderboard", "SHOW_LEADERBOARD");
         // Node parity (leaderboard-flow.ts:256): tempRoundRecap is cleared only
         // AFTER SHOW_LEADERBOARD has consumed it, so the round-recap dwell above
@@ -669,13 +666,14 @@ pub(crate) async fn finish_and_broadcast(
         payloads::build_finished_data(&game, recap_json.clone())
     };
 
-    // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank
-    let manager_socket_id = game_ref.lock().unwrap().manager_socket_id.clone();
-    if let Ok(sid) = manager_socket_id.parse() {
-        if let Some(sock) = io.get_socket(sid) {
-            send_status_to_manager(&sock, game_ref, &GameStatus::Finished(finished.clone()));
-        }
-    }
+    // Personalized FINISHED: send to manager with rank: None, then per-player with personalized rank.
+    // Also mirrors GameComplete experience to the display room (works without manager socket).
+    send_status_to_manager(
+        io,
+        game_ref,
+        game_id,
+        &GameStatus::Finished(finished.clone()),
+    );
 
     // Send personalized FINISHED data to each player (raw — not manager status)
     let game = game_ref.lock().unwrap();

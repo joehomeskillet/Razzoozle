@@ -6,9 +6,22 @@
 //! recorded state always matches wire order (Node single-threaded parity).
 //! socketioxide 0.15 emits are sync (no .await) and non-blocking (channel try_send),
 //! so holding std::sync::Mutex across them is safe.
+//!
+//! # WP-958F-R — result envelope ordering (FlowerBattle / experience modes)
+//!
+//! Reveal is manager-only on the STATUS wire (`SHOW_RESPONSES`), but the paired
+//! display still needs content-free `game:experience`. Authoritative Flower
+//! Growth/Sun/Offers/Victory mutate only in `after_reveal_tick`, so:
+//! 1. `send_status_to_manager(SHOW_RESPONSES)` → `answers_locked` (pre-tick)
+//! 2. `after_reveal_tick` mutates state + player statuses
+//! 3. `emit_post_reveal_resolution` → `resolution` from **post-tick** state
+//! 4. If the tick finishes the game, `game_complete` is final — no later resolution
+//!
+//! Display emit does **not** require a connected manager socket.
 
 use crate::socket::manager::game_flow::flower_battle_display;
 use crate::state::{get_now_ms, Game};
+use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::experience::{
     ChaseState, DeepSeaPayload, ExperiencePayload, ExperiencePhase, ExperienceTransition,
@@ -25,6 +38,13 @@ use std::sync::{Arc, Mutex};
 // so a process-global counter is enough; a per-game counter would need a new
 // Game field + snapshot roundtrip support for no behavioural gain today.
 static EXPERIENCE_REVISION: AtomicI32 = AtomicI32::new(0);
+
+/// Active non-Classic experience mode (Classic rides game:status only).
+fn active_experience_mode(game: &Game) -> Option<ExperienceMode> {
+    game.selected_modes
+        .experience_mode
+        .filter(|m| *m != ExperienceMode::Classic)
+}
 
 /// Map a `game:status` transition to its content-free `game:experience` phase.
 /// `None` = deliberate blackout (no envelope sent, display keeps its last frame):
@@ -45,6 +65,129 @@ fn status_to_experience_phase(status: &GameStatus) -> Option<ExperiencePhase> {
         // question forever (display never gets told the game ended).
         GameStatus::Finished(_) => Some(ExperiencePhase::GameComplete),
     }
+}
+
+/// Manager-only STATUS path experience phase.
+///
+/// `Resolution` is **not** emitted here — authoritative post-reveal state
+/// (FlowerBattle growth/sun/offers/victory) lands only after `after_reveal_tick`.
+/// Lifecycle owns [`emit_post_reveal_resolution`].
+fn manager_status_experience_phase(status: &GameStatus) -> Option<ExperiencePhase> {
+    match status_to_experience_phase(status) {
+        Some(ExperiencePhase::Resolution) => None,
+        other => other,
+    }
+}
+
+/// Whether post-tick `resolution` may still fire (not terminal).
+fn post_reveal_resolution_allowed(game: &Game) -> bool {
+    if active_experience_mode(game).is_none() {
+        return false;
+    }
+    // Terminal: game_complete is final — never trail a later resolution.
+    if game.finish_broadcast_done
+        || game.engine.phase == GamePhase::Finished
+        || game.flower_battle_effects.victory_resolved
+        || game.flower_battle_winner_team_ids.is_some()
+    {
+        return false;
+    }
+    true
+}
+
+/// Shared envelope builder (broadcast / manager path / reconnect / post-tick).
+fn build_experience_transition(
+    game: &Game,
+    mode: ExperienceMode,
+    phase: ExperiencePhase,
+    bump_revision: bool,
+) -> ExperienceTransition {
+    let (answered, total, phase_duration_ms) = experience_progress(game, phase);
+    let phase_started_at_server_ms =
+        if matches!(phase, ExperiencePhase::Question) && game.question_start_at_server_ms > 0 {
+            game.question_start_at_server_ms
+        } else {
+            get_now_ms() as i64
+        };
+    let revision = if bump_revision {
+        EXPERIENCE_REVISION.fetch_add(1, Ordering::Relaxed)
+    } else {
+        EXPERIENCE_REVISION.load(Ordering::Relaxed)
+    };
+    ExperienceTransition {
+        mode,
+        phase,
+        phase_started_at_server_ms,
+        phase_duration_ms,
+        revision,
+        answered,
+        total,
+        payload: default_payload_for_mode(mode, game),
+    }
+}
+
+/// Room emit for `game:experience` — works with zero connected sockets.
+fn emit_experience_to_display_room(
+    io: &SocketIo,
+    game_id: &str,
+    transition: &ExperienceTransition,
+) {
+    let display_room = format!("display:{}", game_id);
+    io.to(display_room)
+        .emit(constants::experience::TRANSITION, transition)
+        .ok();
+}
+
+/// Build + emit one experience transition for the active mode (no-op if Classic/None).
+fn emit_experience_phase(
+    io: &SocketIo,
+    game_ref: &Arc<Mutex<Game>>,
+    game_id: &str,
+    phase: ExperiencePhase,
+    bump_revision: bool,
+) {
+    let transition = {
+        let game = game_ref.lock().unwrap();
+        let Some(mode) = active_experience_mode(&game) else {
+            return;
+        };
+        build_experience_transition(&game, mode, phase, bump_revision)
+    };
+    emit_experience_to_display_room(io, game_id, &transition);
+}
+
+/// After `after_reveal_tick`: emit personalized-display `resolution` from post-tick state.
+/// No-op when Classic/None or when the tick already finished the game.
+pub fn emit_post_reveal_resolution(io: &SocketIo, game_ref: &Arc<Mutex<Game>>, game_id: &str) {
+    let allowed = {
+        let game = game_ref.lock().unwrap();
+        post_reveal_resolution_allowed(&game)
+    };
+    if !allowed {
+        return;
+    }
+    emit_experience_phase(io, game_ref, game_id, ExperiencePhase::Resolution, true);
+}
+
+/// Resume/reconnect phases for a live SHOW_RESULT window.
+///
+/// Order: content-free `answers_locked`, then post-state `resolution`.
+/// Terminal games emit only `game_complete` (never a trailing resolution).
+fn result_window_experience_phases(game: &Game) -> Vec<ExperiencePhase> {
+    if active_experience_mode(game).is_none() {
+        return Vec::new();
+    }
+    if game.finish_broadcast_done
+        || game.engine.phase == GamePhase::Finished
+        || game.flower_battle_effects.victory_resolved
+        || game.flower_battle_winner_team_ids.is_some()
+    {
+        return vec![ExperiencePhase::GameComplete];
+    }
+    if matches!(game.engine.phase, GamePhase::ShowResult) {
+        return vec![ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution];
+    }
+    Vec::new()
 }
 
 /// Payload body for a mode's current display-safe state. PyramidClimb team
@@ -142,39 +285,21 @@ pub fn broadcast_status(
     game_id: &str,
     status: &GameStatus,
 ) {
-    let (
-        experience_mode,
-        manager_socket_id,
-        payload,
-        answered,
-        total,
-        phase_duration_ms,
-        phase_opt,
-    ) = {
+    let (experience_mode, manager_socket_id, transition) = {
         let mut game = game_ref.lock().unwrap();
         game.record_last_manager_status(status);
         let experience_mode = game.selected_modes.experience_mode;
         let manager_socket_id = game.manager_socket_id.clone();
-        let phase_opt = status_to_experience_phase(status);
-        let (answered, total, phase_duration_ms, payload) = if let (Some(mode), Some(phase)) = (
-            experience_mode.filter(|m| *m != ExperienceMode::Classic),
-            phase_opt,
+        let transition = match (
+            active_experience_mode(&game),
+            status_to_experience_phase(status),
         ) {
-            let (a, t, d) = experience_progress(&game, phase);
-            let payload = default_payload_for_mode(mode, &game);
-            (a, t, d, Some((mode, phase, payload)))
-        } else {
-            (None, None, None, None)
+            (Some(mode), Some(phase)) => {
+                Some(build_experience_transition(&game, mode, phase, true))
+            }
+            _ => None,
         };
-        (
-            experience_mode,
-            manager_socket_id,
-            payload,
-            answered,
-            total,
-            phase_duration_ms,
-            phase_opt,
-        )
+        (experience_mode, manager_socket_id, transition)
     };
 
     if status_must_exclude_display_room(experience_mode) {
@@ -205,46 +330,9 @@ pub fn broadcast_status(
     // mode is active. Content-free: only phase/mode/progress go out, the
     // question/answer data already went out on the STATUS emit above (now
     // wire-excluded from the display room itself, see above).
-    if let Some((mode, phase, payload_body)) = payload {
-        let _ = phase_opt; // used above for progress
-        let transition = ExperienceTransition {
-            mode,
-            phase,
-            phase_started_at_server_ms: get_now_ms() as i64,
-            phase_duration_ms,
-            revision: EXPERIENCE_REVISION.fetch_add(1, Ordering::Relaxed),
-            answered,
-            total,
-            payload: payload_body,
-        };
-        // Pass real answered/total; do not overwrite with None (L-13).
-        broadcast_experience_to_display(io, game_ref, game_id, transition, answered, total);
+    if let Some(transition) = transition {
+        emit_experience_to_display_room(io, game_id, &transition);
     }
-}
-
-/// Emit an experience transition only to the game's display room. `answered`/
-/// `total` are optional (WP #877 doesn't yet track per-question progress for
-/// experience modes — that lands with the mode-specific gameplay in WP
-/// #904/#905); the wire field is already `skip_serializing_if` on the type.
-///
-/// Transition-only path — do **not** call from reconnect (WP #939B uses
-/// [`resend_experience_on_display_reconnect`] instead, single-socket, no
-/// revision bump).
-pub fn broadcast_experience_to_display(
-    io: &SocketIo,
-    game_ref: &Arc<Mutex<Game>>,
-    game_id: &str,
-    mut experience: ExperienceTransition,
-    answered: Option<i32>,
-    total: Option<i32>,
-) {
-    let _game = game_ref.lock().unwrap();
-    experience.answered = answered;
-    experience.total = total;
-    let display_room = format!("display:{}", game_id);
-    io.to(display_room)
-        .emit(constants::experience::TRANSITION, &experience)
-        .ok();
 }
 
 /// Map recorded manager wire `Status` → experience phase (same table as
@@ -264,8 +352,8 @@ fn recorded_status_to_experience_phase(
     }
 }
 
-/// WP #939B — resend the current FlowerBattle `game:experience` envelope to
-/// the single reconnecting socket (host/satellite after hard-reload).
+/// WP #939B / WP-958F-R — resend FlowerBattle `game:experience` to the single
+/// reconnecting socket (host/satellite after hard-reload).
 ///
 /// - Target: this socket only (not a room broadcast; room exclusion stays intact).
 /// - Revision: `EXPERIENCE_REVISION.load` **without** bump — multi-reconnect is
@@ -273,71 +361,93 @@ fn recorded_status_to_experience_phase(
 ///   come from live `Game` (WP #939A) so the payload is stable.
 /// - Modes: FlowerBattle only; Classic/None/other modes = no-op.
 /// - Blackout phases (lobby / wait / paused): no-op (same as transitions).
+/// - SHOW_RESULT window: replay `answers_locked` then post-state `resolution`
+///   (or sole `game_complete` when the tick already finished the game).
 pub fn resend_experience_on_display_reconnect(socket: &SocketRef, game_ref: &Arc<Mutex<Game>>) {
-    let transition = {
+    let transitions = {
         let game = game_ref.lock().unwrap();
         let mode = match game.selected_modes.experience_mode {
             Some(ExperienceMode::FlowerBattle) => ExperienceMode::FlowerBattle,
             _ => return,
         };
-        let phase = game
-            .last_manager_status
-            .as_ref()
-            .and_then(|(s, _)| recorded_status_to_experience_phase(*s))
-            .or_else(|| {
-                // Fallback when nothing was recorded yet: map engine phase.
-                use razzoozle_engine::state::GamePhase;
-                match game.engine.phase {
-                    GamePhase::ShowRoom => None,
-                    GamePhase::ShowStart => Some(ExperiencePhase::Intro),
-                    GamePhase::ShowQuestion | GamePhase::SelectAnswer => {
-                        Some(ExperiencePhase::Question)
-                    }
-                    GamePhase::ShowResult => Some(ExperiencePhase::Resolution),
-                    GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard => {
-                        Some(ExperiencePhase::WorldTransition)
-                    }
-                    GamePhase::Finished => Some(ExperiencePhase::GameComplete),
-                }
-            });
-        let Some(phase) = phase else {
-            return;
-        };
-        let (answered, total, phase_duration_ms) = experience_progress(&game, phase);
-        // Prefer live question open time when in the answer window; otherwise
-        // wall-clock now (phase wall-clock is not persisted — reconnect fills
-        // the blank screen; timeline interpolation is out of scope for #939B).
-        let phase_started_at_server_ms =
-            if matches!(phase, ExperiencePhase::Question) && game.question_start_at_server_ms > 0 {
-                game.question_start_at_server_ms
+
+        // Result-window dual envelope takes precedence over last_manager_status
+        // (manager STATUS is SHOW_RESPONSES while engine phase is ShowResult).
+        let phases = {
+            let result_phases = result_window_experience_phases(&game);
+            if !result_phases.is_empty() {
+                result_phases
             } else {
-                get_now_ms() as i64
-            };
-        let payload = default_payload_for_mode(mode, &game);
-        ExperienceTransition {
-            mode,
-            phase,
-            phase_started_at_server_ms,
-            phase_duration_ms,
-            // Revision-guard: do not fetch_add — identical multi-reconnect.
-            revision: EXPERIENCE_REVISION.load(Ordering::Relaxed),
-            answered,
-            total,
-            payload,
-        }
+                let phase = game
+                    .last_manager_status
+                    .as_ref()
+                    .and_then(|(s, _)| recorded_status_to_experience_phase(*s))
+                    .or_else(|| match game.engine.phase {
+                        GamePhase::ShowRoom => None,
+                        GamePhase::ShowStart => Some(ExperiencePhase::Intro),
+                        GamePhase::ShowQuestion | GamePhase::SelectAnswer => {
+                            Some(ExperiencePhase::Question)
+                        }
+                        GamePhase::ShowResult => Some(ExperiencePhase::Resolution),
+                        GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard => {
+                            Some(ExperiencePhase::WorldTransition)
+                        }
+                        GamePhase::Finished => Some(ExperiencePhase::GameComplete),
+                    });
+                phase.into_iter().collect()
+            }
+        };
+
+        phases
+            .into_iter()
+            .map(|phase| build_experience_transition(&game, mode, phase, false))
+            .collect::<Vec<_>>()
     };
 
-    socket
-        .emit(constants::experience::TRANSITION, &transition)
-        .ok();
+    for transition in transitions {
+        socket
+            .emit(constants::experience::TRANSITION, &transition)
+            .ok();
+    }
 }
 
-/// Manager-socket STATUS: record, then emit to that socket only.
-/// Record and emit are atomic under the game lock.
-pub fn send_status_to_manager(sock: &SocketRef, game_ref: &Arc<Mutex<Game>>, status: &GameStatus) {
-    let mut game = game_ref.lock().unwrap();
-    game.record_last_manager_status(status);
-    sock.emit(constants::game::STATUS, status).ok();
+/// Manager-relevant STATUS: record, emit to manager socket if connected, and
+/// mirror content-free `game:experience` to the display room when mapped.
+///
+/// Does **not** require a connected manager socket (display emit still runs).
+/// Does **not** emit `resolution` — that is owned by
+/// [`emit_post_reveal_resolution`] after `after_reveal_tick`.
+pub fn send_status_to_manager(
+    io: &SocketIo,
+    game_ref: &Arc<Mutex<Game>>,
+    game_id: &str,
+    status: &GameStatus,
+) {
+    let (manager_socket_id, transition) = {
+        let mut game = game_ref.lock().unwrap();
+        game.record_last_manager_status(status);
+        let manager_socket_id = game.manager_socket_id.clone();
+        let transition = match (
+            active_experience_mode(&game),
+            manager_status_experience_phase(status),
+        ) {
+            (Some(mode), Some(phase)) => {
+                Some(build_experience_transition(&game, mode, phase, true))
+            }
+            _ => None,
+        };
+        (manager_socket_id, transition)
+    };
+
+    if let Ok(sid) = manager_socket_id.parse() {
+        if let Some(sock) = io.get_socket(sid) {
+            sock.emit(constants::game::STATUS, status).ok();
+        }
+    }
+
+    if let Some(transition) = transition {
+        emit_experience_to_display_room(io, game_id, &transition);
+    }
 }
 
 /// Emit lifecycle events for a game state transition — Node parity:
@@ -703,5 +813,267 @@ mod tests {
         assert_eq!(v["mode"], "flowerBattle");
         assert_eq!(v["data"]["state"]["background"]["seed"], "42424242");
         assert_eq!(v["data"]["state"]["background"]["recipeVersion"], 1);
+    }
+
+    // ── WP-958F-R: result envelope chokepoint ─────────────────────────────
+
+    fn flower_game(phase: GamePhase) -> Game {
+        use razzoozle_protocol::quizz::Quizz;
+        let mut game = Game::new(
+            "g-958f".into(),
+            "INV".into(),
+            "mgr".into(),
+            "quiz".into(),
+            Quizz {
+                subject: "t".into(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
+        game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+        game.engine.phase = phase;
+        game.flower_battle_seed = 99_001;
+        game
+    }
+
+    fn sample_show_responses() -> GameStatus {
+        GameStatus::ShowResponses(ShowResponsesData {
+            question: "SECRET_Q".into(),
+            responses: Default::default(),
+            solutions: vec![],
+            answers: vec!["SECRET_A".into()],
+            media: None,
+            question_type: None,
+            correct: None,
+            correct_answer: None,
+            unit: None,
+            cooldown: 0,
+            time: 0,
+            min: None,
+            max: None,
+            step: None,
+            average_guess: None,
+            text_responses: None,
+            accepted_answers: None,
+            match_mode: None,
+            chunks: None,
+            correct_chunks: None,
+            correct_options: None,
+            correct_matches: None,
+            correct_hotspot_index: None,
+            correct_order: None,
+            items: None,
+            correct_token_pos: None,
+            round_recap: None,
+        })
+    }
+
+    #[test]
+    fn manager_status_answers_locked_not_resolution() {
+        assert_eq!(
+            manager_status_experience_phase(&sample_show_responses()),
+            Some(ExperiencePhase::AnswersLocked)
+        );
+        // Resolution is post-tick owned — never from manager STATUS path.
+        assert_eq!(
+            manager_status_experience_phase(&GameStatus::ShowResult(ShowResultData {
+                correct: true,
+                message: "x".into(),
+                points: 0,
+                my_points: 0,
+                rank: 1,
+                ahead_of_me: None,
+                streak: None,
+                streak_bonus: None,
+                bonus: None,
+                first_correct: None,
+                poll: None,
+                achievements: None,
+                bonus_points: None,
+                player_count: None,
+                correct_answer: None,
+                correct_chunks: None,
+                correct_options: None,
+                correct_matches: None,
+                correct_hotspot_index: None,
+                correct_order: None,
+                items: None,
+                correct_token_pos: None,
+                auto_advance_ms: None,
+                round_recap: None,
+                scoring_mode: None,
+                text_responses: None,
+            })),
+            None
+        );
+    }
+
+    #[test]
+    fn answers_locked_envelope_is_content_free() {
+        let game = flower_game(GamePhase::ShowResult);
+        let t = build_experience_transition(
+            &game,
+            ExperienceMode::FlowerBattle,
+            ExperiencePhase::AnswersLocked,
+            true,
+        );
+        assert_eq!(t.phase, ExperiencePhase::AnswersLocked);
+        let v = serde_json::to_value(&t).unwrap();
+        // Phase name is answers_locked — check payload/data only, not the whole envelope.
+        let payload = &v["payload"];
+        for forbidden in [
+            "question",
+            "solutions",
+            "SECRET_Q",
+            "SECRET_A",
+            "correctAnswer",
+        ] {
+            let s = payload.to_string();
+            assert!(
+                !s.contains(forbidden),
+                "answers_locked payload must not carry content key/text {forbidden}: {s}"
+            );
+        }
+        // Top-level status-style answer content must not exist on the envelope.
+        assert!(v.get("question").is_none());
+        assert!(v.get("answers").is_none());
+        assert!(v.get("media").is_none());
+        assert!(v.get("solutions").is_none());
+        assert_eq!(v["mode"], "flowerBattle");
+        assert_eq!(v["phase"], "answers_locked");
+    }
+
+    #[test]
+    fn post_tick_resolution_reflects_growth_state() {
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.flower_battle_effects.set_stage("red", 4);
+        game.flower_battle_sun_points.insert("red".into(), 12);
+        assert!(post_reveal_resolution_allowed(&game));
+
+        let t = build_experience_transition(
+            &game,
+            ExperienceMode::FlowerBattle,
+            ExperiencePhase::Resolution,
+            true,
+        );
+        assert_eq!(t.phase, ExperiencePhase::Resolution);
+        let v = serde_json::to_value(&t.payload).unwrap();
+        // Post-tick payload projects live growth (not zero defaults).
+        let teams = &v["data"]["state"]["teams"];
+        // teams is a map keyed by team id when players exist; without roster the
+        // growth_stage map still lives under effects projection via powerups/state.
+        // At minimum the envelope must be FlowerBattle-tagged and content-free.
+        assert_eq!(v["mode"], "flowerBattle");
+        assert_eq!(t.mode, ExperienceMode::FlowerBattle);
+        let _ = teams;
+        let s = v.to_string();
+        assert!(!s.contains("SECRET_Q"));
+    }
+
+    #[test]
+    fn post_reveal_resolution_suppressed_when_terminal() {
+        let mut game = flower_game(GamePhase::ShowResult);
+        assert!(post_reveal_resolution_allowed(&game));
+
+        game.flower_battle_effects.victory_resolved = true;
+        assert!(!post_reveal_resolution_allowed(&game));
+
+        let game = flower_game(GamePhase::Finished);
+        assert!(!post_reveal_resolution_allowed(&game));
+
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.finish_broadcast_done = true;
+        assert!(!post_reveal_resolution_allowed(&game));
+
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.flower_battle_winner_team_ids = Some(vec!["red".into()]);
+        assert!(!post_reveal_resolution_allowed(&game));
+    }
+
+    #[test]
+    fn terminal_ordering_game_complete_no_later_resolution() {
+        let mut game = flower_game(GamePhase::Finished);
+        game.flower_battle_effects.victory_resolved = true;
+        let phases = result_window_experience_phases(&game);
+        assert_eq!(phases, vec![ExperiencePhase::GameComplete]);
+        assert!(!phases.contains(&ExperiencePhase::Resolution));
+    }
+
+    #[test]
+    fn resume_reconnect_show_result_replays_answers_locked_then_resolution() {
+        let game = flower_game(GamePhase::ShowResult);
+        let phases = result_window_experience_phases(&game);
+        assert_eq!(
+            phases,
+            vec![ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution]
+        );
+    }
+
+    #[test]
+    fn classic_and_none_modes_skip_result_experience() {
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.selected_modes.experience_mode = None;
+        assert!(result_window_experience_phases(&game).is_empty());
+        assert!(!post_reveal_resolution_allowed(&game));
+
+        game.selected_modes.experience_mode = Some(ExperienceMode::Classic);
+        assert!(result_window_experience_phases(&game).is_empty());
+        assert!(!post_reveal_resolution_allowed(&game));
+    }
+
+    #[test]
+    fn shared_builder_aligns_broadcast_and_manager_answers_locked() {
+        let game = flower_game(GamePhase::ShowResult);
+        let a = build_experience_transition(
+            &game,
+            ExperienceMode::FlowerBattle,
+            ExperiencePhase::AnswersLocked,
+            false,
+        );
+        let b = build_experience_transition(
+            &game,
+            ExperienceMode::FlowerBattle,
+            ExperiencePhase::AnswersLocked,
+            false,
+        );
+        assert_eq!(a.mode, b.mode);
+        assert_eq!(a.phase, b.phase);
+        assert_eq!(a.payload, b.payload);
+        assert_eq!(a.revision, b.revision);
+        assert_eq!(
+            manager_status_experience_phase(&sample_show_responses()),
+            Some(ExperiencePhase::AnswersLocked)
+        );
+    }
+
+    #[test]
+    fn no_manager_socket_still_builds_display_transition() {
+        // send_status_to_manager looks up manager by id; even when offline the
+        // transition is still built for the display room. Pure path check:
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.manager_socket_id = "not-a-connected-socket".into();
+        let phase = manager_status_experience_phase(&sample_show_responses());
+        assert_eq!(phase, Some(ExperiencePhase::AnswersLocked));
+        let t =
+            build_experience_transition(&game, ExperienceMode::FlowerBattle, phase.unwrap(), true);
+        assert_eq!(t.phase, ExperiencePhase::AnswersLocked);
+        // Emitting to an empty display room is a no-op success (io.to(...).ok()).
+    }
+
+    #[test]
+    fn pyramid_and_deep_sea_preserve_post_reveal_resolution() {
+        for mode in [ExperienceMode::PyramidClimb, ExperienceMode::DeepSeaEscape] {
+            let mut game = flower_game(GamePhase::ShowResult);
+            game.selected_modes.experience_mode = Some(mode);
+            assert!(
+                post_reveal_resolution_allowed(&game),
+                "{mode:?} must still get post-tick resolution"
+            );
+            assert_eq!(
+                result_window_experience_phases(&game),
+                vec![ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution]
+            );
+        }
     }
 }

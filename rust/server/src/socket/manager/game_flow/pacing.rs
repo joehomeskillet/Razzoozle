@@ -5,7 +5,9 @@ use crate::is_game_host;
 use crate::socket::auth;
 use crate::socket::lifecycle::build_select_answer_data;
 use crate::socket::reveal_helpers::build_manager_show_responses;
-use crate::socket::status_emit::{broadcast_status, send_status_to_manager};
+use crate::socket::status_emit::{
+    broadcast_status, emit_post_reveal_resolution, send_status_to_manager,
+};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::status::{
@@ -439,11 +441,10 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
 
                 match status {
                     Status::ShowResult => {
-                        let (payloads, manager_socket_id, manager_status) = {
+                        let (payloads, manager_status) = {
                             let game = game_ref.lock().unwrap();
                             (
                                 game.last_show_result_data.clone(),
-                                game.manager_socket_id.clone(),
                                 build_manager_show_responses(&game),
                             )
                         };
@@ -457,11 +458,16 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                                 }
                             }
                         }
-                        if let Ok(sid) = manager_socket_id.parse() {
-                            if let Some(sock) = ctx.io.get_socket(sid) {
-                                send_status_to_manager(&sock, &game_ref, &manager_status);
-                            }
-                        }
+                        // Manager SHOW_RESPONSES + content-free answers_locked (no manager
+                        // socket required for display), then post-state resolution.
+                        // Same order as live reveal (WP-958F-R resume).
+                        send_status_to_manager(
+                            &ctx.io,
+                            &game_ref,
+                            &game_id,
+                            &manager_status,
+                        );
+                        emit_post_reveal_resolution(&ctx.io, &game_ref, &game_id);
                     }
                     Status::ShowStart => {
                         if let Ok(start_data) = serde_json::from_value::<ShowStartData>(data) {
@@ -485,15 +491,13 @@ pub fn register_resume_game(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                     Status::ShowRoundRecap => {
                         if let Ok(recap_data) = serde_json::from_value::<ShowRoundRecapData>(data) {
-                            if let Ok(sid) = manager_socket_id.parse() {
-                                if let Some(sock) = ctx.io.get_socket(sid) {
-                                    send_status_to_manager(
-                                        &sock,
-                                        &game_ref,
-                                        &GameStatus::ShowRoundRecap(recap_data),
-                                    );
-                                }
-                            }
+                            let _ = manager_socket_id; // looked up inside chokepoint
+                            send_status_to_manager(
+                                &ctx.io,
+                                &game_ref,
+                                &game_id,
+                                &GameStatus::ShowRoundRecap(recap_data),
+                            );
                         }
                     }
                     Status::ShowLeaderboard => {

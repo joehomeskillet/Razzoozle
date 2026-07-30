@@ -558,3 +558,135 @@ async fn manual_mode_single_abort_per_dwell_reaches_finished() {
     );
     driver.abort();
 }
+
+// ── WP-958F-R: result envelope ordering (manager-only + post-tick) ────────
+
+use crate::socket::reveal_helpers::build_manager_show_responses;
+use crate::socket::status_emit::{emit_post_reveal_resolution, send_status_to_manager};
+use razzoozle_protocol::game::ExperienceMode;
+use razzoozle_protocol::status::Status;
+
+/// Manager-only SHOW_RESPONSES records status even when the manager socket is
+/// offline — display experience must not depend on a connected host socket.
+#[tokio::test]
+async fn wp958f_manager_status_records_without_connected_manager() {
+    let quiz = QuizFixture::load().expect("fixture quiz loads");
+    let mut game = Game::new(
+        "g-958f-nm".into(),
+        "NM01".into(),
+        "offline-manager-socket".into(),
+        "test-quiz".into(),
+        quiz,
+    );
+    game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+    game.engine.phase = GamePhase::ShowResult;
+    let game_ref = Arc::new(Mutex::new(game));
+
+    let (_layer, io) = SocketIo::builder().build_layer();
+    io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+    let manager_status = {
+        let g = game_ref.lock().unwrap();
+        build_manager_show_responses(&g)
+    };
+    // No manager socket connected — must still record + emit display experience.
+    send_status_to_manager(&io, &game_ref, "g-958f-nm", &manager_status);
+
+    let recorded = game_ref.lock().unwrap().last_manager_status.clone();
+    assert!(
+        recorded.is_some(),
+        "last_manager_status must be recorded without a live manager socket"
+    );
+    assert_eq!(recorded.unwrap().0, Status::ShowResponses);
+}
+
+/// Terminal early-finish: resolution must not run after game_complete ownership.
+#[tokio::test]
+async fn wp958f_terminal_skips_post_reveal_resolution() {
+    let quiz = QuizFixture::load().expect("fixture quiz loads");
+    let mut game = Game::new(
+        "g-958f-term".into(),
+        "TM01".into(),
+        "manager-socket".into(),
+        "test-quiz".into(),
+        quiz,
+    );
+    game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+    game.engine.phase = GamePhase::Finished;
+    game.finish_broadcast_done = true;
+    game.flower_battle_effects.victory_resolved = true;
+    game.flower_battle_winner_team_ids = Some(vec!["red".into()]);
+    let game_ref = Arc::new(Mutex::new(game));
+
+    let (_layer, io) = SocketIo::builder().build_layer();
+    io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+    // Must be a no-op (no panic); game_complete remains final.
+    emit_post_reveal_resolution(&io, &game_ref, "g-958f-term");
+    assert!(game_ref.lock().unwrap().finish_broadcast_done);
+    assert_eq!(game_ref.lock().unwrap().engine.phase, GamePhase::Finished);
+}
+
+/// Post-tick path: ongoing ShowResult allows resolution emit (no panic, state kept).
+#[tokio::test]
+async fn wp958f_post_tick_resolution_on_ongoing_show_result() {
+    let quiz = QuizFixture::load().expect("fixture quiz loads");
+    let mut game = Game::new(
+        "g-958f-res".into(),
+        "RS01".into(),
+        "manager-socket".into(),
+        "test-quiz".into(),
+        quiz,
+    );
+    game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+    game.engine.phase = GamePhase::ShowResult;
+    game.flower_battle_effects.set_stage("red", 3);
+    game.flower_battle_sun_points.insert("red".into(), 7);
+    let game_ref = Arc::new(Mutex::new(game));
+
+    let (_layer, io) = SocketIo::builder().build_layer();
+    io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+    emit_post_reveal_resolution(&io, &game_ref, "g-958f-res");
+
+    let g = game_ref.lock().unwrap();
+    assert_eq!(g.engine.phase, GamePhase::ShowResult);
+    assert_eq!(g.flower_battle_effects.stage_of("red"), 3);
+    assert_eq!(g.flower_battle_sun_points.get("red"), Some(&7));
+}
+
+/// Resume contract: SHOW_RESPONSES record then post-state resolution stays on ShowResult.
+#[tokio::test]
+async fn wp958f_resume_answers_locked_then_resolution_order() {
+    let quiz = QuizFixture::load().expect("fixture quiz loads");
+    let mut game = Game::new(
+        "g-958f-resume".into(),
+        "RM01".into(),
+        "offline-manager".into(),
+        "test-quiz".into(),
+        quiz,
+    );
+    game.selected_modes.experience_mode = Some(ExperienceMode::FlowerBattle);
+    game.engine.phase = GamePhase::ShowResult;
+    game.flower_battle_effects.set_stage("blue", 5);
+    let game_ref = Arc::new(Mutex::new(game));
+
+    let (_layer, io) = SocketIo::builder().build_layer();
+    io.ns("/", |_socket: socketioxide::extract::SocketRef| {});
+
+    let manager_status = {
+        let g = game_ref.lock().unwrap();
+        build_manager_show_responses(&g)
+    };
+    // Live resume order: answers_locked (via manager status) then resolution.
+    send_status_to_manager(&io, &game_ref, "g-958f-resume", &manager_status);
+    emit_post_reveal_resolution(&io, &game_ref, "g-958f-resume");
+
+    let g = game_ref.lock().unwrap();
+    assert_eq!(
+        g.last_manager_status.as_ref().unwrap().0,
+        Status::ShowResponses
+    );
+    assert_eq!(g.engine.phase, GamePhase::ShowResult);
+    assert_eq!(g.flower_battle_effects.stage_of("blue"), 5);
+}
