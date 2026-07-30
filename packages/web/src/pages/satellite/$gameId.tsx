@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import { ExperienceDisplay } from "@razzoozle/web/features/game/components/display/ExperienceDisplay"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
@@ -48,7 +49,8 @@ const SatelliteManagerPage = () => {
   // manager privileges to this display without a typed password. We expose the
   // token both as a handshake `auth` field and as a transport header so the
   // server-side validator (separate WP) can read whichever it prefers.
-  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
+  const { status, CurrentComponent, experienceTransition } =
+    useManagerGameSession(gameIdParam, {
     onConnect: () => {
       socket.auth = {
         ...(socket.auth as Record<string, unknown>),
@@ -68,8 +70,11 @@ const SatelliteManagerPage = () => {
   // satellite is a pure display.
   return (
     <GameWrapper statusName={status?.name} manager controls={false}>
-      {status && CurrentComponent && (
-        <CurrentComponent data={status.data as never} />
+      {experienceTransition ? (
+        <ExperienceDisplay data={experienceTransition} />
+      ) : (
+        status &&
+        CurrentComponent && <CurrentComponent data={status.data as never} />
       )}
     </GameWrapper>
   )

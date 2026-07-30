@@ -1,4 +1,5 @@
 import { EVENTS } from "@razzoozle/common/constants"
+import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
 import {
   useEvent,
   useSocket,
@@ -9,7 +10,7 @@ import {
   GAME_STATE_COMPONENTS_MANAGER,
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface ManagerGameSessionOptions {
   // Extra work run inside the `connect` handler before the MANAGER.RECONNECT
@@ -41,6 +42,15 @@ export const useManagerGameSession = (
   const { status, setGameId, setStatus, setPlayers, resetStatus } =
     useManagerStore()
   const { setQuestionStates } = useQuestionStore()
+  // WP #877 — own envelope, not GAME.STATUS (see ServerToClientEvents). Local
+  // state is enough: this hook is only ever mounted once per presenter/display
+  // route, unlike `status` which other components also read via the store.
+  const [experienceTransition, setExperienceTransition] =
+    useState<ExperienceTransition | null>(null)
+
+  useEvent(EVENTS.EXPERIENCE.TRANSITION, (data) => {
+    setExperienceTransition(data)
+  })
 
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
     if (name in GAME_STATE_COMPONENTS_MANAGER) {
@@ -82,6 +92,10 @@ export const useManagerGameSession = (
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayers(players)
       setQuestionStates(currentQuestion)
+      // MANAGER.RECONNECT doesn't (yet) replay the last experience transition
+      // — drop any stale one rather than show a phase that predates the drop.
+      // The next broadcast_status re-syncs it.
+      setExperienceTransition(null)
     },
   )
 
@@ -94,6 +108,7 @@ export const useManagerGameSession = (
 
     resetStatus()
     setQuestionStates(null)
+    setExperienceTransition(null)
   })
 
   const CurrentComponent =
@@ -101,5 +116,5 @@ export const useManagerGameSession = (
       ? GAME_STATE_COMPONENTS_MANAGER[status.name]
       : null
 
-  return { status, CurrentComponent }
+  return { status, CurrentComponent, experienceTransition }
 }

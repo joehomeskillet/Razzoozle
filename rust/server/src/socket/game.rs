@@ -5,7 +5,6 @@ use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::EndScreen;
 use razzoozle_protocol::game::GameCreate;
-use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::status::ScoringMode;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
@@ -201,6 +200,16 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                         // Join socket to the game room
                         socket.join(game_id.clone()).ok();
+                        // WP #877 follow-up (wire-level leak fix) — the manager
+                        // socket also joins the display room from creation
+                        // onward (not just on a later manager:reconnect, see
+                        // auth.rs), so status_emit::broadcast_status's
+                        // `.except(display_room)` during Experience modes has
+                        // a deterministic, always-a-member manager socket to
+                        // exclude-then-backfill via direct emit — no gap
+                        // where content briefly leaks or briefly hides before
+                        // the first reconnect.
+                        socket.join(format!("display:{}", game_id)).ok();
 
                         // Inject achievements config and mode snapshots via setters (inside the write guard)
                         let overrides = razzoozle_engine::achievements::rows_to_overrides(&ach_rows);
@@ -230,18 +239,15 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             } else {
                                 razzoozle_protocol::game::TeamAssignment::default()
                             };
-                            g.selected_modes = SelectedModes {
-                                scoring_mode: Some(
-                                    if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() }
-                                    else { "accuracy".to_string() }
-                                ),
-                                team_mode: Some(validated_team_mode),
-                                klassen: Some(validated_klassen),
-                                end_screen: Some(validated_end_screen),
-                                participant_cap: g.player_cap.map(|u| u as i64),
-                                experience_mode: validated_experience_mode,
+                            g.selected_modes = experience::build_selected_modes_snapshot(
+                                validated_scoring_mode,
+                                validated_team_mode,
+                                validated_klassen,
+                                validated_end_screen,
+                                g.player_cap.map(|u| u as i64),
+                                validated_experience_mode,
                                 team_assignment,
-                            };
+                            );
                         }
 
                         // Emit manager:gameCreated with protocol type
@@ -316,6 +322,9 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
             } else {
                 info!("Client disconnected: socketId={}", socket_id);
             }
+
+            // WP #877: Display-room cleanup würde hier gehören (display:<gameId>),
+            // aber ohne Game-ID-Mapping. Wird in Reconnect-WP (Folge-Ticket) ergänzt.
         });
     });
 }

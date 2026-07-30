@@ -383,7 +383,9 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
                     }
 
                     // Join display socket to game room
-                    display_socket.join(game_id_clone.clone());
+                    display_socket.join(game_id_clone.clone()).ok();
+                    let display_room = format!("display:{}", game_id_clone);
+                    display_socket.join(display_room).ok();
 
                     // Emit PAIR_SUCCESS to both sockets
                     display_socket
@@ -478,6 +480,8 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     });
 
     // Handle socket disconnect
+    // 2026-07-30 WP #877: socketioxide on_disconnect ist SINGLETON (game.rs:255 active).
+    // Dieser event handler ist UNERREICHBAR. Display-cleanup gehört in game.rs.
     socket.on("disconnect", {
         let io = ctx.io.clone();
         let registry = ctx.registry.clone();

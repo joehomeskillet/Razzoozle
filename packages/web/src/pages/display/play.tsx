@@ -3,6 +3,7 @@ import {
   EVENTS,
 } from "@razzoozle/common/constants"
 import Loader from "@razzoozle/web/components/Loader"
+import { ExperienceDisplay } from "@razzoozle/web/features/game/components/display/ExperienceDisplay"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
@@ -74,9 +75,10 @@ const DisplayPlayPage = () => {
   // socket was already authenticated during the display pairing handshake.
   // `reconnectIfConnected` also fires the reconnect immediately when we land
   // here already connected (in-app navigation from /display).
-  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
-    reconnectIfConnected: true,
-  })
+  const { status, CurrentComponent, experienceTransition } =
+    useManagerGameSession(gameIdParam, {
+      reconnectIfConnected: true,
+    })
 
   // Idle screen between pairing and the first status push.
   if (!status) {
@@ -97,7 +99,11 @@ const DisplayPlayPage = () => {
   return (
     <div className="display-stage h-full w-full">
       <GameWrapper statusName={status.name} manager controls={false}>
-        {CurrentComponent && <CurrentComponent data={status.data as never} />}
+        {experienceTransition ? (
+          <ExperienceDisplay data={experienceTransition} />
+        ) : (
+          CurrentComponent && <CurrentComponent data={status.data as never} />
+        )}
       </GameWrapper>
     </div>
   )
