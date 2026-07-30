@@ -169,4 +169,20 @@ describe("FlowerBattleDisplay", () => {
     expect(html).toContain('data-testid="flower-battle-display"')
     expect(html).toContain('data-testid="flower-garden-scene"')
   })
+
+  it("clips its own box so an oversized child can never leak into a page scrollbar (WP-958B)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
+    )
+    const rootMatch = html.match(/data-testid="flower-battle-display"[^>]*class="([^"]*)"/)
+    expect(rootMatch).not.toBeNull()
+    expect(rootMatch![1]).toContain("overflow-hidden")
+  })
+
+  it("never renders an h-screen viewport that could exceed its parent's box (ADR-013)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
+    )
+    expect(html).not.toContain("h-screen")
+  })
 })
