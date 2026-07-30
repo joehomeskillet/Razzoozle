@@ -686,6 +686,23 @@ export interface ClientToServerEvents {
     }>,
   ) => void
 
+  // FlowerBattle mode (WP #927 domain contract). Types the wire contract for
+  // the player power-up vote UI (WP #941). The server handler lands in #931
+  // (grep-verified absent from rust/server/src/socket/** as of WP #941) — the
+  // actual socket.emit call in FlowerPowerupVote.tsx stays behind a documented
+  // no-op flag until then; this entry only unblocks typechecking the emit.
+  [EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE]: (
+    _message: MessageWithoutStatus<{
+      offerId: string
+      // One of the (up to) 3 PowerupType ids offered in this offer's
+      // `offerType` (packages/web .../player/flower-battle.types.ts).
+      choice: string
+      clientMessageId?: string
+      // SEC-04 — mirrors SELECTED_ANSWER's playerToken convention.
+      playerToken?: string
+    }>,
+  ) => void
+
   // Low-latency mode: UI-only clock sync ping (client monotonic clock).
   [EVENTS.CLOCK.PING]: (_data: { clientSendMonoMs: number }) => void
 

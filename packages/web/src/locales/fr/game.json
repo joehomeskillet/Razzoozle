@@ -408,5 +408,34 @@
       "acidRain": "☁ Prochaine croissance −1",
       "sunbeam": "☀ Prochaine croissance +1"
     }
+  },
+  "flowerBattle": {
+    "powerupVote": {
+      "title": "Choisis un bonus",
+      "description": "Vote pour un bonus avant la fin du temps imparti.",
+      "submit": "Voter",
+      "status": {
+        "selected": "{{name}} sélectionné",
+        "submitted": "Vote envoyé"
+      },
+      "options": {
+        "fertilizer": {
+          "name": "Engrais",
+          "effect": "Fait pousser ta fleur plus vite"
+        },
+        "sunbeam": {
+          "name": "Rayon de soleil",
+          "effect": "Donne un coup de pouce de croissance immédiat"
+        },
+        "umbrella_shield": {
+          "name": "Bouclier parapluie",
+          "effect": "Protège ton équipe de la prochaine attaque"
+        },
+        "acid_rain": {
+          "name": "Pluie acide",
+          "effect": "Ralentit l'équipe adverse"
+        }
+      }
+    }
   }
 }
