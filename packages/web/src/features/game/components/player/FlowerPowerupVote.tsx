@@ -9,7 +9,6 @@ import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import clsx from "clsx"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { v7 as uuid } from "uuid"
 import {
   parsePowerupOptions,
   POWERUP_ICONS,
@@ -17,11 +16,14 @@ import {
   type PowerupType,
 } from "./flower-battle.types"
 
-// PENDING(WP-931): the SUBMIT_POWERUP_VOTE server handler isn't wired yet
-// (grep-verified absent from rust/server/src/socket/** as of WP-941 — see the
-// WP report). Flip this once WP-931 lands and the round-trip is proven; until
-// then the emit below is a documented no-op so this UI ships without
-// depending on unmerged server work.
+// PENDING(WP-931/942): the SUBMIT_POWERUP_VOTE server handler is live
+// (rust/server/src/socket/player/powerup_vote.rs, verified as of WP-942 —
+// see the WP-942 report), but the S2C POWERUP_OFFERED/POWERUP_SELECTED
+// broadcasts that would drive this UI from a real game are still unemitted
+// anywhere in rust/server/src (grep-verified). Flip this once that broadcast
+// lands and the full round-trip is proven end-to-end; until then the emit
+// below is a documented no-op so this UI ships without depending on
+// unfinished server wiring.
 const POWERUP_VOTE_HANDLER_LIVE = false
 
 // Reconstructs the remaining ms to `expiresAt` on the server clock, using the
@@ -253,7 +255,7 @@ export function FlowerPowerupVote({ mode, offer }: FlowerPowerupVoteProps) {
   }
 
   const handleSubmit = () => {
-    if (!selected || cardsDisabled) return
+    if (!selected || cardsDisabled || !gameId) return
     if (votedOfferIdRef.current === offer.id) return
 
     votedOfferIdRef.current = offer.id
@@ -261,13 +263,12 @@ export function FlowerPowerupVote({ mode, offer }: FlowerPowerupVoteProps) {
     setStatusMessage(t("game:flowerBattle.powerupVote.status.submitted"))
 
     if (POWERUP_VOTE_HANDLER_LIVE) {
+      // Wire-verified payload shape: PowerupVotePayload in
+      // rust/server/src/socket/player/powerup_vote.rs — flat { gameId,
+      // optionIndex }, index into `options`, not the PowerupType string.
       socket.emit(EVENTS.FLOWER_BATTLE.SUBMIT_POWERUP_VOTE, {
-        gameId: gameId ?? undefined,
-        data: {
-          offerId: offer.id,
-          choice: selected,
-          clientMessageId: uuid(),
-        },
+        gameId,
+        optionIndex: options.indexOf(selected),
       })
     }
   }

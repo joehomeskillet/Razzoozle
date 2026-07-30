@@ -436,6 +436,19 @@
           "effect": "减慢对方队伍的速度"
         }
       }
+    },
+    "targetVote": {
+      "title": "选择目标队伍",
+      "description": "在时间结束前选择酸雨攻击的队伍。",
+      "submit": "确认",
+      "status": {
+        "selected": "已选择{{name}}",
+        "submitted": "目标已确认"
+      },
+      "shieldBadge": "已保护",
+      "disabledReason": {
+        "recentlyAttacked": "刚被攻击过——请选择其他队伍"
+      }
     }
   }
 }

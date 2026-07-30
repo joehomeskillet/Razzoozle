@@ -436,6 +436,19 @@
           "effect": "Slows down the other team"
         }
       }
+    },
+    "targetVote": {
+      "title": "Choose a target team",
+      "description": "Pick the team the acid rain hits before time runs out.",
+      "submit": "Confirm",
+      "status": {
+        "selected": "{{name}} selected",
+        "submitted": "Target confirmed"
+      },
+      "shieldBadge": "Protected",
+      "disabledReason": {
+        "recentlyAttacked": "Just attacked — choose another team"
+      }
     }
   }
 }
