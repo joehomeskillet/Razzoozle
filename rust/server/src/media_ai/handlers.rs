@@ -48,7 +48,7 @@ pub(super) fn register_generate_image(socket: &SocketRef, client_id: String) {
 
                 // 1. length 1..=300
                 let len = prompt.chars().count();
-                if len < 1 || len > PROMPT_MAX_LEN {
+                if !(1..=PROMPT_MAX_LEN).contains(&len) {
                     socket
                         .emit(
                             constants::manager::IMAGE_ERROR,
@@ -131,11 +131,9 @@ pub(super) fn register_edit_image(socket: &SocketRef, client_id: String) {
                 //    Node emits a single fixed key for any validator miss.
                 let blen = base_url.chars().count();
                 let plen = prompt.chars().count();
-                if blen < 1
-                    || blen > 300
+                if !(1..=300).contains(&blen)
                     || !base_url.starts_with("/media/")
-                    || plen < 1
-                    || plen > PROMPT_MAX_LEN
+                    || !(1..=PROMPT_MAX_LEN).contains(&plen)
                 {
                     socket
                         .emit(
@@ -249,7 +247,7 @@ pub(super) fn register_enhance_prompt(socket: &SocketRef, client_id: String) {
                     .unwrap_or("")
                     .to_string();
                 let len = prompt.chars().count();
-                if len < 1 || len > PROMPT_MAX_LEN {
+                if !(1..=PROMPT_MAX_LEN).contains(&len) {
                     socket
                         .emit(
                             constants::manager::IMAGE_ERROR,

@@ -419,7 +419,7 @@ mod tests {
         let result: () = remove_student_from_class(&opt, student_id, class_id, Some(owner))
             .await
             .expect("removal must succeed even for the student's last class");
-        let _ = result;
+        result;
         assert_eq!(count_membership(&pool, student_id, class_id).await, 0);
         let survives: i64 =
             sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM students WHERE id = $1")

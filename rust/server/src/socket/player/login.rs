@@ -88,7 +88,7 @@ pub(crate) fn decide_klassen_login(
         return KlassenLoginDecision::InvalidCredentials;
     }
     // A6: post-PIN dedup — active session for this student.
-    if active_student_ids.iter().any(|id| *id == sid) {
+    if active_student_ids.contains(&sid) {
         return KlassenLoginDecision::AlreadyJoined;
     }
     KlassenLoginDecision::Allow {

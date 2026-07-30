@@ -22,7 +22,7 @@ const AUTO_RESULT_MS: i32 = 6000;
 /// (decimals for mathematik, unit concatenation for slider/mathematik, etc.).
 /// Returns None for unscored questions; used by both player SHOW_RESULT and manager SHOW_RESPONSES.
 pub fn format_correct_answer(question: &Question) -> Option<String> {
-    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
+    let is_unscored = question.r#type.as_ref().is_some_and(|t| t.is_unscored());
 
     if is_unscored {
         return None;
@@ -337,7 +337,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
             .as_ref()
             .map(|t| question_type_wire(t).to_string()),
         correct: question.correct.map(|v| v as i32),
-        correct_answer: format_correct_answer(&question),
+        correct_answer: format_correct_answer(question),
         unit: question.unit.clone(),
         // WP-H gap 4: Node parity (results-broadcast.ts spreads `...question`).
         cooldown: question.cooldown,
@@ -371,9 +371,9 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
-        correct_options: format_correct_options(&question),
-        correct_matches: format_correct_matches(&question),
-        correct_hotspot_index: format_correct_hotspot_index(&question),
+        correct_options: format_correct_options(question),
+        correct_matches: format_correct_matches(question),
+        correct_hotspot_index: format_correct_hotspot_index(question),
         correct_order: if is_sequencing {
             question.correct_order.clone()
         } else {
@@ -384,7 +384,7 @@ pub fn build_manager_show_responses(game: &Game) -> GameStatus {
         } else {
             None
         },
-        correct_token_pos: format_correct_token_pos(&question),
+        correct_token_pos: format_correct_token_pos(question),
         round_recap: round_recap_opt_for_manager,
     })
 }
@@ -428,7 +428,7 @@ pub async fn perform_reveal_and_broadcast(
             let correct_options = format_correct_options(&question);
             let correct_matches = format_correct_matches(&question);
             let correct_hotspot_index = format_correct_hotspot_index(&question);
-            let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
+            let is_unscored = question.r#type.as_ref().is_some_and(|t| t.is_unscored());
             let bonus_flag = question.bonus.unwrap_or(false);
             let is_practice = question.practice == Some(true);
             // WP-H gap 2: Node parity (results-broadcast.ts:172-174) — reveal the
@@ -594,7 +594,7 @@ pub async fn perform_reveal_and_broadcast(
             for player in &players {
                 if let Some(result) = results_map.get(&player.client_id) {
                     let rank = rank_map.get(&player.client_id).copied().unwrap_or(1);
-                    let mut show_result_data = result.to_show_result_data(&player, total_players);
+                    let mut show_result_data = result.to_show_result_data(player, total_players);
                     show_result_data.rank = rank;
 
                     // STEP 1 parity fields
@@ -628,14 +628,13 @@ pub async fn perform_reveal_and_broadcast(
                     show_result_data.ahead_of_me = if rank > 1 {
                         sorted_by_points
                             .get((rank as usize) - 2)
-                            .map(|(cid, _)| {
+                            .and_then(|(cid, _)| {
                                 game.engine
                                     .players
                                     .iter()
                                     .find(|p| p.client_id == *cid)
                                     .map(|p| p.username.clone())
                             })
-                            .flatten()
                     } else {
                         None
                     };

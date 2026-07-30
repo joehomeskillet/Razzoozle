@@ -42,8 +42,8 @@ use super::status_emit::{broadcast_status, send_status_to_manager};
 pub(crate) mod payloads;
 pub(crate) use payloads::build_select_answer_data;
 pub(crate) mod timing;
+pub(crate) use timing::dwell_auto_or_manual;
 pub use timing::request_abort;
-pub(crate) use timing::{dwell_auto_or_manual, wait_while_paused};
 
 /// 3-2-1 intro before Q1 (node: `io.emit(START_COOLDOWN)` + `cooldown.start(3)`).
 const INTRO_COOLDOWN_SECS: i32 = 3;
@@ -127,7 +127,7 @@ async fn open_question(
 
     let show_question_status = GameStatus::ShowQuestion(show_data);
     broadcast_status(io, game_ref, game_id, &show_question_status);
-    emit_plugin_lifecycle(&io, &game_id, "onQuestionShown", "SHOW_QUESTION");
+    emit_plugin_lifecycle(io, game_id, "onQuestionShown", "SHOW_QUESTION");
 
     let (
         question,
@@ -480,7 +480,7 @@ async fn run_lifecycle_from(
         let (auto_advance_ms, round_recap_opt) = {
             let game = game_ref.lock().unwrap();
             let auto_ms = if game.auto_mode {
-                Some((LEADERBOARD_DWELL_SECS as i32) * 1000)
+                Some(LEADERBOARD_DWELL_SECS * 1000)
             } else {
                 None
             };

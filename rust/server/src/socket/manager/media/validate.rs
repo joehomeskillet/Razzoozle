@@ -103,13 +103,12 @@ pub(super) fn infer_type_and_validate_mime(
         {
             return Err("errors:media.invalidDataUrl".to_string());
         }
-    } else if inferred_type == "video" {
-        if !mime.starts_with("video/mp4")
-            && !mime.starts_with("video/webm")
-            && !mime.starts_with("video/ogg")
-        {
-            return Err("errors:media.invalidDataUrl".to_string());
-        }
+    } else if inferred_type == "video"
+        && !mime.starts_with("video/mp4")
+        && !mime.starts_with("video/webm")
+        && !mime.starts_with("video/ogg")
+    {
+        return Err("errors:media.invalidDataUrl".to_string());
     }
 
     // Resolve category: Node semantics (audio→"audio", else→"questions")

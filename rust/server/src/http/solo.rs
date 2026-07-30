@@ -315,7 +315,7 @@ pub async fn handle_check_answer(
     let eval_result = evaluate_answer(question, &answer_input);
 
     // Check if this is an unscored question (poll, word-cloud, brainstorm, etc.)
-    let is_unscored = question.r#type.as_ref().map_or(false, |t| t.is_unscored());
+    let is_unscored = question.r#type.as_ref().is_some_and(|t| t.is_unscored());
 
     // Calculate points: base × 1000, rounded
     let points = (eval_result.base * 1000.0).round() as i32;
@@ -386,7 +386,7 @@ fn compute_solo_score(quiz: &Quizz, answers: Option<&[SoloScoreSubmitAnswer]>) -
 pub fn count_scored_questions(quiz: &Quizz) -> i32 {
     quiz.questions
         .iter()
-        .filter(|q| !q.r#type.as_ref().map_or(false, |t| t.is_unscored()))
+        .filter(|q| !q.r#type.as_ref().is_some_and(|t| t.is_unscored()))
         .count() as i32
 }
 

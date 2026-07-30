@@ -16,7 +16,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let user = match ctx.require_user().await {
+                let _user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
@@ -40,7 +40,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let user = match ctx.require_user().await {
+                let _user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket.emit(constants::manager::UNAUTHORIZED, &"").ok();
@@ -118,7 +118,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
         move |socket: SocketRef, Data::<serde_json::Value>(payload)| {
             let ctx = ctx.clone();
             tokio::spawn(async move {
-                let user = match ctx.require_user().await {
+                let _user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
                         socket.emit(constants::manager::UNAUTHORIZED, &"").ok();

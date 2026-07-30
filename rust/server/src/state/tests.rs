@@ -28,8 +28,6 @@ impl ConfigPathGuard {
     /// Create a new guard that redirects CONFIG_PATH to a unique test directory.
     /// Serializes with other tests via mutex to prevent CONFIG_PATH races.
     fn acquire() -> std::io::Result<Self> {
-        use std::path::PathBuf;
-
         // Acquire lock FIRST, before any env operations
         let _lock = TEST_CONFIG_PATH_LOCK.lock().unwrap();
 
@@ -810,8 +808,8 @@ async fn test_showroom_transport_disconnect_keeps_slot() {
         "third element should be player socket_id"
     );
     assert_eq!(total_players, 1, "player should still be in roster");
-    assert_eq!(
-        removed, false,
+    assert!(
+        !removed,
         "removed flag should be false for keep-slot disconnect"
     );
 
@@ -823,8 +821,8 @@ async fn test_showroom_transport_disconnect_keeps_slot() {
             1,
             "player should still be in players list"
         );
-        assert_eq!(
-            game.players[0].connected, false,
+        assert!(
+            !game.players[0].connected,
             "player should be marked disconnected"
         );
         assert_eq!(
@@ -883,7 +881,7 @@ async fn test_showroom_leave_hard_removes() {
     );
     assert_ne!(removed_socket_id, "player-client", "must not be client_id");
     assert_eq!(total_players, 0, "player should be removed from roster");
-    assert_eq!(removed, true, "removed flag should be true for hard remove");
+    assert!(removed, "removed flag should be true for hard remove");
 
     {
         let game_ref = registry.get_game_by_id(&game_id).unwrap();
@@ -937,8 +935,8 @@ async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
         result.unwrap();
 
     assert_eq!(total_players, 1, "player should still be in roster");
-    assert_eq!(
-        removed, false,
+    assert!(
+        !removed,
         "removed should be false because we're mid-game, not ShowRoom"
     );
 
@@ -950,8 +948,8 @@ async fn test_midgame_disconnect_keeps_slot_even_with_flag() {
             1,
             "player should still be in players list"
         );
-        assert_eq!(
-            game.players[0].connected, false,
+        assert!(
+            !game.players[0].connected,
             "player should be marked disconnected"
         );
     }
@@ -995,10 +993,7 @@ async fn test_disconnect_cleans_socket_index() {
         1,
         "player slot kept after keep-slot disconnect"
     );
-    assert_eq!(
-        game.players[0].connected, false,
-        "player marked disconnected"
-    );
+    assert!(!game.players[0].connected, "player marked disconnected");
 }
 
 #[tokio::test]
@@ -1042,10 +1037,7 @@ async fn test_keep_slot_player_still_findable_by_client_id() {
         );
         let player = player.unwrap();
         assert_eq!(player.id, "player-socket", "socket_id should still match");
-        assert_eq!(
-            player.connected, false,
-            "player should be marked disconnected"
-        );
+        assert!(!player.connected, "player should be marked disconnected");
     }
 }
 

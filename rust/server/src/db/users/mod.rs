@@ -53,7 +53,7 @@ pub async fn create_user(
         let mut rng = rand::thread_rng();
         let mut token_bytes = [0u8; 16];
         rng.fill(&mut token_bytes);
-        URL_SAFE_NO_PAD.encode(&token_bytes)
+        URL_SAFE_NO_PAD.encode(token_bytes)
     };
 
     // Insert into users table
@@ -157,7 +157,7 @@ pub async fn mint_session(pool: &PgPool, user_id: i64, ttl_days: i64) -> Result<
         let mut rng = rand::thread_rng();
         let mut token_bytes = [0u8; 32];
         rng.fill(&mut token_bytes);
-        URL_SAFE_NO_PAD.encode(&token_bytes)
+        URL_SAFE_NO_PAD.encode(token_bytes)
     };
     let token_hash = hash_token(&token);
 

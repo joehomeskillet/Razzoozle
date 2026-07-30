@@ -52,7 +52,7 @@ fn encode_base64(bytes: &[u8]) -> String {
         result.push(BASE64_CHARS[idx] as char);
     }
 
-    while result.len() % 4 != 0 {
+    while !result.len().is_multiple_of(4) {
         result.push('=');
     }
 

@@ -31,12 +31,9 @@ pub async fn get_themes(pool: &Option<PgPool>, me: Option<i64>) -> Vec<serde_jso
             }
         };
 
-    let result = rows
-        .into_iter()
+    rows.into_iter()
         .map(|(id, name)| serde_json::json!({"id": id, "name": name}))
-        .collect();
-
-    result
+        .collect()
 }
 
 /// Fetch the active theme (currently stored in a dedicated table or config).
@@ -114,12 +111,9 @@ pub async fn get_theme_templates_full(
             }
         };
 
-    let result = rows
-        .into_iter()
+    rows.into_iter()
         .map(|(id, name, theme)| serde_json::json!({"id": id, "name": name, "theme": theme}))
-        .collect();
-
-    result
+        .collect()
 }
 
 /// Upsert a theme template into the database.
@@ -190,23 +184,6 @@ pub async fn delete_theme_template(
     }
 
     Ok(result.rows_affected())
-}
-
-#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn mutation_without_pool() {
-        let theme = serde_json::json!({});
-        assert_eq!(
-            super::upsert_theme_template(&None, "t", "n", &theme, Some(1), Some(1))
-                .await
-                .unwrap(),
-            0
-        );
-        assert!(super::delete_theme_template(&None, "t", Some(1))
-            .await
-            .is_err());
-    }
 }
 
 /// Insert a theme revision into the database and prune to newest 10.
@@ -289,4 +266,21 @@ pub async fn get_theme_revision_by_id(
     .ok()
     .flatten()
     .map(|(snapshot,)| snapshot)
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn mutation_without_pool() {
+        let theme = serde_json::json!({});
+        assert_eq!(
+            super::upsert_theme_template(&None, "t", "n", &theme, Some(1), Some(1))
+                .await
+                .unwrap(),
+            0
+        );
+        assert!(super::delete_theme_template(&None, "t", Some(1))
+            .await
+            .is_err());
+    }
 }

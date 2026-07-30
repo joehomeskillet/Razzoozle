@@ -142,7 +142,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
 
                 if let (Some(game_id), Some(count)) = (game_id_opt, count_opt) {
                     // Validate count is in [1, 50]
-                    if count < 1 || count > 50 {
+                    if !(1..=50).contains(&count) {
                         return;
                     }
                     let count = count as usize;
@@ -196,7 +196,7 @@ fn register_add_bots(socket: &SocketRef, ctx: HandlerCtx) {
                         let room = std::cmp::max(0, max_total - existing_bots);
                         let actual_count = std::cmp::min(count, room);
 
-                        if actual_count <= 0 {
+                        if actual_count == 0 {
                             return;
                         }
 

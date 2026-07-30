@@ -68,9 +68,7 @@ pub async fn apply_theme(
     ctx: &HandlerCtx,
 ) -> Result<serde_json::Value, String> {
     // Validate theme payload structure and field types
-    if let Err(error) = validate_theme(&payload) {
-        return Err(error);
-    }
+    validate_theme(payload)?;
 
     // Clamp the skeleton enable-flags to on-disk file presence (see above): the
     // clamped copy is what we persist, broadcast, and return.

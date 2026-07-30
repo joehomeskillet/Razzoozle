@@ -97,7 +97,7 @@ pub fn validate_theme(payload: &serde_json::Value) -> Result<(), String> {
             if arr.len() != 4 {
                 return Err("errors:theme.invalidAnswerColors".to_string());
             }
-            for (_i, color) in arr.iter().enumerate() {
+            for color in arr.iter() {
                 if let Some(c) = color.as_str() {
                     if !is_valid_hex_color(c) {
                         return Err("errors:theme.invalidColor".to_string());

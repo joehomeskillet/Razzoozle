@@ -222,7 +222,7 @@ pub fn auto_generate_chunks(sentence: &str) -> Vec<String> {
             let is_abbreviation = abbreviations.contains(word.to_lowercase().as_str());
             let is_pause = is_pause_char(last_char) && !is_abbreviation;
 
-            let is_next_split_word = next_word.map_or(false, |nw| {
+            let is_next_split_word = next_word.is_some_and(|nw| {
                 let cleaned = nw
                     .to_lowercase()
                     .chars()
@@ -261,7 +261,7 @@ pub fn auto_generate_chunks(sentence: &str) -> Vec<String> {
 
             let chunk_to_split = &chunks[max_words_index];
             let words_in_chunk: Vec<&str> = chunk_to_split.split_whitespace().collect();
-            let mid = (words_in_chunk.len() + 1) / 2; // ceil(len / 2)
+            let mid = words_in_chunk.len().div_ceil(2); // ceil(len / 2)
             let part1 = words_in_chunk[..mid].join(" ");
             let part2 = words_in_chunk[mid..].join(" ");
 
@@ -489,7 +489,7 @@ mod tests {
     #[test]
     fn test_chunks_constraint_min_2() {
         // Validates that chunks must be at least 2 elements
-        let chunks = vec!["OnlyOne".to_string()];
+        let chunks = ["OnlyOne".to_string()];
         assert!(chunks.len() < 2);
     }
 
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_chunks_constraint_valid_range() {
-        let chunks = vec![
+        let chunks = [
             "The".to_string(),
             "quick".to_string(),
             "brown".to_string(),

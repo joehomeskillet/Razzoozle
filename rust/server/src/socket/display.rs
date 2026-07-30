@@ -243,7 +243,7 @@ fn broadcast_status(
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     // Handle DISPLAY.REGISTER — register a display and get a pairing code
     socket.on(constants::display::REGISTER, {
-        let ctx = ctx.clone();
+        let _ctx = ctx.clone();
 
         move |socket: SocketRef, Data::<serde_json::Value>(data)| {
             let code = generate_code();

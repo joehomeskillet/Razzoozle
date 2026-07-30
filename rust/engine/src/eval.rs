@@ -636,8 +636,10 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn mathematik_comma_input() {
         let mut q = test_question(QuestionType::Mathematik);
+        // The value 3.14 is intentional for testing comma input (e.g., "3,14"), not PI approximation.
         q.correct = Some(3.14);
         q.tolerance = Some(0.01);
         let ans = AnswerInput {

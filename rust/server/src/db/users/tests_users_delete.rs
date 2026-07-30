@@ -43,7 +43,7 @@ mod tests {
         cleanup_test_users(&pool).await;
 
         // Create fixture: 1 active admin, 1 inactive admin, 1 regular user
-        let active_admin_id = create_user(&pool, "test_active_admin", "pass123", "admin")
+        let _active_admin_id = create_user(&pool, "test_active_admin", "pass123", "admin")
             .await
             .expect("Failed to create active admin");
 
@@ -51,7 +51,7 @@ mod tests {
             .await
             .expect("Failed to create inactive admin");
 
-        let user_id = create_user(&pool, "test_regular_user", "pass123", "user")
+        let _user_id = create_user(&pool, "test_regular_user", "pass123", "user")
             .await
             .expect("Failed to create regular user");
 

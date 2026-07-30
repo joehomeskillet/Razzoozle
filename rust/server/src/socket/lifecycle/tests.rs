@@ -1,3 +1,4 @@
+use super::timing::wait_while_paused;
 use super::*;
 use crate::state::{Game, QuizFixture};
 

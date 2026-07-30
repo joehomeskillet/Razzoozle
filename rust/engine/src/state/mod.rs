@@ -556,7 +556,7 @@ impl GameState {
         // reflects it, but the recap's internal rank_after does not).
         // Build AwardRow structs for each player, sorted DESC by points_after (results order)
         let mut award_rows: Vec<AwardRow> = Vec::new();
-        for (_idx, result) in results.iter().enumerate() {
+        for result in results.iter() {
             if let Some(player) = self
                 .players
                 .iter()
@@ -626,7 +626,7 @@ impl GameState {
             .enumerate()
             .filter(|(_, q)| q.practice != Some(true) && q.r#type != Some(QuestionType::Poll))
             .map(|(idx, _)| idx as i32)
-            .last()
+            .next_back()
             .unwrap_or(-1);
         let is_last_scored = self.current_question_index as i32 == last_scored_index;
         let has_prior = self.current_question_index > 0;

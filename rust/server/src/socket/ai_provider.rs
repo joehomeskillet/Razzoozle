@@ -495,7 +495,7 @@ pub async fn generate_quiz(
     let raw_questions: Vec<Value> = parsed
         .get("questions")
         .and_then(|q| q.as_array())
-        .map(|arr| arr.clone())
+        .cloned()
         .unwrap_or_default();
 
     let questions: Vec<Value> = raw_questions
@@ -649,7 +649,7 @@ mod tests {
             "en",
         );
         assert_eq!(pin["media"]["type"], json!("image"));
-        assert!(pin["hotspots"].as_array().unwrap().len() >= 1);
+        assert!(!pin["hotspots"].as_array().unwrap().is_empty());
     }
 
     #[test]

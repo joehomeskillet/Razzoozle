@@ -242,7 +242,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     // W1-M2: Restore selected_modes from snapshot
     let selected_modes = snap
         .get("selectedModes")
-        .and_then(|v| {
+        .map(|v| {
             let scoring_mode = v
                 .get("scoringMode")
                 .and_then(|s| s.as_str())
@@ -258,13 +258,13 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
                     "full" => Some(razzoozle_protocol::game::EndScreen::Full),
                     _ => None,
                 });
-            Some(razzoozle_protocol::game::SelectedModes {
+            razzoozle_protocol::game::SelectedModes {
                 scoring_mode,
                 team_mode,
                 klassen,
                 end_screen,
                 participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
-            })
+            }
         })
         .unwrap_or(razzoozle_protocol::game::SelectedModes {
             scoring_mode: None,
@@ -547,7 +547,7 @@ pub async fn save_snapshot(
     for game_ref in games {
         if let Ok(game) = game_ref.lock() {
             if game.engine.phase != GamePhase::ShowRoom || !game.players.is_empty() {
-                snapshots.push(game_to_snapshot(&*game));
+                snapshots.push(game_to_snapshot(&game));
             }
         }
     }
@@ -768,7 +768,7 @@ mod tests {
 
         assert_eq!(p1.player_token, Some("token-alice".to_string()));
 
-        let player_json = serde_json::to_value(&p1).unwrap();
+        let player_json = serde_json::to_value(p1).unwrap();
         assert!(
             player_json.get("playerToken").is_none(),
             "Token leaked in wire serialization"
@@ -809,8 +809,8 @@ mod tests {
                 "currentQuestionIndex": 0,
             });
 
-            let restored =
-                game_from_snapshot(&snap).expect(&format!("Failed to restore phase {}", phase_str));
+            let restored = game_from_snapshot(&snap)
+                .unwrap_or_else(|| panic!("Failed to restore phase {}", phase_str));
             assert_eq!(
                 restored.engine.phase, expected_phase,
                 "Phase mismatch for '{}'",

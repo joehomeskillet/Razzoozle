@@ -31,7 +31,7 @@ fn validate_tags(tags: &serde_json::Value) -> Result<(), &'static str> {
                         // UTF-16 parity with JS string length: use scalar-count
                         // (chars) rather than UTF-8 byte length.
                         let n = s.chars().count();
-                        if n < 1 || n > 40 {
+                        if !(1..=40).contains(&n) {
                             return Err("errors:catalog.invalid");
                         }
                     }

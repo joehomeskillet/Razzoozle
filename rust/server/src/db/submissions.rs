@@ -250,17 +250,6 @@ pub async fn update_submission(
     Ok(max_affected)
 }
 
-#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn update_without_pool_returns_err() {
-        let patch = serde_json::json!({ "status": "approved" });
-        assert!(super::update_submission(&None, "id", &patch, Some(1))
-            .await
-            .is_err());
-    }
-}
-
 /// Fetch a submission by id. Returns the full submission including question, rejectionReason, and category.
 /// `me`: None = unfiltered (admin); Some(id) = only that owner's rows.
 pub async fn get_submission_by_id(
@@ -310,4 +299,15 @@ pub async fn get_submission_by_id(
             obj
         },
     )
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn update_without_pool_returns_err() {
+        let patch = serde_json::json!({ "status": "approved" });
+        assert!(super::update_submission(&None, "id", &patch, Some(1))
+            .await
+            .is_err());
+    }
 }
