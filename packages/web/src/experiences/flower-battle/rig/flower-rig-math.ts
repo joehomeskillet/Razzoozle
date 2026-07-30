@@ -220,6 +220,10 @@ export function solveFlowerRigFk(
  *
  * `reducedMotion: true` yields the exact baked pose — zero sway — so the
  * output is identical for every `timeMs`.
+ *
+ * Non-finite `timeMs` (NaN, ±Infinity) normalizes to 0 at this single source
+ * so motion-on sway never feeds non-finite values into Math.sin. Finite
+ * negative and positive times keep their natural sine-phase semantics.
  */
 export function evaluateFlowerRigPoints(
   options: EvaluateFlowerRigPointsOptions,
@@ -228,7 +232,10 @@ export function evaluateFlowerRigPoints(
   if (options.reducedMotion === true) {
     return solveFlowerRigFk(pose, options.root)
   }
-  const sway = computeFlowerRigIdleSway(options.timeMs ?? 0)
+  // Single source: undefined/nullish → 0; any non-finite number → 0.
+  const rawTimeMs = options.timeMs ?? 0
+  const timeMs = Number.isFinite(rawTimeMs) ? rawTimeMs : 0
+  const sway = computeFlowerRigIdleSway(timeMs)
   const swayedPose: FlowerRigStageKeyframe = {
     ...pose,
     localAngles: [

@@ -232,6 +232,51 @@ describe("evaluateFlowerRigPoints", () => {
     expect(points).toEqual(evaluateFlowerRigPoints({ stage: 3, timeMs: 0 }))
   })
 
+  it("normalizes non-finite timeMs to 0 so all points stay finite (NaN)", () => {
+    const atNaN = evaluateFlowerRigPoints({ stage: 6, timeMs: NaN })
+    const atZero = evaluateFlowerRigPoints({ stage: 6, timeMs: 0 })
+    expect(atNaN).toHaveLength(6)
+    for (const point of atNaN) {
+      expect(Number.isFinite(point.x)).toBe(true)
+      expect(Number.isFinite(point.y)).toBe(true)
+    }
+    expect(atNaN).toEqual(atZero)
+  })
+
+  it("normalizes non-finite timeMs to 0 so all points stay finite (+Infinity)", () => {
+    const atPosInf = evaluateFlowerRigPoints({ stage: 6, timeMs: Infinity })
+    const atZero = evaluateFlowerRigPoints({ stage: 6, timeMs: 0 })
+    expect(atPosInf).toHaveLength(6)
+    for (const point of atPosInf) {
+      expect(Number.isFinite(point.x)).toBe(true)
+      expect(Number.isFinite(point.y)).toBe(true)
+    }
+    expect(atPosInf).toEqual(atZero)
+  })
+
+  it("normalizes non-finite timeMs to 0 so all points stay finite (-Infinity)", () => {
+    const atNegInf = evaluateFlowerRigPoints({ stage: 6, timeMs: -Infinity })
+    const atZero = evaluateFlowerRigPoints({ stage: 6, timeMs: 0 })
+    expect(atNegInf).toHaveLength(6)
+    for (const point of atNegInf) {
+      expect(Number.isFinite(point.x)).toBe(true)
+      expect(Number.isFinite(point.y)).toBe(true)
+    }
+    expect(atNegInf).toEqual(atZero)
+  })
+
+  it("preserves finite negative timeMs sway semantics (not collapsed to 0)", () => {
+    const atNeg = evaluateFlowerRigPoints({ stage: 6, timeMs: -250 })
+    const atZero = evaluateFlowerRigPoints({ stage: 6, timeMs: 0 })
+    const atPos = evaluateFlowerRigPoints({ stage: 6, timeMs: 250 })
+    expect(atNeg).not.toEqual(atZero)
+    expect(atNeg).not.toEqual(atPos)
+    for (const point of atNeg) {
+      expect(Number.isFinite(point.x)).toBe(true)
+      expect(Number.isFinite(point.y)).toBe(true)
+    }
+  })
+
   it("honours the root offset together with reduced motion", () => {
     const root = { x: 40, y: 120 }
     const points = evaluateFlowerRigPoints({
