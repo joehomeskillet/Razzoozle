@@ -10,6 +10,7 @@ interface Props {
   acceptedAnswers: string[] | undefined
   matchMode: "exact" | "normalized" | "fuzzy" | undefined
   correctChunks?: string[] | undefined
+  isTypeAnswer?: boolean
   isSentenceBuilder?: boolean
 }
 
@@ -18,6 +19,7 @@ const TextAnswersDisplay = ({
   acceptedAnswers,
   matchMode,
   correctChunks,
+  isTypeAnswer = false,
   isSentenceBuilder = false,
 }: Props) => {
   const reveal = useReveal()
@@ -26,9 +28,9 @@ const TextAnswersDisplay = ({
   return (
     <div className="mx-auto w-full max-w-7xl px-4 lg:max-w-[85vw]">
       {/* Accepted answers legend (outside scroll area) */}
-      {acceptedAnswers && (
+      {isTypeAnswer && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {acceptedAnswers.map((a) => (
+          {(acceptedAnswers ?? []).map((a) => (
             <span
               key={a}
               className="text-answer-text rounded-full bg-[var(--state-correct-soft)] px-4 py-2 text-base font-semibold md:text-xl lg:text-[clamp(1.25rem,3vh,2.5rem)]"
