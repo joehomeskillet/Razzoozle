@@ -114,6 +114,8 @@ pub mod manager {
     pub const PLUGIN_INSTALL: &str = "manager:pluginInstall";
     pub const PLUGIN_REMOVE: &str = "manager:pluginRemove";
     pub const PLUGIN_SET_CONFIG: &str = "manager:pluginSetConfig";
+    /// Host rebalance of lobby teams (WP #952). Phase=ShowRoom only.
+    pub const BALANCE_TEAMS: &str = "manager:balanceTeams";
 }
 
 pub mod quizz {

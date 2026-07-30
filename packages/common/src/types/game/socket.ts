@@ -73,6 +73,9 @@ export interface HandlerCtx {
 
 export type EndScreen = 'full' | 'top3' | 'private'
 
+/** How players get a team in team-mode games (WP #952). Default server-side: `self`. */
+export type TeamAssignment = 'self' | 'auto'
+
 export interface SelectedModes {
   scoringMode?: 'speed' | 'accuracy'
   teamMode?: boolean
@@ -80,6 +83,8 @@ export interface SelectedModes {
   endScreen?: EndScreen
   /** Per-game participant cap. None or 0 = unlimited (up to server ceiling of 200). Validated and clamped server-side. */
   participantCap?: number
+  /** Team assignment: players pick (`self`) or server auto-balances on join (`auto`). Default `self`. */
+  teamAssignment?: TeamAssignment
 }
 
 // ---- Class-mode LIVE join types (Wave 1B) ----
@@ -497,6 +502,8 @@ export interface ClientToServerEvents {
     gameId?: string
     count: number
   }) => void
+  /** Host rebalance of lobby teams (WP #952). Phase=ShowRoom only. */
+  [EVENTS.MANAGER.BALANCE_TEAMS]: (_message: { gameId: string }) => void
   [EVENTS.MANAGER.ABORT_QUIZ]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.NEXT_QUESTION]: (_message: MessageGameId) => void
   [EVENTS.MANAGER.SHOW_LEADERBOARD]: (_message: MessageGameId) => void

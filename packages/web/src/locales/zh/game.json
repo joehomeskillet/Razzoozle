@@ -179,7 +179,8 @@
     "blue": "蓝队",
     "green": "绿队",
     "yellow": "黄队",
-    "pick": "选择队伍"
+    "pick": "选择队伍",
+    "unbalanced": "队伍不均衡"
   },
   "solo": {
     "play": "单人游玩",

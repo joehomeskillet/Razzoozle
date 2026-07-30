@@ -138,6 +138,8 @@ export const EVENTS = {
     PLUGIN_INSTALL: "manager:pluginInstall",
     PLUGIN_REMOVE: "manager:pluginRemove",
     PLUGIN_SET_CONFIG: "manager:pluginSetConfig",
+    /** Host rebalance of lobby teams (WP #952). Phase=ShowRoom only. */
+    BALANCE_TEAMS: "manager:balanceTeams",
   },
   QUIZZ: {
     GET: "quizz:get",

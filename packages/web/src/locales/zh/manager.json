@@ -638,7 +638,14 @@
     "chooseClass": "选择一个班级 …",
     "klassenModeNeedsClass": "请选择一个班级",
     "intro": "选择一个测验并开始游戏。",
-    "optionsTitle": "游戏选项"
+    "optionsTitle": "游戏选项",
+    "teamAssignment": {
+      "label": "队伍分配",
+      "self": "自行选择",
+      "selfHint": "玩家自己选择队伍",
+      "auto": "自动分配",
+      "autoHint": "服务器分配到人数最少的队伍"
+    }
   },
   "gameMode": {
     "title": "游戏模式",
@@ -1089,5 +1096,6 @@
     "saveError": "无法保存模板。",
     "deleteError": "无法删除模板。",
     "questionCount_one": "{{count}} 个问题"
-  }
+  },
+  "balanceTeams": "平衡队伍"
 }

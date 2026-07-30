@@ -638,7 +638,14 @@
     "chooseClass": "Sélectionne une classe …",
     "klassenModeNeedsClass": "Choisis une classe",
     "intro": "Choisis un quiz et lance une partie.",
-    "optionsTitle": "Options du jeu"
+    "optionsTitle": "Options du jeu",
+    "teamAssignment": {
+      "label": "Attribution d'équipe",
+      "self": "Choisir soi-même",
+      "selfHint": "Les joueurs choisissent leur équipe",
+      "auto": "Automatique",
+      "autoHint": "Le serveur assigne à la plus petite équipe"
+    }
   },
   "gameMode": {
     "title": "Mode de jeu",
@@ -1089,5 +1096,6 @@
     "createError": "Impossible de creer le modele.",
     "saveError": "Impossible d'enregistrer le modele.",
     "deleteError": "Impossible de supprimer le modele."
-  }
+  },
+  "balanceTeams": "Équilibrer les équipes"
 }

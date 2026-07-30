@@ -34,6 +34,7 @@ const ConfigSelectQuizz = () => {
   const [selected, setSelected] = useState<string | null>(null)
   const [scoringMode, setScoringMode] = useState<"speed" | "accuracy">("speed")
   const [teamMode, setTeamMode] = useState(false)
+  const [teamAssignment, setTeamAssignment] = useState<"self" | "auto">("self")
   const [klassenMode, setKlassenMode] = useState(false)
   const [classId, setClassId] = useState<string>("")
   const [endScreen, setEndScreen] = useState<string>("full")
@@ -123,6 +124,9 @@ const ConfigSelectQuizz = () => {
 
     if (config.teamMode === true) {
       selectedModes.teamMode = teamMode
+      if (teamMode) {
+        selectedModes.teamAssignment = teamAssignment
+      }
       hasCustomModes = true
     }
 
@@ -153,7 +157,7 @@ const ConfigSelectQuizz = () => {
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
     }
-  }, [socket, selected, config, scoringMode, teamMode, klassenMode, classId, endScreen, participantCap, t])
+  }, [socket, selected, config, scoringMode, teamMode, teamAssignment, klassenMode, classId, endScreen, participantCap, t])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -273,12 +277,71 @@ const ConfigSelectQuizz = () => {
             )}
 
             {config.teamMode === true && (
-              <ToggleField
-                label={t("manager:gameMode.teamMode")}
-                description={t("manager:selectQuizz.modeSelector.teamModeHint")}
-                checked={teamMode}
-                onChange={setTeamMode}
-              />
+              <>
+                <ToggleField
+                  label={t("manager:gameMode.teamMode")}
+                  description={t("manager:selectQuizz.modeSelector.teamModeHint")}
+                  checked={teamMode}
+                  onChange={setTeamMode}
+                />
+                {teamMode && (
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-medium text-[var(--ink)]">
+                      {t("manager:selectQuizz.teamAssignment.label")}
+                    </legend>
+                    <div
+                      role="radiogroup"
+                      aria-label={t("manager:selectQuizz.teamAssignment.label")}
+                      className="flex flex-col gap-2 sm:flex-row sm:gap-4"
+                    >
+                      {(
+                        [
+                          {
+                            value: "self" as const,
+                            labelKey: "manager:selectQuizz.teamAssignment.self",
+                            hintKey: "manager:selectQuizz.teamAssignment.selfHint",
+                          },
+                          {
+                            value: "auto" as const,
+                            labelKey: "manager:selectQuizz.teamAssignment.auto",
+                            hintKey: "manager:selectQuizz.teamAssignment.autoHint",
+                          },
+                        ] as const
+                      ).map((opt) => {
+                        const selected = teamAssignment === opt.value
+                        return (
+                          <label
+                            key={opt.value}
+                            className={`flex cursor-pointer items-start gap-2 rounded-[var(--radius-theme)] border px-3 py-2 ${
+                              selected
+                                ? "border-[var(--color-primary)] bg-[var(--surface-3)]"
+                                : "border-[var(--border-hairline)] bg-[var(--surface)]"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="team-assignment"
+                              value={opt.value}
+                              checked={selected}
+                              onChange={() => setTeamAssignment(opt.value)}
+                              className="mt-1"
+                              data-testid={`team-assignment-${opt.value}`}
+                            />
+                            <span className="flex flex-col">
+                              <span className="text-sm font-medium text-[var(--ink)]">
+                                {t(opt.labelKey)}
+                              </span>
+                              <span className="text-xs text-[var(--ink-muted)]">
+                                {t(opt.hintKey)}
+                              </span>
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </fieldset>
+                )}
+              </>
             )}
 
             {config.klassenEnabled === true && (

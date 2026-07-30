@@ -1453,6 +1453,7 @@ fn test_participant_cap_from_selected_modes_wiring() {
         end_screen: None,
         participant_cap: Some(50),
         experience_mode: None,
+        team_assignment: Default::default(),
     };
     // Simulate socket handler wiring: extract and validate
     let requested_cap1 = modes1.participant_cap;
@@ -1478,6 +1479,7 @@ fn test_participant_cap_from_selected_modes_wiring() {
         end_screen: None,
         participant_cap: Some(250),
         experience_mode: None,
+        team_assignment: Default::default(),
     };
     let requested_cap2 = modes2.participant_cap;
     game2.player_cap = crate::state::resolve_player_cap(requested_cap2);
@@ -1502,6 +1504,7 @@ fn test_participant_cap_from_selected_modes_wiring() {
         end_screen: None,
         participant_cap: None,
         experience_mode: None,
+        team_assignment: Default::default(),
     };
     let requested_cap3 = modes3.participant_cap;
     game3.player_cap = crate::state::resolve_player_cap(requested_cap3);
@@ -1539,6 +1542,7 @@ fn test_participant_cap_snapshot_stores_clamped_value_not_raw_client_value() {
         end_screen: None,
         participant_cap: Some(250),
         experience_mode: None,
+        team_assignment: Default::default(),
     };
 
     // Handler: extract + clamp + snapshot
@@ -1552,6 +1556,7 @@ fn test_participant_cap_snapshot_stores_clamped_value_not_raw_client_value() {
         end_screen: None,
         participant_cap: game.player_cap.map(|u| u as i64),
         experience_mode: None,
+        team_assignment: Default::default(),
     };
 
     // Verify: both must be 200, not 250
@@ -1596,6 +1601,7 @@ fn test_participant_cap_snapshot_roundtrip_preserves_value() {
         end_screen: None,
         participant_cap: Some(50),
         experience_mode: None,
+        team_assignment: Default::default(),
     };
     game.player_cap = crate::state::resolve_player_cap(Some(50));
 

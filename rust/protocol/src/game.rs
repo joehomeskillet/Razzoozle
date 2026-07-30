@@ -91,6 +91,10 @@ pub struct SelectedModes {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub experience_mode: Option<ExperienceMode>,
+    /// Team assignment mode (WP #952). Default `self` — players pick; `auto` assigns
+    /// each joiner to the smallest team (TEAMS order as tie-break).
+    #[serde(default)]
+    pub team_assignment: TeamAssignment,
 }
 
 /// End-screen display mode (mutually exclusive)
@@ -112,6 +116,20 @@ pub enum ExperienceMode {
     PyramidClimb,
     DeepSeaEscape,
     FlowerBattle,
+}
+
+/// How players get a team in team-mode games (WP #952).
+/// Wire values: `"self"` | `"auto"`. Missing / unknown → `SelfAssign`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, Default)]
+#[ts(export)]
+#[serde(rename_all = "lowercase")]
+pub enum TeamAssignment {
+    /// Players choose their own team (classic).
+    #[default]
+    #[serde(rename = "self")]
+    SelfAssign,
+    /// Server assigns to the smallest active team on login / selectTeam.
+    Auto,
 }
 
 /// player:join payload (C2S) — invite code
@@ -407,6 +425,7 @@ mod tests {
                 end_screen: Some(EndScreen::Top3),
                 participant_cap: None,
                 experience_mode: None,
+                team_assignment: TeamAssignment::default(),
             }),
             class_id: Some(7),
         };
@@ -425,11 +444,13 @@ mod tests {
             end_screen: None,
             participant_cap: None,
             experience_mode: None,
+            team_assignment: TeamAssignment::default(),
         };
         let json = serde_json::to_value(&modes).unwrap();
         let parsed: SelectedModes = serde_json::from_value(json).unwrap();
         assert_eq!(parsed.team_mode, Some(false));
         assert!(parsed.scoring_mode.is_none());
+        assert_eq!(parsed.team_assignment, TeamAssignment::SelfAssign);
     }
 
     #[test]
@@ -441,10 +462,26 @@ mod tests {
             end_screen: None,
             participant_cap: Some(50),
             experience_mode: None,
+            team_assignment: TeamAssignment::default(),
         };
         let json = serde_json::to_value(&modes).unwrap();
         assert_eq!(json["participantCap"], 50);
         let parsed: SelectedModes = serde_json::from_value(json).unwrap();
         assert_eq!(parsed.participant_cap, Some(50));
+    }
+
+    #[test]
+    fn test_team_assignment_default_self() {
+        let json = serde_json::json!({ "teamMode": true });
+        let parsed: SelectedModes = serde_json::from_value(json).unwrap();
+        assert_eq!(parsed.team_assignment, TeamAssignment::SelfAssign);
+        assert_eq!(
+            serde_json::to_value(TeamAssignment::SelfAssign).unwrap(),
+            serde_json::json!("self")
+        );
+        assert_eq!(
+            serde_json::to_value(TeamAssignment::Auto).unwrap(),
+            serde_json::json!("auto")
+        );
     }
 }
