@@ -185,6 +185,8 @@ body {
 .cb-fa { animation: cb-float-1 calc(30s / var(--cb-speed, 1)) ease-in-out infinite; }
 .cb-fb { animation: cb-float-2 calc(26s / var(--cb-speed, 1)) ease-in-out infinite; }
 .cb-fc { animation: cb-float-3 calc(36s / var(--cb-speed, 1)) ease-in-out infinite; }
+/* WP921-Audit: cb-float-* (26–36s infinite) & cb-drift-* (34–50s infinite) serve CreamBackdrop
+   decorative orbits. These are NOT duplicates of actorIdleFloat. Kept as CSS for performance. */
 @keyframes cb-float-3 { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(-1rem,-1.2rem) rotate(8deg); } }
 @keyframes cb-drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(6rem,4rem) scale(1.12); } }
 @keyframes cb-drift-b { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-5rem,-6rem) scale(1.1); } }
@@ -420,6 +422,7 @@ button:not(:disabled),
 }
 
 .lobby-bob { animation: lobby-bob 4.5s ease-in-out infinite; }
+/* WP921-Audit: lobby-bob (4.5s simple Y-translate) is NOT a duplicate of actorIdleFloat. Kept as CSS; staggered via inline style. */
 @keyframes lobby-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 @media (prefers-reduced-motion: reduce) { .lobby-bob { animation: none !important; } }
 
