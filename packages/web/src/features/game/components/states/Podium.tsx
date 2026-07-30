@@ -1,6 +1,7 @@
 import type { ManagerRecap } from "@razzoozle/common/types/game"
 import type { ManagerStatusDataMap } from "@razzoozle/common/types/game/status"
 import Avatar from "@razzoozle/web/components/Avatar"
+import { dispatchCelebration } from "@razzoozle/web/experiences/shared/celebration/ConfettiAdapter"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import AchievementMedal from "@razzoozle/web/features/game/components/AchievementMedal"
 import RecapSequence from "@razzoozle/web/features/game/components/RecapSequence"
@@ -11,18 +12,27 @@ import { ACHIEVEMENT_META } from "@razzoozle/web/features/game/utils/achievement
 import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 import useStickerExport from "@razzoozle/web/features/game/utils/useStickerExport"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
-import useScreenSize from "@razzoozle/web/hooks/useScreenSize"
 import clsx from "clsx"
 import { Sparkles } from "lucide-react"
 import { motion } from "motion/react"
-import { Suspense, lazy, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import useSound from "use-sound"
 
-// react-confetti is lazy-loaded into its own chunk: it is only rendered once the
-// podium fully reveals, never on first paint, so it stays out of the eager bundle.
-const ReactConfetti = lazy(() => import("react-confetti"))
+/**
+ * Full-screen award-reveal condition — kept as a named export so the SSR
+ * regression suite (Podium.test.tsx) can assert it directly: `apparition`
+ * never advances past its initial state under renderToStaticMarkup (the
+ * effect below never runs during SSR), so the trigger can't be exercised via
+ * a component render.
+ */
+export function shouldFireAwardReveal(
+  apparition: number,
+  reduced: boolean,
+): boolean {
+  return apparition >= 4 && !reduced
+}
 
 interface Props {
   data: ManagerStatusDataMap["FINISHED"]
@@ -396,8 +406,20 @@ const Podium = ({
 
   const apparition = usePodiumAnimation(top.length, recapDone)
 
-  const { width, height } = useScreenSize()
   const reveal = useReveal()
+
+  // Award-reveal confetti — fires once via the shared celebration adapter
+  // instead of mounting a persistent react-confetti canvas. `apparition`
+  // only ever rises to 4 and stays there, so this effect runs exactly once.
+  useEffect(() => {
+    if (shouldFireAwardReveal(apparition, reveal.reduced)) {
+      void dispatchCelebration(
+        { id: "podium-award-reveal", kind: "award-reveal" },
+        reveal.reduced,
+      )
+    }
+  }, [apparition, reveal.reduced])
+
   // Lifecycle rise distance — the podium blocks lift up from below as each
   // tier reveals. Opacity-only when reduced (reveal.item handles the guard).
   const RISE = 96
@@ -422,16 +444,6 @@ const Podium = ({
           autoMode
           onComplete={() => setRecapDone(true)}
         />
-      )}
-
-      {apparition >= 4 && !reveal.reduced && (
-        <Suspense fallback={null}>
-          <ReactConfetti
-            width={width}
-            height={height}
-            className="h-full w-full"
-          />
-        </Suspense>
       )}
 
       {apparition >= 3 && top.length >= 3 && !reveal.reduced && (

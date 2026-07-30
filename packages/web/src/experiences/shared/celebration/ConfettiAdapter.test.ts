@@ -6,29 +6,25 @@ import { dispatchCelebration } from "./ConfettiAdapter"
 
 const {
   fireCenterSalvo,
+  fireFullScreenBurst,
   fireTierConfetti,
   getTokenCanvasRgba,
-  legacyModuleLoaded,
 } = vi.hoisted(() => ({
     fireCenterSalvo: vi.fn(() => Promise.resolve()),
+    fireFullScreenBurst: vi.fn(() => Promise.resolve()),
     fireTierConfetti: vi.fn(() => Promise.resolve()),
     getTokenCanvasRgba: vi.fn((token: string) => `resolved:${token}`),
-    legacyModuleLoaded: vi.fn(),
   }))
 
 vi.mock("@razzoozle/web/features/game/utils/confetti", () => ({
   fireCenterSalvo,
+  fireFullScreenBurst,
   fireTierConfetti,
 }))
 
 vi.mock("@razzoozle/web/features/theme/hyperShaderTokenSync", () => ({
   getTokenCanvasRgba,
 }))
-
-vi.mock("react-confetti", () => {
-  legacyModuleLoaded()
-  return { default: vi.fn() }
-})
 
 describe("dispatchCelebration", () => {
   beforeEach(() => {
@@ -105,14 +101,27 @@ describe("dispatchCelebration", () => {
     expect(fireTierConfetti).not.toHaveBeenCalled()
   })
 
-  it("loads the internal legacy award adapter only when motion is enabled", async () => {
+  it("fires the full-screen award-reveal burst, forwarding reduced motion through to canvas-confetti", async () => {
     await dispatchCelebration({ id: "award-1", kind: "award-reveal" }, true)
 
-    expect(legacyModuleLoaded).not.toHaveBeenCalled()
+    expect(fireFullScreenBurst).toHaveBeenCalledOnce()
+    expect(fireFullScreenBurst).toHaveBeenCalledWith(true, {
+      colors: undefined,
+      zIndex: undefined,
+    })
 
-    await dispatchCelebration({ id: "award-2", kind: "award-reveal" }, false)
+    fireFullScreenBurst.mockClear()
 
-    expect(legacyModuleLoaded).toHaveBeenCalledOnce()
+    await dispatchCelebration(
+      { id: "award-2", kind: "award-reveal", zIndex: 50 },
+      false,
+    )
+
+    expect(fireFullScreenBurst).toHaveBeenCalledOnce()
+    expect(fireFullScreenBurst).toHaveBeenCalledWith(false, {
+      colors: undefined,
+      zIndex: 50,
+    })
     expect(fireTierConfetti).not.toHaveBeenCalled()
     expect(fireCenterSalvo).not.toHaveBeenCalled()
     expect(getTokenCanvasRgba).not.toHaveBeenCalled()

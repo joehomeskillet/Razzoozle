@@ -179,16 +179,12 @@ export default defineConfig({
           ) {
             return "vendor-markdown"
           }
-          // canvas-confetti + react-confetti (and react-confetti's tween-functions
-          // dep) are only used during celebrations and are dynamic-imported at
-          // their call sites (utils/confetti.ts, Podium/SharePage React.lazy), so
-          // route them to their OWN chunk — kept out of the eager bundle and
+          // canvas-confetti is only used during celebrations and is
+          // dynamic-imported at its one call site (utils/confetti.ts, reached
+          // via the shared celebration adapter from Podium/SharePage/etc.), so
+          // route it to its OWN chunk — kept out of the eager bundle and
           // fetched on demand when a burst first fires.
-          if (
-            id.includes("/canvas-confetti/") ||
-            id.includes("/react-confetti/") ||
-            id.includes("/tween-functions/")
-          ) {
+          if (id.includes("/canvas-confetti/")) {
             return "confetti"
           }
           // @dicebear/core + collection are heavy (~3MB) and dynamically imported

@@ -121,3 +121,30 @@ export async function fireCenterSalvo(
     disableForReducedMotion: true,
   })
 }
+
+/**
+ * Fire a full-window, non-recycling confetti pass — the canvas-confetti
+ * equivalent of a one-shot react-confetti mount. Used for the "award-reveal"
+ * celebration kind (podium reveal, shared-result page): a top-down canon wide
+ * enough to cover the whole viewport, tuned to read as a single continuous
+ * fall rather than a center burst.
+ */
+export async function fireFullScreenBurst(
+  reduced: boolean,
+  options?: { colors?: string[]; zIndex?: number },
+): Promise<void> {
+  if (shouldSkipBurst(reduced)) return
+
+  const fire = await createWorkerConfetti()
+  void fire({
+    particleCount: 200,
+    spread: 160,
+    startVelocity: 45,
+    ticks: 300,
+    gravity: 0.6,
+    origin: { x: 0.5, y: -0.1 },
+    colors: options?.colors,
+    zIndex: options?.zIndex ?? CONFETTI_Z_INDEX,
+    disableForReducedMotion: true,
+  })
+}
