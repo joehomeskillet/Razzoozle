@@ -23,8 +23,10 @@ import "@razzoozle/web/features/manager/components/console/tokens.css"
 const QuizzEditorShell = () => {
   return (
     <div className="relative flex h-svh flex-col overflow-hidden">
-      {/* Solid app surface — content sits here, never on the page background. */}
-      <div className="relative z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3 2xl:mx-auto 2xl:w-full 2xl:max-w-[110rem]">
+      {/* Solid app surface — content sits here, never on the page background.
+          .console-shell pins --accent-tint and related tokens for the Quiz
+          Editor's derived theme colors (active type selector, header band). */}
+      <div className="console-shell relative z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-gray-50 shadow-lg sm:m-3 2xl:mx-auto 2xl:w-full 2xl:max-w-[110rem]">
         <QuizzEditorHeader />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
           <QuizzEditorSidebar />
