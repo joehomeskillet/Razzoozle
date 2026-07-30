@@ -57,9 +57,9 @@ for type in "${TYPES[@]}"; do
     check "$type" packages/common/src/validators/quizz.ts
   fi
 
-  # editor: either file counts
+  # editor: either file counts (QuestionEditor/index.tsx or questionTypeMeta.ts)
   if ! (grep -qF "\"$type\"" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null || grep -qF "'$type'" packages/web/src/features/quizz/components/QuestionEditor/index.tsx 2>/dev/null) \
-     && ! (grep -qF "\"$type\"" packages/web/src/features/quizz/components/QuestionEditor/QuestionEditorType.tsx 2>/dev/null || grep -qF "'$type'" packages/web/src/features/quizz/components/QuestionEditor/QuestionEditorType.tsx 2>/dev/null); then
+     && ! (grep -qF "\"$type\"" packages/web/src/lib/questionTypeMeta.ts 2>/dev/null || grep -qF "'$type'" packages/web/src/lib/questionTypeMeta.ts 2>/dev/null); then
     echo "MISSING $type packages/web/src/features/quizz/components/QuestionEditor"
     missing=$((missing+1))
   fi
