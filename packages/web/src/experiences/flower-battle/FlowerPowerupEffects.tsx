@@ -12,6 +12,7 @@ import {
   useMotionValue,
   useReducedMotion,
 } from "motion/react"
+import useSound from "use-sound"
 
 import acidCloudSvg from "@razzoozle/web/assets/experiences/flower-battle/optimized/fixed/acid-cloud.svg?raw"
 import fertilizerSvg from "@razzoozle/web/assets/experiences/flower-battle/optimized/fixed/fertilizer.svg?raw"
@@ -25,6 +26,8 @@ import {
   UmbrellaTiming,
 } from "./flower-battle-motion"
 import { ANCHOR_POSITIONS, extractSvgInner } from "./flower-plant.constants"
+import { useSoundStore } from "@razzoozle/web/features/game/stores/sound"
+import { useSoundUrl } from "@razzoozle/web/features/game/utils/sfx"
 
 const fertilizerInner = extractSvgInner(fertilizerSvg)
 const umbrellaInner = extractSvgInner(umbrellaSvg)
@@ -59,8 +62,16 @@ function SvgIcon({ html }: { html: string }) {
 export function FertilizerEffect({ playKey, reduced }: { playKey: number; reduced: boolean }) {
   const timing = getMotionTiming(reduced, "fertilizer")
   const opacity = useMotionValue(0)
+  const muted = useSoundStore((s) => s.muted)
+  const fertilizerUrl = useSoundUrl("flowerFertilizer")
+  const [playFertilizerSound] = useSound(fertilizerUrl, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+
   useEffect(() => {
     if (playKey <= 0) { opacity.set(0); return }
+    playFertilizerSound()
     const exitMs =
       "phases" in timing && timing.phases && "Exit" in timing.phases
         ? Number(timing.phases.Exit)
@@ -77,7 +88,7 @@ export function FertilizerEffect({ playKey, reduced }: { playKey: number; reduce
       delay: exitMs / 1000,
     })
     return () => { enter.stop(); exit.stop() }
-  }, [playKey, reduced, timing, opacity])
+  }, [playKey, reduced, timing, opacity, playFertilizerSound])
   if (playKey <= 0) return null
   return (
     <motion.g data-testid="flower-powerup-fertilizer-effect" style={{ opacity }} className="text-ink">
@@ -98,8 +109,17 @@ export function SunbeamEffect({ reduced }: { reduced: boolean }) {
   const r3 = useMotionValue(0)
   const r4 = useMotionValue(0)
   const rays = [r0, r1, r2, r3, r4]
+
+  const muted = useSoundStore((s) => s.muted)
+  const sunbeamUrl = useSoundUrl("flowerSunbeam")
+  const [playSunbeamSound] = useSound(sunbeamUrl, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+
   useEffect(() => {
     if (reduced) { r0.set(1); return }
+    playSunbeamSound()
     const ctrls = rays.map((mv, i) => {
       const start = "rayStartMs" in timing && typeof timing.rayStartMs === "function" ? timing.rayStartMs(i) : 0
       const dur = "rayDurationMs" in timing ? Number(timing.rayDurationMs) : 140
@@ -108,7 +128,7 @@ export function SunbeamEffect({ reduced }: { reduced: boolean }) {
     })
     return () => { for (const c of ctrls) c.stop() }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable motion values
-  }, [reduced, timing])
+  }, [reduced, timing, playSunbeamSound])
   return (
     <motion.g data-testid="flower-powerup-sunbeam-effect" className="text-ink">
       <SvgIcon html={sunbeamInner} />
@@ -174,8 +194,17 @@ export function AcidRainEffect({ reduced }: { reduced: boolean }) {
   const d6 = useMotionValue(0)
   const drops = [d0, d1, d2, d3, d4, d5, d6]
   const count = AcidCloudTiming.dropletCount
+
+  const muted = useSoundStore((s) => s.muted)
+  const acidRainUrl = useSoundUrl("flowerAcidRain")
+  const [playAcidRainSound] = useSound(acidRainUrl, {
+    volume: 0.2,
+    soundEnabled: !muted,
+  })
+
   useEffect(() => {
     if (reduced) { leafTilt.set(0); for (const d of drops) d.set(0); return }
+    playAcidRainSound()
     const tilt = animate(leafTilt, [-6, 0], { duration: timing.duration / 1000, ease: "easeOut" })
     const dcs = drops.slice(0, count).map((mv, i) => {
       const start = "dropletStartMs" in timing && typeof timing.dropletStartMs === "function"
@@ -186,7 +215,7 @@ export function AcidRainEffect({ reduced }: { reduced: boolean }) {
     })
     return () => { tilt.stop(); for (const c of dcs) c.stop() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduced, timing, leafTilt, count])
+  }, [reduced, timing, leafTilt, count, playAcidRainSound])
   const pos: Array<[number, number]> = [[-14, 8], [-8, 12], [-2, 8], [4, 12], [10, 8], [-10, 16], [8, 16]]
   return (
     <motion.g data-testid="flower-powerup-acid-rain-effect" style={{ rotate: leafTilt }} className="text-ink">

@@ -56,6 +56,18 @@ vi.mock("motion/react", () => ({
   },
 }))
 
+vi.mock("use-sound", () => ({
+  default: vi.fn(() => [vi.fn(), { stop: vi.fn() }]),
+}))
+
+vi.mock("@razzoozle/web/features/game/stores/sound", () => ({
+  useSoundStore: vi.fn(() => ({ muted: false })),
+}))
+
+vi.mock("@razzoozle/web/features/game/utils/sfx", () => ({
+  useSoundUrl: vi.fn((slot: string) => `/sounds/${slot}.mp3`),
+}))
+
 import { FlowerPowerupEffects } from "./FlowerPowerupEffects"
 import { ANCHOR_POSITIONS } from "./flower-plant.constants"
 
@@ -128,7 +140,6 @@ describe("FlowerPowerupEffects", () => {
     expect(grains).toBeGreaterThan(0)
     expect(grains).toBeLessThanOrEqual(12)
     expect(html).toContain('data-testid="flower-powerup-fertilizer-effect"')
-    // Transient label only in sr-only aria, not as a persistent status line
     expect(html).toContain("🌱 Dünger")
     expect(html).not.toContain("flower-powerup-effects-status-fertilizer")
   })
@@ -171,16 +182,13 @@ describe("FlowerPowerupEffects", () => {
       />,
     )
     expect(html).toContain('data-reduced-motion="true"')
-    // Status labels always present
     expect(html).toContain("☂ Schutz aktiv")
     expect(html).toContain("☁ Nächstes Wachstum −1")
     expect(html).toContain("☀ Nächstes Wachstum +1")
     expect(html).toContain("sr-only")
-    // No particle / droplet / grain circles when reduced
     expect(countAttr(html, "flower-powerup-fertilizer-grain")).toBe(0)
     expect(countAttr(html, "flower-powerup-umbrella-droplet")).toBe(0)
     expect(countAttr(html, "flower-powerup-acid-droplet")).toBe(0)
-    // Effect shells still mount (icon path)
     expect(html).toContain('data-testid="flower-powerup-umbrella-effect"')
     expect(html).toContain('data-testid="flower-powerup-sunbeam-effect"')
     expect(html).toContain('data-testid="flower-powerup-acid-rain-effect"')
