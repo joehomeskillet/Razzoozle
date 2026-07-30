@@ -1,6 +1,6 @@
 //! MANAGER CONFIG WRITES — game config and achievements config handlers
 //!
-//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, lowLatencyMode, joinLocked, randomizeAnswers, scoringMode, managerPassword, klassenEnabled, endScreenModes)
+//! manager:setGameConfig — PATCH game config (teamMode, lowLatencyEnabled, lowLatencyMode, joinLocked, randomizeAnswers, scoringMode, managerPassword, klassenEnabled, endScreenModes, experienceModesEnabled, flowerBattleTargetLevel, flowerBattlePowerupsEnabled, flowerBattleAcidRainEnabled, flowerBattlePowerupThreshold)
 //! manager:setAchievementsConfig — PATCH achievements config (per-achievement deep-merge by id)
 
 use super::super::HandlerCtx;
@@ -201,6 +201,56 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         warn!(
                             "experienceModesEnabled: rejected invalid input: {}",
                             truncated
+                        );
+                    }
+                }
+
+                // Whitelist flowerBattleTargetLevel: value-bounded against the UI's
+                // <Select> options (WP-FLB-18) — no free-text numeric input reaches
+                // here, but validate anyway since the socket payload is client input.
+                if let Some(target_level) = payload
+                    .get("flowerBattleTargetLevel")
+                    .and_then(|v| v.as_i64())
+                {
+                    if matches!(target_level, 5 | 10 | 15 | 20) {
+                        patch["flowerBattleTargetLevel"] = serde_json::json!(target_level);
+                    } else {
+                        warn!(
+                            "flowerBattleTargetLevel: rejected out-of-range value: {}",
+                            target_level
+                        );
+                    }
+                }
+
+                // Pass through flowerBattlePowerupsEnabled if provided
+                if let Some(powerups_enabled) = payload
+                    .get("flowerBattlePowerupsEnabled")
+                    .and_then(|v| v.as_bool())
+                {
+                    patch["flowerBattlePowerupsEnabled"] = serde_json::json!(powerups_enabled);
+                }
+
+                // Pass through flowerBattleAcidRainEnabled if provided
+                if let Some(acid_rain_enabled) = payload
+                    .get("flowerBattleAcidRainEnabled")
+                    .and_then(|v| v.as_bool())
+                {
+                    patch["flowerBattleAcidRainEnabled"] = serde_json::json!(acid_rain_enabled);
+                }
+
+                // Whitelist flowerBattlePowerupThreshold: value-bounded against the
+                // UI's <Select> options (WP-FLB-18).
+                if let Some(powerup_threshold) = payload
+                    .get("flowerBattlePowerupThreshold")
+                    .and_then(|v| v.as_i64())
+                {
+                    if matches!(powerup_threshold, 1 | 2 | 3 | 4 | 5) {
+                        patch["flowerBattlePowerupThreshold"] =
+                            serde_json::json!(powerup_threshold);
+                    } else {
+                        warn!(
+                            "flowerBattlePowerupThreshold: rejected out-of-range value: {}",
+                            powerup_threshold
                         );
                     }
                 }

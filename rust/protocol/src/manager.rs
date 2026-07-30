@@ -359,6 +359,15 @@ pub struct ManagerConfig {
     /// CSV allow-list of experience modes (classic,pyramidclimb,...). Empty = none unlocked.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub experience_modes_enabled: Option<String>,
+    /// Blüten-Battle (flower_battle) MVP options — WP #960 persistence.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flower_battle_target_level: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flower_battle_powerups_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flower_battle_acid_rain_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flower_battle_powerup_threshold: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
