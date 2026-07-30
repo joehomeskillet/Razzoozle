@@ -1,0 +1,16 @@
+<!--
+  flower-head-bell.svg  bell blossom (petals + face only).
+  IDs: flower-petals, flower-face
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 80 80" aria-hidden="true">
+  <g id="flower-petals">
+    <path d="M-18 4 C-14 -10 14 -10 18 4 L14 16 Q0 22 -14 16 Z" fill="currentColor" />
+    <path d="M-10 -8 C-6 -16 6 -16 10 -8 L6 2 Q0 6 -6 2 Z" fill="currentColor" opacity="0.85" />
+    <ellipse cx="0" cy="10" rx="10" ry="6" fill="var(--status-pending-bg)" />
+  </g>
+  <g id="flower-face">
+    <circle cx="-3" cy="4" r="1.6" fill="var(--status-online-text)" />
+    <circle cx="3" cy="4" r="1.6" fill="var(--status-online-text)" />
+    <path d="M-4 9 Q0 12 4 9" fill="none" stroke="var(--status-online-text)" stroke-width="1.2" stroke-linecap="round" />
+  </g>
+</svg>

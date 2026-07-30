@@ -1,0 +1,22 @@
+<!--
+  garden-ground.svg  stable pot/soil geometry for Flower Battle plants.
+  Anchors (fixed, do not move between growth stages):
+    - soil-anchor: (100, 210)  plant stem origin
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" aria-hidden="true">
+  <g id="garden-ground">
+    <!-- soil surface -->
+    <ellipse cx="100" cy="210" rx="52" ry="10" fill="var(--surface-4)" />
+  </g>
+  <g id="garden-pot">
+    <path
+      d="M58 210 L64 268 Q100 278 136 268 L142 210 Z"
+      fill="var(--surface-3)"
+      stroke="var(--line)"
+      stroke-width="2"
+    />
+    <ellipse cx="100" cy="210" rx="44" ry="8" fill="var(--surface-5)" />
+  </g>
+  <!-- invisible anchor marker -->
+  <circle id="soil-anchor" cx="100" cy="210" r="1" fill="none" data-anchor="soil-anchor" />
+</svg>

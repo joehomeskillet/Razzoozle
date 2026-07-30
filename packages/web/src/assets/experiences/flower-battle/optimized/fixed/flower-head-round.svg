@@ -1,0 +1,22 @@
+<!--
+  flower-head-round.svg  round blossom (petals + face only).
+  IDs: flower-petals, flower-face (required, stable across variants)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 80 80" aria-hidden="true">
+  <g id="flower-petals">
+    <circle cx="0" cy="-14" r="12" fill="currentColor" />
+    <circle cx="14" cy="0" r="12" fill="currentColor" />
+    <circle cx="0" cy="14" r="12" fill="currentColor" />
+    <circle cx="-14" cy="0" r="12" fill="currentColor" />
+    <circle cx="10" cy="-10" r="11" fill="currentColor" />
+    <circle cx="-10" cy="-10" r="11" fill="currentColor" />
+    <circle cx="10" cy="10" r="11" fill="currentColor" />
+    <circle cx="-10" cy="10" r="11" fill="currentColor" />
+    <circle cx="0" cy="0" r="10" fill="var(--status-pending-bg)" />
+  </g>
+  <g id="flower-face">
+    <circle cx="-4" cy="-2" r="2" fill="var(--status-online-text)" />
+    <circle cx="4" cy="-2" r="2" fill="var(--status-online-text)" />
+    <path d="M-5 5 Q0 9 5 5" fill="none" stroke="var(--status-online-text)" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+</svg>
