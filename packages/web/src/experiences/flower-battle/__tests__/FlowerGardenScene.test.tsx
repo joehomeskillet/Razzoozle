@@ -129,15 +129,26 @@ describe("FlowerGardenScene", () => {
     expect(html).not.toContain('data-testid="garden-team-slot-1"')
   })
 
-  it("caps every team slot's width so 1–2 teams never dwarf the scene (WP-958D)", () => {
-    for (const teamCount of [1, 2, 3, 4]) {
+  it("caps the lone slot's width in a sparse (0–1 team) layout so one plant never dwarfs the scene (WP-958D)", () => {
+    const html = renderScene(1)
+    const slotMatch = html.match(
+      /data-testid="garden-team-slot-0"[^>]*class="([^"]*)"/,
+    )
+    expect(slotMatch).not.toBeNull()
+    // Container-relative (cqw) so the cap scales with the scene, not px.
+    expect(slotMatch![1]).toMatch(/max-w-\[\d+cqw\]/)
+  })
+
+  it("leaves normal multi-team (2–4) slots uncapped — the sparse cap must not shrink them (WP-958D)", () => {
+    for (const teamCount of [2, 3, 4]) {
       const html = renderScene(teamCount)
       for (let index = 0; index < teamCount; index += 1) {
         const slotMatch = html.match(
           new RegExp(`data-testid="garden-team-slot-${index}"[^>]*class="([^"]*)"`),
         )
         expect(slotMatch).not.toBeNull()
-        expect(slotMatch![1]).toMatch(/max-w-\[/)
+        expect(slotMatch![1]).not.toMatch(/max-w-/)
+        expect(slotMatch![1]).toMatch(/flex-1/)
       }
     }
   })

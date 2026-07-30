@@ -61,6 +61,14 @@ export const FlowerGardenScene = ({
   className = "",
 }: FlowerGardenSceneProps) => {
   const visibleTeams = teams.slice(0, MAX_TEAMS)
+  // WP-958D: a sparse game (0–1 teams, i.e. below the normal MIN_TEAMS
+  // minimum) gives a single flex-1 slot almost the full row width, and the
+  // plant's aspect-preserving svg scaling then grows to fill it (~55 % of the
+  // screen live). Sparse slots get a responsive container-relative max width
+  // (~the per-slot width of a normal 3-team game) so a lone plant renders at
+  // intentional, multi-team-comparable scale. Normal 2–4 team layouts keep
+  // their uncapped flex-1 sizing — the cap must not shrink them.
+  const isSparseTeamLayout = visibleTeams.length < MIN_TEAMS
 
   return (
     <ExperienceViewport
@@ -113,14 +121,12 @@ export const FlowerGardenScene = ({
                     key={`${team.name}-${index}`}
                     data-testid={`garden-team-slot-${index}`}
                     data-team-name={team.name}
-                    // WP-958D: at 1–2 teams flex-1 gives the slot almost the
-                    // full row width, and the plant's own aspect-preserving
-                    // svg scaling then grows to fill it, dwarfing the scene.
-                    // max-w (in container-query width units, so it stays
-                    // correct at any scene size) caps the slot regardless of
-                    // team count; the 3–4 team slots are already narrower
-                    // than the cap, so nothing changes there.
-                    className="relative flex h-full min-w-0 max-w-[26cqw] flex-1 items-end justify-center"
+                    // Sparse-only max width (see isSparseTeamLayout above);
+                    // cqw resolves against the ExperienceViewport container,
+                    // so the cap stays correct at any scene size.
+                    className={`relative flex h-full min-w-0 flex-1 items-end justify-center ${
+                      isSparseTeamLayout ? "max-w-[26cqw]" : ""
+                    }`.trim()}
                   >
                     <FlowerPlant
                       variant={variantForTeam(seed, index)}

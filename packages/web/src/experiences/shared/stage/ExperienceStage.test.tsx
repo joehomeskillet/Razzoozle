@@ -25,9 +25,12 @@ describe("ExperienceStage", () => {
     expect(html).toContain("overflow-x-hidden")
   })
 
-  it("has a dvh-based max-height ceiling so an indefinite ancestor can never let aspect-video overflow the viewport (WP-958D)", () => {
+  it("carries no dvh max-height ceiling — the route-level height chain (WP-958D), not a local cap, bounds the stage", () => {
+    // A max-h-[Ndvh] ceiling would clamp legitimate definite-height fills
+    // (fullscreen kiosk) below their intended size; regression guard so the
+    // local-hack fix is not reintroduced.
     const html = renderToStaticMarkup(<ExperienceStage>Test</ExperienceStage>)
-    expect(html).toMatch(/max-h-\[\d+dvh\]/)
+    expect(html).not.toMatch(/max-h-\[\d+dvh\]/)
   })
 
   it("renders children", () => {

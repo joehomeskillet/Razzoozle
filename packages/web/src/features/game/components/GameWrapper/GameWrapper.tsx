@@ -131,7 +131,21 @@ const GameWrapper = ({
   return (
     <GameAudienceContext.Provider value={audience}>
       <section
-        className="relative flex min-h-dvh"
+        className={clsx(
+          "relative flex",
+          // WP-958D: presenter/display surfaces (manager) pin the route-level
+          // height chain to a definite, non-scrolling 100dvh box — the same
+          // contract `.display-kiosk` establishes for the /display routes.
+          // min-h-dvh only set a *minimum*, leaving the box height indefinite,
+          // so every h-full/flex-1 descendant down to ExperienceViewport
+          // collapsed to content height and ExperienceStage's aspect-video
+          // fallback derived height from width (1080px at 1920w), pushing the
+          // toolbar + HUD ~304px past the viewport fold on /party/manager.
+          // With a definite root the whole chain resolves and the scene fills
+          // exactly the space the presenter chrome leaves behind. The player
+          // client keeps the legacy min-h-dvh growth (long grids scroll).
+          manager ? "h-dvh overflow-hidden" : "min-h-dvh",
+        )}
         style={{ "--game-fg": "#0E1120" } as React.CSSProperties}
         data-audience={audience}
       >
