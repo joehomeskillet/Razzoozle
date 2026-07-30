@@ -99,7 +99,8 @@ describe("QuestionEditorConfig", () => {
     mockQuestion = { ...mockQuestion, type: "slider" }
     const html = renderToStaticMarkup(<QuestionEditorConfig />)
 
-    expect(html).toContain("radiogroup")
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-haspopup="listbox"')
   })
 
   it("renders slider fields only when type === 'slider'", () => {

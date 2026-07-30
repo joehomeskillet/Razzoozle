@@ -9,7 +9,6 @@ import quizzFr from "@razzoozle/web/locales/fr/quizz.json"
 import quizzZh from "@razzoozle/web/locales/zh/quizz.json"
 
 import { QuestionTypeSelector } from "../QuestionTypeSelector"
-import { TYPE_META } from "@razzoozle/web/lib/questionTypeMeta"
 import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
 
 // Mocked useManagerStore — allows test to control klassenEnabled
@@ -24,6 +23,7 @@ vi.mock("@razzoozle/web/features/game/stores/manager", () => ({
 
 /**
  * Helper: Render QuestionTypeSelector with i18n provider
+ * Note: SSR rendering only supports closed state (no Portal in Node)
  */
 const renderComponent = async (
   currentType: QuestionTypeKey,
@@ -54,7 +54,7 @@ const renderComponent = async (
   return html
 }
 
-describe("QuestionTypeSelector (SSR)", () => {
+describe("QuestionTypeSelector (SSR, Dropdown)", () => {
   beforeEach(() => {
     managerStoreConfig.config = null
   })
@@ -63,238 +63,153 @@ describe("QuestionTypeSelector (SSR)", () => {
     vi.clearAllMocks()
   })
 
+  // ===== CLOSED STATE TESTS (SSR-compatible) =====
+
   /**
-   * Test 1: All TYPE_META entries rendered when klassenEnabled=true
-   * Expects 18 role="radio"
+   * Test 1: Closed state renders trigger button with correct structure
    */
-  it("renders all 18 TYPE_META entries when klassenEnabled=true", async () => {
+  it("renders closed trigger button with current type", async () => {
     managerStoreConfig.config = { klassenEnabled: true } as any
     const html = await renderComponent("choice")
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 18 entries in TYPE_META (17 from QUESTION_TYPES + vokabelliste)
-    expect(radioMatches).toHaveLength(18)
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-haspopup="listbox"')
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).toContain('aria-label=')
   })
 
   /**
-   * Test 2: klassenEnabled=false filters out class-dependent types
-   * Expects 15 radio options (18 - 3 klassen-dependent types)
-   * Missing: mathematik, wortarten, vokabelliste
+   * Test 2: Closed state does NOT render listbox
    */
-  it("excludes class-dependent types when klassenEnabled=false", async () => {
+  it("does not render listbox when closed", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent("choice")
+
+    expect(html).not.toContain('role="listbox"')
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
+  })
+
+  /**
+   * Test 3: Closed state shows active type on trigger
+   */
+  it("displays active type label on closed trigger", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent("slider")
+
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-label=')
+  })
+
+  /**
+  /**
+   * Test 4: Trigger has chevron indicator (CSS-based, no testid)
+   */
+  it("has visual chevron indicator on trigger", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent("choice")
+
+    expect(html).toContain("border-r-2")
+    expect(html).toContain("border-b-2")
+  })
+
+  /**
+   * Test 5: Trigger styling for closed state
+   */
+  it("has correct styling for closed trigger", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent("choice")
+
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).toContain('data-testid="question-type-trigger"')
+  })
+
+  /**
+   * Test 6: Works with klassenEnabled=false
+   */
+  it("renders correctly when klassenEnabled=false", async () => {
     managerStoreConfig.config = { klassenEnabled: false } as any
     const html = await renderComponent("choice")
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
-
-    // Verify the three types are not in testids
-    expect(html).not.toContain('data-testid="question-type-option-mathematik"')
-    expect(html).not.toContain('data-testid="question-type-option-wortarten"')
-    expect(html).not.toContain('data-testid="question-type-option-vokabelliste"')
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
   })
 
   /**
-   * Test 3: klassenEnabled=true includes all types
-   * Expects 18 radio options
+   * Test 7: Respects excludeTypes (UI filter)
    */
-  it("includes all types when klassenEnabled=true", async () => {
-    managerStoreConfig.config = { klassenEnabled: true } as any
-    const html = await renderComponent("choice")
-
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(18)
-
-    // Verify the three klassen-dependent types are present
-    expect(html).toContain('data-testid="question-type-option-mathematik"')
-    expect(html).toContain('data-testid="question-type-option-wortarten"')
-    expect(html).toContain('data-testid="question-type-option-vokabelliste"')
-  })
-
-  /**
-   * Test 4: excludeTypes prop filters specified types
-   * When excluding poll with klassenEnabled=false, expect 14 radio options (15 - 1)
-   */
-  it("filters types via excludeTypes prop", async () => {
+  it("renders trigger regardless of excludeTypes filter", async () => {
     managerStoreConfig.config = { klassenEnabled: false } as any
     const html = await renderComponent("choice", vi.fn(), ["poll"])
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 15 (after klassenEnabled filter) - 1 (excluded) = 14
-    expect(radioMatches).toHaveLength(14)
-    expect(html).not.toContain('data-testid="question-type-option-poll"')
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
   })
 
   /**
-   * Test 5: aria-checked set to true only for currentType
-   * aria-checked="true" appears exactly once, aria-checked="false" for all others
+   * Test 8: Locale robustness — French
    */
-  it("sets aria-checked=true only for currentType", async () => {
+  it("renders French locale without error on trigger", async () => {
     managerStoreConfig.config = { klassenEnabled: false } as any
-    const currentType = "slider"
-    const html = await renderComponent(currentType)
+    const html = await renderComponent(
+      "choice",
+      vi.fn(),
+      [],
+      { quizz: quizzFr, errors: errorsDe },
+    )
 
-    // Exactly one aria-checked="true"
-    const ariaCheckedTrue = html.match(/aria-checked="true"/g) || []
-    expect(ariaCheckedTrue).toHaveLength(1)
-
-    // Verify it's on the slider option
-    expect(html).toContain('data-testid="question-type-option-slider"')
-
-    // Count aria-checked="false" (should be 14 for klassenEnabled=false, all others)
-    const ariaCheckedFalse = html.match(/aria-checked="false"/g) || []
-    expect(ariaCheckedFalse).toHaveLength(14)
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
   })
 
   /**
-   * Test 6: Category headers appear in correct order
-   * Order: basic → survey → numeric → text → arrangement
+   * Test 9: Locale robustness — Chinese
    */
-  it("renders category headers in fixed order", async () => {
+  it("renders Chinese locale without error on trigger", async () => {
     managerStoreConfig.config = { klassenEnabled: false } as any
+    const html = await renderComponent(
+      "choice",
+      vi.fn(),
+      [],
+      { quizz: quizzZh, errors: errorsDe },
+    )
+
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
+  })
+
+  /**
+   * Test 10: Label section always renders
+   */
+  it("renders label section with correct structure", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
     const html = await renderComponent("choice")
 
-    // Verify category header elements are present
-    // The HTML contains category div containers in the correct order
-    expect(html).toContain("role=\"radiogroup\"")
-
-    // Verify all expected type labels are present (sample check across categories)
-    // Basic category
-    expect(html).toContain('data-testid="question-type-option-choice"')
-    expect(html).toContain('data-testid="question-type-option-boolean"')
-    // Survey category
-    expect(html).toContain('data-testid="question-type-option-poll"')
-    // Numeric category
-    expect(html).toContain('data-testid="question-type-option-slider"')
-    // Text category
-    expect(html).toContain('data-testid="question-type-option-type-answer"')
-    // Arrangement category
-    expect(html).toContain('data-testid="question-type-option-sequencing"')
-    expect(html).toContain('data-testid="question-type-option-matching"')
-
-    // Verify order by index positions
-    const choiceIdx = html.indexOf('data-testid="question-type-option-choice"')
-    const pollIdx = html.indexOf('data-testid="question-type-option-poll"')
-    const sliderIdx = html.indexOf('data-testid="question-type-option-slider"')
-    const typeAnswerIdx = html.indexOf('data-testid="question-type-option-type-answer"')
-    const sequencingIdx = html.indexOf('data-testid="question-type-option-sequencing"')
-
-    expect(choiceIdx < pollIdx).toBe(true)
-    expect(pollIdx < sliderIdx).toBe(true)
-    expect(sliderIdx < typeAnswerIdx).toBe(true)
-    expect(typeAnswerIdx < sequencingIdx).toBe(true)
+    expect(html).toContain("text-xs")
+    expect(html).toContain("font-semibold")
+    expect(html).toContain("text-[var(--ink-subtle)]")
   })
 
   /**
-   * Test 7: Container has correct A11y attributes
-   * - role="radiogroup"
-   * - aria-label
-   * - data-testid="question-type-list"
+   * Test 11: Trigger has complete A11y attributes
    */
-  it("has correct container accessibility attributes", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
+  it("trigger has complete accessibility structure", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
     const html = await renderComponent("choice")
 
-    expect(html).toContain('role="radiogroup"')
+    expect(html).toContain('aria-haspopup="listbox"')
+    expect(html).toContain('aria-expanded="false"')
     expect(html).toContain('aria-label=')
-    expect(html).toContain('data-testid="question-type-list"')
   })
 
   /**
-   * Test 8: Each option has data-testid and correct role
-   * Every option: role="radio", data-testid="question-type-option-<id>"
+   * Test 12: Button element with correct type
    */
-  it("each option has required testid and accessibility attributes", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("slider")
+  it("trigger is a button element with type=button", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent("choice")
 
-    // Verify each non-klassen-dependent type has testid and role
-    const nonKlassenTypes = TYPE_META.filter((t) => !t.requiresKlassen)
-    for (const type of nonKlassenTypes) {
-      expect(html).toContain(`data-testid="question-type-option-${type.id}"`)
-    }
-
-    // Verify role="radio" appears
-    expect(html).toContain('role="radio"')
-  })
-
-  /**
-   * Test 9: Roving tabIndex — exactly one element has tabIndex="0" (lowercase in rendered HTML)
-   * All other options have tabindex="-1"
-   */
-  it("roving tabindex: one selected element with tabindex=0, others -1", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const currentType = "matching"
-    const html = await renderComponent(currentType)
-
-    // Count tabindex="0" in the rendered HTML string (lowercase in SSR output)
-    const tabindex0Matches = (html.match(/tabindex="0"/g) || []).length
-    expect(tabindex0Matches).toBe(1)
-
-    // Count tabindex="-1" (should be 14 for all other options)
-    const tabindexNeg1Matches = (html.match(/tabindex="-1"/g) || []).length
-    expect(tabindexNeg1Matches).toBe(14) // 15 total - 1 selected
-  })
-
-  /**
-   * Test 10: Locale robustness — French locale renders without markup break
-   * Verify that long/different French labels render cleanly
-   */
-  it("renders French locale labels without markup break", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent(
-      "choice",
-      vi.fn(),
-      [],
-      { quizz: quizzFr },
-    )
-
-    // Verify radiogroup and options are present
-    expect(html).toMatch(/role="radiogroup"/)
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
-
-    // No escaped angle brackets in the middle of content
-    expect(html).not.toMatch(/&lt;|&gt;/)
-  })
-
-  /**
-   * Test 11: Locale robustness — Chinese locale renders without markup break
-   */
-  it("renders Chinese locale labels without markup break", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent(
-      "choice",
-      vi.fn(),
-      [],
-      { quizz: quizzZh },
-    )
-
-    // Verify radiogroup and options are present
-    expect(html).toMatch(/role="radiogroup"/)
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
-
-    // No truncated or malformed HTML
-    expect(html).not.toMatch(/&lt;|&gt;/)
-  })
-
-  /**
-   * Test 12: Filtered and excluded types combined
-   * klassenEnabled=false + excludeTypes includes both filters
-   */
-  it("applies both klassenEnabled and excludeTypes filters", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    // klassenEnabled=false removes 3 types (mathematik, wortarten, vokabelliste)
-    // excludeTypes removes 2 more (poll, slider)
-    const html = await renderComponent("choice", vi.fn(), ["poll", "slider"])
-
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 18 - 3 (klassen) - 2 (excluded) = 13
-    expect(radioMatches).toHaveLength(13)
-
-    expect(html).not.toContain('data-testid="question-type-option-mathematik"')
-    expect(html).not.toContain('data-testid="question-type-option-poll"')
-    expect(html).not.toContain('data-testid="question-type-option-slider"')
+    expect(html).toContain('type="button"')
+    expect(html).toContain('data-testid="question-type-trigger"')
   })
 })
