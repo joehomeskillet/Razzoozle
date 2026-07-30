@@ -2,10 +2,12 @@ import { useRef, useEffect, useState, useCallback, useLayoutEffect } from "react
 import { useTranslation } from "react-i18next"
 import { createPortal } from "react-dom"
 import clsx from "clsx"
+import { ChevronDown } from "lucide-react"
 import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
-import { TYPE_META, TYPE_CATEGORIES } from "@razzoozle/web/lib/questionTypeMeta"
+import { TYPE_META } from "@razzoozle/web/lib/questionTypeMeta"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
+import QuestionTypeDropdownList from "./QuestionTypeDropdownList"
 import {
   rowShellBase,
   rowRestState,
@@ -20,8 +22,6 @@ export interface QuestionTypeSelectorProps {
   currentType: QuestionTypeKey
   onTypeChange: (next: QuestionTypeKey) => void
   excludeTypes?: QuestionTypeKey[]
-  /** Internal: for SSR tests to render open state. */
-  _testIsOpen?: boolean
 }
 
 const POPOVER_GAP = 8
@@ -55,8 +55,8 @@ function positionDropdown(
 /**
  * QuestionTypeSelector — Dropdown-based question type picker.
  *
- * Renders TYPE_META grouped by TYPE_CATEGORIES (5 groups) in a dropdown overlay.
- * Uses Portal for positioning above scroll containers (right sidebar).
+ * Renders TYPE_META grouped by TYPE_CATEGORIES in a dropdown overlay with Portal.
+ * Portal positioning: above scroll containers (right sidebar).
  * Full A11y: listbox role, option semantics, arrow-key navigation, focus trap,
  * Escape to close, click-outside to close.
  */
@@ -64,7 +64,6 @@ export function QuestionTypeSelector({
   currentType,
   onTypeChange,
   excludeTypes = [],
-  _testIsOpen = false,
 }: QuestionTypeSelectorProps) {
   const { t } = useTranslation("quizz")
   const config = useManagerStore((s) => s.config)
@@ -72,7 +71,7 @@ export function QuestionTypeSelector({
 
   const triggerRef = useRef<HTMLButtonElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
-  const [isOpen, setIsOpen] = useState(_testIsOpen)
+  const [isOpen, setIsOpen] = useState(false)
   const [style, setStyle] = useState<CSSProperties>({
     position: "fixed",
     top: -9999,
@@ -80,22 +79,6 @@ export function QuestionTypeSelector({
     zIndex: 50,
     visibility: "hidden",
   })
-
-  // Filter types by excludeTypes and klassenEnabled
-  const filteredTypes = TYPE_META.filter((meta) => {
-    if (excludeTypes.includes(meta.id)) return false
-    if (!klassenEnabled && meta.requiresKlassen) return false
-    return true
-  })
-
-  // Group filtered types by category, in category order
-  const typesByCategory = TYPE_CATEGORIES.map((cat) => ({
-    ...cat,
-    types: filteredTypes.filter((t) => t.category === cat.id),
-  })).filter((cat) => cat.types.length > 0)
-
-  // Flat list of all available types (for arrow key navigation)
-  const flatTypes = typesByCategory.flatMap((cat) => cat.types)
 
   // Get the current type's metadata for the trigger display
   const currentTypeMeta = TYPE_META.find((t) => t.id === currentType)
@@ -139,36 +122,20 @@ export function QuestionTypeSelector({
     handler: () => setIsOpen(false),
   })
 
-  // Handle keyboard navigation in the overlay
+  // Handle keyboard navigation and escape
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       e.preventDefault()
       setIsOpen(false)
       triggerRef.current?.focus()
-      return
     }
-
-    let delta = 0
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") delta = 1
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") delta = -1
-    else if (e.key === "Enter" || e.key === " ") {
-      // Select the focused option
-      e.preventDefault()
-      return
-    } else return
-
-    e.preventDefault()
-    const currentIdx = flatTypes.findIndex((tp) => tp.id === currentType)
-    const fallbackIdx = currentIdx === -1 ? 0 : currentIdx
-    const nextIdx = (fallbackIdx + delta + flatTypes.length) % flatTypes.length
-    onTypeChange(flatTypes[nextIdx].id)
   }
 
   const handleTriggerClick = () => {
     setIsOpen((prev) => !prev)
   }
 
-  const handleOptionClick = (typeId: QuestionTypeKey) => {
+  const handleOptionSelect = (typeId: QuestionTypeKey) => {
     onTypeChange(typeId)
     setIsOpen(false)
   }
@@ -206,15 +173,11 @@ export function QuestionTypeSelector({
             {currentTypeMeta && t(currentTypeMeta.labelKey)}
           </span>
         </div>
-        {/* Chevron icon (CSS-only, no Lucide import for SSR test compatibility) */}
-        <div
+        <ChevronDown
           className={clsx(
-            "size-4 shrink-0 border-r-2 border-b-2 border-[var(--ink-muted)] transition-transform",
-            "relative inline-block",
-            isOpen && "rotate-[225deg]",
-            !isOpen && "rotate-45",
+            "size-4 shrink-0 text-[var(--ink-muted)] transition-transform",
+            isOpen && "rotate-180",
           )}
-          style={{ width: "8px", height: "8px", marginRight: "4px" }}
         />
       </button>
 
@@ -229,54 +192,12 @@ export function QuestionTypeSelector({
             onKeyDown={handleKeyDown}
             className="console-shell console-scroll max-h-96 w-80 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-lg"
           >
-            {typesByCategory.map((category) => (
-              <div key={category.id}>
-                {/* Category Group */}
-                <div
-                  role="group"
-                  aria-label={t(category.labelKey)}
-                  className="sticky top-0 bg-[var(--surface-2)] px-4 py-2"
-                >
-                  <div className="text-xs font-semibold text-[var(--ink-subtle)]">
-                    {t(category.labelKey)}
-                  </div>
-                </div>
-
-                {/* Category Options */}
-                <div className="divide-y divide-[var(--line)]">
-                  {category.types.map((type) => {
-                    const Icon = type.icon
-                    const isSelected = currentType === type.id
-
-                    return (
-                      <button
-                        key={type.id}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        data-testid={`question-type-option-${type.id}`}
-                        onClick={() => handleOptionClick(type.id)}
-                        className={clsx(
-                          rowShellBase,
-                          "w-full",
-                          rowShellDensity.compact,
-                          "flex items-center gap-3 text-left px-4 py-2",
-                          "transition-colors",
-                          isSelected
-                            ? rowSelectedState
-                            : clsx(rowRestState, rowHoverState, rowFocusState),
-                        )}
-                      >
-                        <Icon className="size-4 shrink-0 text-[var(--ink-muted)]" />
-                        <span className="truncate text-sm font-medium text-[var(--ink)]">
-                          {t(type.labelKey)}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+            <QuestionTypeDropdownList
+              currentType={currentType}
+              onSelect={handleOptionSelect}
+              excludeTypes={excludeTypes}
+              klassenEnabled={klassenEnabled}
+            />
           </div>,
           document.body,
         )}

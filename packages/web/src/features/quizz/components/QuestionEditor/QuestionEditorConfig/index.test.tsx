@@ -26,6 +26,7 @@ vi.mock("lucide-react", () => ({
   GraduationCap: () => null,
   X: () => null,
   Sparkles: () => null,
+  ChevronDown: () => null,
 }))
 
 // Mock dependencies
