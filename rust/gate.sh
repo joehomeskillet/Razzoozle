@@ -97,7 +97,7 @@ if command -v cargo-clippy >/dev/null 2>&1; then
     fail=1
   else
     CLIPPY_N=$(printf '%s\n' "$CLIPPY_OUT" | grep -E '^\s*-->' | sed 's/^\s*--> //' | sort -u | wc -l)
-    CLIPPY_BASELINE=185
+    CLIPPY_BASELINE=82
     if [[ "$CLIPPY_N" -gt "$CLIPPY_BASELINE" ]]; then
       say "NO-GO: clippy findings ($CLIPPY_N) exceed baseline ($CLIPPY_BASELINE) — new lint debt introduced"
       fail=1
