@@ -50,6 +50,7 @@ export const EVENTS = {
     ANSWER_ACK: "player:answerAck",
     SET_AVATAR: "player:setAvatar",
     SELECT_TEAM: "player:selectTeam",
+    SELECT_CONFIDENCE: "player:selectConfidence",
   },
   // Low-latency mode: UI-only clock sync (never a scoring input).
   CLOCK: {

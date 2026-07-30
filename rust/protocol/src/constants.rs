@@ -56,6 +56,7 @@ pub mod player {
     pub const ANSWER_ACK: &str = "player:answerAck";
     pub const SET_AVATAR: &str = "player:setAvatar";
     pub const SELECT_TEAM: &str = "player:selectTeam";
+    pub const SELECT_CONFIDENCE: &str = "player:selectConfidence";
 }
 
 pub mod clock {
