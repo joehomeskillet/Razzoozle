@@ -6,8 +6,9 @@ use tracing::{info, warn};
 
 /// Snapshot format version — bump when changing the structure.
 /// v2: Added currentAnswers, answerOrder, recapStats, questionStats, questionsHistory
-/// (backward-compatible via serde defaults for old snapshots)
-const SNAPSHOT_VERSION: u32 = 2;
+/// v3: Added selectedModes.experienceMode (WP #878)
+/// (backward-compatible via serde defaults / defensive restore for old snapshots)
+const SNAPSHOT_VERSION: u32 = 3;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -143,6 +144,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
             "klassen": game.selected_modes.klassen,
             "endScreen": game.selected_modes.end_screen,
             "participantCap": game.selected_modes.participant_cap,
+            "experienceMode": game.selected_modes.experience_mode,
         },
         // W1-1: Persist in-flight answer data and per-question stats
         "currentAnswers": current_answers,
@@ -240,6 +242,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
     }
 
     // W1-M2: Restore selected_modes from snapshot
+    // v3: experienceMode; v1/v2 snapshots omit it → None (classic default).
     let selected_modes = snap
         .get("selectedModes")
         .map(|v| {
@@ -258,12 +261,25 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
                     "full" => Some(razzoozle_protocol::game::EndScreen::Full),
                     _ => None,
                 });
+            let experience_mode = v
+                .get("experienceMode")
+                .and_then(|e| e.as_str())
+                .and_then(|em| match em {
+                    "classic" => Some(razzoozle_protocol::game::ExperienceMode::Classic),
+                    "pyramidClimb" => Some(razzoozle_protocol::game::ExperienceMode::PyramidClimb),
+                    "deepSeaEscape" => {
+                        Some(razzoozle_protocol::game::ExperienceMode::DeepSeaEscape)
+                    }
+                    "flowerBattle" => Some(razzoozle_protocol::game::ExperienceMode::FlowerBattle),
+                    _ => None,
+                });
             razzoozle_protocol::game::SelectedModes {
                 scoring_mode,
                 team_mode,
                 klassen,
                 end_screen,
                 participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
+                experience_mode,
             }
         })
         .unwrap_or(razzoozle_protocol::game::SelectedModes {
@@ -272,6 +288,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
             klassen: None,
             end_screen: None,
             participant_cap: None,
+            experience_mode: None,
         });
 
     // W1-1 Fix: Restore in-flight answers with backward compatibility
@@ -614,12 +631,12 @@ pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
         }
     };
 
-    // Accept version 1 (old format) or version 2 (new format with in-flight answers)
-    // Version 1 snapshots will be restored with default empty values for new fields
+    // Accept version 1–3. Older snapshots restore with defaults for newer fields
+    // (v2: in-flight answers; v3: experienceMode).
     let version = parsed.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    if version != 1 && version != 2 {
+    if version != 1 && version != 2 && version != 3 {
         warn!(
-            "Unrecognized snapshot version {} (expected 1 or 2), ignoring",
+            "Unrecognized snapshot version {} (expected 1, 2, or 3), ignoring",
             version
         );
         return Vec::new();
@@ -1147,14 +1164,59 @@ mod tests {
         );
     }
 
-    /// Test the updated load_snapshot logic accepts both version 1 and 2
-    #[tokio::test]
-    async fn test_load_snapshot_accepts_version_1_and_2() {
-        // This test would require mocking the file system, so we just test
-        // the version check logic here by verifying the version constant was bumped
-        assert!(
-            SNAPSHOT_VERSION >= 2,
-            "SNAPSHOT_VERSION should be at least 2"
+    /// WP #878: SNAPSHOT_VERSION is 3 (experienceMode field).
+    #[test]
+    fn test_snapshot_version_is_3() {
+        assert_eq!(SNAPSHOT_VERSION, 3, "SNAPSHOT_VERSION must be 3");
+    }
+
+    /// WP #878: experience_mode survives snapshot roundtrip; v2-shaped snaps restore as None.
+    #[test]
+    fn test_experience_mode_snapshot_roundtrip() {
+        use razzoozle_protocol::game::{ExperienceMode, SelectedModes};
+        use razzoozle_protocol::quizz::Quizz;
+
+        let empty_quiz = Quizz {
+            subject: "Exp".to_string(),
+            questions: vec![],
+            archived: None,
+            theme_id: None,
+        };
+        let mut game = Game::new(
+            "game-exp-rt".to_string(),
+            "INVEXP".to_string(),
+            "mgr".to_string(),
+            "quiz".to_string(),
+            empty_quiz,
         );
+        game.selected_modes = SelectedModes {
+            scoring_mode: Some("speed".to_string()),
+            team_mode: Some(true),
+            klassen: None,
+            end_screen: None,
+            participant_cap: None,
+            experience_mode: Some(ExperienceMode::PyramidClimb),
+        };
+
+        let snap = game_to_snapshot(&game);
+        assert_eq!(
+            snap.get("selectedModes")
+                .and_then(|m| m.get("experienceMode"))
+                .and_then(|v| v.as_str()),
+            Some("pyramidClimb")
+        );
+        let restored = game_from_snapshot(&snap).expect("restore");
+        assert_eq!(
+            restored.selected_modes.experience_mode,
+            Some(ExperienceMode::PyramidClimb)
+        );
+
+        // Defensive: drop experienceMode (simulates v2 snapshot) → None
+        let mut v2_like = snap.clone();
+        if let Some(modes) = v2_like.get_mut("selectedModes") {
+            modes.as_object_mut().map(|o| o.remove("experienceMode"));
+        }
+        let restored_v2 = game_from_snapshot(&v2_like).expect("restore v2-like");
+        assert_eq!(restored_v2.selected_modes.experience_mode, None);
     }
 }

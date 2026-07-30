@@ -27,21 +27,28 @@ The bash-based migration script is kept in the repository for emergency/offline 
 
 ## Migration Count
 
-The database schema consists of **exactly 22 sequential migrations**:
+The database schema consists of **exactly 23 sequential migrations**:
 
 | Migration | Description |
 |-----------|-------------|
 | `001_initial_schema.sql` | Initial database schema (domain types, tables, indexes) |
 | `002_node_parity_columns.sql` | Node parity tracking columns |
 | `003_theme_id_and_recap.sql` | Theme ID and recap support |
-| ... | (18 more migrations) |
+| ... | (19 more migrations) |
 | `022_students_active.sql` | Student active status tracking |
+| `023_experience_modes.sql` | Experience-mode CSV allow-list on `games_config` (WP #878) |
 
 **Verify locally**:
 ```bash
 ls db/migrations/ | wc -l
-# Expected output: 22
+# Expected output: 23
 ```
+
+### Apply path for 023 (prod does NOT auto-apply)
+
+1. **Standard (embedded SQLx migrator):** restart/redeploy the Rust server after the binary includes `023_experience_modes.sql`. On boot the migrator runs pending files under `db/migrations/` and records them in `_sqlx_migrations`.
+2. **Emergency (deprecated bash):** `scripts/migrate-apply.sh` against the target `DATABASE_URL` (idempotent `IF NOT EXISTS`).
+3. **Manual SQL:** `ALTER TABLE games_config ADD COLUMN IF NOT EXISTS experience_modes_enabled VARCHAR(255) DEFAULT '';`
 
 ---
 

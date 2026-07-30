@@ -200,6 +200,7 @@ impl Game {
                 klassen: None,
                 end_screen: None,
                 participant_cap: None,
+                experience_mode: None,
             },
             player_cap: None,
         }

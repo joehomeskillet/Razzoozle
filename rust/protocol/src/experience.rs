@@ -170,9 +170,7 @@ mod tests {
             phase_started_at_server_ms: 1_700_000_000_000,
             phase_duration_ms: Some(20_000),
             revision: 3,
-            payload: ExperiencePayload::Pyramid(PyramidPayload {
-                team_steps: vec![],
-            }),
+            payload: ExperiencePayload::Pyramid(PyramidPayload { team_steps: vec![] }),
         };
         let v = serde_json::to_value(&t).unwrap();
         assert_eq!(v["mode"], "pyramidClimb");
@@ -191,7 +189,10 @@ mod tests {
             "message",
             "value",
         ] {
-            assert!(v.get(forbidden).is_none(), "forbidden key present: {forbidden}");
+            assert!(
+                v.get(forbidden).is_none(),
+                "forbidden key present: {forbidden}"
+            );
         }
     }
 

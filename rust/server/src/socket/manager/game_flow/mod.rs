@@ -24,6 +24,7 @@ use tracing::{info, warn};
 /// Result-screen auto-advance countdown (mirrors Node AUTO_RESULT_MS).
 const AUTO_RESULT_MS: i32 = 6000;
 
+pub mod experience;
 mod pacing;
 pub use pacing::{register_adjust_timer, register_pause_game, register_resume_game};
 
@@ -75,6 +76,103 @@ fn register_start_game(socket: &SocketRef, ctx: HandlerCtx) {
                                     .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                                     .ok();
                                 return;
+                            }
+                        }
+
+                        // E-11rev soft-start gate + E-12rev unscored filter (WP #878)
+                        let confirmed = payload
+                            .get("confirmed")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                            || payload
+                                .get("override")
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(false);
+
+                        {
+                            let mut game = game_ref.lock().unwrap();
+                            let experience_mode = game.selected_modes.experience_mode;
+                            let team_mode = game.selected_modes.team_mode.unwrap_or(false);
+
+                            match experience::evaluate_experience_start_gate(
+                                experience_mode,
+                                team_mode,
+                                &game.players,
+                                confirmed,
+                            ) {
+                                experience::StartGateResult::HardBlock { reason } => {
+                                    warn!(
+                                        "manager:startGame hard-blocked gameId={} reason={}",
+                                        game_id, reason
+                                    );
+                                    let msg = if reason == "noPlayersConnected" {
+                                        "errors:game.noPlayersConnected"
+                                    } else {
+                                        "errors:game.notFound"
+                                    };
+                                    socket.emit(constants::game::ERROR_MESSAGE, msg).ok();
+                                    return;
+                                }
+                                experience::StartGateResult::SoftWarning { reason } => {
+                                    info!(
+                                        "manager:startGame soft-warning gameId={} reason={} (confirmed={})",
+                                        game_id, reason, confirmed
+                                    );
+                                    socket
+                                        .emit(
+                                            constants::manager::START_WARNING,
+                                            &serde_json::json!({
+                                                "gameId": game_id,
+                                                "reason": reason,
+                                                "confirmedRequired": true,
+                                            }),
+                                        )
+                                        .ok();
+                                    return;
+                                }
+                                experience::StartGateResult::Ok => {}
+                            }
+
+                            // E-12rev: filter unscored/practice for non-classic experience modes
+                            let questions = std::mem::take(&mut game.engine.quiz.questions);
+                            let (kept, skipped) = experience::filter_experience_questions(
+                                experience_mode,
+                                questions,
+                            );
+                            if experience_mode.is_some()
+                                && !matches!(
+                                    experience_mode,
+                                    Some(razzoozle_protocol::game::ExperienceMode::Classic) | None
+                                )
+                                && kept.is_empty()
+                            {
+                                // Restore empty list and block — quiz has no scored questions.
+                                game.engine.quiz.questions = kept;
+                                warn!(
+                                    "manager:startGame denied: no scored questions after experience filter gameId={}",
+                                    game_id
+                                );
+                                socket
+                                    .emit(
+                                        constants::game::ERROR_MESSAGE,
+                                        "errors:game.noScoredQuestions",
+                                    )
+                                    .ok();
+                                return;
+                            }
+                            game.engine.quiz.questions = kept;
+                            if skipped > 0 {
+                                socket
+                                    .emit(
+                                        constants::manager::START_WARNING,
+                                        &serde_json::json!({
+                                            "gameId": game_id,
+                                            "reason": "unscoredFiltered",
+                                            "skipped": skipped,
+                                            "remaining": game.engine.quiz.questions.len(),
+                                        }),
+                                    )
+                                    .ok();
                             }
                         }
 

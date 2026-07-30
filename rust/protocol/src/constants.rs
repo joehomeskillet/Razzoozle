@@ -59,6 +59,9 @@ pub mod manager {
     pub const LEAVE: &str = "manager:leave";
     pub const KICK_PLAYER: &str = "manager:kickPlayer";
     pub const START_GAME: &str = "manager:startGame";
+    /// Soft start-gate / unscored-filter warning (WP #878, E-11rev/E-12rev).
+    /// Wire name kept as `gameFlow:startWarning` per experience-modes contract.
+    pub const START_WARNING: &str = "gameFlow:startWarning";
     pub const SET_AUTO: &str = "manager:setAuto";
     pub const ADD_BOTS: &str = "manager:addBots";
     pub const ABORT_QUIZ: &str = "manager:abortQuiz";

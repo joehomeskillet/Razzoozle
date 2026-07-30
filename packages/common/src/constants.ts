@@ -62,6 +62,8 @@ export const EVENTS = {
     LEAVE: "manager:leave",
     KICK_PLAYER: "manager:kickPlayer",
     START_GAME: "manager:startGame",
+    /** Soft start-gate / unscored-filter warning (WP #878, E-11rev/E-12rev). */
+    START_WARNING: "gameFlow:startWarning",
     SET_AUTO: "manager:setAuto",
     ADD_BOTS: "manager:addBots",
     ABORT_QUIZ: "manager:abortQuiz",
