@@ -23,8 +23,10 @@ export const MAX_TEAMS = 4
 export const MIN_TEAMS = 2
 
 export interface FlowerGardenSceneProps {
-  seed: number
-  recipeVersion: string
+  /** Wire seed is a String (server CSPRNG, WP-939A) — number kept for legacy callers. */
+  seed: number | string
+  /** Wire recipeVersion is a number; string kept for legacy callers. */
+  recipeVersion: number | string
   teams: FlowerBattleTeamState[]
   className?: string
 }
@@ -34,15 +36,10 @@ const teamColorForIndex = (index: number): TeamColorKey => {
   return (team ?? TEAMS[0]) as TeamColorKey
 }
 
-const variantForTeam = (seed: number, index: number): FlowerVariant => {
+const variantForTeam = (seed: number | string, index: number): FlowerVariant => {
   const rng = createSeededRandom(`${seed}-plant-${index}`)
   const variantIndex = Math.floor(rng() * FLOWER_VARIANTS.length)
   return FLOWER_VARIANTS[variantIndex] ?? "round"
-}
-
-const growthStageFromSunPoints = (sunPoints: number): number => {
-  const safe = Number.isFinite(sunPoints) ? Math.max(0, Math.floor(sunPoints)) : 0
-  return Math.min(10, safe)
 }
 
 /**
@@ -109,7 +106,7 @@ export const FlowerGardenScene = ({
                     <FlowerPlant
                       variant={variantForTeam(seed, index)}
                       teamColor={teamColorForIndex(index)}
-                      growthStage={growthStageFromSunPoints(team.sunPoints)}
+                      growthStage={team.growthStage}
                     />
                     <FlowerPowerupEffects activeEffects={team.effects} />
                   </div>

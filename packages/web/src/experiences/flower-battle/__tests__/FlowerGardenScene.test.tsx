@@ -60,6 +60,7 @@ const makeTeam = (name: string, sunPoints = 0): FlowerBattleTeamState => ({
   hp: 0,
   shield: 0,
   effects: [],
+  growthStage: sunPoints,
   sunPoints,
 })
 

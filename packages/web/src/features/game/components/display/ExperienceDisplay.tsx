@@ -1,20 +1,31 @@
 /**
- * ExperienceDisplay — Content-free Display for Experience modes.
+ * ExperienceDisplay — Content-free Display shell for Experience modes.
  *
  * Renders a static placeholder showing phase and progress counters {answered, total}
  * only. No question text, answers, media, or animations—pure display info for the
  * beamer/kiosk, divorced from player knowledge.
  *
+ * Mounted by three consumers (pages/display/play.tsx, pages/satellite/$gameId.tsx,
+ * pages/party/manager/$gameId.tsx) — the mode branch below is the single place
+ * that fans out to a mode-specific scene, so all three inherit it for free
+ * (WP-939C). mode=flowerBattle renders FlowerBattleDisplay (real garden scene +
+ * presenter HUD); every other mode keeps the original content-free placeholder.
+ *
  * Scaffolded via `pnpm g:display ExperienceDisplay` with WP 877.
  */
 
 import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
+import { FlowerBattleDisplay } from "@razzoozle/web/experiences/flower-battle/FlowerBattleDisplay"
 
 export interface ExperienceDisplayProps {
   data: ExperienceTransition
 }
 
 export function ExperienceDisplay({ data }: ExperienceDisplayProps) {
+  if (data.mode === "flowerBattle") {
+    return <FlowerBattleDisplay data={data} />
+  }
+
   const phase = data.phase?.replace(/_/g, " ").toLowerCase() || "loading"
   const answered = data.answered ?? 0
   const total = data.total ?? 0
