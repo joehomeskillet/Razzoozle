@@ -5,7 +5,6 @@ import {
 import Loader from "@razzoozle/web/components/Loader"
 import { ExperienceDisplay } from "@razzoozle/web/features/game/components/display/ExperienceDisplay"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
-import { FlowerBattleDisplay } from "@razzoozle/web/experiences/flower-battle/FlowerBattleDisplay"
 import {
   socketClient,
   useSocket,
@@ -101,11 +100,7 @@ const DisplayPlayPage = () => {
     <div className="display-stage h-full w-full">
       <GameWrapper statusName={status.name} manager controls={false}>
         {experienceTransition ? (
-          experienceTransition.mode === "flowerBattle" ? (
-            <FlowerBattleDisplay data={experienceTransition} />
-          ) : (
-            <ExperienceDisplay data={experienceTransition} />
-          )
+          <ExperienceDisplay data={experienceTransition} />
         ) : (
           CurrentComponent && <CurrentComponent data={status.data as never} />
         )}
