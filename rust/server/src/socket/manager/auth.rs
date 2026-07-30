@@ -1,6 +1,11 @@
-//! LOGOUT, RECONNECT — manager session handlers (DB-session-token auth only)
+//! LOGOUT, RECONNECT — manager session handlers
+//!
+//! Reconnect accepts DB-session auth (host) **or** a valid satellite handshake
+//! token (display kiosk). Satellite joins are display-only: they enter
+//! `display:{gameId}` for `game:experience` and never steal `manager_socket_id`.
 
 use super::super::HandlerCtx;
+use crate::socket::auth;
 use crate::socket::status_emit;
 use crate::state::socket_role;
 use razzoozle_protocol::constants;
@@ -43,6 +48,29 @@ fn register_logout(socket: &SocketRef, ctx: HandlerCtx) {
     });
 }
 
+/// WP #959 — reconnect may proceed when either a session user or a valid
+/// satellite token is present. Pure session-less sockets are denied.
+pub(crate) fn reconnect_auth_allowed(has_user: bool, satellite_ok: bool) -> bool {
+    has_user || satellite_ok
+}
+
+/// WP #959 — whether this reconnect should claim the single `manager_socket_id`.
+///
+/// - Satellite kiosks never claim (display-only; phone stays controller).
+/// - Host claims when the previous manager socket is free or is this socket.
+/// - Host with another live manager socket joins display-only (no hard RESET)
+///   so a second tab / satellite SPA can still receive `game:experience`.
+pub(crate) fn reconnect_claims_manager(
+    satellite_ok: bool,
+    same_socket: bool,
+    previous_manager_alive: bool,
+) -> bool {
+    if satellite_ok {
+        return false;
+    }
+    same_socket || !previous_manager_alive
+}
+
 fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
     socket.on(constants::manager::RECONNECT, {
         let ctx = ctx.clone();
@@ -51,28 +79,34 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
             let ctx = ctx.clone();
 
             tokio::spawn(async move {
-                // Auth-gate: manager:reconnect requires valid session
-                let user = match ctx.require_user().await {
-                    Some(user) => user,
-                    None => {
-                        warn!(
-                            "manager:unauthorized event=reconnect check=require_user socketId={}",
-                            socket.id
-                        );
-                        socket
-                            .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
-                            .ok();
-                        return;
-                    }
-                };
-
-                // Claim Manager role — observe only, don't reject on conflict
-                let socket_id = socket.id.to_string();
-                if let Err(held_role) = socket_role::try_claim(&socket_id, socket_role::VerifiedRole::Manager) {
-                    tracing::warn!(
-                        "manager role conflict: socketId={} held_role={:?} requested=Manager",
-                        socket_id, held_role
+                // WP #959 — session host OR satellite token (handshake).
+                // Previously require_user-only silently blocked pure kiosks
+                // before they could join display:{gameId} / get the envelope.
+                let user = ctx.require_user().await;
+                let satellite_ok = auth::can_authorize_display_event(&ctx);
+                if !reconnect_auth_allowed(user.is_some(), satellite_ok) {
+                    warn!(
+                        "manager:unauthorized event=reconnect check=require_user_or_satellite socketId={} satellite={}",
+                        socket.id, satellite_ok
                     );
+                    socket
+                        .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
+                        .ok();
+                    return;
+                }
+
+                // Claim Manager role only for host path — observe only.
+                // Satellite stays display-side (VerifiedRole may already be unset).
+                let socket_id = socket.id.to_string();
+                if !satellite_ok {
+                    if let Err(held_role) =
+                        socket_role::try_claim(&socket_id, socket_role::VerifiedRole::Manager)
+                    {
+                        tracing::warn!(
+                            "manager role conflict: socketId={} held_role={:?} requested=Manager",
+                            socket_id, held_role
+                        );
+                    }
                 }
 
                 let game_id_opt = payload
@@ -97,60 +131,71 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     return;
                 };
 
-                // W0-A3: OWNERSHIP gates the reconnect with new user-id based logic + admin bypass.
-                // is_game_host() now checks user_id matching, admin bypass, and legacy fallback.
-                let is_owner = {
-                    let game = game_ref.lock().unwrap();
-                    crate::is_game_host(&game, &payload, &ctx.client_id, Some(&user))
-                };
+                // Ownership: satellite token is a shared display secret (any game).
+                // Host path still needs is_game_host (user-id / admin / hostToken).
+                if !satellite_ok {
+                    let is_owner = {
+                        let game = game_ref.lock().unwrap();
+                        crate::is_game_host(&game, &payload, &ctx.client_id, user.as_ref())
+                    };
 
-                if !is_owner {
-                    socket
-                        .emit(constants::game::RESET, "errors:game.expired")
-                        .ok();
+                    if !is_owner {
+                        socket
+                            .emit(constants::game::RESET, "errors:game.expired")
+                            .ok();
 
-                    return;
-                }
+                        return;
+                    }
 
-                // Ownership verified: refresh manager_client_id to this reconnecting clientId,
-                // keeping ownership current across e.g. a cleared-localStorage reconnect.
-                {
-                    let mut registry = ctx.registry.write().await;
-                    registry.reactivate_game(game_id.clone());
-                }
-                {
-                    let mut game = game_ref.lock().unwrap();
-                    game.manager_client_id = Some(ctx.client_id.clone());
+                    // Ownership verified: refresh manager_client_id to this reconnecting clientId,
+                    // keeping ownership current across e.g. a cleared-localStorage reconnect.
+                    {
+                        let mut registry = ctx.registry.write().await;
+                        registry.reactivate_game(game_id.clone());
+                    }
+                    {
+                        let mut game = game_ref.lock().unwrap();
+                        game.manager_client_id = Some(ctx.client_id.clone());
+                    }
                 }
 
                 let new_socket_id = socket.id.to_string();
 
-                // Reject while a DIFFERENT manager socket is still genuinely
-                // connected — mirrors Node's `this._manager.connected` guard
-                // (GAME.RESET "errors:game.managerAlreadyConnected").
                 let previous_socket_id = {
                     let game = game_ref.lock().unwrap();
                     game.manager_socket_id.clone()
                 };
 
-                if previous_socket_id != new_socket_id {
-                    if let Ok(sid) = previous_socket_id.parse() {
-                        if ctx.io.get_socket(sid).is_some() {
-                            socket
-                                .emit(
-                                    constants::game::RESET,
-                                    "errors:game.managerAlreadyConnected",
-                                )
-                                .ok();
+                let same_socket = previous_socket_id == new_socket_id;
+                let previous_manager_alive = if same_socket {
+                    false
+                } else if let Ok(sid) = previous_socket_id.parse() {
+                    ctx.io.get_socket(sid).is_some()
+                } else {
+                    false
+                };
 
-                            return;
-                        }
-                    }
+                let claim_manager =
+                    reconnect_claims_manager(satellite_ok, same_socket, previous_manager_alive);
+
+                // Pre-#959 host dual-tab got hard RESET managerAlreadyConnected and
+                // never joined display:{gameId} — so no live experience + no 939B
+                // resend. Satellite and non-claiming host now fall through to the
+                // display-room join + envelope resend below.
+                if !claim_manager && !satellite_ok && previous_manager_alive {
+                    // Host second view: do not steal the manager slot; still join
+                    // display rooms so the garden envelope reaches this socket.
+                    tracing::info!(
+                        "manager:reconnect display-only join (manager slot held) gameId={} socketId={}",
+                        game_id, new_socket_id
+                    );
                 }
 
                 let (game_id, players, current_question_index, total_questions, reconnect_status) = {
                     let mut game = game_ref.lock().unwrap();
-                    game.manager_socket_id = new_socket_id;
+                    if claim_manager {
+                        game.manager_socket_id = new_socket_id;
+                    }
                     let reconnect_status = game.manager_reconnect_status();
                     (
                         game.game_id.clone(),
@@ -161,14 +206,10 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     )
                 };
 
+                // socketioxide does NOT auto-join rooms — both rooms are required:
+                // game room for lobby/player counts; display room for game:experience
+                // (status_emit::broadcast_experience_to_display targets display:{id}).
                 socket.join(game_id.clone());
-                // WP #877 — the presenter (host) and satellite kiosk both
-                // reconnect through this handler (satellite authenticates via
-                // its handshake token, not game ownership) and both need the
-                // content-free `game:experience` transitions, not just a
-                // separately-paired beamer (which already joins this room in
-                // DISPLAY.PAIR). Harmless when no Experience mode is active —
-                // nothing else broadcasts into this room.
                 socket.join(format!("display:{}", game_id));
 
                 let (status_name, status_data) = reconnect_status;
@@ -191,12 +232,55 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     .emit(constants::game::TOTAL_PLAYERS, &(players.len() as i32))
                     .ok();
 
-                // WP #939B — hard-reload left the display room joined but with
-                // no game:experience snapshot (transitions only fire on
-                // status changes). Resend the current FlowerBattle envelope
-                // to THIS socket only; revision is not bumped (idempotent).
+                // WP #939B / #959 — hard-reload / satellite join left the socket
+                // with no game:experience snapshot (transitions only fire on
+                // status changes). Resend current FlowerBattle envelope to THIS
+                // socket only; revision is not bumped (idempotent).
                 status_emit::resend_experience_on_display_reconnect(&socket, &game_ref);
             });
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reconnect_auth_requires_user_or_satellite() {
+        assert!(!reconnect_auth_allowed(false, false));
+        assert!(reconnect_auth_allowed(true, false));
+        assert!(reconnect_auth_allowed(false, true));
+        assert!(reconnect_auth_allowed(true, true));
+    }
+
+    /// WP #959 — satellite never steals the manager slot (phone stays controller).
+    #[test]
+    fn satellite_never_claims_manager_slot() {
+        assert!(!reconnect_claims_manager(true, false, true));
+        assert!(!reconnect_claims_manager(true, true, false));
+        assert!(!reconnect_claims_manager(true, false, false));
+    }
+
+    /// Host claims when free or same socket; dual-tab host does not claim.
+    #[test]
+    fn host_claims_only_when_slot_free_or_same_socket() {
+        assert!(reconnect_claims_manager(false, true, false)); // same socket
+        assert!(reconnect_claims_manager(false, false, false)); // free
+        assert!(!reconnect_claims_manager(false, false, true)); // other alive → display-only
+    }
+
+    /// Regression: the pre-#959 path hard-RESET on dual manager and skipped
+    /// display-room join + envelope resend. Display-only is the intended
+    /// fallback whenever claim is false (satellite or dual host view).
+    #[test]
+    fn display_only_path_covers_satellite_and_dual_host() {
+        let satellite_display_only = !reconnect_claims_manager(true, false, true);
+        let dual_host_display_only = !reconnect_claims_manager(false, false, true);
+        assert!(satellite_display_only);
+        assert!(dual_host_display_only);
+        // Auth still required before that path is reachable.
+        assert!(reconnect_auth_allowed(false, true));
+        assert!(reconnect_auth_allowed(true, false));
+    }
 }
