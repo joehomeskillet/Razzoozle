@@ -7,14 +7,15 @@
 //! socketioxide 0.15 emits are sync (no .await) and non-blocking (channel try_send),
 //! so holding std::sync::Mutex across them is safe.
 
+use crate::socket::manager::game_flow::flower_battle_display;
 use crate::state::{get_now_ms, Game};
 use razzoozle_protocol::constants;
 use razzoozle_protocol::experience::{
     ChaseState, DeepSeaPayload, ExperiencePayload, ExperiencePhase, ExperienceTransition,
-    FlowerBattleBackground, FlowerBattlePayload, FlowerBattlePhase, FlowerBattleState,
-    PyramidPayload, FLOWER_BATTLE_RECIPE_VERSION,
+    PyramidPayload,
 };
 use razzoozle_protocol::game::ExperienceMode;
+use razzoozle_protocol::player::Player;
 use razzoozle_protocol::status::GameStatus;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -47,13 +48,18 @@ fn status_to_experience_phase(status: &GameStatus) -> Option<ExperiencePhase> {
     }
 }
 
-/// Placeholder payload body for a mode until its mode-specific gameplay state
-/// is actually tracked (PyramidClimb team steps land in WP #904, DeepSeaEscape
-/// chase in WP #905; FlowerBattle's wire contract exists as of WP #927 but its
-/// gameplay-driven state — phase/teams/background/powerups — is still future
-/// work). Keeps the envelope's `payload.mode` tag consistent with
-/// `envelope.mode` in the meantime.
-fn default_payload_for_mode(mode: ExperienceMode) -> ExperiencePayload {
+/// Payload body for a mode's current display-safe state. PyramidClimb team
+/// steps (WP #904) and DeepSeaEscape chase (WP #905) still have no gameplay
+/// state to read yet, so they stay empty/zeroed placeholders that only keep
+/// `payload.mode` consistent with `envelope.mode`. FlowerBattle (WP #928)
+/// delegates to a real projection of the current game state — see
+/// `flower_battle_display` for what's genuinely wired vs. still a docking
+/// point for #929/#930.
+fn default_payload_for_mode(
+    mode: ExperienceMode,
+    game_id: &str,
+    players: &[Player],
+) -> ExperiencePayload {
     match mode {
         ExperienceMode::Classic => ExperiencePayload::Classic,
         ExperienceMode::PyramidClimb => {
@@ -67,17 +73,9 @@ fn default_payload_for_mode(mode: ExperienceMode) -> ExperiencePayload {
                 correct_ratio: 0.0,
             },
         }),
-        ExperienceMode::FlowerBattle => ExperiencePayload::FlowerBattle(FlowerBattlePayload {
-            state: FlowerBattleState {
-                phase: FlowerBattlePhase::Start,
-                teams: vec![],
-                background: FlowerBattleBackground {
-                    seed: String::new(),
-                    recipe_version: FLOWER_BATTLE_RECIPE_VERSION,
-                },
-                powerups: vec![],
-            },
-        }),
+        ExperienceMode::FlowerBattle => {
+            flower_battle_display::build_flower_battle_payload(game_id, players)
+        }
     }
 }
 
@@ -101,12 +99,13 @@ pub fn broadcast_status(
     game_id: &str,
     status: &GameStatus,
 ) {
-    let (experience_mode, manager_socket_id) = {
+    let (experience_mode, manager_socket_id, players) = {
         let mut game = game_ref.lock().unwrap();
         game.record_last_manager_status(status);
         (
             game.selected_modes.experience_mode,
             game.manager_socket_id.clone(),
+            game.players.clone(),
         )
     };
 
@@ -150,7 +149,7 @@ pub fn broadcast_status(
             revision: EXPERIENCE_REVISION.fetch_add(1, Ordering::Relaxed),
             answered: None,
             total: None,
-            payload: default_payload_for_mode(mode),
+            payload: default_payload_for_mode(mode, game_id, &players),
         };
         broadcast_experience_to_display(io, game_ref, game_id, transition, None, None);
     }
@@ -427,19 +426,19 @@ mod tests {
     #[test]
     fn default_payload_for_mode_tags_match_envelope_mode() {
         assert_eq!(
-            default_payload_for_mode(ExperienceMode::Classic),
+            default_payload_for_mode(ExperienceMode::Classic, "g1", &[]),
             ExperiencePayload::Classic
         );
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::PyramidClimb),
+            default_payload_for_mode(ExperienceMode::PyramidClimb, "g1", &[]),
             ExperiencePayload::Pyramid(_)
         ));
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::DeepSeaEscape),
+            default_payload_for_mode(ExperienceMode::DeepSeaEscape, "g1", &[]),
             ExperiencePayload::DeepSea(_)
         ));
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::FlowerBattle),
+            default_payload_for_mode(ExperienceMode::FlowerBattle, "g1", &[]),
             ExperiencePayload::FlowerBattle(_)
         ));
     }
