@@ -38,10 +38,7 @@ async fn get_media_usage_batch(pool: &PgPool) -> HashMap<String, Vec<MediaUsageE
             question_label: truncated_label,
         };
 
-        usage_map
-            .entry(media_url)
-            .or_insert_with(Vec::new)
-            .push(entry);
+        usage_map.entry(media_url).or_default().push(entry);
     }
 
     usage_map
@@ -290,117 +287,6 @@ pub async fn delete_media_assets_by_slot(
     Ok(result.rows_affected())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn delete_without_pool_returns_false_or_zero() {
-        assert!(!super::delete_media_asset(&None, "id", Some(1)).await);
-        assert_eq!(
-            super::delete_media_assets_by_slot(&None, "auth", "theme", Some(1))
-                .await
-                .unwrap(),
-            0
-        );
-    }
-
-    #[test]
-    fn test_media_usage_label_truncation_utf8() {
-        // Test UTF-8 safe truncation at 80 chars with emoji and multibyte chars
-        let label_with_emoji = "Was ist das Funktionsprinzip von Photosynthese 🌱🌿? Ein sehr langer Fragetext mit Umlauten äöü";
-        let truncated: String = label_with_emoji.chars().take(80).collect();
-
-        // Should not panic on UTF-8 boundaries and should be valid Rust string
-        assert!(truncated.len() <= 320); // 80 chars can be up to 4 bytes each in UTF-8
-        assert!(truncated.chars().count() <= 80);
-        assert!(!truncated.is_empty());
-    }
-
-    #[test]
-    fn test_media_usage_label_truncation_exact_boundary() {
-        // Test with emoji exactly at boundary
-        let label =
-            "12345678901234567890123456789012345678901234567890123456789012345678901234567890🎉";
-        let truncated: String = label.chars().take(80).collect();
-        assert_eq!(truncated.chars().count(), 80);
-    }
-
-    #[test]
-    fn test_media_usage_hashmap_grouping() {
-        // Test HashMap grouping logic: same media_url should accumulate entries
-        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
-
-        let entry1 = MediaUsageEntry {
-            quiz_id: "q1".to_string(),
-            quiz_title: "Quiz 1".to_string(),
-            question_index: 0,
-            question_label: "Q1".to_string(),
-        };
-        let entry2 = MediaUsageEntry {
-            quiz_id: "q1".to_string(),
-            quiz_title: "Quiz 1".to_string(),
-            question_index: 1,
-            question_label: "Q2".to_string(),
-        };
-        let entry3 = MediaUsageEntry {
-            quiz_id: "q2".to_string(),
-            quiz_title: "Quiz 2".to_string(),
-            question_index: 0,
-            question_label: "Q3".to_string(),
-        };
-
-        let media_url = "/media/images/pic.jpg".to_string();
-        usage_map
-            .entry(media_url.clone())
-            .or_insert_with(Vec::new)
-            .push(entry1);
-        usage_map
-            .entry(media_url.clone())
-            .or_insert_with(Vec::new)
-            .push(entry2);
-        usage_map
-            .entry(media_url.clone())
-            .or_insert_with(Vec::new)
-            .push(entry3);
-
-        assert_eq!(usage_map.len(), 1);
-        assert_eq!(usage_map[&media_url].len(), 3);
-    }
-
-    #[test]
-    fn test_media_usage_empty_label_coalesce() {
-        // Verify that empty/NULL question labels don't break the structure
-        // (COALESCE in SQL ensures we get '' instead of NULL)
-        let empty_label = "";
-        let truncated: String = empty_label.chars().take(80).collect();
-        assert_eq!(truncated, "");
-    }
-
-    #[test]
-    fn test_media_usage_empty_quiz_title() {
-        // Verify that empty quiz titles (from NULL subject via COALESCE) don't break HashMap fold
-        let empty_title = "";
-        let entry = MediaUsageEntry {
-            quiz_id: "q_null".to_string(),
-            quiz_title: empty_title.to_string(),
-            question_index: 0,
-            question_label: "Q1".to_string(),
-        };
-
-        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
-        let media_url = "/media/test.jpg".to_string();
-        usage_map
-            .entry(media_url.clone())
-            .or_insert_with(Vec::new)
-            .push(entry);
-
-        assert_eq!(usage_map.len(), 1);
-        assert_eq!(usage_map[&media_url].len(), 1);
-        assert_eq!(usage_map[&media_url][0].quiz_title, "");
-    }
-}
-
 /// Get media assets with url and data for hydration.
 /// Returns Vec<(url, data)> for all media_assets where data IS NOT NULL.
 /// Returns empty vec if pool is None or query fails.
@@ -522,4 +408,103 @@ pub async fn hydrate_media_from_pg(pool: &Option<sqlx::PgPool>, config_base: &st
     }
 
     tracing::debug!("media hydrate: {} assets, {} written", total_count, written);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn delete_without_pool_returns_false_or_zero() {
+        assert!(!super::delete_media_asset(&None, "id", Some(1)).await);
+        assert_eq!(
+            super::delete_media_assets_by_slot(&None, "auth", "theme", Some(1))
+                .await
+                .unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_media_usage_label_truncation_utf8() {
+        // Test UTF-8 safe truncation at 80 chars with emoji and multibyte chars
+        let label_with_emoji = "Was ist das Funktionsprinzip von Photosynthese 🌱🌿? Ein sehr langer Fragetext mit Umlauten äöü";
+        let truncated: String = label_with_emoji.chars().take(80).collect();
+
+        // Should not panic on UTF-8 boundaries and should be valid Rust string
+        assert!(truncated.len() <= 320); // 80 chars can be up to 4 bytes each in UTF-8
+        assert!(truncated.chars().count() <= 80);
+        assert!(!truncated.is_empty());
+    }
+
+    #[test]
+    fn test_media_usage_label_truncation_exact_boundary() {
+        // Test with emoji exactly at boundary
+        let label =
+            "12345678901234567890123456789012345678901234567890123456789012345678901234567890🎉";
+        let truncated: String = label.chars().take(80).collect();
+        assert_eq!(truncated.chars().count(), 80);
+    }
+
+    #[test]
+    fn test_media_usage_hashmap_grouping() {
+        // Test HashMap grouping logic: same media_url should accumulate entries
+        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
+
+        let entry1 = MediaUsageEntry {
+            quiz_id: "q1".to_string(),
+            quiz_title: "Quiz 1".to_string(),
+            question_index: 0,
+            question_label: "Q1".to_string(),
+        };
+        let entry2 = MediaUsageEntry {
+            quiz_id: "q1".to_string(),
+            quiz_title: "Quiz 1".to_string(),
+            question_index: 1,
+            question_label: "Q2".to_string(),
+        };
+        let entry3 = MediaUsageEntry {
+            quiz_id: "q2".to_string(),
+            quiz_title: "Quiz 2".to_string(),
+            question_index: 0,
+            question_label: "Q3".to_string(),
+        };
+
+        let media_url = "/media/images/pic.jpg".to_string();
+        usage_map.entry(media_url.clone()).or_default().push(entry1);
+        usage_map.entry(media_url.clone()).or_default().push(entry2);
+        usage_map.entry(media_url.clone()).or_default().push(entry3);
+
+        assert_eq!(usage_map.len(), 1);
+        assert_eq!(usage_map[&media_url].len(), 3);
+    }
+
+    #[test]
+    fn test_media_usage_empty_label_coalesce() {
+        // Verify that empty/NULL question labels don't break the structure
+        // (COALESCE in SQL ensures we get '' instead of NULL)
+        let empty_label = "";
+        let truncated: String = empty_label.chars().take(80).collect();
+        assert_eq!(truncated, "");
+    }
+
+    #[test]
+    fn test_media_usage_empty_quiz_title() {
+        // Verify that empty quiz titles (from NULL subject via COALESCE) don't break HashMap fold
+        let empty_title = "";
+        let entry = MediaUsageEntry {
+            quiz_id: "q_null".to_string(),
+            quiz_title: empty_title.to_string(),
+            question_index: 0,
+            question_label: "Q1".to_string(),
+        };
+
+        let mut usage_map: HashMap<String, Vec<MediaUsageEntry>> = HashMap::new();
+        let media_url = "/media/test.jpg".to_string();
+        usage_map.entry(media_url.clone()).or_default().push(entry);
+
+        assert_eq!(usage_map.len(), 1);
+        assert_eq!(usage_map[&media_url].len(), 1);
+        assert_eq!(usage_map[&media_url][0].quiz_title, "");
+    }
 }

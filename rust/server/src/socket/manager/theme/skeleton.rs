@@ -26,7 +26,7 @@ fn set_skeleton_asset(
     }
 
     // Check size cap (512 KB) — Node checks Buffer.byteLength(content) > SKELETON_ASSET_MAX_BYTES
-    if content.as_bytes().len() > SKELETON_ASSET_MAX_BYTES {
+    if content.len() > SKELETON_ASSET_MAX_BYTES {
         return Err("errors:skeleton.assetTooLarge".to_string());
     }
 
@@ -178,7 +178,7 @@ pub(super) fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         let theme_dir = Path::new("config/theme");
-                        if let Err(_) = fs::create_dir_all(theme_dir) {
+                        if fs::create_dir_all(theme_dir).is_err() {
                             socket
                                 .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                                 .ok();
@@ -198,7 +198,7 @@ pub(super) fn register_set_skeleton_asset(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         };
 
-                        if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                        if fs::write(theme_dir.join("theme.json"), theme_json).is_err() {
                             socket
                                 .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                                 .ok();
@@ -279,7 +279,7 @@ pub(super) fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
                         }
 
                         let theme_dir = Path::new("config/theme");
-                        if let Err(_) = fs::create_dir_all(theme_dir) {
+                        if fs::create_dir_all(theme_dir).is_err() {
                             socket
                                 .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                                 .ok();
@@ -299,7 +299,7 @@ pub(super) fn register_reset_skeleton(socket: &SocketRef, ctx: HandlerCtx) {
                             }
                         };
 
-                        if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                        if fs::write(theme_dir.join("theme.json"), theme_json).is_err() {
                             socket
                                 .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                                 .ok();

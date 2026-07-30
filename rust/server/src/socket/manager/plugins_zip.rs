@@ -320,7 +320,7 @@ fn encode_base64_std(bytes: &[u8]) -> String {
     if bits > 0 {
         result.push(CHARS[((buf << (6 - bits)) & 0x3f) as usize] as char);
     }
-    while result.len() % 4 != 0 {
+    while !result.len().is_multiple_of(4) {
         result.push('=');
     }
     result

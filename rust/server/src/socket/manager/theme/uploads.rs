@@ -424,7 +424,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                 }
 
                 let theme_dir = Path::new("config/theme");
-                if let Err(_) = fs::create_dir_all(theme_dir) {
+                if fs::create_dir_all(theme_dir).is_err() {
                     socket
                         .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                         .ok();
@@ -441,7 +441,7 @@ pub(super) fn register_upload_sound(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 };
 
-                if let Err(_) = fs::write(theme_dir.join("theme.json"), theme_json) {
+                if fs::write(theme_dir.join("theme.json"), theme_json).is_err() {
                     socket
                         .emit(constants::manager::THEME_ERROR, "errors:theme.saveFailed")
                         .ok();

@@ -153,7 +153,7 @@ mod tests {
         let var_name = test_var("not_set");
         // Make sure neither is set
         std::env::remove_var(&var_name);
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
 
         let result = resolve_secret(&var_name);
         assert_eq!(result.unwrap(), None);
@@ -167,14 +167,14 @@ mod tests {
 
         // Write file with trailing newline
         fs::write(&file_path, "fileseeret\n").unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
         // Should remove exactly one trailing newline
         assert_eq!(result.unwrap(), Some("fileseeret".to_string()));
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
@@ -185,13 +185,13 @@ mod tests {
 
         // Write file with trailing space but no newline
         fs::write(&file_path, "secret ").unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
         assert_eq!(result.unwrap(), Some("secret ".to_string()));
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
@@ -202,14 +202,14 @@ mod tests {
 
         // Write file with content ending in multiple newlines
         fs::write(&file_path, "line1\nline2\n\n").unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
         // Should remove only the last newline
         assert_eq!(result.unwrap(), Some("line1\nline2\n".to_string()));
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
@@ -220,21 +220,21 @@ mod tests {
 
         // Write empty file
         fs::write(&file_path, "").unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
         // Empty file after stripping newline = Ok(Some(""))
         assert_eq!(result.unwrap(), Some("".to_string()));
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
     fn test_conflict_both_set() {
         let var_name = test_var("conflict");
         std::env::set_var(&var_name, "direct_value");
-        std::env::set_var(&format!("{}_FILE", var_name), "/tmp/secret.txt");
+        std::env::set_var(format!("{}_FILE", var_name), "/tmp/secret.txt");
 
         let result = resolve_secret(&var_name);
         match result {
@@ -243,16 +243,13 @@ mod tests {
         }
 
         std::env::remove_var(&var_name);
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
     fn test_file_not_found() {
         let var_name = test_var("file_not_found");
-        std::env::set_var(
-            &format!("{}_FILE", var_name),
-            "/nonexistent/path/secret.txt",
-        );
+        std::env::set_var(format!("{}_FILE", var_name), "/nonexistent/path/secret.txt");
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
@@ -261,7 +258,7 @@ mod tests {
             _ => panic!("Expected FileNotFound error"),
         }
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
@@ -273,7 +270,7 @@ mod tests {
         // Write file larger than MAX_SECRET_FILE_SIZE
         let large_content = vec![b'A'; (MAX_SECRET_FILE_SIZE as usize) + 1];
         fs::write(&file_path, large_content).unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
@@ -282,7 +279,7 @@ mod tests {
             _ => panic!("Expected FileTooLarge error"),
         }
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 
     #[test]
@@ -294,12 +291,12 @@ mod tests {
         let file_path = temp_dir.path().join("secret_alone.txt");
 
         fs::write(&file_path, "from_file\n").unwrap();
-        std::env::set_var(&format!("{}_FILE", var_name), file_path.to_str().unwrap());
+        std::env::set_var(format!("{}_FILE", var_name), file_path.to_str().unwrap());
         std::env::remove_var(&var_name);
 
         let result = resolve_secret(&var_name);
         assert_eq!(result.unwrap(), Some("from_file".to_string()));
 
-        std::env::remove_var(&format!("{}_FILE", var_name));
+        std::env::remove_var(format!("{}_FILE", var_name));
     }
 }

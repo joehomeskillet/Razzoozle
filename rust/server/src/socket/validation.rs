@@ -149,7 +149,7 @@ pub fn validate_question(q: &Value) -> Result<(), &'static str> {
             };
 
             let decimals = match question.decimals {
-                Some(d) if d >= 0 && d <= 6 => d,
+                Some(d) if (0..=6).contains(&d) => d,
                 None => 2, // default is OK
                 _ => return Err("errors:quizz.invalidPayload"),
             };
@@ -306,12 +306,10 @@ fn is_valid_media_url(url: &str) -> bool {
         return false;
     }
     // Node: /^https?:\/\/\S+$/ — at least one non-whitespace char after scheme
-    if url.starts_with("https://") {
-        let rest = &url[8..];
+    if let Some(rest) = url.strip_prefix("https://") {
         return !rest.is_empty() && !rest.chars().any(|c| c.is_whitespace());
     }
-    if url.starts_with("http://") {
-        let rest = &url[7..];
+    if let Some(rest) = url.strip_prefix("http://") {
         return !rest.is_empty() && !rest.chars().any(|c| c.is_whitespace());
     }
     if url.contains("..") {

@@ -85,7 +85,7 @@ pub fn validate_set_settings(payload: &Value) -> Result<(), String> {
 
         // Optional: temperature validation (0-2)
         if let Some(temp) = obj.get("temperature").and_then(|v| v.as_f64()) {
-            if temp < constants::AI::TEMP_MIN || temp > constants::AI::TEMP_MAX {
+            if !(constants::AI::TEMP_MIN..=constants::AI::TEMP_MAX).contains(&temp) {
                 return Err(format!(
                     "text.providers[{}].temperature must be {} to {}",
                     idx,
@@ -222,7 +222,7 @@ pub fn validate_generate_question(payload: &Value) -> Result<(String, String, St
         .and_then(|v| v.as_str())
         .ok_or("topic is required")?;
 
-    if topic.is_empty() || topic.len() > constants::AI::TOPIC_MAX_LEN as usize {
+    if topic.is_empty() || topic.len() > constants::AI::TOPIC_MAX_LEN {
         return Err(format!(
             "topic must be 1-{} chars",
             constants::AI::TOPIC_MAX_LEN
@@ -294,7 +294,7 @@ pub fn validate_generate_distractors(
         .map(|c| c as usize)
         .unwrap_or(3);
 
-    if count < 1 || count > 3 {
+    if !(1..=3).contains(&count) {
         return Err("count must be 1-3".to_string());
     }
 
@@ -322,7 +322,7 @@ pub fn validate_generate_quiz(payload: &Value) -> Result<(String, usize, String)
         .and_then(|v| v.as_str())
         .ok_or("topic is required")?;
 
-    if topic.is_empty() || topic.len() > constants::AI::TOPIC_MAX_LEN as usize {
+    if topic.is_empty() || topic.len() > constants::AI::TOPIC_MAX_LEN {
         return Err(format!(
             "topic must be 1-{} chars",
             constants::AI::TOPIC_MAX_LEN
