@@ -1,335 +1,302 @@
-# ADR-013 — PixiJS 8 Procedural Puppet-Rig Presenter (Spine-Free)
+# ADR-013: PixiJS + Motion + hierarchische Puppet-Rigs — v2 (2026-07-30)
 
-**Status:** DECIDED (2026-07-30) · **Date:** 2026-07-30
-**Supersedes:** ADR-012 (partially, Canvas/WebGL presenter scope only)  
-**Decision:** Option (a) — Procedural puppet-rig PixiJS-native + motion (MIT, already installed). GSAP (Webflow No-Charge, proprietär) as fallback only. Research & alternatives: `docs/design/anim-runtime-research-2026-07-30.md`
-**Architecture Board:** Approved
-
----
-
-## Context
-
-The Flower Battle game mode (WP-939) requires high-quality 2D animation for plants responding to player actions, team progress, and power-up effects. The SDD (User-Direktive 2026-07-30) initially designated PixiJS 8 + Spine 4.2 as the rendering + skeletal animation stack.
-
-**User Decision (2026-07-30):** Spine runtime licensing removed; animation implemented via **procedural puppet-rig + GSAP tweening** within PixiJS scene graph. This eliminates all external animation runtime dependencies and licensing overhead.
-
-ADR-012 (2026-07-30) explicitly excluded PixiJS from the canonical animation stack, citing "motion/react + canvas-confetti sufficient." This ADR supersedes the PixiJS exclusion **scoped to the Flower Battle presenter canvas only**, while preserving the rest of ADR-012's technology governance for UI animations, confetti, and audio.
+**Status:** Accepted  
+**Datum:** 2026-07-30  
+**Owner:** WP-01 / codex, WP-H1  
+**Betroffene Bereiche:** Visuelle Razzoozle-Spielmodi (flower-battle, pyramid-climb, deep-sea-escape), Presenter-Canvas, Assetpipeline  
+**Supersedes:** ADR-012 (teilweise, Presenter-Canvas-Scope; UI-Animations in ADR-012 bleiben gültig)  
+**Ersetzt:** v1 (2026-07-30), Entwürfe mit Spine- oder Rive-Runtime  
+**Git-Historie:** `git log --all -- docs/adr/013-* docs/design/anim-runtime-research-2026-07-30.md`
 
 ---
 
-## Decision
+## Kontext
 
-### 1. Canvas/WebGL Rendering Scope
+Razzoozle benötigt für drei Spielmodi (Blüten-Battle, Pyramiden-Aufstieg, Tiefsee-Flucht) hochwertige 2D-Cartoon-Animationen im Web. Die Spielmodi werden in eine bestehende Anwendung integriert und müssen deren Multiplayer-, Punkte-, Strike-, Zeitbonus-, Badge- und Achievement-Systeme wiederverwenden.
 
-**PixiJS 8 is canonical for the Flower Battle presenter scene only.**
+Anforderungen:
 
-| Component | Technology | Scope | Rationale |
-|-----------|-----------|-------|-----------|
-|-----------|-----------|-------|-----------|
-| **Presenter Garden Scene** | PixiJS 8 | FlowerBattleCanvasHost + layers | 2D animation, 60 FPS, teams up to 4 |
-| **Plant Rigging & Animation** | Procedural Puppet-Rig + motion | Container hierarchy ≈ bones; tweens ≈ keyframes | motion (MIT, installed); fallback: GSAP (Webflow No-Charge) if motion insufficient |
-| **Question/Answer UI** | React + motion/react | ExperienceStageOverlay | Existing web component patterns unchanged |
-| **Navigation & Dialogs** | React + radix-ui | HTML outside canvas | Content-free presenter principle |
-| **Mobile Player Scene** | Optional: PixiJS low-profile OR static fallback | ExperienceDisplay on phones | No impact on answer interaction |
-
-**Architectural Principle:** The canvas is purely presentational. No game logic, scoring, or state mutation occurs in PixiJS. The server remains authoritative; PixiJS interprets semantic game events (e.g., `growth_changed`, `power_up_applied`) and renders animations. See SDD §4.4.
+- keine zweite Game-State- oder Punkteengine
+- serverautoritäre Spielzustände
+- responsive Presenter-Ansicht
+- kleine und modulare Dateien
+- kontrollierbare Assetpipeline
+- niedrige Bundle- und Lizenzkomplexität
+- gute Testbarkeit
+- reduzierte Animationen und Fallback
+- keine Abhängigkeit von kostenpflichtigen Authoring-Tools
+- möglichst reine permissive Software-Lizenzkette
+- Wiederverwendung von Rig-/Animations-Core über mehrere Modi
 
 ---
 
-## 2. Animation Runtime: Procedural Puppet-Rig + motion (Primary)
+## Entscheidung
 
-### Decision: Option (a) — Procedural Puppet-Rig + motion
+Wir verwenden:
 
-**DECIDED (2026-07-30).** User decision: no Spine Runtime. Evaluated 4 alternatives; chose procedural puppet-rig for zero licensing overhead + native PixiJS integration. Rationale & rejected options documented in `docs/design/anim-runtime-research-2026-07-30.md`:
-
-| Option | Status | Reason |
-|--------|--------|--------|
-| **Procedural Puppet (PixiJS native) + GSAP** | ✓ **DECIDED** | Zero licenses; full scene integration; simple plant animations (grow, sway, wilt) don't need skeletal rigging |
-| DragonBones | ⚠️ Not recommended | Editor EOL; Pixi8 compatibility uncertain; migration risk |
-| Rive | ⚠️ Not recommended | Separate canvas rendering; z-ordering friction; scene graph mismatch |
-| Spritesheet flipbooks | ❌ Not recommended | Prohibitive asset payload (~500 MB–1 GB per tier) |
-
-### Procedural Puppet Architecture
-
-**Rig Contract (§6.1 SDD, semantic level):**
-```
-Container: root
-├── Container: ground_anchor
-├── Container: stem_root
-│   ├── Container: stem_mid
-│   │   ├── Container: stem_top
-│   │   │   └── Container: flower_head
-│   │   │       ├── Container: face_root
-│   │   │       │   ├── Sprite: eye_l
-│   │   │       │   ├── Sprite: eye_r
-│   │   │       │   └── Sprite: mouth
-│   │   │       ├── Sprite: petals
-│   │   │       └── Container: fx_head_anchor
-│   │   ├── Sprite: leaf_l
-│   │   └── Sprite: leaf_r
-├── Container: fx_ground_anchor
-└── Container: ui_anchor
+```text
+PixiJS 8
++ das bereits im Projekt vorhandene Paket motion (12.42.2, MIT)
++ hierarchische PixiJS-Container und Sprites als Puppet-Rig
++ Modus-Events als Payloads im bestehenden game:experience-Envelope
 ```
 
-**Animation Controller:**
-- Central `AnimationController` class manages GSAP Timeline instances
-- Each plant skeleton has one Timeline (tracks: 0=body, 1=face, 2=additive effects)
-- Mixing strategy: Crossfade tweens per track (SDD §6.5 mixing profile)
-- No direct `tween.play()` in views; all via controller
+Wir verwenden nicht:
 
-**Tween Registry:**
-```typescript
-export const PLANT_TWEENS = {
-  idle_seed: { duration: 2, loop: true, easing: 'sine.inOut', ... },
-  idle_sprout: { duration: 1.8, loop: true, ... },
-  grow_small: { duration: 0.6, targets: { stem: '+=20px', ... } },
-  grow_medium: { duration: 0.8, targets: { stem: '+=40px', ... } },
-  celebrate_small: { duration: 1.0, targets: { flower_head: 'rotate 10 -10' } },
-  // ... etc per SDD §6.3
-}
+```text
+Spine
+Rive
+GSAP als Standarddependency
+neue Top-Level-Socket-Events
 ```
 
-**Mixing Profile (§6.5 SDD, GSAP-adapted):**
-```typescript
-export const FLOWER_MIXES = {
-  default: 0.18,
-  idleToReaction: 0.08,
-  reactionToIdle: 0.16,
-  stageTransition: 0.24,
-  statusEnter: 0.12,
-  statusExit: 0.18,
-} as const
+Motion ist die Primary-Animation-Library. GSAP bleibt nur eine dokumentierte Fallback-Option für einen später nachgewiesenen Funktionsbedarf, der mit Motion nicht vertretbar abgebildet werden kann.
+
+---
+
+## Begründung
+
+### PixiJS
+
+PixiJS stellt den Scene Graph, Container, Sprites, Transformationen, Assets, Particles sowie WebGL-/WebGPU-Rendering bereit. Container vererben Position, Rotation, Skalierung und Alpha an ihre Kinder; der Pivot definiert Gelenkpunkte. Dies reicht für Cutout-/Puppet-Animationen der vorgesehenen Figuren.
+
+Lizenz: MIT.
+
+### Motion
+
+Motion ist bereits im Projekt vorhanden (12.42.2), steht unter MIT und kann neben DOM-/SVG-Elementen auch JavaScript-Objekte und einzelne Werte animieren. PixiJS-Objekte und deren `position`, `scale`, `rotation` und eigene Rig-Werte können daher ohne neue Animationsdependency getweent werden.
+
+Konsequenz:
+
+- null neue Animationsdependencies
+- einheitliche Tween- und Sequenz-API
+- testbare TypeScript-Sequenzen
+- kontrolliertes Stoppen und Cleanup
+- reine MIT-Softwarekette für PixiJS und Motion
+
+### Puppet-Rig
+
+Ein Puppet-Rig wird aus verschachtelten PixiJS-Containern aufgebaut. Arme, Beine, Kopf, Gesicht und weitere Teile sind einzelne Sprites. Gelenkpunkte werden über `pivot` und Rig-Metadaten definiert.
+
+Vorteile:
+
+- kein proprietäres Dateiformat
+- keine Editor-/Runtime-Kopplung
+- Assets können mit normalen Grafikwerkzeugen erstellt werden
+- Sequenzen liegen im Quellcode und sind code-reviewbar
+- einfache Reduced-Motion-Varianten
+- einfacher Sprite-Fallback
+- gute Integration mit serverautoritativen Events
+
+### Modus-Integration: game:experience-Envelope
+
+Alle Modus-Events (growth_changed, power_up_applied etc.) fließen als strukturierte Payloads im bestehenden `game:experience`-Socket-Envelope (Revision/Reconnect-Resend/ts-rs/display-room). Keine neuen Top-Level-Events. Dies sichert Konsistenz, Resync-Semantik und Testbarkeit.
+
+### Shared-Core: Extraction ab zwei Nutzern
+
+Das gemeinsame Puppet/Motion-Core entsteht **IN** flower-battle, wird dort getestet und iteriert. Extraktion nach `packages/web/src/experiences/shared/` erfolgt erst beim **ZWEITEN realen Nutzer** (pyramid-climb). Dabei:
+
+- Gemeinsame Puppet-/Rig-Klassen extrahieren
+- Motion-Adapter mit Modus-Hooks (custom Tween-Factories pro Modus)
+- Rig-Definitionsformat vereinbaren
+- Assetpipeline-Templates für neue Modi
+
+Ziel: Vermeidung von vorweggenommener Abstraktion; Architektur lernt aus echtem Gebrauch.
+
+---
+
+## Verifizierte Alternativen
+
+### Spine
+
+Nicht gewählt.
+
+Gründe:
+
+- zusätzliche Runtime
+- zusätzliche Editor-/Exportpipeline
+- versionsgebundene Runtime-/Exportkompatibilität
+- zusätzliche Lizenzprüfung
+- für die vorgesehenen Cutout-Rigs nicht zwingend erforderlich
+
+### Rive
+
+Nicht gewählt.
+
+Der kostenlose Editor erlaubt das Erstellen und Lernen; das Exportieren von `.riv`-Dateien für Runtime-Nutzung ist auf bezahlte Pläne beschränkt. Dadurch entsteht kein geeigneter freier Produktionsworkflow für das Projekt.
+
+### GSAP
+
+Nicht als Standard gewählt.
+
+GSAP ist seit dem 30.04.2025 vollständig kostenlos nutzbar. Es gilt jedoch die Webflow/GSAP Standard License und nicht MIT. Motion deckt den primären Bedarf bereits ab und befindet sich im Projekt.
+
+GSAP darf später nur eingesetzt werden, wenn:
+
+1. ein konkretes Motion-Defizit reproduzierbar dokumentiert ist
+2. die Architekturprüfung zustimmt
+3. die Lizenzprüfung die Nutzung freigibt
+4. die neue Dependency und Bundlewirkung akzeptiert werden
+5. ein isolierter Adapter die Austauschbarkeit sicherstellt
+
+### AnimatedSprite-only
+
+Nicht als einziges Animationsmodell gewählt.
+
+Spritesheets eignen sich für Effekte und Fallback, erzeugen bei vielen Figurenvarianten jedoch viele Frames und erschweren dynamische Gesichts-, Farb- und Teilvarianten. Sie bleiben Bestandteil des Systems, aber nicht primäres Actor-Rig.
+
+---
+
+## Technisches Muster
+
+```text
+PuppetActor
+├── root: Container
+├── bodyJoint: Container
+├── headJoint: Container
+├── armLeftJoint: Container
+├── armRightJoint: Container
+├── legLeftJoint: Container
+├── legRightJoint: Container
+├── faceController
+├── poseMixer
+└── animationController
 ```
 
-Interpreted as GSAP tween duration for crossfade (timeline blend).
+Motion animiert:
 
-### GSAP Dependency
+- `Container.position`
+- `Container.scale`
+- `Container.rotation`
+- `Container.alpha`
+- Sprite-Tint beziehungsweise definierte Farbwerte
+- eigene numerische Poseparameter
 
-**Library:** gsap (^3.12.0, Webflow No-Charge License)
+Nicht animiert werden:
 
-**Features Used:**
-- Timeline (multi-track animation sequencing)
-- Tween (position, rotation, scale, color)
-- Easing (standard + custom)
-- onComplete callbacks (for audio sync)
-
-**Features NOT Used** (free tier sufficient):
-- DrawSVG, MorphSVGPlugin (paid tier — not needed)
-- ScrollTrigger, Draggable (not applicable to game scene)
-
-**License:** Webflow "No-Charge Standard License" (free, but proprietary; not MIT)
-**Restriction:** Cannot build competing animation builders (does not impact Flower Battle)
-**Status:** FALLBACK ONLY — use only if motion' Timeline mixing insufficient for 21 animations + FLOWER_MIXES crossfades
-
-**Size:** ~30 KB gzipped (overhead if used; prefer motion for MVP)
+- fachliche Punkte
+- serverautoritäre Fortschrittswerte
+- Gewinnerentscheidungen
+- Antwortresultate
+- Teamaggregation
 
 ---
 
-### 3. Technology Restrictions & Fallbacks
+## Assetentscheidung
 
-#### Allowed Technologies
-- PixiJS 8 for rendering (presentation only)
-- motion (MIT) for tween-based animation (primary)
-- GSAP (Webflow No-Charge) as fallback if motion insufficient
-- Container hierarchy for semantic rig
-- AnimatedSprite for texture cycles (faces, petals)
-- Existing motion/react for HTML overlay animations (unchanged)
-- Existing canvas-confetti for celebration effects (unchanged)
-- Existing use-sound + Web Audio API for audio (unchanged)
+Zentrale Figuren und Hauptkulissen werden als eigene Razzoozle-Assets produziert.
 
-#### Explicitly Excluded (unchanged from ADR-012)
-- ❌ **Spine Runtime** (User decision: Spine-free)
-- ❌ **Phaser** (redundant physics + render loop)
-- ❌ **Three.js** (3D rendering out of scope)
-- ❌ **Rive** (separate canvas rendering, scene graph mismatch)
-- ❌ **DragonBones** (editor EOL, Pixi8 compatibility unclear)
-- ❌ **Custom IK/constraint solver** (unless simple procedural bone bends, see WP-04)
+CC0-Assets dürfen für Ambient-Elemente, Partikel, Lichtmasken, Blockouts und ausgewählte Produktionsobjekte verwendet werden. Primäre Quelle ist Kenney, da die Assetseiten CC0 ausweisen und Attribution nicht verlangen.
 
-#### Graceful Degradation
-- **Canvas Load Failure:** Static sprite fallback (prerendered growth stages)
-- **Animation Compute Error:** Fallback to idle-only (no reactions)
-- **GPU Exhaustion:** Automatic quality downgrade (§10.3 of SDD)
-- **prefers-reduced-motion:** Disable all tweens; show static stage
+Verbindlich:
+
+- jede konkrete Assetseite prüfen
+- Assets lokal übernehmen, nicht remote hotlinken
+- nur benötigte Dateien in Runtime-Bundles
+- `SOURCES.md` mit Quelle, Lizenz, Änderungen und Importdatum
+- zentrale Figuren nicht aus stilistisch unpassenden Assetpacks zusammensetzen
+- fremde Markenassets nicht übernehmen
 
 ---
 
-### 4. Architectural Boundaries (Experience Kit Surfaces)
+## Beispielcode und Referenzprojekte
 
-**Boundary Principle:** PixiJS canvas is scoped to the Flower Battle **presenter scene** only. Other Experience Kit surfaces (game client, manager, console) remain unchanged.
+PixiJS Open Games darf als MIT-Code-Referenz für Screen-Lifecycle, Asset-Bundles, Settings, UI-Struktur und Effekte genutzt werden.
 
-```
-Presenter Display (Beamer/Kiosk)
-├── Canvas Host (NEW: PixiJS 8 + procedural puppet + GSAP)
-│   ├── GardenScene (PixiJS Container hierarchy)
-│   ├── TeamFlowers (procedural skeletons)
-│   ├── Effects Layer (Particles + geometry)
-│   └── Viewport Camera
-├── HTML Overlay (React, unchanged)
-│   ├── Status badges
-│   ├── Team names & scores
-│   └── Reconnect indicator
-└── Audio Adapter (use-sound, unchanged)
+Einschränkung:
 
-Mobile Client / Game Instance (unchanged)
-├── React components
-├── motion/react animations
-├── canvas-confetti
-└── No PixiJS canvas
-
-Manager Console (unchanged)
-├── React components
-├── motion/react animations
-└── No PixiJS canvas
-```
-
-**Contract:** The presenter scene canvas and HTML layer are hermetic. No HTML component may import from the PixiJS rendering layer, and vice versa. Communication flows through semantic game events (socket.io `game:experience` envelope).
+- Figma-Dateien sind nur zur Ansicht
+- enthaltene Grafiken und Designassets werden nicht übernommen
+- Spine- und GSAP-spezifische Teile werden nicht kopiert
+- Code wird nur gezielt und angepasst integriert
 
 ---
 
-### 5. No Animation Commands from Backend
+## Konsequenzen
 
-The backend **must never** send animation names or duration hints. It sends only semantic events:
+### Positiv
 
-```json
-{
-  "type": "growth_changed",
-  "delta": 42,
-  "reason": "correct_answer_time_bonus"
-}
-```
+- keine neue Animationsdependency
+- MIT-lizenzierte Softwarekette
+- keine kostenpflichtige Exportpipeline
+- klare Ownership im TypeScript-Code
+- guter Fallback
+- einfache Tests
+- Wiederverwendung über mehrere Modi (gelernt aus flower-battle)
+- Assetparts können dynamisch eingefärbt und ausgetauscht werden
+- Envelope-Sicherheit: Game-Events bleiben in autoritative Verantwortung
 
-The presenter client interprets this locally:
-- Reads current/target growth stages
-- Selects animation tier (small/medium/large based on delta)
-- Plays tween via `AnimationController`
-- Triggers audio if applicable
+### Negativ
 
-This decouples the backend from asset names, animation tooling, and rendering technology.
+- kein visueller Skeletteditor
+- Rig-Pivots und Animationen müssen im eigenen Workflow gepflegt werden
+- komplexe Mesh-Deformation ist nicht vorgesehen
+- hochwertige Animation benötigt klare Posebibliothek und Art-Disziplin
+- Rigging-Tools müssen gegebenenfalls als kleines internes Devtool ergänzt werden
 
----
+### Risiken
 
-### 6. Asset Governance
-
-**Art Assets:**
-- **Plant concept & mockups:** Figma (design-only)
-- **Plant rig/skeleton:** Procedurally defined in code (Container hierarchy) OR exported from Figma as placement hints
-- **Plant textures:** Exported PNG/WebP from Figma or illustration tool (no special editor required)
-- **Animations:** Hand-authored GSAP tweens in `PLANT_TWEENS` registry OR generated from Figma prototypes (via frame export → parameter extraction)
-- **Audio:** Existing audio pipeline (use-sound, SOUND_SLOTS enum)
-
-**No Copying:**
-- No Spine Editor assets (user decision: Spine-free)
-- No Mergic Pets or Adventure Time designs (§17 SDD)
-- Figma design is inspiration only; actual assets are original
-
-**License File:**
-- `THIRD_PARTY_NOTICES.md` includes GSAP MIT + PixiJS MIT
-- No Spine license file needed (Spine-free decision)
+| Risiko | Massnahme |
+|---|---|
+| zu viele manuell gepflegte Posewerte | zentrale Pose-Library und Rig-Validator |
+| Motion-Controls werden nicht gestoppt | Cleanup Registry und AbortSignal |
+| verschiedene Modi bauen eigene Rigsysteme | gemeinsames Modul erst nach zwei realen Nutzern extrahieren |
+| CC0-Assets wirken stilistisch inkonsistent | Art-Pass und Palette-/Konturregeln |
+| komplexe Figur braucht Deformation | Figur vereinfachen oder Spritesheet nur für diese Sequenz |
+| Motion reicht für Spezialfall nicht | GSAP-Fallbackprozess gemäss ADR |
 
 ---
 
-### 7. Testing & Quality Gates
+## Implementierungsvorgaben
 
-**Before PixiJS/procedural WPs are approved:**
-1. ✓ ADR reviewed and architecture board sign-off
-2. ✓ Procedural rig contract validated (container hierarchy matches §6.1 SDD)
-3. ✓ Animation tween registry complete (all §6.3 animations present)
-4. ✓ GSAP license verified (MIT, no commercial tier required)
-5. ✓ Contract tests pass: backend events → presenter state (no logic mutation)
-6. ✓ Render tests: all team colors + growth stages + animations
-7. ✓ Accessibility tests: reduced-motion, fallback accessibility
-8. ✓ Performance targets met: 60 FPS on Presenter, 30+ FPS on fallback tier
-
-**License gate is NOW RESOLVED** (Spine-free per user decision). All downstream WP approval proceeds without licensing blocker.
-
----
-
-## Rationale
-
-### Why Procedural Puppet + GSAP (not Spine / DragonBones / Rive)?
-- **License Clarity:** Zero external runtime fees; GSAP MIT is unrestricted
-- **Scene Integration:** Direct PixiJS Container hierarchy; no adapter friction
-- **Simplicity:** Plant animations (grow, sway, wilt) are relatively simple; don't need skeletal IK
-- **Artist Workflow:** Tweens can be authored incrementally; Figma → code pipeline straightforward
-- **Community:** GSAP is industry-standard for web animations; plenty of examples
-
-### Why Not Spine?
-- User decision (2026-07-30): Licensing overhead (Spine Editor license required); procedural path acceptable
-- Alternative achieves same visual fidelity with less dependency complexity
-
-### Why Partial Supersession of ADR-012?
-ADR-012's PixiJS exclusion was based on "motion/react + confetti sufficient" for **UI animations**. That remains true. Flower Battle's **presenter scene** is a dedicated canvas for plant animation, not a UI component. The exclusion is lifted **only** for this scope, preserving ADR-012 for all other surfaces.
-
-### Why Not Rewrite the Entire UI in PixiJS?
-- **Anti-Pattern §17 SDD:** No full frontend rewrite in PixiJS
-- **Maintenance burden:** Dual rendering stacks (React/PixiJS) complicate lifecycle
-- **Existing patterns:** Question display, answer reveal, team badges remain in React
-- **Mobile compatibility:** Phone clients render minimal canvas or static fallback
+1. Motion-Version (12.42.2) aus Lockfile dokumentieren.
+2. Keine Installation einer weiteren Tween-Bibliothek vor Architekturprüfung.
+3. `MotionPixiAdapter` erstellen.
+4. Animationen mit `AbortSignal` abbrechbar machen.
+5. Puppet-Rig aus PixiJS-Containern aufbauen.
+6. Rigdefinition in versioniertem JSON oder TypeScript halten.
+7. Posen und Sequenzen typisieren.
+8. Fallback über Spritesheets oder statische Sprites.
+9. `prefers-reduced-motion` berücksichtigen.
+10. Assetquellen und Lizenzen dokumentieren.
+11. Mount/Unmount- und Speicherlecks testen.
+12. Fachliche Events und visuelle Sequenzen strikt trennen.
+13. Events nur im `game:experience`-Envelope, nie als Top-Level-Emissions.
 
 ---
 
-## Consequences
+## Abnahmekriterien
 
-### Positive
-1. **Licensing:** No external animation runtime fees; GSAP MIT unrestricted
-2. **Scene Integration:** Procedural puppet rigs live directly in PixiJS scene graph
-3. **Performance:** GSAP tweens are lightweight; no Spine event overhead
-4. **Flexibility:** Animation authoring in code; easy to iterate and customize
-5. **Maintenance:** One less external editor + asset pipeline dependency
-
-### Negative
-1. **Artist Tooling:** No visual skeleton editor (Spine-like); tweens authored procedurally or hand-coded
-2. **Animation Complexity:** Complex IK/constraints require custom code (unlikely needed for plants)
-3. **Asset Validation:** Tween registry must be manually maintained (gate: WP-04 validator)
-4. **Testing Overhead:** Render tests require visual regression baselines
-5. **Performance Budget:** Must monitor 60 FPS target and degrade gracefully
-
----
-
-## Compliance & Gating
-
-### WP-01 (Architektur-Gate) — ✓ NOW COMPLETE
-- ✓ Frontend-Stack inventory (pnpm, Vite, React 19, motion, vitest, Playwright)
-- ✓ PixiJS version pin + GSAP compatibility confirmed
-- ✓ ADR-013 approved (procedural puppet + GSAP decision)
-- ✓ **License gate RESOLVED** (Spine-free per user decision)
-- ✓ WP-02/03 architectural notes prepared
-
-### WP-02 (Canvas Host Lifecycle)
-- ✓ PixiJS application init/destroy
-- ✓ ResizeObserver, Page Visibility API
-- ✓ Error boundary + static fallback
-
-### WP-04 (Puppet Rig PoC)
-- ✓ Semantic rig contract: Container hierarchy per SDD §6.1 (root → stem_root → stem_mid → stem_top → flower_head + leaves, face, effects anchors)
-- ✓ GSAP AnimationController: Central Timeline manager with track semantics (0=body, 1=face, 2=effects) per SDD §6.5 FLOWER_MIXES mixing profile
-- ✓ Tween Registry: All mandatory animations from SDD §6.3 (idle_seed/sprout/young/budding/blooming/full_bloom, grow_small/medium/stage_up, celebrate_small/big, hit_light/heavy, wilt_enter/idle/exit, shield_enter/idle/break, win/lose)
-- ✓ Dummy plant visual: Procedural Container tree + basic Sprite faces; MeshRope for bendy stem (optional)
-- ✓ Asset Validator: Registry gate ensuring all PLANT_TWEENS exist + correct track assignments (replaces WP-04 Spine validation)
-
-All downstream WPs proceed without license blocker.
-
-All downstream WPs proceed without license blocker.
+- PixiJS und Motion sind die einzigen Runtime-Bausteine für das Puppet-System.
+- Keine Spine- oder Rive-Abhängigkeit im Runtime-Bundle.
+- Kein GSAP im Standardbundle (nur bei nachgewiesener Notwendigkeit nach Architekturprüfung).
+- Ein Puppet mit mindestens fünf beweglichen Teilen funktioniert.
+- Idle, Anticipation, Hauptbewegung, Treffer und Celebration sind implementiert.
+- Animationen sind abbrechbar.
+- Reduced Motion funktioniert.
+- Reconnect kann Actorposition und Pose auf Snapshot korrigieren.
+- Alle Modus-Events fließen durch `game:experience`-Envelope.
+- Assetquellenliste ist vorhanden.
+- Lizenz- und Research-Dokumentation ist eingecheckt.
+- Tests für Adapter, Posemixer, Queue und Cleanup sind grün.
+- Shared-Core-Extraction-Entscheidung im Backlog verankert (nach flower-battle + pyramid-climb Live-Test).
 
 ---
 
-## Related Documents
+## Quellen
 
-- **SDD:** `docs/design/flower-battle-pixi-spine-sdd.md` (User-Direktive 2026-07-30; addendum block marks §2.1 + §6 superseded by this ADR)
-- **Animation Research:** `docs/design/anim-runtime-research-2026-07-30.md` (detailed findings: DragonBones editor EOL, Rive canvas/z-order mismatch, Flipbooks ~500MB–1GB payload)
-- **Frontend Stack:** `docs/design/frontend-stack-inventory-wp01.md`
-- **License Gate:** RESOLVED (Spine-free simplifies licensing; see updated THIRD_PARTY_NOTICES.md)
-- **WP-02/03 Prep:** `docs/design/wp-02-03-canvas-host-prep.md`
-- **ADR-012:** `docs/adr/012-experience-kit-boundaries.md` (unchanged for non-presenter surfaces)
-- **Experience Kit Boundaries:** `packages/web/src/experiences/shared/` (layer architecture, stage contracts)
-
----
-
-## Approval Checklist
-
-- [ ] Architecture Board: Reviewed
-- [ ] Performance Lead: FPS targets + degradation strategy approved
-- [ ] Test Lead: Visual regression + contract test coverage planned
-- [ ] Artist Lead: Procedural puppet + GSAP workflow acceptable
-- [ ] Security Lead: Canvas XSS + CORS no new risks
-
+- Motion: https://motion.dev/
+- Motion Quick Start: https://motion.dev/docs/quick-start
+- Motion `animate()`: https://motion.dev/docs/animate
+- Motion `propEffect()`: https://motion.dev/docs/prop-effect
+- Motion MIT License: https://github.com/motiondivision/motion/blob/main/LICENSE.md
+- Motion version 12.42.2: pnpm-lock.yaml
+- PixiJS Scene Objects: https://pixijs.com/8.x/guides/components/scene-objects
+- PixiJS Assets: https://pixijs.com/8.x/guides/components/assets
+- PixiJS MIT License: https://github.com/pixijs/pixijs/blob/dev/LICENSE
+- GSAP Free Announcement: https://webflow.com/updates/gsap-becomes-free
+- GSAP Standard License: https://gsap.com/community/standard-license/
+- Rive Pricing: https://rive.app/pricing
+- Rive Runtime Export: https://rive.app/docs/editor/exporting/exporting-for-runtime
+- PixiJS Open Games: https://github.com/pixijs/open-games
+- Kenney License FAQ: https://kenney.nl/support

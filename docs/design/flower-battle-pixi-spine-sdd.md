@@ -7,7 +7,7 @@
 
 **Zielsystem:** Razzoozle Web-Client, Presenter und bestehendes Multiplayer-Backend
 **Rendering:** PixiJS 8
-**Skelettanimation:** Procedurales Puppet-Rig + GSAP (MIT-lizenziert)
+**Skelettanimation:** Procedurales Puppet-Rig + motion (MIT, vorhanden); GSAP nur Fallback (Webflow-No-Charge)
 **Visuelle Richtung:** hochwertiges, freundliches 2D-Cartoon-Spiel mit Tiefe, weichen Formen und lebendigen Figuren; inspiriert von modernen Casual-Webgames wie *Mergic Pets* und *Adventure Time Elemental*, jedoch ohne Übernahme geschützter Figuren, Assets, Layouts oder Markenmerkmale.
 
 ---
@@ -39,7 +39,7 @@ Die grosse Presenter-Szene wird mit PixiJS und Spine dargestellt. Fragen, Antwor
 |---|---|
 | 2D-Rendering | PixiJS 8 |
 | Skelettanimation | `@esotericsoftware/spine-pixi-v8` |
-| Animationssequenzen ausserhalb Spine | bestehende Tween-Lösung oder GSAP nach Lizenzprüfung |
+| Animationssequenzen ausserhalb Spine | motion (MIT, 12.42.2, bereits vorhanden); GSAP nur Fallback (Webflow No-Charge) |
 | Partikel | PixiJS `ParticleContainer` beziehungsweise projektinterner Effekt-Wrapper |
 | Assetverwaltung | PixiJS Assets, Manifeste und Bundles; optional PixiJS AssetPack |
 | Netzwerk | bestehender Razzoozle-WebSocket-Layer |
