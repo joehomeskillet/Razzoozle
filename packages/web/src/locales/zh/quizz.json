@@ -216,5 +216,35 @@
     "numeric": "数值",
     "text": "文本输入",
     "arrangement": "排序"
+  },
+  "typechange": {
+    "confirmTitle": "更改问题类型?",
+    "confirmButton": "确认更改",
+    "genericWarning": "此更改将丢失某些已输入的内容。",
+    "fieldLossWarning": "以下字段将被删除: {{fields}}",
+    "fieldLabels": {
+      "answers": "答案",
+      "solutions": "解答",
+      "bonus": "加分题",
+      "acceptedAnswers": "接受的答案",
+      "matchMode": "匹配模式",
+      "chunks": "句子片段",
+      "items": "项目",
+      "correctOrder": "正确顺序",
+      "segments": "文本片段",
+      "slots": "空白处",
+      "leftItems": "匹配项",
+      "hotspots": "热点区域",
+      "min": "最小值",
+      "max": "最大值",
+      "correct": "正确",
+      "step": "步长",
+      "unit": "单位",
+      "sentence": "句子",
+      "tokens": "单词",
+      "posSet": "词性",
+      "tolerance": "容差",
+      "decimals": "小数位数"
+    }
   }
 }

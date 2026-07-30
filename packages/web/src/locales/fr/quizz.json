@@ -216,5 +216,35 @@
     "numeric": "Numérique",
     "text": "Saisie Texte",
     "arrangement": "Arrangement"
+  },
+  "typechange": {
+    "confirmTitle": "Changer le type de question ?",
+    "confirmButton": "Confirmer le changement",
+    "genericWarning": "Certains contenus saisis seront perdus avec ce changement.",
+    "fieldLossWarning": "Les champs suivants seront supprimés : {{fields}}",
+    "fieldLabels": {
+      "answers": "Réponses",
+      "solutions": "Solutions",
+      "bonus": "Bonus",
+      "acceptedAnswers": "Réponses Acceptées",
+      "matchMode": "Mode de Correspondance",
+      "chunks": "Fragments de Phrase",
+      "items": "Éléments",
+      "correctOrder": "Ordre Correct",
+      "segments": "Segments de Texte",
+      "slots": "Espaces à Remplir",
+      "leftItems": "Éléments à Associer",
+      "hotspots": "Zones",
+      "min": "Min",
+      "max": "Max",
+      "correct": "Correct",
+      "step": "Étape",
+      "unit": "Unité",
+      "sentence": "Phrase",
+      "tokens": "Mots",
+      "posSet": "Parties du Discours",
+      "tolerance": "Tolérance",
+      "decimals": "Décimales"
+    }
   }
 }

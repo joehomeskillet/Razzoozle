@@ -216,5 +216,35 @@
     "numeric": "Numeric",
     "text": "Text Input",
     "arrangement": "Arrangement"
+  },
+  "typechange": {
+    "confirmTitle": "Change question type?",
+    "confirmButton": "Confirm change",
+    "genericWarning": "Some entered content will be lost with this change.",
+    "fieldLossWarning": "The following fields will be deleted: {{fields}}",
+    "fieldLabels": {
+      "answers": "Answers",
+      "solutions": "Solutions",
+      "bonus": "Bonus",
+      "acceptedAnswers": "Accepted Answers",
+      "matchMode": "Match Mode",
+      "chunks": "Sentence Chunks",
+      "items": "Items",
+      "correctOrder": "Correct Order",
+      "segments": "Text Segments",
+      "slots": "Blanks",
+      "leftItems": "Items to Match",
+      "hotspots": "Zones",
+      "min": "Min",
+      "max": "Max",
+      "correct": "Correct",
+      "step": "Step",
+      "unit": "Unit",
+      "sentence": "Sentence",
+      "tokens": "Words",
+      "posSet": "Parts of Speech",
+      "tolerance": "Tolerance",
+      "decimals": "Decimal Places"
+    }
   }
 }

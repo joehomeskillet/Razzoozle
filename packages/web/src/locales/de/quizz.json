@@ -216,5 +216,35 @@
     "numeric": "Numerisch",
     "text": "Texteingabe",
     "arrangement": "Anordnung"
+  },
+  "typechange": {
+    "confirmTitle": "Fragetyp wechseln?",
+    "confirmButton": "Wechsel bestätigen",
+    "genericWarning": "Einige eingegebene Inhalte gehen bei diesem Wechsel verloren.",
+    "fieldLossWarning": "Folgende Felder werden gelöscht: {{fields}}",
+    "fieldLabels": {
+      "answers": "Antworten",
+      "solutions": "Lösungen",
+      "bonus": "Bonus",
+      "acceptedAnswers": "Akzeptierte Antworten",
+      "matchMode": "Vergleichsmodus",
+      "chunks": "Satzbausteine",
+      "items": "Elemente",
+      "correctOrder": "Richtige Reihenfolge",
+      "segments": "Textabschnitte",
+      "slots": "Lücken",
+      "leftItems": "Zuordnungselemente",
+      "hotspots": "Zonen",
+      "min": "Min",
+      "max": "Max",
+      "correct": "Richtig",
+      "step": "Schritt",
+      "unit": "Einheit",
+      "sentence": "Satz",
+      "tokens": "Wörter",
+      "posSet": "Wortarten",
+      "tolerance": "Toleranz",
+      "decimals": "Dezimalstellen"
+    }
   }
 }

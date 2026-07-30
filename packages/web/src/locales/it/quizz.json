@@ -216,5 +216,35 @@
     "numeric": "Numerico",
     "text": "Immissione Testo",
     "arrangement": "Disposizione"
+  },
+  "typechange": {
+    "confirmTitle": "Cambiare il tipo di domanda?",
+    "confirmButton": "Conferma modifica",
+    "genericWarning": "Alcuni contenuti inseriti andranno persi con questo cambio.",
+    "fieldLossWarning": "I seguenti campi verranno eliminati: {{fields}}",
+    "fieldLabels": {
+      "answers": "Risposte",
+      "solutions": "Soluzioni",
+      "bonus": "Bonus",
+      "acceptedAnswers": "Risposte Accettate",
+      "matchMode": "Modalità di Abbinamento",
+      "chunks": "Frammenti di Frase",
+      "items": "Elementi",
+      "correctOrder": "Ordine Corretto",
+      "segments": "Segmenti di Testo",
+      "slots": "Spazi Vuoti",
+      "leftItems": "Elementi da Abbinare",
+      "hotspots": "Zone",
+      "min": "Min",
+      "max": "Max",
+      "correct": "Corretto",
+      "step": "Passo",
+      "unit": "Unità",
+      "sentence": "Frase",
+      "tokens": "Parole",
+      "posSet": "Parti del Discorso",
+      "tolerance": "Tolleranza",
+      "decimals": "Decimali"
+    }
   }
 }
