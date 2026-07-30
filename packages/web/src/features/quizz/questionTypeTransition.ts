@@ -77,7 +77,9 @@ export function buildTypePatch(
         : [0],
       ...SLIDER_CLEAR,
     }
-  } else if (next === "slider") {
+  }
+
+  if (next === "slider") {
     return {
       type: "slider",
       min: current.min ?? 0,
@@ -87,7 +89,9 @@ export function buildTypePatch(
       unit: current.unit ?? "",
       ...CHOICE_CLEAR,
     }
-  } else if (next === "poll") {
+  }
+
+  if (next === "poll") {
     return {
       type: "poll",
       answers: current.answers?.length ? current.answers : ["", ""],
@@ -95,7 +99,9 @@ export function buildTypePatch(
       bonus: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "multiple-select") {
+  }
+
+  if (next === "multiple-select") {
     return {
       type: "multiple-select",
       answers:
@@ -108,7 +114,9 @@ export function buildTypePatch(
           : [0, 1],
       ...SLIDER_CLEAR,
     }
-  } else if (next === "type-answer") {
+  }
+
+  if (next === "type-answer") {
     return {
       type: "type-answer",
       answers: undefined,
@@ -117,7 +125,9 @@ export function buildTypePatch(
       matchMode: (current.matchMode ?? "normalized") as "exact" | "normalized" | "fuzzy",
       ...SLIDER_CLEAR,
     }
-  } else if (next === "sentence-builder") {
+  }
+
+  if (next === "sentence-builder") {
     return {
       type: "sentence-builder",
       chunks: ["", ""],
@@ -127,7 +137,9 @@ export function buildTypePatch(
       matchMode: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "sequencing") {
+  }
+
+  if (next === "sequencing") {
     return {
       type: "sequencing",
       items: [],
@@ -139,7 +151,9 @@ export function buildTypePatch(
       chunks: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "mathematik") {
+  }
+
+  if (next === "mathematik") {
     // ORPHANED-FIELD: mathematik uses individual field clears instead of SLIDER_CLEAR.
     // This is preserved exactly as-is from the original; see dedicated WP for consistency.
     return {
@@ -157,7 +171,9 @@ export function buildTypePatch(
       step: undefined,
       unit: undefined,
     }
-  } else if (next === "wortarten") {
+  }
+
+  if (next === "wortarten") {
     // ORPHANED-FIELD: wortarten also uses individual field clears instead of SLIDER_CLEAR.
     // posSet is seeded with the full POS set; fields are preserved exactly as-is.
     return {
@@ -185,7 +201,9 @@ export function buildTypePatch(
       step: undefined,
       unit: undefined,
     }
-  } else if (next === "fill-blank") {
+  }
+
+  if (next === "fill-blank") {
     return {
       type: "fill-blank",
       segments: ["", ""],
@@ -200,7 +218,9 @@ export function buildTypePatch(
       leftItems: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "matching") {
+  }
+
+  if (next === "matching") {
     return {
       type: "matching",
       leftItems: [{ label: "", options: ["", ""], correctIndex: 0 }],
@@ -215,7 +235,9 @@ export function buildTypePatch(
       slots: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "drop-pin") {
+  }
+
+  if (next === "drop-pin") {
     return {
       type: "drop-pin",
       hotspots: [{ x: 0.25, y: 0.25, w: 0.25, h: 0.25 }],
@@ -231,7 +253,9 @@ export function buildTypePatch(
       leftItems: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "word-cloud") {
+  }
+
+  if (next === "word-cloud") {
     // Word cloud: unscored collection format, same shape as poll — teacher
     // seeds a few words, no correct solution (see UNSCORED_QUESTION_TYPES).
     return {
@@ -250,7 +274,9 @@ export function buildTypePatch(
       hotspots: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "brainstorm") {
+  }
+
+  if (next === "brainstorm") {
     // Brainstorm: unscored collection format, same shape as poll — teacher
     // seeds a few ideas, players can add their own during play.
     return {
@@ -269,7 +295,9 @@ export function buildTypePatch(
       hotspots: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "confidence") {
+  }
+
+  if (next === "confidence") {
     // Confidence rating: three fixed levels hardcoded in
     // ConfidenceSelector — no extra fields, just the question text.
     return {
@@ -288,7 +316,9 @@ export function buildTypePatch(
       hotspots: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "micro-lesson") {
+  }
+
+  if (next === "micro-lesson") {
     // Micro-lesson: today's player view renders a single slide — title
     // from the question text, content from `answers` joined with
     // newlines. Reuse the generic answers editor as the (short,
@@ -309,7 +339,9 @@ export function buildTypePatch(
       hotspots: undefined,
       ...SLIDER_CLEAR,
     }
-  } else if (next === "vokabelliste") {
+  }
+
+  if (next === "vokabelliste") {
     return {
       type: "vokabelliste" as QuestionType,
       question: "",
@@ -324,14 +356,14 @@ export function buildTypePatch(
       step: undefined,
       unit: undefined,
     }
-  } else {
-    // Default fallback: treat as "choice"
-    return {
-      type: "choice",
-      answers: current.answers?.length ? current.answers : ["", ""],
-      solutions: current.solutions?.length ? current.solutions : [0],
-      ...SLIDER_CLEAR,
-    }
+  }
+
+  // Default fallback: treat as "choice"
+  return {
+    type: "choice",
+    answers: current.answers?.length ? current.answers : ["", ""],
+    solutions: current.solutions?.length ? current.solutions : [0],
+    ...SLIDER_CLEAR,
   }
 }
 
