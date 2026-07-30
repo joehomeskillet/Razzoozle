@@ -208,5 +208,12 @@
     "addZone": "Añadir zona",
     "removeZone": "Quitar zona",
     "minZonesRequired": "Se requiere al menos una zona"
+  },
+  "typeCategory": {
+    "basic": "Selección",
+    "survey": "Encuesta y Retroalimentación",
+    "numeric": "Numérico",
+    "text": "Entrada de Texto",
+    "arrangement": "Disposición"
   }
 }

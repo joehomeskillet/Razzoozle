@@ -208,5 +208,12 @@
     "addZone": "Ajouter une zone",
     "removeZone": "Supprimer la zone",
     "minZonesRequired": "Au moins une zone requise"
+  },
+  "typeCategory": {
+    "basic": "Choix",
+    "survey": "Sondage et Retour",
+    "numeric": "Numérique",
+    "text": "Saisie Texte",
+    "arrangement": "Arrangement"
   }
 }

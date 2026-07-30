@@ -208,5 +208,12 @@
     "addZone": "Zone hinzufügen",
     "removeZone": "Zone entfernen",
     "minZonesRequired": "Mindestens eine Zone erforderlich"
+  },
+  "typeCategory": {
+    "basic": "Auswahl",
+    "survey": "Umfrage & Feedback",
+    "numeric": "Numerisch",
+    "text": "Texteingabe",
+    "arrangement": "Anordnung"
   }
 }
