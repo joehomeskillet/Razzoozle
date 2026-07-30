@@ -1,7 +1,11 @@
 import "@fontsource-variable/rubik/wght.css"
 import Toaster from "@razzoozle/web/components/Toaster"
 import { socketClient } from "@razzoozle/web/features/game/contexts/socket-context"
-import { initSwAutoReload } from "@razzoozle/web/features/game/utils/swAutoReload"
+import {
+  handleSwUpdateActivated,
+  initSwAutoReload,
+} from "@razzoozle/web/features/game/utils/swAutoReload"
+import { registerSW } from "virtual:pwa-register"
 import "@razzoozle/web/i18n"
 import "@razzoozle/web/index.css"
 import { routeTree } from "@razzoozle/web/route.gen"
@@ -27,6 +31,11 @@ if (!root) {
 // control, guarded so it never fires during an active question. See
 // features/game/utils/swAutoReload.ts.
 initSwAutoReload()
+registerSW({
+  immediate: true,
+  onRegisteredSW: (_, r) => r?.update(),
+  onNeedReload: handleSwUpdateActivated,
+})
 
 createRoot(root).render(
   <StrictMode>

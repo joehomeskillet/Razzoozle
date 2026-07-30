@@ -22,7 +22,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      injectRegister: false, // manual register via virtual:pwa-register in main.tsx
       includeAssets: ["icon.svg"],
       manifest: {
         name: "Razzoozle Quiz",
