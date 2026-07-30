@@ -132,7 +132,13 @@ const GameWrapper = ({
     <GameAudienceContext.Provider value={audience}>
       <section
         className={clsx(
-          "relative flex",
+          // WP-958E: w-full — /party/manager wraps this section in a row-flex
+          // `flex h-dvh w-full` box, so as a flex item its main-axis size
+          // shrink-fits to content without an explicit width, shifting
+          // SHOW_START and the Flower Battle presenter HUD off the route
+          // center. On the player route the section is the block-level root
+          // (auto width already fills), so w-full is a no-op safeguard there.
+          "relative flex w-full",
           // WP-958D: presenter/display surfaces (manager) pin the route-level
           // height chain to a definite, non-scrolling 100dvh box — the same
           // contract `.display-kiosk` establishes for the /display routes.
