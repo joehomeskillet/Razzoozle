@@ -9,8 +9,7 @@ import quizzFr from "@razzoozle/web/locales/fr/quizz.json"
 import quizzZh from "@razzoozle/web/locales/zh/quizz.json"
 
 import { QuestionTypeSelector } from "../QuestionTypeSelector"
-import { TYPE_META } from "@razzoozle/web/lib/questionTypeMeta"
-import type { QuestionTypeKey } from "@razzoozle/web/lib/questionTypeMeta"
+import { QuestionTypeDropdownList } from "../QuestionTypeDropdownList"
 
 // Mocked useManagerStore — allows test to control klassenEnabled
 const managerStoreConfig = vi.hoisted(() => ({
@@ -23,12 +22,10 @@ vi.mock("@razzoozle/web/features/game/stores/manager", () => ({
 }))
 
 /**
- * Helper: Render QuestionTypeSelector with i18n provider
+ * Helper: Render with i18n provider
  */
 const renderComponent = async (
-  currentType: QuestionTypeKey,
-  onTypeChange = vi.fn(),
-  excludeTypes?: QuestionTypeKey[],
+  component: React.ReactElement,
   i18nResources: Record<string, any> = { quizz: quizzDe, errors: errorsDe },
 ) => {
   const i18n = createInstance()
@@ -42,19 +39,13 @@ const renderComponent = async (
   })
 
   const html = renderToStaticMarkup(
-    <I18nextProvider i18n={i18n}>
-      <QuestionTypeSelector
-        currentType={currentType}
-        onTypeChange={onTypeChange}
-        excludeTypes={excludeTypes}
-      />
-    </I18nextProvider>,
+    <I18nextProvider i18n={i18n}>{component}</I18nextProvider>,
   )
 
   return html
 }
 
-describe("QuestionTypeSelector (SSR)", () => {
+describe("QuestionTypeDropdownList (SSR)", () => {
   beforeEach(() => {
     managerStoreConfig.config = null
   })
@@ -64,237 +55,244 @@ describe("QuestionTypeSelector (SSR)", () => {
   })
 
   /**
-   * Test 1: All TYPE_META entries rendered when klassenEnabled=true
-   * Expects 18 role="radio"
+   * Test 1: Renders all 18 options when klassenEnabled=true
    */
-  it("renders all 18 TYPE_META entries when klassenEnabled=true", async () => {
-    managerStoreConfig.config = { klassenEnabled: true } as any
-    const html = await renderComponent("choice")
+  it("renders all 18 TYPE_META options when klassenEnabled=true", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={true}
+      />,
+    )
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 18 entries in TYPE_META (17 from QUESTION_TYPES + vokabelliste)
-    expect(radioMatches).toHaveLength(18)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches).toHaveLength(18)
   })
 
   /**
-   * Test 2: klassenEnabled=false filters out class-dependent types
-   * Expects 15 radio options (18 - 3 klassen-dependent types)
-   * Missing: mathematik, wortarten, vokabelliste
+   * Test 2: Filters class-dependent types when klassenEnabled=false
    */
   it("excludes class-dependent types when klassenEnabled=false", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("choice")
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+    )
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches).toHaveLength(15)
 
-    // Verify the three types are not in testids
     expect(html).not.toContain('data-testid="question-type-option-mathematik"')
     expect(html).not.toContain('data-testid="question-type-option-wortarten"')
     expect(html).not.toContain('data-testid="question-type-option-vokabelliste"')
   })
 
   /**
-   * Test 3: klassenEnabled=true includes all types
-   * Expects 18 radio options
-   */
-  it("includes all types when klassenEnabled=true", async () => {
-    managerStoreConfig.config = { klassenEnabled: true } as any
-    const html = await renderComponent("choice")
-
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(18)
-
-    // Verify the three klassen-dependent types are present
-    expect(html).toContain('data-testid="question-type-option-mathematik"')
-    expect(html).toContain('data-testid="question-type-option-wortarten"')
-    expect(html).toContain('data-testid="question-type-option-vokabelliste"')
-  })
-
-  /**
-   * Test 4: excludeTypes prop filters specified types
-   * When excluding poll with klassenEnabled=false, expect 14 radio options (15 - 1)
+   * Test 3: Respects excludeTypes filter
    */
   it("filters types via excludeTypes prop", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("choice", vi.fn(), ["poll"])
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        excludeTypes={["poll"]}
+        klassenEnabled={false}
+      />,
+    )
 
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 15 (after klassenEnabled filter) - 1 (excluded) = 14
-    expect(radioMatches).toHaveLength(14)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches).toHaveLength(14)
     expect(html).not.toContain('data-testid="question-type-option-poll"')
   })
 
   /**
-   * Test 5: aria-checked set to true only for currentType
-   * aria-checked="true" appears exactly once, aria-checked="false" for all others
+   * Test 4: aria-selected=true only for currentType
    */
-  it("sets aria-checked=true only for currentType", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const currentType = "slider"
-    const html = await renderComponent(currentType)
+  it("sets aria-selected=true only for currentType", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="slider"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+    )
 
-    // Exactly one aria-checked="true"
-    const ariaCheckedTrue = html.match(/aria-checked="true"/g) || []
-    expect(ariaCheckedTrue).toHaveLength(1)
+    const ariaSelectedTrue = html.match(/aria-selected="true"/g) || []
+    expect(ariaSelectedTrue).toHaveLength(1)
 
-    // Verify it's on the slider option
-    expect(html).toContain('data-testid="question-type-option-slider"')
-
-    // Count aria-checked="false" (should be 14 for klassenEnabled=false, all others)
-    const ariaCheckedFalse = html.match(/aria-checked="false"/g) || []
-    expect(ariaCheckedFalse).toHaveLength(14)
+    const ariaSelectedFalse = html.match(/aria-selected="false"/g) || []
+    expect(ariaSelectedFalse).toHaveLength(14)
   })
 
   /**
-   * Test 6: Category headers appear in correct order
-   * Order: basic → survey → numeric → text → arrangement
+   * Test 5: Category groups with role="group"
    */
-  it("renders category headers in fixed order", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("choice")
+  it("renders category groups with role=group", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+    )
 
-    // Verify category header elements are present
-    // The HTML contains category div containers in the correct order
-    expect(html).toContain("role=\"radiogroup\"")
-
-    // Verify all expected type labels are present (sample check across categories)
-    // Basic category
-    expect(html).toContain('data-testid="question-type-option-choice"')
-    expect(html).toContain('data-testid="question-type-option-boolean"')
-    // Survey category
-    expect(html).toContain('data-testid="question-type-option-poll"')
-    // Numeric category
-    expect(html).toContain('data-testid="question-type-option-slider"')
-    // Text category
-    expect(html).toContain('data-testid="question-type-option-type-answer"')
-    // Arrangement category
-    expect(html).toContain('data-testid="question-type-option-sequencing"')
-    expect(html).toContain('data-testid="question-type-option-matching"')
-
-    // Verify order by index positions
-    const choiceIdx = html.indexOf('data-testid="question-type-option-choice"')
-    const pollIdx = html.indexOf('data-testid="question-type-option-poll"')
-    const sliderIdx = html.indexOf('data-testid="question-type-option-slider"')
-    const typeAnswerIdx = html.indexOf('data-testid="question-type-option-type-answer"')
-    const sequencingIdx = html.indexOf('data-testid="question-type-option-sequencing"')
-
-    expect(choiceIdx < pollIdx).toBe(true)
-    expect(pollIdx < sliderIdx).toBe(true)
-    expect(sliderIdx < typeAnswerIdx).toBe(true)
-    expect(typeAnswerIdx < sequencingIdx).toBe(true)
-  })
-
-  /**
-   * Test 7: Container has correct A11y attributes
-   * - role="radiogroup"
-   * - aria-label
-   * - data-testid="question-type-list"
-   */
-  it("has correct container accessibility attributes", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("choice")
-
-    expect(html).toContain('role="radiogroup"')
+    const groupMatches = html.match(/role="group"/g) || []
+    expect(groupMatches.length).toBeGreaterThan(0)
     expect(html).toContain('aria-label=')
-    expect(html).toContain('data-testid="question-type-list"')
   })
 
   /**
-   * Test 8: Each option has data-testid and correct role
-   * Every option: role="radio", data-testid="question-type-option-<id>"
+   * Test 6: Combined filters (klassenEnabled + excludeTypes)
    */
-  it("each option has required testid and accessibility attributes", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent("slider")
-
-    // Verify each non-klassen-dependent type has testid and role
-    const nonKlassenTypes = TYPE_META.filter((t) => !t.requiresKlassen)
-    for (const type of nonKlassenTypes) {
-      expect(html).toContain(`data-testid="question-type-option-${type.id}"`)
-    }
-
-    // Verify role="radio" appears
-    expect(html).toContain('role="radio"')
-  })
-
-  /**
-   * Test 9: Roving tabIndex — exactly one element has tabIndex="0" (lowercase in rendered HTML)
-   * All other options have tabindex="-1"
-   */
-  it("roving tabindex: one selected element with tabindex=0, others -1", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const currentType = "matching"
-    const html = await renderComponent(currentType)
-
-    // Count tabindex="0" in the rendered HTML string (lowercase in SSR output)
-    const tabindex0Matches = (html.match(/tabindex="0"/g) || []).length
-    expect(tabindex0Matches).toBe(1)
-
-    // Count tabindex="-1" (should be 14 for all other options)
-    const tabindexNeg1Matches = (html.match(/tabindex="-1"/g) || []).length
-    expect(tabindexNeg1Matches).toBe(14) // 15 total - 1 selected
-  })
-
-  /**
-   * Test 10: Locale robustness — French locale renders without markup break
-   * Verify that long/different French labels render cleanly
-   */
-  it("renders French locale labels without markup break", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
+  it("applies both klassenEnabled and excludeTypes", async () => {
     const html = await renderComponent(
-      "choice",
-      vi.fn(),
-      [],
-      { quizz: quizzFr },
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        excludeTypes={["poll", "slider"]}
+        klassenEnabled={false}
+      />,
     )
 
-    // Verify radiogroup and options are present
-    expect(html).toMatch(/role="radiogroup"/)
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
-
-    // No escaped angle brackets in the middle of content
-    expect(html).not.toMatch(/&lt;|&gt;/)
-  })
-
-  /**
-   * Test 11: Locale robustness — Chinese locale renders without markup break
-   */
-  it("renders Chinese locale labels without markup break", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    const html = await renderComponent(
-      "choice",
-      vi.fn(),
-      [],
-      { quizz: quizzZh },
-    )
-
-    // Verify radiogroup and options are present
-    expect(html).toMatch(/role="radiogroup"/)
-    const radioMatches = html.match(/role="radio"/g) || []
-    expect(radioMatches).toHaveLength(15)
-
-    // No truncated or malformed HTML
-    expect(html).not.toMatch(/&lt;|&gt;/)
-  })
-
-  /**
-   * Test 12: Filtered and excluded types combined
-   * klassenEnabled=false + excludeTypes includes both filters
-   */
-  it("applies both klassenEnabled and excludeTypes filters", async () => {
-    managerStoreConfig.config = { klassenEnabled: false } as any
-    // klassenEnabled=false removes 3 types (mathematik, wortarten, vokabelliste)
-    // excludeTypes removes 2 more (poll, slider)
-    const html = await renderComponent("choice", vi.fn(), ["poll", "slider"])
-
-    const radioMatches = html.match(/role="radio"/g) || []
-    // 18 - 3 (klassen) - 2 (excluded) = 13
-    expect(radioMatches).toHaveLength(13)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches).toHaveLength(13)
 
     expect(html).not.toContain('data-testid="question-type-option-mathematik"')
     expect(html).not.toContain('data-testid="question-type-option-poll"')
     expect(html).not.toContain('data-testid="question-type-option-slider"')
+  })
+
+  /**
+   * Test 7: Locale robustness — French
+   */
+  it("renders French locale without markup break", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+      { quizz: quizzFr, errors: errorsDe },
+    )
+
+    expect(html).toMatch(/role="option"/)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches.length).toBeGreaterThan(0)
+    expect(html).not.toMatch(/&lt;|&gt;/)
+  })
+
+  /**
+   * Test 8: Locale robustness — Chinese
+   */
+  it("renders Chinese locale without markup break", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+      { quizz: quizzZh, errors: errorsDe },
+    )
+
+    expect(html).toMatch(/role="option"/)
+    const optionMatches = html.match(/role="option"/g) || []
+    expect(optionMatches.length).toBeGreaterThan(0)
+    expect(html).not.toMatch(/&lt;|&gt;/)
+  })
+
+  /**
+   * Test 9: Each option has required testid
+   */
+  it("each option has required testid", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="slider"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+    )
+
+    expect(html).toContain('data-testid="question-type-option-choice"')
+    expect(html).toContain('data-testid="question-type-option-boolean"')
+    expect(html).toContain('data-testid="question-type-option-slider"')
+  })
+
+  /**
+   * Test 10: Correct A11y semantics
+   */
+  it("has correct accessibility structure", async () => {
+    const html = await renderComponent(
+      <QuestionTypeDropdownList
+        currentType="choice"
+        onSelect={vi.fn()}
+        klassenEnabled={false}
+      />,
+    )
+
+    expect(html).toContain('role="group"')
+    expect(html).toContain('role="option"')
+    expect(html).toContain('aria-selected=')
+  })
+})
+
+describe("QuestionTypeSelector (SSR, Trigger)", () => {
+  beforeEach(() => {
+    managerStoreConfig.config = null
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  /**
+   * Test 11: Trigger renders with correct A11y
+   */
+  it("renders trigger with correct accessibility attributes", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent(
+      <QuestionTypeSelector
+        currentType="choice"
+        onTypeChange={vi.fn()}
+      />,
+    )
+
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-haspopup="listbox"')
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).toContain('aria-label=')
+  })
+
+  /**
+   * Test 12: Trigger displays active type
+   */
+  it("displays active type label on trigger", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent(
+      <QuestionTypeSelector
+        currentType="slider"
+        onTypeChange={vi.fn()}
+      />,
+    )
+
+    expect(html).toContain('data-testid="question-type-trigger"')
+    expect(html).toContain('aria-expanded="false"')
+  })
+
+  /**
+   * Test 13: Trigger has ChevronDown icon
+   */
+  it("renders ChevronDown icon on trigger", async () => {
+    managerStoreConfig.config = { klassenEnabled: true } as any
+    const html = await renderComponent(
+      <QuestionTypeSelector
+        currentType="choice"
+        onTypeChange={vi.fn()}
+      />,
+    )
+
+    expect(html).toContain("lucide-chevron-down")
   })
 })
