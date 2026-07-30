@@ -2,7 +2,7 @@
 //
 // Only initSwAutoReload is exported; the guards (the module-let `refreshing`,
 // the RELOAD_ONCE_KEY sessionStorage flag, isActiveQuestion, doReload and
-// handleActivatedUpdate) are private. We exercise them THROUGH initSwAutoReload
+// handleSwUpdateActivated) are exercised THROUGH initSwAutoReload
 // plus a faked "controllerchange" event and faked zustand stores.
 //
 // The two stores are mocked so we can drive `status` per test and replay
@@ -167,20 +167,23 @@ describe("initSwAutoReload", () => {
 
   it("handles getRegistration rejection without crashing", async () => {
     setupGlobals({})
+    // Capture the mock on the path actually used after re-stub (do not assert
+    // the stale updateMock from setupGlobals — that registration is replaced).
+    const getRegistration = vi
+      .fn()
+      .mockRejectedValue(new Error("lookup failed"))
     vi.stubGlobal("navigator", {
       serviceWorker: {
         controller: {},
         addEventListener: vi.fn(),
-        getRegistration: vi
-          .fn()
-          .mockRejectedValue(new Error("lookup failed")),
+        getRegistration,
       },
     })
     const { initSwAutoReload } = await import("./swAutoReload")
 
     expect(() => initSwAutoReload()).not.toThrow()
     await vi.waitFor(() => {
-      expect(updateMock).not.toHaveBeenCalled()
+      expect(getRegistration).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -203,5 +206,4 @@ describe("initSwAutoReload", () => {
       expect(rejectUpdate).toHaveBeenCalledTimes(1)
     })
   })
-
 })

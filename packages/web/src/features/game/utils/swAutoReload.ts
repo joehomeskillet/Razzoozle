@@ -75,7 +75,6 @@ export const handleSwUpdateActivated = (): void => {
   const unsubManager = useManagerStore.subscribe(tryReload)
 }
 
-
 const probeSwUpdate = (): void => {
   safeSwCall(async () => {
     const registration = await navigator.serviceWorker.getRegistration()
