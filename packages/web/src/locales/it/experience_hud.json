@@ -1,0 +1,29 @@
+{
+  "hud": {
+    "regionLabel": "Pannello di gioco"
+  },
+  "roundProgress": {
+    "label": "Progresso",
+    "unit": "%"
+  },
+  "answerCounter": {
+    "suffix": "risposte"
+  },
+  "phaseIndicator": {
+    "defaultName": "Domanda",
+    "of": "di"
+  },
+  "countdown": {
+    "secondsLabel": "secondi",
+    "ariaLabel_one": "Rimane {{count}} secondo",
+    "ariaLabel_other": "Rimangono {{count}} secondi"
+  },
+  "statusBanner": {
+    "type": {
+      "info": "Informazione",
+      "success": "Riuscito",
+      "warning": "Avviso",
+      "error": "Errore"
+    }
+  }
+}
