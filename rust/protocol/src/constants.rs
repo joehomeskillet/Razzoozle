@@ -14,6 +14,13 @@ pub mod game {
     pub const CREATE: &str = "game:create";
 }
 
+/// Experience-mode event family (WP #876). Own envelope, not game:status.
+/// Payload type: `ExperienceTransition` (see experience.rs).
+pub mod experience {
+    /// S2C: experience phase/mode transition envelope.
+    pub const TRANSITION: &str = "game:experience";
+}
+
 pub mod player {
     pub const SUCCESS_RECONNECT: &str = "player:successReconnect";
     pub const UPDATE_LEADERBOARD: &str = "player:updateLeaderboard";

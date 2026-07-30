@@ -6,6 +6,7 @@
 //! - docs/rust-port-event-inventory.md (event inventory)
 
 pub mod constants;
+pub mod experience;
 pub mod game;
 pub mod manager;
 pub mod media_ai;

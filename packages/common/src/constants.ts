@@ -12,6 +12,12 @@ export const EVENTS = {
     PLAYER_ANSWER: "game:playerAnswer",
     CREATE: "game:create",
   },
+  // Experience-mode event family (WP #876). Own envelope, not game:status.
+  // Payload type: ExperienceTransition (rust/protocol/src/experience.rs).
+  EXPERIENCE: {
+    /** S2C: experience phase/mode transition envelope. */
+    TRANSITION: "game:experience",
+  },
   PLAYER: {
     SUCCESS_RECONNECT: "player:successReconnect",
     UPDATE_LEADERBOARD: "player:updateLeaderboard",

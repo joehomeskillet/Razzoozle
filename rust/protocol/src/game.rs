@@ -87,6 +87,10 @@ pub struct SelectedModes {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub participant_cap: Option<i64>,
+    /// Experience presentation mode (WP #876). None = classic default on server.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub experience_mode: Option<ExperienceMode>,
 }
 
 /// End-screen display mode (mutually exclusive)
@@ -97,6 +101,17 @@ pub enum EndScreen {
     Full,
     Top3,
     Private,
+}
+
+/// Experience presentation mode (mutually exclusive). Exactly four values (WP #876).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub enum ExperienceMode {
+    Classic,
+    PyramidClimb,
+    DeepSeaEscape,
+    FlowerBattle,
 }
 
 /// player:join payload (C2S) — invite code
@@ -391,6 +406,7 @@ mod tests {
                 klassen: Some(false),
                 end_screen: Some(EndScreen::Top3),
                 participant_cap: None,
+                experience_mode: None,
             }),
             class_id: Some(7),
         };
@@ -408,6 +424,7 @@ mod tests {
             klassen: None,
             end_screen: None,
             participant_cap: None,
+            experience_mode: None,
         };
         let json = serde_json::to_value(&modes).unwrap();
         let parsed: SelectedModes = serde_json::from_value(json).unwrap();
@@ -423,6 +440,7 @@ mod tests {
             klassen: None,
             end_screen: None,
             participant_cap: Some(50),
+            experience_mode: None,
         };
         let json = serde_json::to_value(&modes).unwrap();
         assert_eq!(json["participantCap"], 50);
