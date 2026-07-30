@@ -179,7 +179,8 @@
     "blue": "Blu",
     "green": "Verde",
     "yellow": "Giallo",
-    "pick": "Scegli una squadra"
+    "pick": "Scegli una squadra",
+    "unbalanced": "Squadre sbilanciate"
   },
   "solo": {
     "play": "Gioca da solo",

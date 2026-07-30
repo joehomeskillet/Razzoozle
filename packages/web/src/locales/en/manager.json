@@ -638,7 +638,14 @@
     "chooseClass": "Choose a class …",
     "klassenModeNeedsClass": "Please select a class",
     "intro": "Pick a quiz and start a game.",
-    "optionsTitle": "Game options"
+    "optionsTitle": "Game options",
+    "teamAssignment": {
+      "label": "Team assignment",
+      "self": "Self-select",
+      "selfHint": "Players pick their own team",
+      "auto": "Automatic",
+      "autoHint": "Server assigns to the smallest team"
+    }
   },
   "gameMode": {
     "title": "Game mode",
@@ -1089,5 +1096,6 @@
     "createError": "Could not create template.",
     "saveError": "Could not save template.",
     "deleteError": "Could not delete template."
-  }
+  },
+  "balanceTeams": "Balance teams"
 }

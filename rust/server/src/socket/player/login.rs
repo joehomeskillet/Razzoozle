@@ -439,10 +439,14 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                     crate::db::get_game_config(&db_pool).await;
                                 let join_locked = join_locked_opt.unwrap_or(false);
 
-                                // W1-M2: Read team_mode from per-game snapshot
-                                let team_mode = {
+                                // W1-M2: Read team_mode + team_assignment from per-game snapshot
+                                let (team_mode, team_assignment_auto) = {
                                     let game = game_ref.lock().unwrap();
-                                    game.selected_modes.team_mode.unwrap_or(false)
+                                    (
+                                        game.selected_modes.team_mode.unwrap_or(false),
+                                        game.selected_modes.team_assignment
+                                            == razzoozle_protocol::game::TeamAssignment::Auto,
+                                    )
                                 };
 
                                 let (
@@ -597,6 +601,35 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                             p.identifier_hash = Some(sid_str.clone());
                                         }
                                         player.identifier_hash = Some(sid_str);
+                                    }
+
+                                    // WP #952: auto team assignment on login — smallest active team (only if unassigned).
+                                    // Guard: rejoin/reconnect must not re-assign if player already has a team.
+                                    if team_mode && team_assignment_auto && player.team_id.is_none() {
+                                        let counts: Vec<(bool, Option<&str>)> = game
+                                            .players
+                                            .iter()
+                                            .filter(|p| p.id != player.id)
+                                            .map(|p| (p.connected, p.team_id.as_deref()))
+                                            .collect();
+                                        let team = crate::socket::manager::balance_teams::smallest_team(
+                                            &counts,
+                                        )
+                                        .to_string();
+                                        if let Some(p) =
+                                            game.players.iter_mut().find(|p| p.id == player.id)
+                                        {
+                                            p.team_id = Some(team.clone());
+                                        }
+                                        if let Some(p) = game
+                                            .engine
+                                            .players
+                                            .iter_mut()
+                                            .find(|p| p.id == player.id)
+                                        {
+                                            p.team_id = Some(team.clone());
+                                        }
+                                        player.team_id = Some(team);
                                     }
 
                                     let game_id = game.game_id.clone();

@@ -82,39 +82,60 @@ pub(super) fn register_select_team(socket: &SocketRef, ctx: HandlerCtx) {
             let socket_id = socket_id.clone();
 
             tokio::spawn(async move {
-                let Some(team_id) = team_id_opt else {
+                let Some(requested_team) = team_id_opt else {
                     return;
                 };
 
                 // #8: Team-mode gate + TEAMS enum check, mirroring Node's
                 // RoundManager.selectTeam (round-manager.ts:1459-1477): silent
                 // no-op when team mode is off or teamId isn't a real team.
-                // teamMode isn't cached on Rust's Game yet, so — same idiom as
-                // the join_locked read in register_login — a live config read
-                // per pick is the cheapest correct source (picks are
-                // infrequent: once per player, in the lobby).
                 // #8: Team-mode gate + TEAMS enum check (W1-M2): read from per-game snapshot
-                // instead of global config
-                let team_mode_enabled = {
+                // WP #952: when team_assignment=auto, ignore requested team and
+                // re-assign to the smallest active team (same helper as login).
+                let (team_mode_enabled, auto_assign) = {
                     let registry = registry.read().await;
                     let candidates = registry.socket_lookup_candidates(&socket_id);
                     // ponytail: trust ONLY a unique candidate. socket_lookup_candidates
                     // returns ALL games when the socket isn't mapped (fail-open); fail
                     // closed when ambiguous so team-select can't read a random game's gate.
                     if candidates.len() == 1 {
-                        candidates[0]
-                            .lock()
-                            .unwrap()
-                            .selected_modes
-                            .team_mode
-                            .unwrap_or(false)
+                        let g = candidates[0].lock().unwrap();
+                        (
+                            g.selected_modes.team_mode.unwrap_or(false),
+                            g.selected_modes.team_assignment
+                                == razzoozle_protocol::game::TeamAssignment::Auto,
+                        )
                     } else {
-                        false
+                        (false, false)
                     }
                 };
-                if !team_mode_enabled || !crate::state::TEAMS.contains(&team_id.as_str()) {
+                if !team_mode_enabled {
                     return;
                 }
+
+                let team_id = if auto_assign {
+                    let registry = registry.read().await;
+                    let candidates = registry.socket_lookup_candidates(&socket_id);
+                    if candidates.len() != 1 {
+                        return;
+                    }
+                    let counts: Vec<(bool, Option<String>)> = {
+                        let game = candidates[0].lock().unwrap();
+                        game.players
+                            .iter()
+                            .filter(|p| p.id != socket_id)
+                            .map(|p| (p.connected, p.team_id.clone()))
+                            .collect()
+                    };
+                    let view: Vec<(bool, Option<&str>)> =
+                        counts.iter().map(|(c, t)| (*c, t.as_deref())).collect();
+                    crate::socket::manager::balance_teams::smallest_team(&view).to_string()
+                } else {
+                    if !crate::state::TEAMS.contains(&requested_team.as_str()) {
+                        return;
+                    }
+                    requested_team
+                };
 
                 let registry = registry.read().await;
                 if let Some((player, game_id, manager_socket_id)) =

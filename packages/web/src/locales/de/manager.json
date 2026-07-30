@@ -638,7 +638,14 @@
     "chooseClass": "Klasse auswählen …",
     "klassenModeNeedsClass": "Bitte wähle eine Klasse aus",
     "intro": "Wähle ein Quiz und starte ein Spiel.",
-    "optionsTitle": "Spieloptionen"
+    "optionsTitle": "Spieloptionen",
+    "teamAssignment": {
+      "label": "Team-Zuordnung",
+      "self": "Selbst wählen",
+      "selfHint": "Spieler wählen ihr Team selbst",
+      "auto": "Automatisch",
+      "autoHint": "Server teilt dem kleinsten Team zu"
+    }
   },
   "achievementsConfig": {
     "title": "Achievements konfigurieren",
@@ -1089,5 +1096,6 @@
     "createError": "Vorlage konnte nicht erstellt werden.",
     "saveError": "Vorlage konnte nicht gespeichert werden.",
     "deleteError": "Vorlage konnte nicht gelöscht werden."
-  }
+  },
+  "balanceTeams": "Teams ausgleichen"
 }

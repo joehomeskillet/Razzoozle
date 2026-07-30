@@ -183,7 +183,8 @@
     "blue": "Azul",
     "green": "Verde",
     "yellow": "Amarillo",
-    "pick": "Elige un equipo"
+    "pick": "Elige un equipo",
+    "unbalanced": "Equipos desequilibrados"
   },
   "solo": {
     "play": "Jugar solo",

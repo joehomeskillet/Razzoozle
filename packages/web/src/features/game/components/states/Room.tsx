@@ -10,10 +10,11 @@ import {
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useThemeStore } from "@razzoozle/web/features/theme/store"
 import { buildJoinUrl, resolveJoinBase } from "@razzoozle/web/features/game/utils/joinUrl"
+import { isTeamsUnbalanced } from "@razzoozle/web/features/game/utils/teamBalance"
 import { teamDot } from "@razzoozle/web/features/game/utils/teams"
 import { useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { useOnClickOutside } from "@razzoozle/web/hooks/useOnClickOutside"
-import { Maximize2, X } from "lucide-react"
+import { Maximize2, Scale, X } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import QRCode from "@razzoozle/web/components/QRCode"
 import { useEffect, useRef, useState } from "react"
@@ -124,6 +125,17 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
     })
   }
 
+  const balanceTeams = () => {
+    if (!gameId) {
+      return
+    }
+    socket.emit(EVENTS.MANAGER.BALANCE_TEAMS, { gameId })
+  }
+
+  const teamsUnbalanced = isTeamsUnbalanced(playerList)
+  const showTeamControls =
+    playerList.some((p) => Boolean(p.teamId)) || teamsUnbalanced
+
   const handleCloseQrCode = () => setQrOpen(false)
 
   return (
@@ -204,11 +216,48 @@ const Room = ({ data: { text, inviteCode } }: Props) => {
         {t(text)}
       </h2>
 
-      <div className="mb-4 flex items-center justify-center rounded-lg bg-white px-6 py-3 shadow-sm">
-        <span className="text-2xl font-bold text-[color:var(--color-field-ink)]">
-          {t("game:playersJoined")}
-          {totalPlayers}
-        </span>
+      <div className="mb-4 flex flex-col items-center gap-2">
+        <div className="flex items-center justify-center rounded-lg bg-white px-6 py-3 shadow-sm">
+          <span className="text-2xl font-bold text-[color:var(--color-field-ink)]">
+            {t("game:playersJoined")}
+            {totalPlayers}
+          </span>
+        </div>
+
+        {teamsUnbalanced && (
+          <div
+            role="status"
+            data-testid="teams-unbalanced-badge"
+            className="flex items-center gap-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface)] px-3 py-1.5 shadow-sm"
+          >
+            <span
+              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[var(--ink-muted)]"
+              aria-hidden
+            >
+              <Scale className="size-3.5" strokeWidth={2.25} />
+            </span>
+            <span className="text-sm font-semibold text-[var(--ink)]">
+              {t("game:teams.unbalanced")}
+            </span>
+            <span className="flex h-4 items-end gap-0.5" aria-hidden>
+              <span className="h-full w-1 rounded-sm bg-[var(--team-red)]" />
+              <span className="h-1.5 w-1 rounded-sm bg-[var(--team-blue)]" />
+              <span className="h-3 w-1 rounded-sm bg-[var(--team-green)]" />
+              <span className="h-2 w-1 rounded-sm bg-[var(--team-yellow)]" />
+            </span>
+          </div>
+        )}
+
+        {showTeamControls && (
+          <button
+            type="button"
+            data-testid="balance-teams-btn"
+            onClick={balanceTeams}
+            className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
+          >
+            {t("manager:balanceTeams")}
+          </button>
+        )}
       </div>
 
       <div className="mb-6 flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm">

@@ -8,7 +8,8 @@ use tracing::{info, warn};
 /// v2: Added currentAnswers, answerOrder, recapStats, questionStats, questionsHistory
 /// v3: Added selectedModes.experienceMode (WP #878)
 /// (backward-compatible via serde defaults / defensive restore for old snapshots)
-const SNAPSHOT_VERSION: u32 = 3;
+// v4: selectedModes.teamAssignment (WP #952). v3 snaps omit it → SelfAssign default.
+const SNAPSHOT_VERSION: u32 = 4;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -145,6 +146,7 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
             "endScreen": game.selected_modes.end_screen,
             "participantCap": game.selected_modes.participant_cap,
             "experienceMode": game.selected_modes.experience_mode,
+            "teamAssignment": game.selected_modes.team_assignment,
         },
         // W1-1: Persist in-flight answer data and per-question stats
         "currentAnswers": current_answers,
@@ -273,6 +275,11 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
                     "flowerBattle" => Some(razzoozle_protocol::game::ExperienceMode::FlowerBattle),
                     _ => None,
                 });
+            // v4 field; absent on v1–v3 → SelfAssign (serde default)
+            let team_assignment = match v.get("teamAssignment").and_then(|t| t.as_str()) {
+                Some("auto") => razzoozle_protocol::game::TeamAssignment::Auto,
+                _ => razzoozle_protocol::game::TeamAssignment::SelfAssign,
+            };
             razzoozle_protocol::game::SelectedModes {
                 scoring_mode,
                 team_mode,
@@ -280,6 +287,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
                 end_screen,
                 participant_cap: v.get("participantCap").and_then(|p| p.as_i64()),
                 experience_mode,
+                team_assignment,
             }
         })
         .unwrap_or(razzoozle_protocol::game::SelectedModes {
@@ -289,6 +297,7 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
             end_screen: None,
             participant_cap: None,
             experience_mode: None,
+            team_assignment: Default::default(),
         });
 
     // W1-1 Fix: Restore in-flight answers with backward compatibility
@@ -631,12 +640,12 @@ pub async fn load_snapshot() -> Vec<(Game, Option<ResumePlan>)> {
         }
     };
 
-    // Accept version 1–3. Older snapshots restore with defaults for newer fields
-    // (v2: in-flight answers; v3: experienceMode).
+    // Accept version 1–4. Older snapshots restore with defaults for newer fields
+    // (v2: in-flight answers; v3: experienceMode; v4: teamAssignment).
     let version = parsed.get("version").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    if version != 1 && version != 2 && version != 3 {
+    if version != 1 && version != 2 && version != 3 && version != 4 {
         warn!(
-            "Unrecognized snapshot version {} (expected 1, 2, or 3), ignoring",
+            "Unrecognized snapshot version {} (expected 1, 2, 3, or 4), ignoring",
             version
         );
         return Vec::new();
@@ -1164,10 +1173,10 @@ mod tests {
         );
     }
 
-    /// WP #878: SNAPSHOT_VERSION is 3 (experienceMode field).
+    /// WP #952: SNAPSHOT_VERSION is 4 (teamAssignment field).
     #[test]
-    fn test_snapshot_version_is_3() {
-        assert_eq!(SNAPSHOT_VERSION, 3, "SNAPSHOT_VERSION must be 3");
+    fn test_snapshot_version_is_4() {
+        assert_eq!(SNAPSHOT_VERSION, 4, "SNAPSHOT_VERSION must be 4");
     }
 
     /// WP #878: experience_mode survives snapshot roundtrip; v2-shaped snaps restore as None.
@@ -1196,6 +1205,7 @@ mod tests {
             end_screen: None,
             participant_cap: None,
             experience_mode: Some(ExperienceMode::PyramidClimb),
+            team_assignment: Default::default(),
         };
 
         let snap = game_to_snapshot(&game);

@@ -4,6 +4,7 @@ use super::HandlerCtx;
 use socketioxide::extract::SocketRef;
 
 pub mod auth;
+pub mod balance_teams;
 pub mod catalog;
 pub mod classes;
 pub mod config;
@@ -35,6 +36,7 @@ pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     game_state::register(socket, ctx.clone());
     games_list::register(socket, ctx.clone());
     players::register(socket, ctx.clone());
+    balance_teams::register(socket, ctx.clone());
     public::register(socket, ctx.clone());
     media::register(socket, ctx.clone());
     quizz::register(socket, ctx.clone());

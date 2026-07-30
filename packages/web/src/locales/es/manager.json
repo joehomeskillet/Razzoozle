@@ -638,7 +638,14 @@
     "chooseClass": "Selecciona una clase …",
     "klassenModeNeedsClass": "Por favor, elige una clase",
     "intro": "Elige un cuestionario y empieza una partida.",
-    "optionsTitle": "Opciones del juego"
+    "optionsTitle": "Opciones del juego",
+    "teamAssignment": {
+      "label": "Asignación de equipo",
+      "self": "Elegir uno mismo",
+      "selfHint": "Los jugadores eligen su equipo",
+      "auto": "Automático",
+      "autoHint": "El servidor asigna al equipo más pequeño"
+    }
   },
   "gameMode": {
     "title": "Modo de juego",
@@ -1089,5 +1096,6 @@
     "createError": "No se pudo crear la plantilla.",
     "saveError": "No se pudo guardar la plantilla.",
     "deleteError": "No se pudo eliminar la plantilla."
-  }
+  },
+  "balanceTeams": "Equilibrar equipos"
 }

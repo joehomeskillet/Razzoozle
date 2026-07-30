@@ -11,7 +11,9 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
 import { EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { isTeamsUnbalanced } from "@razzoozle/web/features/game/utils/teamBalance"
 import { teamSwatch } from "@razzoozle/web/features/game/utils/teams"
+import { Scale } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -26,6 +28,7 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
   const reveal = useReveal()
   const [showPicker, setShowPicker] = useState(true)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [roster, setRoster] = useState<Player[]>([])
 
   // Continuous avatar reconciliation: the server-broadcast roster
   // (UPDATE_LEADERBOARD) is the single source of truth for every player's
@@ -38,8 +41,10 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
   // the player's own screen (picker preview) always matches the lobby. Keyed on
   // the existing socket event — no polling. Cheap: a single find + equality
   // check per broadcast; only writes the store on an actual drift.
+  // Also keeps a local roster copy for the team-imbalance badge (WP #952).
   const reconcileAvatar = useCallback(
     ({ leaderboard }: { leaderboard: Player[] }) => {
+      setRoster(leaderboard)
       const own = leaderboard.find((p) => p.clientId === clientId)
 
       if (!own) {
@@ -60,6 +65,8 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
   // Only the lobby wait (pre-game) lets the player pick an avatar; the same WAIT
   // state is reused between questions where the picker would be out of place.
   const isLobby = text === "game:waitingForPlayers"
+  const teamsUnbalanced =
+    isLobby && Boolean(teamMode) && isTeamsUnbalanced(roster)
 
   // Anticipation loop — a gentle "breathing" pulse on the loader + a soft sheen
   // on the heading so the otherwise-static wait screen feels alive. Looping
@@ -122,6 +129,35 @@ const Wait = ({ data: { text, teamMode } }: Props) => {
           picker would be a dead control (SELECT_TEAM is a no-op), so we gate it.
           Visually compact and non-blocking so it doesn't interfere with the
           avatar flow. */}
+      {isLobby && teamsUnbalanced && (
+        <motion.div
+          role="status"
+          data-testid="teams-unbalanced-badge"
+          variants={reveal.item()}
+          initial="hidden"
+          animate="visible"
+          transition={reveal.spring}
+          className="mt-4 flex w-full max-w-md items-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--surface)] px-4 py-2 shadow-lg"
+        >
+          <span
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[var(--ink-muted)]"
+            aria-hidden
+          >
+            <Scale className="size-4" strokeWidth={2.25} />
+          </span>
+          <span className="text-sm font-semibold text-[var(--ink)]">
+            {t("game:teams.unbalanced")}
+          </span>
+          {/* Mini bar chart: tallest bar hints at uneven team sizes */}
+          <span className="ml-auto flex h-5 items-end gap-0.5" aria-hidden>
+            <span className="h-full w-1.5 rounded-sm bg-[var(--team-red)]" />
+            <span className="h-2 w-1.5 rounded-sm bg-[var(--team-blue)]" />
+            <span className="h-3.5 w-1.5 rounded-sm bg-[var(--team-green)]" />
+            <span className="h-2.5 w-1.5 rounded-sm bg-[var(--team-yellow)]" />
+          </span>
+        </motion.div>
+      )}
+
       {isLobby && teamMode && (
         <motion.div
           variants={reveal.item()}

@@ -221,6 +221,15 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
 
                             // Snapshot per-game mode selection with CLAMPED cap value
                             // (not the raw client value, so snapshot always reflects wirksam state)
+                            // team_assignment only meaningful when team_mode is on; default self.
+                            let team_assignment = if validated_team_mode {
+                                selected_modes
+                                    .as_ref()
+                                    .map(|m| m.team_assignment)
+                                    .unwrap_or_default()
+                            } else {
+                                razzoozle_protocol::game::TeamAssignment::default()
+                            };
                             g.selected_modes = SelectedModes {
                                 scoring_mode: Some(
                                     if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() }
@@ -231,6 +240,7 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                                 end_screen: Some(validated_end_screen),
                                 participant_cap: g.player_cap.map(|u| u as i64),
                                 experience_mode: validated_experience_mode,
+                                team_assignment,
                             };
                         }
 
