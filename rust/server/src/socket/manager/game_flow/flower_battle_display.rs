@@ -89,6 +89,7 @@ fn project_team_rosters(players: &[Player]) -> Vec<FlowerBattleTeamState> {
             shield: 0,
             effects: vec![],
             sun_points: 0,
+            previous_attacker_team_id: None,
         })
         .collect()
 }
@@ -228,6 +229,7 @@ mod tests {
             "shield",
             "effects",
             "sunPoints",
+            "previousAttackerTeamId",
             "background",
             "seed",
             "recipeVersion",
@@ -247,6 +249,7 @@ mod tests {
                     shield: 1,
                     effects: vec![FlowerBattleEffect::Sunbeam, FlowerBattleEffect::AcidRain],
                     sun_points: 2,
+                    previous_attacker_team_id: Some("blue".into()),
                 }],
                 background: FlowerBattleBackground {
                     seed: "game-1".into(),

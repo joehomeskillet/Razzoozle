@@ -142,11 +142,18 @@ impl SeedRng {
 // Option filters + selection
 // ---------------------------------------------------------------------------
 
-fn is_positive(id: &str) -> bool {
+/// Positive option (self-buff / protection) — never a default-excluded negative.
+#[inline]
+pub fn is_positive_option(id: &str) -> bool {
     matches!(
         id,
         OPTION_FERTILIZER | OPTION_SUNBEAM | OPTION_UMBRELLA_SHIELD
     )
+}
+
+#[inline]
+fn is_positive(id: &str) -> bool {
+    is_positive_option(id)
 }
 
 fn is_negative(id: &str) -> bool {

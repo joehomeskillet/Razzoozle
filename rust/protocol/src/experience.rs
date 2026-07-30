@@ -3,6 +3,7 @@
 //! WP #876 — Protokoll-Contract Experience-Modi (Wave-0-Freeze)
 //! WP #927 — FlowerBattle domain contract (payload body + wire types)
 //! WP #930 — FlowerBattle sun-points meter (per-team accumulation)
+//! WP #931 — FlowerBattle power-up voting (previous_attacker_team_id)
 //! Date: 2026-07-30
 //!
 //! Wire family: `game:experience` with envelope
@@ -160,6 +161,12 @@ pub struct FlowerBattleTeamState {
     pub effects: Vec<FlowerBattleEffect>,
     /// Accumulated sun points for power-up triggers (WP #930).
     pub sun_points: i32,
+    /// Last team that successfully acid_rain-attacked this team (WP #931).
+    /// Used to block back-to-back attacks from the same attacker team.
+    /// `None` when never attacked (or after any reset policy lands later).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub previous_attacker_team_id: Option<String>,
 }
 
 /// Full FlowerBattle mode state snapshot body.
@@ -285,6 +292,7 @@ mod tests {
                     shield: 0,
                     effects: vec![FlowerBattleEffect::Sunbeam],
                     sun_points: 2,
+                    previous_attacker_team_id: Some("Violet".into()),
                 }],
                 background: FlowerBattleBackground {
                     seed: "sess-seed-1".into(),
@@ -308,6 +316,10 @@ mod tests {
         assert_eq!(v["data"]["state"]["teams"][0]["hp"], 100.0);
         assert_eq!(v["data"]["state"]["teams"][0]["effects"][0], "sunbeam");
         assert_eq!(v["data"]["state"]["teams"][0]["sunPoints"], 2);
+        assert_eq!(
+            v["data"]["state"]["teams"][0]["previousAttackerTeamId"],
+            "Violet"
+        );
         assert_eq!(v["data"]["state"]["powerups"][0]["id"], "pu-1");
         assert_eq!(
             v["data"]["state"]["powerups"][0]["expiresAt"],

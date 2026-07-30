@@ -1,5 +1,6 @@
 use crate::bot::BotManager;
 use rand::Rng;
+use razzoozle_engine::flower_battle::VoteState;
 use razzoozle_engine::state::{GamePhase, GameState};
 use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::player::Player;
@@ -125,6 +126,13 @@ pub struct Game {
     // resolve_player_cap. `None` = not configured, i.e. use the hard
     // MAX_PLAYERS_PER_GAME ceiling (see effective_player_cap()).
     pub player_cap: Option<usize>,
+    /// In-memory FlowerBattle power-up / target vote sessions (WP #931).
+    /// Keyed by attacker `team_id`. Not snapshotted — reconnect keeps the
+    /// process-local map until evaluation (#933 lifecycle tick).
+    pub flower_battle_votes: HashMap<String, VoteState>,
+    /// Victim team_id → last successful acid_rain attacker team_id (WP #931).
+    /// Mirrors `FlowerBattleTeamState.previous_attacker_team_id` in-memory.
+    pub flower_battle_previous_attacker: HashMap<String, Option<String>>,
 }
 
 impl Game {
@@ -204,6 +212,8 @@ impl Game {
                 team_assignment: Default::default(),
             },
             player_cap: None,
+            flower_battle_votes: HashMap::new(),
+            flower_battle_previous_attacker: HashMap::new(),
         }
     }
 

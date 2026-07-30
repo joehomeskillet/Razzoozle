@@ -473,6 +473,9 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         shuffled_items: None,
         selected_modes,
         player_cap: player_cap_value,
+        // WP #931: vote maps are process-local only — never restored from snapshot.
+        flower_battle_votes: std::collections::HashMap::new(),
+        flower_battle_previous_attacker: std::collections::HashMap::new(),
     };
 
     // Restore last manager status if present
