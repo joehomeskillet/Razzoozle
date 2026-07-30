@@ -11,4 +11,8 @@ export type CelebrationRequest = {
   durationMs?: number
   revision?: number
   achievementIds?: string[]
+  // Stacking override for full-screen celebration kinds (e.g. "award-reveal")
+  // that render above specific chrome. Omitted callers get the adapter's
+  // default confetti z-index.
+  zIndex?: number
 }

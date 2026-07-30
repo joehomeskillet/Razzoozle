@@ -1,6 +1,7 @@
 import type { CssTokenName } from "@razzoozle/common/theme-tokens"
 import {
   fireCenterSalvo,
+  fireFullScreenBurst,
   fireTierConfetti,
 } from "@razzoozle/web/features/game/utils/confetti"
 import { getTokenCanvasRgba } from "@razzoozle/web/features/theme/hyperShaderTokenSync"
@@ -43,10 +44,13 @@ const centerSalvoAdapter: CelebrationAdapter = async (request, reduced) => {
 }
 
 const legacyAwardRevealAdapter: CelebrationAdapter = async (
-  _request,
+  request,
   reduced,
 ) => {
-  if (!reduced) await import("react-confetti")
+  await fireFullScreenBurst(reduced, {
+    colors: resolveColors(request.colorRoles),
+    zIndex: request.zIndex,
+  })
 }
 
 const ADAPTERS = new Map<string, CelebrationAdapter>([
