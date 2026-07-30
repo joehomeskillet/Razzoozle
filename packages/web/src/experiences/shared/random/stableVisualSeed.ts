@@ -38,15 +38,9 @@ export function stableVisualSeed(input: VisualSeedInput): number {
   const parts: string[] = [
     input.gameId,
     String(input.revision),
+    input.eventId ?? '',
+    input.effectId ?? '',
   ]
-
-  if (input.eventId !== undefined) {
-    parts.push(input.eventId)
-  }
-
-  if (input.effectId !== undefined) {
-    parts.push(input.effectId)
-  }
 
   const combined = parts.join(':')
   return fnv1aHash(combined)
