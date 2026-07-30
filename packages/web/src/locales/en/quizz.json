@@ -95,7 +95,8 @@
     "confidence": "Confidence Rating",
     "confidenceDesc": "Players indicate how sure they are of their answer",
     "microLesson": "Micro-Lesson",
-    "microLessonDesc": "Short teaching content to click through, no scoring"
+    "microLessonDesc": "Short teaching content to click through, no scoring",
+    "selectType": "Select question type"
   },
   "multipleSelect": {
     "minSolutionsHint": "Mark at least 2 correct answers",

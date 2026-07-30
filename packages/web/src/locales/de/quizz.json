@@ -87,7 +87,8 @@
     "confidence": "Selbsteinschätzung",
     "confidenceDesc": "Spieler geben an, wie sicher sie sich bei der Antwort sind",
     "microLesson": "Mikro-Lektion",
-    "microLessonDesc": "Kurzer Lerninhalt zum Durchklicken, keine Wertung"
+    "microLessonDesc": "Kurzer Lerninhalt zum Durchklicken, keine Wertung",
+    "selectType": "Fragetyp wählen"
   },
   "slider": {
     "min": "Min",

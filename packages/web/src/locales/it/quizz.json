@@ -87,7 +87,8 @@
     "confidence": "Livello di sicurezza",
     "confidenceDesc": "I giocatori indicano quanto sono sicuri della risposta",
     "microLesson": "Micro-lezione",
-    "microLessonDesc": "Breve contenuto didattico da scorrere, senza punteggio"
+    "microLessonDesc": "Breve contenuto didattico da scorrere, senza punteggio",
+    "selectType": "Seleziona tipo di domanda"
   },
   "slider": {
     "min": "Min",
