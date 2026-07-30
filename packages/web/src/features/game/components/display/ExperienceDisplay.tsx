@@ -8,12 +8,7 @@
  * Scaffolded via `pnpm g:display ExperienceDisplay` with WP 877.
  */
 
-interface ExperienceTransition {
-  mode: string
-  phase: string
-  answered?: number
-  total?: number
-}
+import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
 
 export interface ExperienceDisplayProps {
   data: ExperienceTransition

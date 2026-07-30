@@ -156,6 +156,14 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 };
 
                 socket.join(game_id.clone());
+                // WP #877 — the presenter (host) and satellite kiosk both
+                // reconnect through this handler (satellite authenticates via
+                // its handshake token, not game ownership) and both need the
+                // content-free `game:experience` transitions, not just a
+                // separately-paired beamer (which already joins this room in
+                // DISPLAY.PAIR). Harmless when no Experience mode is active —
+                // nothing else broadcasts into this room.
+                socket.join(format!("display:{}", game_id));
 
                 let (status_name, status_data) = reconnect_status;
 

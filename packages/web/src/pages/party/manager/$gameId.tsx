@@ -1,6 +1,7 @@
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
+import { ExperienceDisplay } from "@razzoozle/web/features/game/components/display/ExperienceDisplay"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import {
   socketClient,
@@ -92,7 +93,8 @@ const ManagerGamePage = () => {
   const { t } = useTranslation()
   const [confirmExit, setConfirmExit] = useState(false)
 
-  const { status, CurrentComponent } = useManagerGameSession(gameIdParam, {
+  const { status, CurrentComponent, experienceTransition } =
+    useManagerGameSession(gameIdParam, {
     onReset: (message) => {
       navigate({ to: "/manager/config" })
       reset()
@@ -152,7 +154,11 @@ const ManagerGamePage = () => {
       manager
     >
       <AutoAdvanceCountdown ms={autoAdvanceMs} />
-      {CurrentComponent && <CurrentComponent data={status.data as never} />}
+      {experienceTransition ? (
+        <ExperienceDisplay data={experienceTransition} />
+      ) : (
+        CurrentComponent && <CurrentComponent data={status.data as never} />
+      )}
 
       <AlertDialog.Root open={confirmExit} onOpenChange={setConfirmExit}>
         <AlertDialog.Portal>

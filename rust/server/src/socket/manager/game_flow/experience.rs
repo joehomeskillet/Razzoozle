@@ -1,9 +1,10 @@
 //! Experience-mode start gates (E-11rev soft-start + E-12rev unscored filter).
 //! Pure helpers — unit-tested without socket I/O.
 
-use razzoozle_protocol::game::ExperienceMode;
+use razzoozle_protocol::game::{EndScreen, ExperienceMode, SelectedModes, TeamAssignment};
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Question;
+use razzoozle_protocol::status::ScoringMode;
 
 /// Soft/hard outcomes for experience start preconditions.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,6 +114,36 @@ pub fn filter_experience_questions(
         .collect();
     let skipped = original.saturating_sub(kept.len());
     (kept, skipped)
+}
+
+/// Build the per-game `selected_modes` snapshot from already-VALIDATED mode
+/// components (Node parity: the snapshot always reflects the clamped/wirksam
+/// values, never the raw client request — see register_create's call site,
+/// which used to inline this as an 8-field struct literal and once regressed
+/// by hardcoding `experience_mode: None` there; extracted so the call site is
+/// a single argument list instead).
+pub fn build_selected_modes_snapshot(
+    validated_scoring_mode: ScoringMode,
+    validated_team_mode: bool,
+    validated_klassen: bool,
+    validated_end_screen: EndScreen,
+    player_cap: Option<i64>,
+    validated_experience_mode: Option<ExperienceMode>,
+    team_assignment: TeamAssignment,
+) -> SelectedModes {
+    SelectedModes {
+        scoring_mode: Some(if validated_scoring_mode == ScoringMode::Speed {
+            "speed".to_string()
+        } else {
+            "accuracy".to_string()
+        }),
+        team_mode: Some(validated_team_mode),
+        klassen: Some(validated_klassen),
+        end_screen: Some(validated_end_screen),
+        participant_cap: player_cap,
+        experience_mode: validated_experience_mode,
+        team_assignment,
+    }
 }
 
 /// Validate requested experience mode against the CSV allow-list.
@@ -339,5 +370,42 @@ mod tests {
             None
         );
         assert_eq!(validate_experience_mode(None, "classic"), None);
+    }
+
+    /// WP #877 regression guard: register_create once hardcoded
+    /// `experience_mode: None` in this snapshot instead of forwarding the
+    /// validated mode. This exercises the exact function register_create now
+    /// calls, so hardcoding `None` there again fails this test.
+    #[test]
+    fn build_selected_modes_snapshot_persists_validated_experience_mode() {
+        let modes = build_selected_modes_snapshot(
+            ScoringMode::Speed,
+            true,
+            false,
+            EndScreen::Full,
+            Some(42),
+            Some(ExperienceMode::PyramidClimb),
+            TeamAssignment::Auto,
+        );
+        assert_eq!(modes.experience_mode, Some(ExperienceMode::PyramidClimb));
+        assert_eq!(modes.scoring_mode, Some("speed".to_string()));
+        assert_eq!(modes.team_mode, Some(true));
+        assert_eq!(modes.klassen, Some(false));
+        assert_eq!(modes.end_screen, Some(EndScreen::Full));
+        assert_eq!(modes.participant_cap, Some(42));
+        assert_eq!(modes.team_assignment, TeamAssignment::Auto);
+
+        let modes_none = build_selected_modes_snapshot(
+            ScoringMode::Accuracy,
+            false,
+            false,
+            EndScreen::Full,
+            None,
+            None,
+            TeamAssignment::SelfAssign,
+        );
+        assert_eq!(modes_none.experience_mode, None);
+        assert_eq!(modes_none.scoring_mode, Some("accuracy".to_string()));
+        assert_eq!(modes_none.team_assignment, TeamAssignment::SelfAssign);
     }
 }

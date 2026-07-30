@@ -21,6 +21,7 @@ import type {
   QuizzWithId,
   SharedResult,
 } from "@razzoozle/common/types/game"
+import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
 import type { Status, StatusDataMap } from "@razzoozle/common/types/game/status"
 import type { ManagerConfig } from "@razzoozle/common/types/manager"
 import type { Submission } from "@razzoozle/common/types/submission"
@@ -283,6 +284,9 @@ export interface ServerToClientEvents {
     total: number
   }) => void
   [EVENTS.GAME.PLAYER_ANSWER]: (_count: number) => void
+  // Experience-mode event family (WP #876/#877). Own envelope, not GAME.STATUS
+  // — content-free phase/progress only, broadcast to the display room.
+  [EVENTS.EXPERIENCE.TRANSITION]: (_data: ExperienceTransition) => void
 
   // Player events
   [EVENTS.PLAYER.SUCCESS_RECONNECT]: (_data: {

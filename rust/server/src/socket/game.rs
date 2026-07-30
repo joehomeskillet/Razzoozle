@@ -5,7 +5,6 @@ use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use razzoozle_protocol::game::EndScreen;
 use razzoozle_protocol::game::GameCreate;
-use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::status::ScoringMode;
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
@@ -230,18 +229,15 @@ fn register_create(socket: &SocketRef, ctx: HandlerCtx) {
                             } else {
                                 razzoozle_protocol::game::TeamAssignment::default()
                             };
-                            g.selected_modes = SelectedModes {
-                                scoring_mode: Some(
-                                    if validated_scoring_mode == ScoringMode::Speed { "speed".to_string() }
-                                    else { "accuracy".to_string() }
-                                ),
-                                team_mode: Some(validated_team_mode),
-                                klassen: Some(validated_klassen),
-                                end_screen: Some(validated_end_screen),
-                                participant_cap: g.player_cap.map(|u| u as i64),
-                                experience_mode: validated_experience_mode,
+                            g.selected_modes = experience::build_selected_modes_snapshot(
+                                validated_scoring_mode,
+                                validated_team_mode,
+                                validated_klassen,
+                                validated_end_screen,
+                                g.player_cap.map(|u| u as i64),
+                                validated_experience_mode,
                                 team_assignment,
-                            };
+                            );
                         }
 
                         // Emit manager:gameCreated with protocol type
