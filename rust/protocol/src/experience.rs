@@ -2,6 +2,7 @@
 //!
 //! WP #876 — Protokoll-Contract Experience-Modi (Wave-0-Freeze)
 //! WP #927 — FlowerBattle domain contract (payload body + wire types)
+//! WP #930 — FlowerBattle sun-points meter (per-team accumulation)
 //! Date: 2026-07-30
 //!
 //! Wire family: `game:experience` with envelope
@@ -157,6 +158,8 @@ pub struct FlowerBattleTeamState {
     pub hp: f32,
     pub shield: i32,
     pub effects: Vec<FlowerBattleEffect>,
+    /// Accumulated sun points for power-up triggers (WP #930).
+    pub sun_points: i32,
 }
 
 /// Full FlowerBattle mode state snapshot body.
@@ -281,6 +284,7 @@ mod tests {
                     hp: 100.0,
                     shield: 0,
                     effects: vec![FlowerBattleEffect::Sunbeam],
+                    sun_points: 2,
                 }],
                 background: FlowerBattleBackground {
                     seed: "sess-seed-1".into(),
@@ -303,6 +307,7 @@ mod tests {
         assert_eq!(v["data"]["state"]["teams"][0]["name"], "Rose");
         assert_eq!(v["data"]["state"]["teams"][0]["hp"], 100.0);
         assert_eq!(v["data"]["state"]["teams"][0]["effects"][0], "sunbeam");
+        assert_eq!(v["data"]["state"]["teams"][0]["sunPoints"], 2);
         assert_eq!(v["data"]["state"]["powerups"][0]["id"], "pu-1");
         assert_eq!(
             v["data"]["state"]["powerups"][0]["expiresAt"],
