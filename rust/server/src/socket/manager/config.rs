@@ -150,6 +150,61 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     }
                 }
 
+                // Whitelist experienceModesEnabled: split, trim, validate against
+                // {"classic","pyramidclimb","deepseaescape","flowerbattle"},
+                // deduplicate, restore canonical order, rejoin.
+                // Empty string is valid (= toggle OFF) and must land as "" in the patch.
+                // Trust boundary: Socket client input may contain arbitrary strings.
+                if let Some(experience_modes) = payload
+                    .get("experienceModesEnabled")
+                    .and_then(|v| v.as_str())
+                {
+                    let raw_value = experience_modes.to_string();
+                    let tokens: Vec<&str> = experience_modes
+                        .split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    let modes: std::collections::HashSet<&str> = tokens
+                        .iter()
+                        .copied()
+                        .filter(|s| {
+                            matches!(
+                                *s,
+                                "classic" | "pyramidclimb" | "deepseaescape" | "flowerbattle"
+                            )
+                        })
+                        .collect();
+
+                    if tokens.is_empty() {
+                        // Empty / whitespace-only: valid toggle OFF
+                        patch["experienceModesEnabled"] = serde_json::json!("");
+                    } else if !modes.is_empty() {
+                        // Canonical order: classic, pyramidclimb, deepseaescape, flowerbattle
+                        let mut ordered_modes = Vec::new();
+                        for canonical in
+                            &["classic", "pyramidclimb", "deepseaescape", "flowerbattle"]
+                        {
+                            if modes.contains(canonical) {
+                                ordered_modes.push(*canonical);
+                            }
+                        }
+                        let validated = ordered_modes.join(",");
+                        patch["experienceModesEnabled"] = serde_json::json!(validated);
+                    } else {
+                        // Completely invalid input: warn, do not patch
+                        let truncated = if raw_value.len() > 64 {
+                            format!("{}…", raw_value.chars().take(64).collect::<String>())
+                        } else {
+                            raw_value
+                        };
+                        warn!(
+                            "experienceModesEnabled: rejected invalid input: {}",
+                            truncated
+                        );
+                    }
+                }
+
                 // If no recognized fields, silent no-op (consistent with Node)
                 if !patch.as_object().map(|o| !o.is_empty()).unwrap_or(false) {
                     return;
