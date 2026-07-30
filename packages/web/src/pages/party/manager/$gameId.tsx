@@ -164,6 +164,14 @@ const ManagerGamePage = () => {
     <div className="flex h-dvh w-full">
       <GameWrapper
         statusName={status.name}
+        // WP-958F-W: keep the experience scene (Flower/Pixi) mounted across
+        // Question → Result → next Question. Classic / no envelope keeps the
+        // default statusName key so classic remount/re-animation is unchanged.
+        contentTransitionKey={
+          experienceTransition && experienceTransition.mode !== "classic"
+            ? experienceTransition.mode
+            : undefined
+        }
         onNext={handleSkip}
         // Exit (LogOut) button opens the confirm dialog instead of leaving
         // immediately; performExit runs after the host confirms.

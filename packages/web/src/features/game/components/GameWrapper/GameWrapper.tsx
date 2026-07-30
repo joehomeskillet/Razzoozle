@@ -35,6 +35,10 @@ import { useTranslation } from "react-i18next"
 
 type Props = PropsWithChildren & {
   statusName: Status | undefined
+  // WP-958F-W: when set, pins the animated content subtree key so experience
+  // scenes (Flower/Pixi) survive Question → Result → next Question. When omitted,
+  // falls back to statusName (classic remount / re-animation behavior).
+  contentTransitionKey?: string
   onNext?: () => void
   onBack?: () => void
   manager?: boolean
@@ -44,6 +48,7 @@ type Props = PropsWithChildren & {
 const GameWrapper = ({
   children,
   statusName,
+  contentTransitionKey,
   onNext,
   onBack,
   manager,
@@ -379,11 +384,18 @@ const GameWrapper = ({
               >
                 {/* State-transition choreography: each game screen cross-fades as
                     the status changes, giving one continuous flow across the whole
-                    game loop. Keyed by statusName so per-question re-animation
-                    stays inside Question.tsx. Reduced motion -> instant opacity. */}
+                    game loop. Default key is statusName so classic per-phase
+                    remount/re-animation stays inside Question.tsx. Presenter
+                    routes with a live non-classic experience pass
+                    contentTransitionKey so the React/Pixi scene is not torn down
+                    on Question → Result → next Question (WP-958F-W plant jump).
+                    Reduced motion -> instant opacity. */}
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={statusName ?? "none"}
+                    key={contentTransitionKey ?? statusName ?? "none"}
+                    data-content-transition-key={
+                      contentTransitionKey ?? statusName ?? "none"
+                    }
                     className="flex min-h-0 w-full flex-1 flex-col justify-center"
                     initial={reveal.reduced ? false : { opacity: 0, y: 8 }}
                     animate={

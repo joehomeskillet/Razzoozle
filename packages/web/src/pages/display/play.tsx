@@ -98,7 +98,19 @@ const DisplayPlayPage = () => {
   // distraction-free presentation sized for a beamer/TV.
   return (
     <div className="display-stage h-full w-full">
-      <GameWrapper statusName={status.name} manager controls={false}>
+      <GameWrapper
+        statusName={status.name}
+        // WP-958F-W: stable content key while a non-classic ExperienceDisplay is
+        // active so the React/Pixi subtree survives phase transitions. Classic /
+        // no experience falls through to statusName remount behavior.
+        contentTransitionKey={
+          experienceTransition && experienceTransition.mode !== "classic"
+            ? experienceTransition.mode
+            : undefined
+        }
+        manager
+        controls={false}
+      >
         {experienceTransition ? (
           <ExperienceDisplay data={experienceTransition} />
         ) : (

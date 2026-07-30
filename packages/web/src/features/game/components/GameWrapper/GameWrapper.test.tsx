@@ -21,13 +21,21 @@ vi.mock("motion/react", () => ({
     <>{children}</>
   ),
   motion: {
+    // Forward data-* attrs so WP-958F-W can assert the content transition key
+    // without a client remount harness (renderToStaticMarkup only).
     div: ({
       children,
       className,
+      ...rest
     }: {
       children?: React.ReactNode
       className?: string
-    }) => <div className={className}>{children}</div>,
+      [key: string]: unknown
+    }) => (
+      <div className={className} {...rest}>
+        {children}
+      </div>
+    ),
   },
 }))
 
@@ -235,5 +243,99 @@ describe("GameWrapper route-level height chain (WP-958D)", () => {
     const sectionClass = sectionClassOf(html)
     expect(sectionClass).toMatch(/(^|\s)min-h-dvh(\s|$)/)
     expect(sectionClass).not.toMatch(/(^|\s)h-dvh(\s|$)/)
+  })
+})
+
+describe("GameWrapper content transition key (WP-958F-W)", () => {
+  const contentKeyOf = (html: string) => {
+    const match = html.match(/data-content-transition-key="([^"]*)"/)
+    expect(match).not.toBeNull()
+    return match![1]
+  }
+
+  it("keeps a stable Flower/experience key across Question → Result → next Question", () => {
+    // Manager/display routes pass contentTransitionKey={mode} while a
+    // non-classic ExperienceDisplay is active. Same React key ⇒ same fiber
+    // identity for the animated content shell, so the Pixi Flower subtree is
+    // not torn down on phase changes (the plant-jump remount).
+    const phases = [
+      STATUS.SHOW_QUESTION,
+      STATUS.SHOW_RESPONSES,
+      STATUS.SHOW_RESULT,
+      STATUS.SHOW_QUESTION,
+    ] as const
+
+    const keys = phases.map((statusName) =>
+      contentKeyOf(
+        renderToStaticMarkup(
+          <GameWrapper
+            statusName={statusName}
+            contentTransitionKey="flowerBattle"
+            manager
+          >
+            <div data-testid="flower-scene">flower scene</div>
+          </GameWrapper>,
+        ),
+      ),
+    )
+
+    expect(keys).toEqual([
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+    ])
+    // All phases share one key identity — React will not remount the shell.
+    expect(new Set(keys).size).toBe(1)
+  })
+
+  it("retains classic/no-experience statusName remount behavior when contentTransitionKey is omitted", () => {
+    const questionKey = contentKeyOf(
+      renderToStaticMarkup(
+        <GameWrapper statusName={STATUS.SHOW_QUESTION} manager>
+          <div>classic question</div>
+        </GameWrapper>,
+      ),
+    )
+    const resultKey = contentKeyOf(
+      renderToStaticMarkup(
+        <GameWrapper statusName={STATUS.SHOW_RESULT} manager>
+          <div>classic result</div>
+        </GameWrapper>,
+      ),
+    )
+    const noneKey = contentKeyOf(
+      renderToStaticMarkup(
+        <GameWrapper statusName={undefined} manager>
+          <div>idle</div>
+        </GameWrapper>,
+      ),
+    )
+
+    expect(questionKey).toBe(STATUS.SHOW_QUESTION)
+    expect(resultKey).toBe(STATUS.SHOW_RESULT)
+    expect(questionKey).not.toBe(resultKey)
+    expect(noneKey).toBe("none")
+  })
+
+  it("preserves WP-958D no-scroll and WP-958E w-full when contentTransitionKey is set", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        contentTransitionKey="flowerBattle"
+        manager
+      >
+        <div>stage</div>
+      </GameWrapper>,
+    )
+
+    const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+    expect(sectionMatch).not.toBeNull()
+    const sectionClass = sectionMatch![1]
+    expect(sectionClass).toMatch(/(^|\s)w-full(\s|$)/)
+    expect(sectionClass).toMatch(/(^|\s)h-dvh(\s|$)/)
+    expect(sectionClass).toMatch(/(^|\s)overflow-hidden(\s|$)/)
+    expect(sectionClass).not.toMatch(/(^|\s)min-h-dvh(\s|$)/)
+    expect(contentKeyOf(html)).toBe("flowerBattle")
   })
 })
