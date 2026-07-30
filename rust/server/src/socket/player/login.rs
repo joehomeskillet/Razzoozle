@@ -603,8 +603,9 @@ pub(super) fn register_login(socket: &SocketRef, ctx: HandlerCtx) {
                                         player.identifier_hash = Some(sid_str);
                                     }
 
-                                    // WP #952: auto team assignment on login — smallest active team.
-                                    if team_mode && team_assignment_auto {
+                                    // WP #952: auto team assignment on login — smallest active team (only if unassigned).
+                                    // Guard: rejoin/reconnect must not re-assign if player already has a team.
+                                    if team_mode && team_assignment_auto && player.team_id.is_none() {
                                         let counts: Vec<(bool, Option<&str>)> = game
                                             .players
                                             .iter()
