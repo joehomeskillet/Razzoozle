@@ -6,7 +6,7 @@ import type { ExperiencePhase } from "./ExperiencePhase";
 /**
  * S2C envelope for `game:experience` transitions.
  *
- * Five structural fields + mode-tagged `payload`. No free-text / media / solution
+ * Seven structural fields + mode-tagged `payload`. No free-text / media / solution
  * fields — anti-cheat and separation from `game:status`.
  */
-export type ExperienceTransition = { mode: ExperienceMode, phase: ExperiencePhase, phaseStartedAtServerMs: bigint, phaseDurationMs?: bigint, revision: number, payload: ExperiencePayload, };
+export type ExperienceTransition = { mode: ExperienceMode, phase: ExperiencePhase, phaseStartedAtServerMs: bigint, phaseDurationMs?: bigint, revision: number, answered?: number, total?: number, payload: ExperiencePayload, };

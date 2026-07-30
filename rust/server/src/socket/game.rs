@@ -316,6 +316,9 @@ fn register_disconnect(socket: &SocketRef, ctx: HandlerCtx) {
             } else {
                 info!("Client disconnected: socketId={}", socket_id);
             }
+
+            // WP #877: Display-room cleanup würde hier gehören (display:<gameId>),
+            // aber ohne Game-ID-Mapping. Wird in Reconnect-WP (Folge-Ticket) ergänzt.
         });
     });
 }

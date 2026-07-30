@@ -359,9 +359,7 @@ mod tests {
             revision: 3,
             answered: Some(7),
             total: Some(12),
-            payload: ExperiencePayload::Pyramid(PyramidPayload {
-                team_steps: vec![],
-            }),
+            payload: ExperiencePayload::Pyramid(PyramidPayload { team_steps: vec![] }),
         };
         let v = serde_json::to_value(&t).unwrap();
         assert_eq!(v["mode"], "pyramidClimb");
