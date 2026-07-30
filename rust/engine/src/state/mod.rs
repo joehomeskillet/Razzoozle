@@ -28,6 +28,17 @@ pub enum GamePhase {
     Finished,
 }
 
+/// Generic experience-mode terminal outcome (not flower-battle-specific).
+/// Shared hook contract for #884 Pyramid / #892 DeepSea / #933 FlowerBattle early finish.
+/// Lifecycle checks this **after** reveal (and mode-specific apply), **before** result dwell.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModeOutcome {
+    /// Mode still running — continue normal lifecycle.
+    Ongoing,
+    /// Mode completed early or at end; `winner_team_ids` may be empty (solo/draw) or multi on ties.
+    Completed { winner_team_ids: Vec<String> },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GameError {
     InvalidTransition {

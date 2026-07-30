@@ -39,6 +39,9 @@ use super::reveal_helpers::perform_reveal_and_broadcast;
 use super::status_emit::emit_plugin_lifecycle;
 use super::status_emit::{broadcast_status, send_status_to_manager};
 
+pub(crate) mod flower_battle_emit;
+pub(crate) mod flower_battle_tick;
+pub(crate) mod flower_battle_votes_tick;
 pub(crate) mod payloads;
 pub(crate) use payloads::build_select_answer_data;
 pub(crate) mod timing;
@@ -369,6 +372,10 @@ async fn run_lifecycle_from(
         // one permit, so a click landing before the dwell awaits still wakes it.
         let abort_result = { game_ref.lock().unwrap().arm_abort() };
 
+        // FlowerBattle: evaluate open power-up/target votes BEFORE reveal
+        // (L-04: after vote-loop wait, before reveal). Non-FLB is a no-op.
+        flower_battle_tick::resolve_votes_before_reveal(&io, &game_ref, &game_id).await;
+
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
         // so a reveal already performed by a racing path is a silent no-op.
@@ -378,6 +385,13 @@ async fn run_lifecycle_from(
         // Touch activity on reveal (phase transition)
         {
             game_ref.lock().unwrap().touch();
+        }
+
+        // Early-finish hook (generic ModeOutcome — coordination for #884 Pyramid
+        // and #892 DeepSea; flower-specific growth/win lives in flower_battle_tick).
+        // AFTER perform_reveal_and_broadcast, BEFORE result dwell / leaderboard.
+        if flower_battle_tick::after_reveal_tick(&io, &game_ref, &game_id, &db_pool).await {
+            return;
         }
 
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
@@ -471,7 +485,7 @@ async fn run_lifecycle_from(
         // no next_or_finish() call (which would reject: phase is no longer
         // ShowLeaderboard).
         if phase_after_leaderboard == GamePhase::Finished {
-            finish_and_broadcast(&io, &game_ref, &game_id, &db_pool).await;
+            flower_battle_tick::finish_once(&io, &game_ref, &game_id, &db_pool).await;
             return;
         }
 
@@ -523,7 +537,7 @@ async fn run_lifecycle_from(
 
         match next_phase {
             Ok(GamePhase::Finished) => {
-                finish_and_broadcast(&io, &game_ref, &game_id, &db_pool).await;
+                flower_battle_tick::finish_once(&io, &game_ref, &game_id, &db_pool).await;
                 return;
             }
             Ok(GamePhase::ShowQuestion) => {
@@ -553,12 +567,30 @@ async fn run_lifecycle_from(
 /// `resume_game_lifecycle` when a restart landed post-reveal on the last
 /// question. Assumes `engine.phase == Finished` and the leaderboard order is
 /// already settled in `engine.players`.
-async fn finish_and_broadcast(
+///
+/// Callers should prefer [`flower_battle_tick::finish_once`] so double-reveal /
+/// retry never re-persists or re-broadcasts (WP #933 idempotency).
+pub(crate) async fn finish_and_broadcast(
     io: &SocketIo,
     game_ref: &Arc<Mutex<Game>>,
     game_id: &str,
     db_pool: &Option<sqlx::PgPool>,
 ) {
+    // Idempotency: network-retry / double early-finish must never re-persist
+    // or re-broadcast FINISHED (WP #933).
+    {
+        let mut game = game_ref.lock().unwrap();
+        if game.finish_broadcast_done {
+            warn!(
+                "finish_and_broadcast skipped (already done): gameId={}",
+                game_id
+            );
+            return;
+        }
+        game.finish_broadcast_done = true;
+        game.engine.phase = GamePhase::Finished;
+    }
+
     info!("Game finished: gameId={}", game_id);
     let (subject, players_json, quiz_id, owner_user_id) = {
         let game = game_ref.lock().unwrap();
@@ -711,7 +743,7 @@ pub async fn resume_game_lifecycle(
             "Resuming restored game straight to FINISHED (post-reveal on last question): gameId={}",
             plan.game_id
         );
-        finish_and_broadcast(&io, &game_ref, &plan.game_id, &db_pool).await;
+        flower_battle_tick::finish_once(&io, &game_ref, &plan.game_id, &db_pool).await;
         return;
     }
 
