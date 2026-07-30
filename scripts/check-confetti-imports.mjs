@@ -9,10 +9,13 @@ const REPO_ROOT = path.resolve(
   "..",
 )
 const SOURCE_DIR = "packages/web/src"
-// WP-KIT-14 (#917): react-confetti is gone (Podium/SharePage now dispatch
-// through the celebration adapter, which itself calls into confetti.ts) —
-// there is no remaining call site that needs an allowlist entry.
-const ALLOWED_FILES = new Set([])
+// WP-KIT-14 (issue 917): react-confetti is gone entirely (0 allowed sites —
+// Podium/SharePage now dispatch through the celebration adapter instead of
+// importing it directly). canvas-confetti remains the one legitimate
+// implementation and keeps its single canonical call site allowlisted.
+const ALLOWED_FILES = new Set([
+  "packages/web/src/features/game/utils/confetti.ts",
+])
 const IMPORT_PATTERN =
   `(from[[:space:]]*|import[[:space:]]*(\\([[:space:]]*)?)` +
   `["'](canvas-confetti|react-confetti)(/[^"']*)?["']`
