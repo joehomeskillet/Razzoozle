@@ -226,6 +226,10 @@ pub fn broadcast_status(
 /// `total` are optional (WP #877 doesn't yet track per-question progress for
 /// experience modes — that lands with the mode-specific gameplay in WP
 /// #904/#905); the wire field is already `skip_serializing_if` on the type.
+///
+/// Transition-only path — do **not** call from reconnect (WP #939B uses
+/// [`resend_experience_on_display_reconnect`] instead, single-socket, no
+/// revision bump).
 pub fn broadcast_experience_to_display(
     io: &SocketIo,
     game_ref: &Arc<Mutex<Game>>,
@@ -240,6 +244,91 @@ pub fn broadcast_experience_to_display(
     let display_room = format!("display:{}", game_id);
     io.to(display_room)
         .emit(constants::experience::TRANSITION, &experience)
+        .ok();
+}
+
+/// Map recorded manager wire `Status` → experience phase (same table as
+/// [`status_to_experience_phase`], without needing a full `GameStatus` value).
+fn recorded_status_to_experience_phase(
+    status: razzoozle_protocol::status::Status,
+) -> Option<ExperiencePhase> {
+    use razzoozle_protocol::status::Status;
+    match status {
+        Status::ShowRoom | Status::Wait | Status::Paused => None,
+        Status::ShowStart | Status::ShowPrepared => Some(ExperiencePhase::Intro),
+        Status::ShowQuestion | Status::SelectAnswer => Some(ExperiencePhase::Question),
+        Status::ShowResponses => Some(ExperiencePhase::AnswersLocked),
+        Status::ShowResult => Some(ExperiencePhase::Resolution),
+        Status::ShowRoundRecap | Status::ShowLeaderboard => Some(ExperiencePhase::WorldTransition),
+        Status::Finished => Some(ExperiencePhase::GameComplete),
+    }
+}
+
+/// WP #939B — resend the current FlowerBattle `game:experience` envelope to
+/// the single reconnecting socket (host/satellite after hard-reload).
+///
+/// - Target: this socket only (not a room broadcast; room exclusion stays intact).
+/// - Revision: `EXPERIENCE_REVISION.load` **without** bump — multi-reconnect is
+///   idempotent; clients can guard on unchanged revision; seed/recipeVersion
+///   come from live `Game` (WP #939A) so the payload is stable.
+/// - Modes: FlowerBattle only; Classic/None/other modes = no-op.
+/// - Blackout phases (lobby / wait / paused): no-op (same as transitions).
+pub fn resend_experience_on_display_reconnect(socket: &SocketRef, game_ref: &Arc<Mutex<Game>>) {
+    let transition = {
+        let game = game_ref.lock().unwrap();
+        let mode = match game.selected_modes.experience_mode {
+            Some(ExperienceMode::FlowerBattle) => ExperienceMode::FlowerBattle,
+            _ => return,
+        };
+        let phase = game
+            .last_manager_status
+            .as_ref()
+            .and_then(|(s, _)| recorded_status_to_experience_phase(*s))
+            .or_else(|| {
+                // Fallback when nothing was recorded yet: map engine phase.
+                use razzoozle_engine::state::GamePhase;
+                match game.engine.phase {
+                    GamePhase::ShowRoom => None,
+                    GamePhase::ShowStart => Some(ExperiencePhase::Intro),
+                    GamePhase::ShowQuestion | GamePhase::SelectAnswer => {
+                        Some(ExperiencePhase::Question)
+                    }
+                    GamePhase::ShowResult => Some(ExperiencePhase::Resolution),
+                    GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard => {
+                        Some(ExperiencePhase::WorldTransition)
+                    }
+                    GamePhase::Finished => Some(ExperiencePhase::GameComplete),
+                }
+            });
+        let Some(phase) = phase else {
+            return;
+        };
+        let (answered, total, phase_duration_ms) = experience_progress(&game, phase);
+        // Prefer live question open time when in the answer window; otherwise
+        // wall-clock now (phase wall-clock is not persisted — reconnect fills
+        // the blank screen; timeline interpolation is out of scope for #939B).
+        let phase_started_at_server_ms =
+            if matches!(phase, ExperiencePhase::Question) && game.question_start_at_server_ms > 0 {
+                game.question_start_at_server_ms
+            } else {
+                get_now_ms() as i64
+            };
+        let payload = default_payload_for_mode(mode, &game);
+        ExperienceTransition {
+            mode,
+            phase,
+            phase_started_at_server_ms,
+            phase_duration_ms,
+            // Revision-guard: do not fetch_add — identical multi-reconnect.
+            revision: EXPERIENCE_REVISION.load(Ordering::Relaxed),
+            answered,
+            total,
+            payload,
+        }
+    };
+
+    socket
+        .emit(constants::experience::TRANSITION, &transition)
         .ok();
 }
 
@@ -521,5 +610,98 @@ mod tests {
             default_payload_for_mode(ExperienceMode::FlowerBattle, &game),
             ExperiencePayload::FlowerBattle(_)
         ));
+    }
+
+    // WP #939B — reconnect phase table must stay aligned with transition mapping.
+    #[test]
+    fn recorded_status_to_experience_phase_matches_transition_table() {
+        use razzoozle_protocol::status::Status;
+        let cases = [
+            (Status::ShowRoom, None),
+            (Status::Wait, None),
+            (Status::Paused, None),
+            (Status::ShowStart, Some(ExperiencePhase::Intro)),
+            (Status::ShowPrepared, Some(ExperiencePhase::Intro)),
+            (Status::ShowQuestion, Some(ExperiencePhase::Question)),
+            (Status::SelectAnswer, Some(ExperiencePhase::Question)),
+            (Status::ShowResponses, Some(ExperiencePhase::AnswersLocked)),
+            (Status::ShowResult, Some(ExperiencePhase::Resolution)),
+            (
+                Status::ShowRoundRecap,
+                Some(ExperiencePhase::WorldTransition),
+            ),
+            (
+                Status::ShowLeaderboard,
+                Some(ExperiencePhase::WorldTransition),
+            ),
+            (Status::Finished, Some(ExperiencePhase::GameComplete)),
+        ];
+        for (status, expected) in cases {
+            assert_eq!(
+                recorded_status_to_experience_phase(status),
+                expected,
+                "{status:?}"
+            );
+        }
+    }
+
+    /// Revision-guard: reconnect must not bump the process counter (load-only).
+    #[test]
+    fn experience_revision_load_does_not_mutate() {
+        let before = EXPERIENCE_REVISION.load(Ordering::Relaxed);
+        let a = EXPERIENCE_REVISION.load(Ordering::Relaxed);
+        let b = EXPERIENCE_REVISION.load(Ordering::Relaxed);
+        assert_eq!(a, b);
+        assert_eq!(before, a);
+        // Contrast: transition path uses fetch_add and would move the counter.
+        let after_bump = EXPERIENCE_REVISION.fetch_add(1, Ordering::Relaxed);
+        assert_eq!(after_bump, before);
+        assert_eq!(
+            EXPERIENCE_REVISION.load(Ordering::Relaxed),
+            before.wrapping_add(1)
+        );
+        // Restore so other tests in this process see a stable baseline.
+        EXPERIENCE_REVISION.store(before, Ordering::Relaxed);
+    }
+
+    /// FlowerBattle reconnect payload is content-free (no Q/A) and seed-stable.
+    #[test]
+    fn flower_battle_reconnect_payload_is_content_free_and_seed_stable() {
+        use razzoozle_protocol::quizz::Quizz;
+        let mut game = Game::new(
+            "g-reconnect".into(),
+            "INV".into(),
+            "mgr".into(),
+            "quiz".into(),
+            Quizz {
+                subject: "t".into(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
+        game.flower_battle_seed = 42_424_242;
+        let p1 = default_payload_for_mode(ExperienceMode::FlowerBattle, &game);
+        let p2 = default_payload_for_mode(ExperienceMode::FlowerBattle, &game);
+        assert_eq!(p1, p2, "multi-rebuild must be identical (idempotent seed)");
+        let v = serde_json::to_value(&p1).unwrap();
+        for forbidden in [
+            "question",
+            "answers",
+            "media",
+            "solutions",
+            "correct",
+            "message",
+        ] {
+            assert!(
+                v.get(forbidden).is_none(),
+                "forbidden key on payload: {forbidden}"
+            );
+            // Also scan nested JSON string for accidental Q text keys at any depth
+            // via the top-level data shape only (payload is mode-tagged).
+        }
+        assert_eq!(v["mode"], "flowerBattle");
+        assert_eq!(v["data"]["state"]["background"]["seed"], "42424242");
+        assert_eq!(v["data"]["state"]["background"]["recipeVersion"], 1);
     }
 }

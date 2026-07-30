@@ -1,9 +1,11 @@
 //! LOGOUT, RECONNECT — manager session handlers (DB-session-token auth only)
 
 use super::super::HandlerCtx;
+use crate::socket::status_emit;
 use crate::state::socket_role;
 use razzoozle_protocol::constants;
 use socketioxide::extract::{Data, SocketRef};
+use tracing::warn;
 
 pub fn register(socket: &SocketRef, ctx: HandlerCtx) {
     register_logout(socket, ctx.clone());
@@ -53,6 +55,10 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 let user = match ctx.require_user().await {
                     Some(user) => user,
                     None => {
+                        warn!(
+                            "manager:unauthorized event=reconnect check=require_user socketId={}",
+                            socket.id
+                        );
                         socket
                             .emit(constants::manager::UNAUTHORIZED, &serde_json::json!([]))
                             .ok();
@@ -184,6 +190,12 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 socket
                     .emit(constants::game::TOTAL_PLAYERS, &(players.len() as i32))
                     .ok();
+
+                // WP #939B — hard-reload left the display room joined but with
+                // no game:experience snapshot (transitions only fire on
+                // status changes). Resend the current FlowerBattle envelope
+                // to THIS socket only; revision is not bumped (idempotent).
+                status_emit::resend_experience_on_display_reconnect(&socket, &game_ref);
             });
         }
     });
