@@ -368,6 +368,44 @@ export function buildTypePatch(
 }
 
 /**
+ * Determines if a value should be considered "empty" for the purpose of
+ * field-loss detection in type transitions.
+ *
+ * Semantics:
+ * - Undefined, null, empty string, or whitespace-only string → empty
+ * - For arrays: empty if length is 0 OR all entries are empty (recursively)
+ * - Other values: empty only if explicitly null/undefined
+ *
+ * Examples:
+ * - isValueEmpty(["", ""]) → true (all entries empty)
+ * - isValueEmpty(["  "]) → true (whitespace counts as empty)
+ * - isValueEmpty(["Berlin", ""]) → false (at least one non-empty entry)
+ * - isValueEmpty([]) → true (length 0)
+ * - isValueEmpty("") → true
+ * - isValueEmpty("hello") → false
+ */
+function isValueEmpty(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return true
+  }
+
+  if (typeof value === "string") {
+    return value.trim() === ""
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return true
+    }
+    // An array is empty only if ALL entries are empty
+    return value.every((entry) => isValueEmpty(entry))
+  }
+
+  // Non-empty scalar value
+  return false
+}
+
+/**
  * Identifies fields that the patch would set to undefined AND that are currently
  * non-empty in the current question.
  *
@@ -376,6 +414,10 @@ export function buildTypePatch(
  *
  * Contract: returned array contains field names (string keys) that will be
  * lost due to the type change.
+ *
+ * Semantics of "non-empty": A field is non-empty if it contains actual user input.
+ * Arrays like ["", ""] or ["  "] are considered empty (template structure with no content).
+ * Arrays like ["Berlin", ""] are non-empty (at least one entry has content).
  */
 export function getClearedNonEmptyFields(
   current: CurrentQuestion,
@@ -387,12 +429,8 @@ export function getClearedNonEmptyFields(
   for (const key in patch) {
     if (patch[key as keyof Question] === undefined) {
       const currentValue = current[key as keyof CurrentQuestion]
-      // If the field exists and is "non-empty", record it
-      if (currentValue !== undefined && currentValue !== null && currentValue !== "") {
-        // For arrays, also check length
-        if (Array.isArray(currentValue) && currentValue.length === 0) {
-          continue
-        }
+      // Record the field only if it exists and is not empty
+      if (!isValueEmpty(currentValue)) {
         cleared.push(key)
       }
     }

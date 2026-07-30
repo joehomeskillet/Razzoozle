@@ -452,3 +452,108 @@ describe("getClearedNonEmptyFields", () => {
     expect(cleared).not.toContain("correctOrder") // Cleared to empty array
   })
 })
+
+  it("should treat empty string arrays as empty (no loss warning)", () => {
+    // Semantics: ["", ""] is a template with no actual content
+    const current = {
+      answers: ["", ""],
+      solutions: [],
+    }
+    const patch: Partial<Question> = {
+      type: "confidence",
+      answers: undefined,
+      solutions: undefined,
+    }
+
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // Empty arrays/strings should not trigger loss warning
+    expect(cleared).not.toContain("answers")
+    expect(cleared).not.toContain("solutions")
+    expect(cleared.length).toBe(0)
+  })
+
+  it("should treat whitespace-only arrays as empty (no loss warning)", () => {
+    // Semantics: ["  ", "  "] is a template with no actual content
+    const current = {
+      answers: ["  ", "  "],
+    }
+    const patch: Partial<Question> = {
+      type: "confidence",
+      answers: undefined,
+    }
+
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // Whitespace-only arrays should not trigger loss warning
+    expect(cleared).not.toContain("answers")
+    expect(cleared.length).toBe(0)
+  })
+
+  it("should detect mixed arrays with at least one non-empty entry (loss warning)", () => {
+    // Semantics: ["Berlin", ""] has content in first entry → non-empty
+    const current = {
+      answers: ["Berlin", ""],
+      solutions: [0],
+    }
+    const patch: Partial<Question> = {
+      type: "confidence",
+      answers: undefined,
+      solutions: undefined,
+    }
+
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // Mixed array with content should trigger loss warning
+    expect(cleared).toContain("answers")
+    expect(cleared).toContain("solutions")
+    expect(cleared.length).toBe(2)
+  })
+
+  it("should detect fully-filled arrays as non-empty (loss warning)", () => {
+    // Semantics: ["Paris", "London"] all entries have content → non-empty
+    const current = {
+      answers: ["Paris", "London"],
+    }
+    const patch: Partial<Question> = {
+      type: "confidence",
+      answers: undefined,
+    }
+
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // Fully-filled array should trigger loss warning
+    expect(cleared).toContain("answers")
+    expect(cleared.length).toBe(1)
+  })
+
+  it("should handle choice → confidence with no user input (fresh question)", () => {
+    // Simulate fresh question: answers template, no user input
+    const current = {
+      type: "choice" as const,
+      answers: ["", ""],
+      solutions: [],
+    }
+    const patch = buildTypePatch(current, "confidence")
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // No actual user input → no loss warning
+    expect(cleared).not.toContain("answers")
+    expect(cleared.length).toBe(0)
+  })
+
+  it("should handle choice → confidence with filled answers (destructive)", () => {
+    // User has filled in actual answers before switching type
+    const current = {
+      type: "choice" as const,
+      answers: ["Option A", "Option B"],
+      solutions: [1],
+    }
+    const patch = buildTypePatch(current, "confidence")
+    const cleared = getClearedNonEmptyFields(current, patch)
+
+    // Actual user input → loss warning
+    expect(cleared).toContain("answers")
+    expect(cleared).toContain("solutions")
+    expect(cleared.length).toBeGreaterThan(0)
+  })
