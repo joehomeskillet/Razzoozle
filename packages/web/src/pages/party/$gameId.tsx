@@ -17,6 +17,7 @@ import {
   GAME_STATE_COMPONENTS,
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
+import { isReconnectForActiveRoute } from "@razzoozle/web/features/game/utils/reconnectRouteGuard"
 import Result from "@razzoozle/web/features/game/components/states/Result"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
@@ -51,7 +52,9 @@ const PlayerGamePage = () => {
 
   // Timeout ID for reconnect attempt. If SUCCESS_RECONNECT doesn't arrive within
   // a reasonable window (8s), the game is unavailable and we navigate home.
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
 
   // The host leaving (server emits the existing EVENTS.GAME.RESET via
   // notifyManagerGone) should land the player on the explanatory Ended
@@ -65,7 +68,8 @@ const PlayerGamePage = () => {
       // the last server sequence so resume can show "answered" if appropriate.
       socket.emit(EVENTS.PLAYER.RECONNECT, {
         gameId: gameIdParam,
-        playerToken: localStorage.getItem(`player_token:${gameIdParam}`) ?? undefined,
+        playerToken:
+          localStorage.getItem(`player_token:${gameIdParam}`) ?? undefined,
         lastServerSeq: lastServerSeqRef.current,
       })
 
@@ -74,7 +78,9 @@ const PlayerGamePage = () => {
       // bounce the player home.
       reconnectTimeoutRef.current = setTimeout(() => {
         navigate({ to: "/" })
-        toast.error(t("errors:game.notFound", { defaultValue: "Spiel nicht gefunden" }))
+        toast.error(
+          t("errors:game.notFound", { defaultValue: "Spiel nicht gefunden" }),
+        )
       }, 8000)
     }
   })
@@ -93,25 +99,32 @@ const PlayerGamePage = () => {
       // clear explicitly so a prior Flower session cannot leak into Classic.
       flowerBattlePlayerStatus,
     }) => {
-      // Reconnect succeeded; clear the timeout.
+      // #978: gameIdParam is authoritative. Reject a delayed foreign envelope
+      // before clearing the timeout and before ANY store writes — otherwise
+      // setGameId(reconnectGameId) makes hydrate's store match tautological.
+      if (!isReconnectForActiveRoute(gameIdParam, reconnectGameId)) {
+        return
+      }
+
+      // Reconnect succeeded for this route; clear the timeout.
       if (reconnectTimeoutRef.current !== undefined) {
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = undefined
       }
 
-      setGameId(reconnectGameId)
+      setGameId(gameIdParam)
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayer(player)
       setQuestionStates(currentQuestion)
       // If the server says we already answered the current question, surface that
       // so the answer screen renders the answered/locked state instead of fresh
       // buttons. ?? false keeps normal-mode behaviour untouched.
-      setAlreadyAnswered(reconnectGameId, alreadyAnswered ?? false)
+      setAlreadyAnswered(gameIdParam, alreadyAnswered ?? false)
 
-      // Guarded hydrate (WP-946-C1-R1): sets only when the payload's gameId
-      // matches the reconnect/store game; clears on absent (Classic) or
-      // mismatch so no stale/foreign Flower state can survive.
-      hydrateFlowerBattlePlayerStatus(flowerBattlePlayerStatus, reconnectGameId)
+      // Guarded hydrate (WP-946-C1-R1): expected id is the route gameIdParam
+      // (authoritative after the match above); clears on absent (Classic) or
+      // payload mismatch so no stale/foreign Flower state can survive.
+      hydrateFlowerBattlePlayerStatus(flowerBattlePlayerStatus, gameIdParam)
     },
   )
 
@@ -218,8 +231,15 @@ const PlayerGamePage = () => {
 
   return (
     <GameWrapper statusName={status.name}>
-      {CurrentComponent && <CurrentComponent {...(CurrentComponent === Result ? { audience: "player" } : {})} data={status.data as never} />}
-      {CurrentComponent && <PluginRenderSlot status={status.name} data={status.data} />}
+      {CurrentComponent && (
+        <CurrentComponent
+          {...(CurrentComponent === Result ? { audience: "player" } : {})}
+          data={status.data as never}
+        />
+      )}
+      {CurrentComponent && (
+        <PluginRenderSlot status={status.name} data={status.data} />
+      )}
     </GameWrapper>
   )
 }
