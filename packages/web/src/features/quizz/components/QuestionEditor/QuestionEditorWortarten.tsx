@@ -34,7 +34,7 @@ const QuestionEditorWortarten = () => {
     updateQuestion,
     silentUpdateQuestion,
   } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const [toastError, setToastError] = useState<string>("")
 
   const sentence = currentQuestion.sentence ?? ""

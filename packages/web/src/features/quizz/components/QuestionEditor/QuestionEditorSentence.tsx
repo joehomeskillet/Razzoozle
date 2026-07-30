@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 
 const QuestionEditorSentence = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const chunks = currentQuestion.chunks ?? []
   const [localSentence, setLocalSentence] = useState(chunks.join(" "))

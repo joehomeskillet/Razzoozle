@@ -11,7 +11,7 @@ interface Props {
 }
 
 const ConfigNumberInput = ({ value, min, max, onChange }: Props) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const hintId = useId()
   const [input, setInput] = useState(String(value))
 

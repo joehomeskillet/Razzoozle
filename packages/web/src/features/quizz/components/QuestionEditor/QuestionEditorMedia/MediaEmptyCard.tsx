@@ -49,7 +49,7 @@ const MediaEmptyCard = ({
   handleEnhance,
   handleGenerate,
 }: MediaEmptyCardProps) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   return (
     <Card className="my-auto flex max-h-150 w-full max-w-xl flex-1 flex-col items-center justify-center gap-2 overflow-y-auto bg-white">

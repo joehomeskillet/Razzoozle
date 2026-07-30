@@ -34,7 +34,7 @@ export function QuestionTypeSelector({
   onTypeChange,
   excludeTypes = [],
 }: QuestionTypeSelectorProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const config = useManagerStore((s) => s.config)
   const klassenEnabled = config?.klassenEnabled ?? false
 

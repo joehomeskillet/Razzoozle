@@ -20,7 +20,7 @@ export function QuestionEditorSlotOptions({
   i18nPrefix = "fillBlank",
   testIdPrefix = "slot",
 }: Props) {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const options = slot.options.length >= 2 ? slot.options : ["", ""]
 
   const setOption = (idx: number, value: string) => {

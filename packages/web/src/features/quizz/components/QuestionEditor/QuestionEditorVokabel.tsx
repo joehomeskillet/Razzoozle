@@ -12,7 +12,7 @@ interface VokabelRow {
 const QuestionEditorVokabel = () => {
   const { currentIndex, addQuestion, removeQuestion, updateQuestion } =
     useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const [rows, setRows] = useState<VokabelRow[]>([
     { word: "", translation: "" },
   ])

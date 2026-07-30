@@ -26,7 +26,7 @@ const MediaEditPanel = ({
   uploading,
   handleUploadClick,
 }: MediaEditPanelProps) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   return (
     <div className="mt-2 flex w-full max-w-xl flex-col items-center gap-3">

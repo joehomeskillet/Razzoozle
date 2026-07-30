@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next"
 
 const QuestionEditorAnswers = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   if (!currentQuestion.answers || !currentQuestion.solutions) {
     return null

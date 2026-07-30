@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 
 const QuestionEditorTitle = () => {
   const { updateQuestion, currentIndex, currentQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
 
   const handleChangeQuestion = (e: ChangeEvent<HTMLInputElement>) => {
     updateQuestion(currentIndex, { question: e.target.value })

@@ -8,7 +8,7 @@ const defaultZone = (): Hotspot => ({ x: 0.25, y: 0.25, w: 0.25, h: 0.25 })
 
 const QuestionEditorDropPin = () => {
   const { currentQuestion, currentIndex, updateQuestion } = useQuizzEditor()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const hotspots: Hotspot[] =
     currentQuestion.hotspots?.length ? currentQuestion.hotspots : [defaultZone()]
   const mediaUrl = currentQuestion.media?.url

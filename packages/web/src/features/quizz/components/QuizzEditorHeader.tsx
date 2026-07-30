@@ -51,7 +51,7 @@ const QuizzEditorHeader = ({ templateMode }: QuizzEditorHeaderProps) => {
   const { themeTemplates } = useConfig()
   const { socket } = useSocket()
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const shouldReduceMotion = useReducedMotion()
   const { role } = useManagerStore()
 

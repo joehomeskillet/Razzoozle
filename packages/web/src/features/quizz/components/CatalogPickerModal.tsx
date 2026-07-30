@@ -32,7 +32,7 @@ const CatalogPickerModal = ({
   onPick,
 }: CatalogPickerModalProps) => {
   const { socket } = useSocket()
-  const { t } = useTranslation()
+  const { t } = useTranslation("quizz")
   const [entries, setEntries] = useState<CatalogEntry[]>([])
   const [search, setSearch] = useState("")
   const sectionRef = useRef<HTMLElement>(null)
