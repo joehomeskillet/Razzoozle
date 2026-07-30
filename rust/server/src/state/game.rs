@@ -1,7 +1,8 @@
 use crate::bot::BotManager;
 use rand::Rng;
-use razzoozle_engine::flower_battle::{EffectsState, VoteState};
+use razzoozle_engine::flower_battle::{EffectsState, OfferCacheKey, VoteState};
 use razzoozle_engine::state::{GamePhase, GameState};
+use razzoozle_protocol::experience::PowerupOffer;
 use razzoozle_protocol::game::SelectedModes;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
@@ -136,6 +137,15 @@ pub struct Game {
     /// Active FlowerBattle power-up statuses + growth stages (WP #932).
     /// Snapshotted as `activeEffects` (SNAPSHOT_VERSION ≥ 5).
     pub flower_battle_effects: EffectsState,
+    /// Offer registry cache (WP #930/#933 L-07). Key = (game_id, team_id, q_idx).
+    /// Snapshotted at SNAPSHOT_VERSION ≥ 6 — reconnect cache-hit returns same offer.
+    pub flower_battle_offers: HashMap<OfferCacheKey, PowerupOffer>,
+    /// Accumulated sun points per team (WP #930/#933 L-05/L-06).
+    pub flower_battle_sun_points: HashMap<String, u8>,
+    /// Early-finish winners (WP #933). Set once when ModeOutcome::Completed fires.
+    pub flower_battle_winner_team_ids: Option<Vec<String>>,
+    /// Idempotency: `finish_and_broadcast` must run at most once per game.
+    pub finish_broadcast_done: bool,
 }
 
 impl Game {
@@ -218,6 +228,10 @@ impl Game {
             flower_battle_votes: HashMap::new(),
             flower_battle_previous_attacker: HashMap::new(),
             flower_battle_effects: EffectsState::new(),
+            flower_battle_offers: HashMap::new(),
+            flower_battle_sun_points: HashMap::new(),
+            flower_battle_winner_team_ids: None,
+            finish_broadcast_done: false,
         }
     }
 

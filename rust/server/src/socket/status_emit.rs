@@ -15,7 +15,6 @@ use razzoozle_protocol::experience::{
     PyramidPayload,
 };
 use razzoozle_protocol::game::ExperienceMode;
-use razzoozle_protocol::player::Player;
 use razzoozle_protocol::status::GameStatus;
 use socketioxide::{extract::SocketRef, SocketIo};
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -55,11 +54,7 @@ fn status_to_experience_phase(status: &GameStatus) -> Option<ExperiencePhase> {
 /// delegates to a real projection of the current game state — see
 /// `flower_battle_display` for what's genuinely wired vs. still a docking
 /// point for #929/#930.
-fn default_payload_for_mode(
-    mode: ExperienceMode,
-    game_id: &str,
-    players: &[Player],
-) -> ExperiencePayload {
+fn default_payload_for_mode(mode: ExperienceMode, game: &Game) -> ExperiencePayload {
     match mode {
         ExperienceMode::Classic => ExperiencePayload::Classic,
         ExperienceMode::PyramidClimb => {
@@ -74,9 +69,57 @@ fn default_payload_for_mode(
             },
         }),
         ExperienceMode::FlowerBattle => {
-            flower_battle_display::build_flower_battle_payload(game_id, players)
+            flower_battle_display::build_flower_battle_payload_from_game(game)
         }
     }
+}
+
+/// Progress + phase duration for experience envelopes (L-13 / L-14).
+///
+/// `answered`/`total` = questions completed so far / quiz length (display
+/// "N / M" progress), not player answer-count.
+fn experience_progress(
+    game: &Game,
+    phase: ExperiencePhase,
+) -> (Option<i32>, Option<i32>, Option<i64>) {
+    let total = game.engine.quiz.questions.len() as i32;
+    let answered = {
+        let idx = game.engine.current_question_index as i32;
+        let post_reveal = matches!(
+            phase,
+            ExperiencePhase::AnswersLocked
+                | ExperiencePhase::Resolution
+                | ExperiencePhase::WorldTransition
+                | ExperiencePhase::GameComplete
+                | ExperiencePhase::LevelComplete
+        );
+        if total == 0 {
+            0
+        } else if post_reveal {
+            (idx + 1).min(total)
+        } else {
+            idx.min(total)
+        }
+    };
+    let phase_duration_ms: Option<i64> = match phase {
+        ExperiencePhase::Intro => Some(3_000),
+        ExperiencePhase::Question => game
+            .engine
+            .quiz
+            .questions
+            .get(game.engine.current_question_index)
+            .map(|q| i64::from(q.time.max(0)) * 1000),
+        ExperiencePhase::AnswersLocked
+        | ExperiencePhase::Resolution
+        | ExperiencePhase::LevelComplete => Some(6_000),
+        ExperiencePhase::WorldTransition => Some(5_000),
+        ExperiencePhase::GameComplete | ExperiencePhase::GameFailed => None,
+    };
+    (
+        if total > 0 { Some(answered) } else { None },
+        if total > 0 { Some(total) } else { None },
+        phase_duration_ms,
+    )
 }
 
 /// Whether `game:status` broadcasts must wire-exclude the display room.
@@ -99,13 +142,38 @@ pub fn broadcast_status(
     game_id: &str,
     status: &GameStatus,
 ) {
-    let (experience_mode, manager_socket_id, players) = {
+    let (
+        experience_mode,
+        manager_socket_id,
+        payload,
+        answered,
+        total,
+        phase_duration_ms,
+        phase_opt,
+    ) = {
         let mut game = game_ref.lock().unwrap();
         game.record_last_manager_status(status);
+        let experience_mode = game.selected_modes.experience_mode;
+        let manager_socket_id = game.manager_socket_id.clone();
+        let phase_opt = status_to_experience_phase(status);
+        let (answered, total, phase_duration_ms, payload) = if let (Some(mode), Some(phase)) = (
+            experience_mode.filter(|m| *m != ExperienceMode::Classic),
+            phase_opt,
+        ) {
+            let (a, t, d) = experience_progress(&game, phase);
+            let payload = default_payload_for_mode(mode, &game);
+            (a, t, d, Some((mode, phase, payload)))
+        } else {
+            (None, None, None, None)
+        };
         (
-            game.selected_modes.experience_mode,
-            game.manager_socket_id.clone(),
-            game.players.clone(),
+            experience_mode,
+            manager_socket_id,
+            payload,
+            answered,
+            total,
+            phase_duration_ms,
+            phase_opt,
         )
     };
 
@@ -137,21 +205,20 @@ pub fn broadcast_status(
     // mode is active. Content-free: only phase/mode/progress go out, the
     // question/answer data already went out on the STATUS emit above (now
     // wire-excluded from the display room itself, see above).
-    if let (Some(mode), Some(phase)) = (
-        experience_mode.filter(|m| *m != ExperienceMode::Classic),
-        status_to_experience_phase(status),
-    ) {
+    if let Some((mode, phase, payload_body)) = payload {
+        let _ = phase_opt; // used above for progress
         let transition = ExperienceTransition {
             mode,
             phase,
             phase_started_at_server_ms: get_now_ms() as i64,
-            phase_duration_ms: None,
+            phase_duration_ms,
             revision: EXPERIENCE_REVISION.fetch_add(1, Ordering::Relaxed),
-            answered: None,
-            total: None,
-            payload: default_payload_for_mode(mode, game_id, &players),
+            answered,
+            total,
+            payload: payload_body,
         };
-        broadcast_experience_to_display(io, game_ref, game_id, transition, None, None);
+        // Pass real answered/total; do not overwrite with None (L-13).
+        broadcast_experience_to_display(io, game_ref, game_id, transition, answered, total);
     }
 }
 
@@ -425,20 +492,33 @@ mod tests {
 
     #[test]
     fn default_payload_for_mode_tags_match_envelope_mode() {
+        use razzoozle_protocol::quizz::Quizz;
+        let game = Game::new(
+            "g1".into(),
+            "INV".into(),
+            "mgr".into(),
+            "quiz".into(),
+            Quizz {
+                subject: "t".into(),
+                questions: vec![],
+                archived: None,
+                theme_id: None,
+            },
+        );
         assert_eq!(
-            default_payload_for_mode(ExperienceMode::Classic, "g1", &[]),
+            default_payload_for_mode(ExperienceMode::Classic, &game),
             ExperiencePayload::Classic
         );
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::PyramidClimb, "g1", &[]),
+            default_payload_for_mode(ExperienceMode::PyramidClimb, &game),
             ExperiencePayload::Pyramid(_)
         ));
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::DeepSeaEscape, "g1", &[]),
+            default_payload_for_mode(ExperienceMode::DeepSeaEscape, &game),
             ExperiencePayload::DeepSea(_)
         ));
         assert!(matches!(
-            default_payload_for_mode(ExperienceMode::FlowerBattle, "g1", &[]),
+            default_payload_for_mode(ExperienceMode::FlowerBattle, &game),
             ExperiencePayload::FlowerBattle(_)
         ));
     }

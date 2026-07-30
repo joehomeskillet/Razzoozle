@@ -1,6 +1,7 @@
 //! WP #932 / WP-FLB-07 — eight hard-literal effect cases.
 
 use super::*;
+use crate::flower_battle::scoring::DEFAULT_MAX_GROWTH_STAGE;
 use razzoozle_protocol::experience::FlowerBattleEffect;
 
 fn state() -> EffectsState {

@@ -6,7 +6,8 @@ use std::collections::HashMap;
 
 use razzoozle_protocol::experience::FlowerBattleEffect;
 
-use super::scoring::{apply_growth_pipeline, DEFAULT_MAX_GROWTH_STAGE};
+use super::scoring::apply_growth_pipeline;
+use super::win_check::PLANT_MAX_GROWTH_STAGE;
 
 // Constants
 
@@ -83,7 +84,9 @@ impl Default for EffectsState {
             growth_stage: HashMap::new(),
             active: HashMap::new(),
             applied_offers: HashMap::new(),
-            max_growth_stage: DEFAULT_MAX_GROWTH_STAGE,
+            // Plant ceiling = victory threshold (WP #933); per-round base still
+            // uses scoring::DEFAULT_MAX_GROWTH_STAGE via ratio tiers only.
+            max_growth_stage: PLANT_MAX_GROWTH_STAGE,
             victory_resolved: false,
         }
     }

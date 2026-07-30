@@ -10,6 +10,10 @@ export type FlowerBattleTeamState = { name: string,
  */
 members: Array<string>, hp: number, shield: number, effects: Array<FlowerBattleEffect>, 
 /**
+ * Cumulative plant growth stage (0..=10); win at 10 (WP #933).
+ */
+growthStage: number, 
+/**
  * Accumulated sun points for power-up triggers (WP #930).
  */
 sunPoints: number, 

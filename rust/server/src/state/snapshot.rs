@@ -10,7 +10,8 @@ use tracing::{info, warn};
 /// (backward-compatible via serde defaults / defensive restore for old snapshots)
 // v4: selectedModes.teamAssignment (WP #952). v3 snaps omit it → SelfAssign default.
 // v5: activeEffects FlowerBattle power-up status (WP #932). v1–v4 omit → empty.
-const SNAPSHOT_VERSION: u32 = 5;
+// v6: flowerBattleOffers + sunPoints + winnerTeamIds (WP #933). v1–v5 omit → empty.
+const SNAPSHOT_VERSION: u32 = 6;
 
 /// Get the snapshot directory path. Uses CONFIG_PATH env var or falls back to relative path.
 pub fn snapshot_dir() -> PathBuf {
@@ -157,7 +158,109 @@ pub fn game_to_snapshot(game: &Game) -> serde_json::Value {
         "questionsHistory": &game.engine.questions_history,
         // WP #932: active FlowerBattle effects + growth (v5)
         "activeEffects": active_effects_to_json(&game.flower_battle_effects),
+        // WP #933: offer cache + sun meter + early-finish winners (v6)
+        "flowerBattleOffers": flower_battle_offers_to_json(&game.flower_battle_offers),
+        "flowerBattleSunPoints": flower_battle_sun_points_to_json(&game.flower_battle_sun_points),
+        "flowerBattleWinnerTeamIds": game.flower_battle_winner_team_ids.clone(),
+        "finishBroadcastDone": game.finish_broadcast_done,
     })
+}
+
+fn flower_battle_offers_to_json(
+    cache: &std::collections::HashMap<
+        razzoozle_engine::flower_battle::OfferCacheKey,
+        razzoozle_protocol::experience::PowerupOffer,
+    >,
+) -> serde_json::Value {
+    let mut entries: Vec<serde_json::Value> = cache
+        .iter()
+        .map(|((game_id, team_id, q_idx), offer)| {
+            serde_json::json!({
+                "gameId": game_id,
+                "teamId": team_id,
+                "questionIndex": q_idx,
+                "offer": offer,
+            })
+        })
+        .collect();
+    // Deterministic order for snapshot bytes.
+    entries.sort_by(|a, b| {
+        let ka = (
+            a.get("gameId").and_then(|v| v.as_str()).unwrap_or(""),
+            a.get("teamId").and_then(|v| v.as_str()).unwrap_or(""),
+            a.get("questionIndex").and_then(|v| v.as_i64()).unwrap_or(0),
+        );
+        let kb = (
+            b.get("gameId").and_then(|v| v.as_str()).unwrap_or(""),
+            b.get("teamId").and_then(|v| v.as_str()).unwrap_or(""),
+            b.get("questionIndex").and_then(|v| v.as_i64()).unwrap_or(0),
+        );
+        ka.cmp(&kb)
+    });
+    serde_json::Value::Array(entries)
+}
+
+fn flower_battle_offers_from_json(
+    value: Option<&serde_json::Value>,
+) -> std::collections::HashMap<
+    razzoozle_engine::flower_battle::OfferCacheKey,
+    razzoozle_protocol::experience::PowerupOffer,
+> {
+    use razzoozle_protocol::experience::PowerupOffer;
+    let mut out = std::collections::HashMap::new();
+    let Some(arr) = value.and_then(|v| v.as_array()) else {
+        return out;
+    };
+    for item in arr {
+        let game_id = item
+            .get("gameId")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let team_id = item
+            .get("teamId")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let q_idx = item
+            .get("questionIndex")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as i32;
+        if game_id.is_empty() || team_id.is_empty() {
+            continue;
+        }
+        if let Some(offer_val) = item.get("offer") {
+            if let Ok(offer) = serde_json::from_value::<PowerupOffer>(offer_val.clone()) {
+                out.insert((game_id, team_id, q_idx), offer);
+            }
+        }
+    }
+    out
+}
+
+fn flower_battle_sun_points_to_json(
+    map: &std::collections::HashMap<String, u8>,
+) -> serde_json::Value {
+    let obj: serde_json::Map<String, serde_json::Value> = map
+        .iter()
+        .map(|(k, v)| (k.clone(), serde_json::json!(v)))
+        .collect();
+    serde_json::Value::Object(obj)
+}
+
+fn flower_battle_sun_points_from_json(
+    value: Option<&serde_json::Value>,
+) -> std::collections::HashMap<String, u8> {
+    let mut out = std::collections::HashMap::new();
+    let Some(obj) = value.and_then(|v| v.as_object()) else {
+        return out;
+    };
+    for (k, v) in obj {
+        if let Some(n) = v.as_u64() {
+            out.insert(k.clone(), n.min(u64::from(u8::MAX)) as u8);
+        }
+    }
+    out
 }
 
 /// Serialize [`EffectsState`] for crash recovery (team → effects + growth + applied ids).
@@ -567,6 +670,18 @@ pub fn game_from_snapshot(snap: &serde_json::Value) -> Option<Game> {
         flower_battle_previous_attacker: std::collections::HashMap::new(),
         // WP #932: activeEffects roundtrip (v5); missing key → empty (v1–v4).
         flower_battle_effects: active_effects_from_json(snap.get("activeEffects")),
+        // WP #933: offers/sun/winners (v6); missing → empty (v1–v5).
+        flower_battle_offers: flower_battle_offers_from_json(snap.get("flowerBattleOffers")),
+        flower_battle_sun_points: flower_battle_sun_points_from_json(
+            snap.get("flowerBattleSunPoints"),
+        ),
+        flower_battle_winner_team_ids: snap
+            .get("flowerBattleWinnerTeamIds")
+            .and_then(|v| serde_json::from_value(v.clone()).ok()),
+        finish_broadcast_done: snap
+            .get("finishBroadcastDone")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
     };
 
     // Restore last manager status if present
@@ -1267,10 +1382,10 @@ mod tests {
         );
     }
 
-    /// WP #932: SNAPSHOT_VERSION is 5 (activeEffects field).
+    /// WP #933: SNAPSHOT_VERSION is 6 (offers + sun + winners; #932 was 5).
     #[test]
-    fn test_snapshot_version_is_5() {
-        assert_eq!(SNAPSHOT_VERSION, 5, "SNAPSHOT_VERSION must be 5");
+    fn test_snapshot_version_is_6() {
+        assert_eq!(SNAPSHOT_VERSION, 6, "SNAPSHOT_VERSION must be 6");
     }
 
     /// WP #932: activeEffects survive roundtrip; v4-shaped snaps restore empty.

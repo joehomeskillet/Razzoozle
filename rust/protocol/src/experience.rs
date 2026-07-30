@@ -231,6 +231,8 @@ pub struct FlowerBattleTeamState {
     pub hp: f32,
     pub shield: i32,
     pub effects: Vec<FlowerBattleEffect>,
+    /// Cumulative plant growth stage (0..=10); win at 10 (WP #933).
+    pub growth_stage: i32,
     /// Accumulated sun points for power-up triggers (WP #930).
     pub sun_points: i32,
     /// Last team that successfully acid_rain-attacked this team (WP #931).
@@ -404,6 +406,7 @@ mod tests {
                     hp: 100.0,
                     shield: 0,
                     effects: vec![FlowerBattleEffect::sunbeam(0)],
+                    growth_stage: 4,
                     sun_points: 2,
                     previous_attacker_team_id: Some("Violet".into()),
                 }],

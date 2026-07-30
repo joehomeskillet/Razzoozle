@@ -4,6 +4,7 @@ pub mod effects;
 pub mod powerups;
 pub mod scoring;
 pub mod votes;
+pub mod win_check;
 
 pub use effects::{
     apply_effects, apply_question_growth, mark_victory_resolved, AppliedEffect, EffectError,
@@ -26,3 +27,4 @@ pub use votes::{
     powerup_requires_target, record_attack, validate_target_choice, VoteChoice, VoteError,
     VoteKind, VoteState, VotingResult, POWERUP_VOTE_TIMEOUT_MS, TARGET_VOTE_TIMEOUT_MS,
 };
+pub use win_check::{check_mode_outcome, PLANT_MAX_GROWTH_STAGE, VICTORY_GROWTH_STAGE};
