@@ -115,4 +115,47 @@ describe("FlowerGardenScene", () => {
     expect(html).toContain('data-team-count="4"')
     expect(html).not.toContain('data-testid="garden-team-slot-4"')
   })
+
+  it("renders zero team slots for an empty team list (no lower bound, live 958D report)", () => {
+    const html = renderScene(0)
+    expect(html).toContain('data-team-count="0"')
+    expect(html).not.toContain('data-testid="garden-team-slot-0"')
+  })
+
+  it("renders exactly one team slot for a single-team game (live 958D report)", () => {
+    const html = renderScene(1)
+    expect(html).toContain('data-team-count="1"')
+    expect(html).toContain('data-testid="garden-team-slot-0"')
+    expect(html).not.toContain('data-testid="garden-team-slot-1"')
+  })
+
+  it("caps every team slot's width so 1–2 teams never dwarf the scene (WP-958D)", () => {
+    for (const teamCount of [1, 2, 3, 4]) {
+      const html = renderScene(teamCount)
+      for (let index = 0; index < teamCount; index += 1) {
+        const slotMatch = html.match(
+          new RegExp(`data-testid="garden-team-slot-${index}"[^>]*class="([^"]*)"`),
+        )
+        expect(slotMatch).not.toBeNull()
+        expect(slotMatch![1]).toMatch(/max-w-\[/)
+      }
+    }
+  })
+
+  it("renders a single opaque full-scene backdrop behind hud/background/actors so app icons never show through (WP-958D)", () => {
+    const html = renderScene(1)
+    const backdropMatch = html.match(
+      /data-testid="garden-scene-backdrop"[^>]*class="([^"]*)"/,
+    )
+    expect(backdropMatch).not.toBeNull()
+    expect(backdropMatch![1]).toMatch(/\binset-0\b/)
+    expect(backdropMatch![1]).not.toMatch(/bg-\S+\/\d+/)
+    expect(backdropMatch![1]).toMatch(/\bbg-\S+/)
+
+    // The backdrop must render before (i.e. behind) the safe-area zones.
+    const backdropIndex = html.indexOf('data-testid="garden-scene-backdrop"')
+    const hudZoneIndex = html.indexOf('aria-label="hud layer"')
+    expect(backdropIndex).toBeGreaterThan(-1)
+    expect(backdropIndex).toBeLessThan(hudZoneIndex)
+  })
 })
