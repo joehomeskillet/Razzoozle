@@ -89,6 +89,12 @@ const loadAuthState = (): StoredAuthState => {
   }
 }
 
+// SECURITY LIMIT (qw-Review #959B): localStorage ist Domain-global. Zwei
+// VERSCHIEDENE Logins in zwei Tabs desselben Browsers überschreiben sich
+// gegenseitig — nach Reload kann ein Tab den Token des anderen laden
+// (Privilege-Confusion). Akzeptiert für den Single-Manager-Betrieb;
+// Hardening-Option bei Bedarf: Storage-Key per userId prefixen.
+
 // WP #959 — persist auth state to BOTH sessionStorage (per-tab) and localStorage
 // (cross-tab) so the satellite display tab can access the manager's session token
 // in the socket handshake, even when loaded as a separate browser tab.

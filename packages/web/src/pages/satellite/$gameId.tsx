@@ -28,8 +28,9 @@ const searchSchema = z.object({
   // `?satellite=true` signals that route-level auth is intentionally skipped;
   // the socket.io token is the only credential.
   satellite: z.coerce.boolean().optional(),
-  // Token may be supplied via the URL (kiosk URL baked into the Pi image) or
-  // fall back to a build-time env var.
+  // Bleibt im Schema: dokumentiert den Kiosk-URL-Contract (?token=...) und
+  // verhindert, dass der Router den Param strippt — GELESEN wird der Token
+  // modulglobal in socket-context.tsx (resolveSatelliteAuth), nicht hier.
   token: z.coerce.string().optional(),
 })
 
