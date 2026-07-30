@@ -82,7 +82,7 @@ export function QuestionTypeSelector({
     <div
       ref={containerRef}
       role="radiogroup"
-      aria-label={t("quizz:type.selectType") || "Select question type"}
+      aria-label={t("quizz:type.selectType", { defaultValue: "Fragetyp wählen" })}
       data-testid="question-type-list"
       className="max-h-96 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--surface)]"
     >
