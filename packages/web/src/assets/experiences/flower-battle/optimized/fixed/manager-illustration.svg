@@ -1,0 +1,25 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="manager-illustration-title">
+  <defs>
+    <style>
+      .fb-petal { fill: currentColor; opacity: 0.9; }
+      .fb-center { fill: currentColor; opacity: 1; }
+      .fb-stem { stroke: currentColor; stroke-width: 2; opacity: 0.7; fill: none; stroke-linecap: round; }
+    </style>
+  </defs>
+  <title id="manager-illustration-title">Blüten-Battle Modus</title>
+
+  <!-- Stem: single curved stalk anchoring the bloom to the card baseline -->
+  <g id="stem">
+    <path class="fb-stem" d="M 32 58 Q 30 42 32 30"/>
+  </g>
+
+  <!-- Bloom: five-petal flower head, petals arranged radially around the center -->
+  <g id="bloom">
+    <ellipse class="fb-petal" cx="32" cy="16" rx="6" ry="10"/>
+    <ellipse class="fb-petal" cx="32" cy="16" rx="6" ry="10" transform="rotate(72 32 16)"/>
+    <ellipse class="fb-petal" cx="32" cy="16" rx="6" ry="10" transform="rotate(144 32 16)"/>
+    <ellipse class="fb-petal" cx="32" cy="16" rx="6" ry="10" transform="rotate(216 32 16)"/>
+    <ellipse class="fb-petal" cx="32" cy="16" rx="6" ry="10" transform="rotate(288 32 16)"/>
+    <circle class="fb-center" cx="32" cy="16" r="4"/>
+  </g>
+</svg>

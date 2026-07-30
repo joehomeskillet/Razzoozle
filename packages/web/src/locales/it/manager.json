@@ -554,6 +554,10 @@
         "deep_sea_escape": {
           "name": "Fuga negli abissi",
           "description": "Una corsa contro il tempo sott'acqua — le risposte corrette assicurano la risalita."
+        },
+        "flower_battle": {
+          "name": "Battaglia dei Fiori",
+          "description": "Le squadre gareggiano facendo crescere le loro piante — le risposte corrette fruttano punti sole."
         }
       },
       "devicesOnlyHint": "Le domande appaiono solo sui dispositivi dei giocatori",
@@ -603,7 +607,8 @@
       "scoring": "Punteggio",
       "school": "Scuola",
       "endScreen": "Schermata finale",
-      "experience": "Modalità esperienza"
+      "experience": "Modalità esperienza",
+      "flowerBattle": "Battaglia dei Fiori"
     },
     "endScreenModeDescription": {
       "full": "Mostra la classifica completa alla fine del gioco.",
@@ -614,7 +619,35 @@
     "experienceModesTitle": "Modalità esperienza",
     "experienceModesDescription": "Sblocca modalità di presentazione alternative selezionabili nella scheda Modalità di gioco. Le domande appaiono solo sui dispositivi dei giocatori.",
     "experienceModesEnabled": "Modalità esperienza attivate",
-    "experienceModesDisabled": "Modalità esperienza disattivate"
+    "experienceModesDisabled": "Modalità esperienza disattivate",
+    "flowerBattle": {
+      "name": "Battaglia dei Fiori",
+      "description": "Le squadre fanno crescere le loro piante rispondendo correttamente — la prima squadra a raggiungere il livello obiettivo vince il round.",
+      "recommendedParticipants": "Consigliato: almeno due squadre (come per Scalata alla piramide).",
+      "backgroundHint": "Lo sfondo del giardino viene generato automaticamente e in modo deterministico per ogni partita — nessuna selezione manuale necessaria.",
+      "targetLevel": {
+        "label": "Livello obiettivo",
+        "description": "Livello di crescita che una squadra deve raggiungere per vincere."
+      },
+      "targetLevelSavedLocally": "Livello obiettivo {{level}} salvato localmente — la sincronizzazione con il server arriverà presto",
+      "powerupsEnabled": {
+        "label": "Power-up",
+        "description": "Consente i power-up raggio di sole, fertilizzante e ombrello durante il round."
+      },
+      "powerupsEnabledLocally": "Power-up attivati (locale — la sincronizzazione con il server arriverà presto)",
+      "powerupsDisabledLocally": "Power-up disattivati (locale — la sincronizzazione con il server arriverà presto)",
+      "acidRainEnabled": {
+        "label": "Pioggia acida",
+        "description": "Aggiunge un pericolo di pioggia acida che può rallentare la crescita delle piante."
+      },
+      "acidRainEnabledLocally": "Pioggia acida attivata (locale — la sincronizzazione con il server arriverà presto)",
+      "acidRainDisabledLocally": "Pioggia acida disattivata (locale — la sincronizzazione con il server arriverà presto)",
+      "powerupThreshold": {
+        "label": "Soglia punti sole",
+        "description": "Punti sole necessari prima che venga offerto un power-up."
+      },
+      "powerupThresholdSavedLocally": "Soglia {{threshold}} salvata localmente — la sincronizzazione con il server arriverà presto"
+    }
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",

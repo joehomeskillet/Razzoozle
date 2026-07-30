@@ -554,6 +554,10 @@
         "deep_sea_escape": {
           "name": "深海逃脱",
           "description": "一场与时间赛跑的水下逃脱——答对问题确保上浮。"
+        },
+        "flower_battle": {
+          "name": "花朵大战",
+          "description": "各队竞相培育植物——答对问题可获得阳光点数。"
         }
       },
       "devicesOnlyHint": "问题仅显示在玩家设备上",
@@ -603,7 +607,8 @@
       "scoring": "评分",
       "school": "学校",
       "endScreen": "结束画面",
-      "experience": "体验模式"
+      "experience": "体验模式",
+      "flowerBattle": "花朵大战"
     },
     "endScreenModeDescription": {
       "full": "在游戏结束时显示完整排行榜。",
@@ -614,7 +619,35 @@
     "experienceModesTitle": "体验模式",
     "experienceModesDescription": "解锁可在「游戏模式」标签页中选择的其他呈现模式。问题仅显示在玩家设备上。",
     "experienceModesEnabled": "体验模式已启用",
-    "experienceModesDisabled": "体验模式已禁用"
+    "experienceModesDisabled": "体验模式已禁用",
+    "flowerBattle": {
+      "name": "花朵大战",
+      "description": "各队通过答对问题让植物成长——率先达到目标等级的队伍赢得本轮。",
+      "recommendedParticipants": "建议：至少两个队伍（与金字塔攀登相同）。",
+      "backgroundHint": "花园背景会为每局游戏自动、确定性地生成——无需手动选择。",
+      "targetLevel": {
+        "label": "目标等级",
+        "description": "队伍获胜需要达到的成长等级。"
+      },
+      "targetLevelSavedLocally": "目标等级 {{level}} 已本地保存——服务器同步即将推出",
+      "powerupsEnabled": {
+        "label": "道具",
+        "description": "允许本轮使用阳光、肥料和雨伞道具。"
+      },
+      "powerupsEnabledLocally": "道具已启用（本地——服务器同步即将推出）",
+      "powerupsDisabledLocally": "道具已禁用（本地——服务器同步即将推出）",
+      "acidRainEnabled": {
+        "label": "酸雨",
+        "description": "增加酸雨危害，可能减缓植物生长。"
+      },
+      "acidRainEnabledLocally": "酸雨已启用（本地——服务器同步即将推出）",
+      "acidRainDisabledLocally": "酸雨已禁用（本地——服务器同步即将推出）",
+      "powerupThreshold": {
+        "label": "阳光点数阈值",
+        "description": "触发道具提供所需的阳光点数。"
+      },
+      "powerupThresholdSavedLocally": "阈值 {{threshold}} 已本地保存——服务器同步即将推出"
+    }
   },
   "achievementsConfig": {
     "title": "配置成就",
