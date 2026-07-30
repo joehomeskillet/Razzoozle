@@ -21,6 +21,30 @@ pub mod experience {
     pub const TRANSITION: &str = "game:experience";
 }
 
+/// FlowerBattle mode events + commands (WP #927 domain contract).
+/// Handler wiring is intentionally deferred (#928+); names only here.
+pub mod flower_battle {
+    // --- S2C (6 server events) ---
+    /// Full public mode state snapshot.
+    pub const SNAPSHOT: &str = "game:flowerBattle:snapshot";
+    /// A round scored and growth applied.
+    pub const ROUND_RESOLVED: &str = "game:flowerBattle:roundResolved";
+    /// Power-up offer opened for team voting.
+    pub const POWERUP_OFFERED: &str = "game:flowerBattle:powerupOffered";
+    /// Majority power-up selection locked.
+    pub const POWERUP_SELECTED: &str = "game:flowerBattle:powerupSelected";
+    /// Selected power-up effect applied to target.
+    pub const POWERUP_APPLIED: &str = "game:flowerBattle:powerupApplied";
+    /// Mode finished (results available).
+    pub const GAME_COMPLETED: &str = "game:flowerBattle:gameCompleted";
+
+    // --- C2S (2 player commands) ---
+    /// Vote for a power-up offer id.
+    pub const SUBMIT_POWERUP_VOTE: &str = "player:flowerBattle:submitPowerupVote";
+    /// Vote for a power-up target (team/player).
+    pub const SUBMIT_POWERUP_TARGET_VOTE: &str = "player:flowerBattle:submitPowerupTargetVote";
+}
+
 pub mod player {
     pub const SUCCESS_RECONNECT: &str = "player:successReconnect";
     pub const UPDATE_LEADERBOARD: &str = "player:updateLeaderboard";

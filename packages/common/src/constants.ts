@@ -18,6 +18,26 @@ export const EVENTS = {
     /** S2C: experience phase/mode transition envelope. */
     TRANSITION: "game:experience",
   },
+  // FlowerBattle mode events + commands (WP #927 domain contract).
+  // Handler wiring deferred (#928+); names only — mirror rust/protocol constants.
+  FLOWER_BATTLE: {
+    /** S2C: full public mode state snapshot. */
+    SNAPSHOT: "game:flowerBattle:snapshot",
+    /** S2C: a round scored and growth applied. */
+    ROUND_RESOLVED: "game:flowerBattle:roundResolved",
+    /** S2C: power-up offer opened for team voting. */
+    POWERUP_OFFERED: "game:flowerBattle:powerupOffered",
+    /** S2C: majority power-up selection locked. */
+    POWERUP_SELECTED: "game:flowerBattle:powerupSelected",
+    /** S2C: selected power-up effect applied to target. */
+    POWERUP_APPLIED: "game:flowerBattle:powerupApplied",
+    /** S2C: mode finished (results available). */
+    GAME_COMPLETED: "game:flowerBattle:gameCompleted",
+    /** C2S: vote for a power-up offer id. */
+    SUBMIT_POWERUP_VOTE: "player:flowerBattle:submitPowerupVote",
+    /** C2S: vote for a power-up target (team/player). */
+    SUBMIT_POWERUP_TARGET_VOTE: "player:flowerBattle:submitPowerupTargetVote",
+  },
   PLAYER: {
     SUCCESS_RECONNECT: "player:successReconnect",
     UPDATE_LEADERBOARD: "player:updateLeaderboard",
