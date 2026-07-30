@@ -18,7 +18,7 @@
  * Reduced-motion safe via `useReveal` (opacity-only fallback, no fabricated
  * motion). Pure presentation: no socket / store writes — labels come from i18n
  * (`game:recap.superlative.<key>` / `game:roundRecap.<key>`) with the emoji
- * mapped locally.
+ * mapped locally. Sound/haptic cues via Experience-Kit `fireFeedback`.
  */
 
 import type {
@@ -48,6 +48,7 @@ import {
   SUPERLATIVE_GLYPH,
   RECAP_FINAL_GLYPH,
 } from "@razzoozle/web/features/game/recap/recapVisuals"
+import { fireFeedback } from "@razzoozle/web/features/experience-kit/feedback/experienceFeedbackService"
 import { AnimatePresence, motion } from "motion/react"
 import type { Transition } from "motion/react"
 import clsx from "clsx"
@@ -175,6 +176,7 @@ const RecapSequence = ({
 
   const advance = useCallback(() => {
     setStep((s) => Math.min(s + 1, total))
+    fireFeedback("progress-small")
   }, [total])
 
   // `onComplete` can be triggered from two independent paths once the final
@@ -185,6 +187,7 @@ const RecapSequence = ({
   const fireComplete = useCallback(() => {
     if (completedRef.current) return
     completedRef.current = true
+    fireFeedback("phase-complete")
     onComplete?.()
   }, [onComplete])
 
