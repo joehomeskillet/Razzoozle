@@ -155,8 +155,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                 // deduplicate, restore canonical order, rejoin.
                 // Empty string is valid (= toggle OFF) and must land as "" in the patch.
                 // Trust boundary: Socket client input may contain arbitrary strings.
-                if let Some(experience_modes) =
-                    payload.get("experienceModesEnabled").and_then(|v| v.as_str())
+                if let Some(experience_modes) = payload
+                    .get("experienceModesEnabled")
+                    .and_then(|v| v.as_str())
                 {
                     let raw_value = experience_modes.to_string();
                     let tokens: Vec<&str> = experience_modes
@@ -170,10 +171,7 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                         .filter(|s| {
                             matches!(
                                 *s,
-                                "classic"
-                                    | "pyramidclimb"
-                                    | "deepseaescape"
-                                    | "flowerbattle"
+                                "classic" | "pyramidclimb" | "deepseaescape" | "flowerbattle"
                             )
                         })
                         .collect();
@@ -184,12 +182,9 @@ fn register_set_game_config(socket: &SocketRef, ctx: HandlerCtx) {
                     } else if !modes.is_empty() {
                         // Canonical order: classic, pyramidclimb, deepseaescape, flowerbattle
                         let mut ordered_modes = Vec::new();
-                        for canonical in &[
-                            "classic",
-                            "pyramidclimb",
-                            "deepseaescape",
-                            "flowerbattle",
-                        ] {
+                        for canonical in
+                            &["classic", "pyramidclimb", "deepseaescape", "flowerbattle"]
+                        {
                             if modes.contains(canonical) {
                                 ordered_modes.push(*canonical);
                             }
