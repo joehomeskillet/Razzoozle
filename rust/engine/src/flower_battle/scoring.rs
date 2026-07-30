@@ -136,6 +136,24 @@ pub fn ratio_to_base_growth(ratio: f64) -> u8 {
     0
 }
 
+/// Map base growth stages to sun points earned this round (WP #930 / SDD sun-meter).
+///
+/// Accumulating table (hard literals, not a formula mirror):
+/// - `0` → `0`
+/// - `1` → `1`
+/// - `2` → `1`
+/// - `3` → `2`
+///
+/// Values above 3 clamp to the stage-3 yield (`2`). Pure; call after
+/// [`ratio_to_base_growth`]. Points accumulate per team across questions.
+pub fn base_growth_to_sunpoints(base_growth: u8) -> u8 {
+    match base_growth {
+        0 => 0,
+        1 | 2 => 1,
+        _ => 2, // 3 and any higher clamp
+    }
+}
+
 /// SDD §9 growth order (WP #929 stub; power-ups remain no-ops until WP-FLB-07):
 /// base → positive modifiers → negative modifiers → floor 0 → clamp `max_growth_stage`.
 pub fn apply_growth_pipeline(
@@ -187,6 +205,16 @@ mod tests {
         assert_eq!(ratio_to_base_growth(0.89999), 2);
         assert_eq!(ratio_to_base_growth(0.90), 3);
         assert_eq!(ratio_to_base_growth(1.0), 3);
+    }
+
+    // --- base_growth_to_sunpoints (WP #930; hard literals) ---
+
+    #[test]
+    fn base_growth_to_sunpoints_table() {
+        assert_eq!(base_growth_to_sunpoints(0), 0);
+        assert_eq!(base_growth_to_sunpoints(1), 1);
+        assert_eq!(base_growth_to_sunpoints(2), 1);
+        assert_eq!(base_growth_to_sunpoints(3), 2);
     }
 
     #[test]

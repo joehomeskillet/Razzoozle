@@ -8,4 +8,8 @@ export type FlowerBattleTeamState = { name: string,
 /**
  * Member player UUIDs.
  */
-members: Array<string>, hp: number, shield: number, effects: Array<FlowerBattleEffect>, };
+members: Array<string>, hp: number, shield: number, effects: Array<FlowerBattleEffect>, 
+/**
+ * Accumulated sun points for power-up triggers (WP #930).
+ */
+sunPoints: number, };
