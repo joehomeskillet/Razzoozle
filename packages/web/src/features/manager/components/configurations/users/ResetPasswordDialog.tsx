@@ -35,7 +35,7 @@ export default function ResetPasswordDialog({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-surface-1 p-6 shadow-xl border border-hairline focus:outline-none">
           <div className="flex items-center justify-between border-b border-hairline pb-4">
             <div className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-ink-muted" />
+              <Key className="h-5 w-5 text-[var(--ink-muted)]" />
               <Dialog.Title className="text-lg font-bold text-ink">
                 {t("manager:users.resetPasswordTitle")}
               </Dialog.Title>
@@ -43,7 +43,7 @@ export default function ResetPasswordDialog({
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="rounded-lg p-1 text-ink-muted hover:bg-surface-2 hover:text-ink focus:outline-none"
+                className="rounded-lg p-1 text-[var(--ink-muted)] hover:bg-surface-2 hover:text-ink focus:outline-none"
               >
                 <X className="h-5 w-5" />
               </button>
