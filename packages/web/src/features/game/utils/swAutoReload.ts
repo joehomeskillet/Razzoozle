@@ -1,5 +1,6 @@
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
+import { safeSwCall } from "@razzoozle/web/utils/safeSwCall"
 
 // The "answering" phases during which an auto-reload would disrupt a live quiz.
 // A reload that lands here would yank the question/answer UI out from under the
@@ -76,8 +77,9 @@ export const handleSwUpdateActivated = (): void => {
 
 
 const probeSwUpdate = (): void => {
-  void navigator.serviceWorker.getRegistration().then((registration) => {
-    registration?.update()
+  safeSwCall(async () => {
+    const registration = await navigator.serviceWorker.getRegistration()
+    await registration?.update()
   })
 }
 

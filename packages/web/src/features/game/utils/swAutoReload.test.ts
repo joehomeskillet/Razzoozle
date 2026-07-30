@@ -165,4 +165,43 @@ describe("initSwAutoReload", () => {
     })
   })
 
+  it("handles getRegistration rejection without crashing", async () => {
+    setupGlobals({})
+    vi.stubGlobal("navigator", {
+      serviceWorker: {
+        controller: {},
+        addEventListener: vi.fn(),
+        getRegistration: vi
+          .fn()
+          .mockRejectedValue(new Error("lookup failed")),
+      },
+    })
+    const { initSwAutoReload } = await import("./swAutoReload")
+
+    expect(() => initSwAutoReload()).not.toThrow()
+    await vi.waitFor(() => {
+      expect(updateMock).not.toHaveBeenCalled()
+    })
+  })
+
+  it("handles ServiceWorkerRegistration.update rejection without crashing", async () => {
+    setupGlobals({})
+    const rejectUpdate = vi.fn().mockRejectedValue(new Error("update failed"))
+    vi.stubGlobal("navigator", {
+      serviceWorker: {
+        controller: {},
+        addEventListener: vi.fn(),
+        getRegistration: vi.fn().mockResolvedValue({
+          update: rejectUpdate,
+        }),
+      },
+    })
+    const { initSwAutoReload } = await import("./swAutoReload")
+
+    expect(() => initSwAutoReload()).not.toThrow()
+    await vi.waitFor(() => {
+      expect(rejectUpdate).toHaveBeenCalledTimes(1)
+    })
+  })
+
 })

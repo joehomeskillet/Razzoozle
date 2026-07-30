@@ -5,6 +5,7 @@ import {
   handleSwUpdateActivated,
   initSwAutoReload,
 } from "@razzoozle/web/features/game/utils/swAutoReload"
+import { safeSwCall } from "@razzoozle/web/utils/safeSwCall"
 import { registerSW } from "virtual:pwa-register"
 import "@razzoozle/web/i18n"
 import "@razzoozle/web/index.css"
@@ -33,7 +34,9 @@ if (!root) {
 initSwAutoReload()
 registerSW({
   immediate: true,
-  onRegisteredSW: (_, r) => r?.update(),
+  onRegisteredSW: (_, r) => {
+    if (r) safeSwCall(() => r.update())
+  },
   onNeedReload: handleSwUpdateActivated,
 })
 
