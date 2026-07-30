@@ -554,6 +554,10 @@
         "deep_sea_escape": {
           "name": "Évasion des abysses",
           "description": "Une course contre la montre sous l'eau — les bonnes réponses assurent la remontée."
+        },
+        "flower_battle": {
+          "name": "Bataille de Fleurs",
+          "description": "Les équipes rivalisent pour faire pousser leurs plantes — les bonnes réponses rapportent des points de soleil."
         }
       },
       "devicesOnlyHint": "Les questions n'apparaissent que sur les appareils des joueurs",
@@ -603,7 +607,8 @@
       "scoring": "Notation",
       "school": "École",
       "endScreen": "Écran de fin",
-      "experience": "Modes d'expérience"
+      "experience": "Modes d'expérience",
+      "flowerBattle": "Bataille de Fleurs"
     },
     "endScreenModeDescription": {
       "full": "Affiche le classement complet à la fin du jeu.",
@@ -614,7 +619,35 @@
     "experienceModesTitle": "Modes d'expérience",
     "experienceModesDescription": "Débloque des modes de présentation alternatifs sélectionnables dans l'onglet Mode de jeu. Les questions n'apparaissent que sur les appareils des joueurs.",
     "experienceModesEnabled": "Modes d'expérience activés",
-    "experienceModesDisabled": "Modes d'expérience désactivés"
+    "experienceModesDisabled": "Modes d'expérience désactivés",
+    "flowerBattle": {
+      "name": "Bataille de Fleurs",
+      "description": "Les équipes font pousser leurs plantes en répondant correctement — la première équipe à atteindre le niveau cible remporte la manche.",
+      "recommendedParticipants": "Recommandé : au moins deux équipes (comme pour Ascension de la pyramide).",
+      "backgroundHint": "L'arrière-plan du jardin est généré automatiquement et de façon déterministe à chaque partie — aucune sélection manuelle nécessaire.",
+      "targetLevel": {
+        "label": "Niveau cible",
+        "description": "Niveau de croissance qu'une équipe doit atteindre pour gagner."
+      },
+      "targetLevelSavedLocally": "Niveau cible {{level}} enregistré localement — la synchronisation serveur arrive bientôt",
+      "powerupsEnabled": {
+        "label": "Bonus",
+        "description": "Autorise les bonus rayon de soleil, engrais et parapluie pendant la manche."
+      },
+      "powerupsEnabledLocally": "Bonus activés (local — la synchronisation serveur arrive bientôt)",
+      "powerupsDisabledLocally": "Bonus désactivés (local — la synchronisation serveur arrive bientôt)",
+      "acidRainEnabled": {
+        "label": "Pluie acide",
+        "description": "Ajoute un risque de pluie acide qui peut ralentir la croissance des plantes."
+      },
+      "acidRainEnabledLocally": "Pluie acide activée (local — la synchronisation serveur arrive bientôt)",
+      "acidRainDisabledLocally": "Pluie acide désactivée (local — la synchronisation serveur arrive bientôt)",
+      "powerupThreshold": {
+        "label": "Seuil de points de soleil",
+        "description": "Points de soleil requis avant qu'un bonus ne soit proposé."
+      },
+      "powerupThresholdSavedLocally": "Seuil {{threshold}} enregistré localement — la synchronisation serveur arrive bientôt"
+    }
   },
   "achievementsConfig": {
     "title": "Configurer les succès",

@@ -13,7 +13,12 @@ vi.mock("react-i18next", () => ({
   }),
 }))
 
-const ALL_UNLOCKED = new Set(["classic", "pyramidclimb", "deepseaescape"])
+const ALL_UNLOCKED = new Set([
+  "classic",
+  "pyramidclimb",
+  "deepseaescape",
+  "flowerbattle",
+])
 
 describe("ExperienceModeSection — visibility gate (WP-EXP-05)", () => {
   it("renders nothing when no mode is unlocked", () => {
@@ -41,8 +46,8 @@ describe("ExperienceModeSection — visibility gate (WP-EXP-05)", () => {
   })
 })
 
-describe("ExperienceModeSection — exactly 3 options (WP-EXP-05)", () => {
-  it("always renders all 3 catalog options, never more, never fewer", () => {
+describe("ExperienceModeSection — exactly 4 options (WP-EXP-05, extended WP-FLB-18)", () => {
+  it("always renders all 4 catalog options, never more, never fewer", () => {
     const html = renderToStaticMarkup(
       <ExperienceModeSection
         unlockedExperienceModes={ALL_UNLOCKED}
@@ -51,7 +56,7 @@ describe("ExperienceModeSection — exactly 3 options (WP-EXP-05)", () => {
       />,
     )
 
-    expect(html.match(/type="radio"/g)).toHaveLength(3)
+    expect(html.match(/type="radio"/g)).toHaveLength(4)
     expect(html).toContain(
       "manager:selectQuizz.experienceMode.options.classic.name",
     )
@@ -61,12 +66,12 @@ describe("ExperienceModeSection — exactly 3 options (WP-EXP-05)", () => {
     expect(html).toContain(
       "manager:selectQuizz.experienceMode.options.deep_sea_escape.name",
     )
-    // Never a 4th option — flowerbattle is explicitly excluded from this
-    // catalog (a separate later work package owns it).
-    expect(html).not.toContain("flowerbattle")
+    expect(html).toContain(
+      "manager:selectQuizz.experienceMode.options.flower_battle.name",
+    )
   })
 
-  it("still renders all 3 radios when only one mode is unlocked, disabling the rest", () => {
+  it("still renders all 4 radios when only one mode is unlocked, disabling the rest", () => {
     const html = renderToStaticMarkup(
       <ExperienceModeSection
         unlockedExperienceModes={new Set(["classic"])}
@@ -75,9 +80,29 @@ describe("ExperienceModeSection — exactly 3 options (WP-EXP-05)", () => {
       />,
     )
 
-    expect(html.match(/type="radio"/g)).toHaveLength(3)
-    // 2 of the 3 radios must be disabled (pyramid_climb, deep_sea_escape).
-    expect(html.match(/disabled/g)?.length).toBeGreaterThanOrEqual(2)
+    expect(html.match(/type="radio"/g)).toHaveLength(4)
+    // 3 of the 4 radios must carry the real disabled="" attribute (pyramid_climb,
+    // deep_sea_escape, flower_battle) — every option's static className also
+    // contains the literal substring "disabled:" (Tailwind variant prefix), so
+    // a bare /disabled/ match would count that too; disabled="" is unambiguous.
+    expect(html.match(/disabled=""/g)?.length).toBe(3)
+  })
+
+  it("flower_battle is unlockable independently and renders enabled once its token is present", () => {
+    const html = renderToStaticMarkup(
+      <ExperienceModeSection
+        unlockedExperienceModes={new Set(["classic", "flowerbattle"])}
+        experienceMode="classic"
+        onExperienceModeChange={vi.fn()}
+      />,
+    )
+
+    const inputTags = html.match(/<input[^/]*\/>/g) ?? []
+    const flowerBattleInput = inputTags.find((tag) =>
+      tag.includes('value="flower_battle"'),
+    )
+    expect(flowerBattleInput).toBeDefined()
+    expect(flowerBattleInput).not.toContain('disabled=""')
   })
 
   it("marks the currently selected mode as checked", () => {

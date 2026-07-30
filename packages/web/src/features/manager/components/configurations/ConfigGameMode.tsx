@@ -1,10 +1,18 @@
+import flowerBattleIllustration from "@razzoozle/web/assets/experiences/flower-battle/optimized/fixed/manager-illustration.svg"
 import Badge from "@razzoozle/web/components/manager/Badge"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { LabelRow, ToggleField } from "@razzoozle/web/components/ui"
 import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
+import Select from "@razzoozle/web/components/Select"
 import { setLowLatencyPref } from "@razzoozle/web/features/game/utils/lowLatencyPref"
 import { useConfig } from "@razzoozle/web/features/manager/contexts/config-context"
-import { ListChecks, Pyramid, Waves, type LucideIcon } from "lucide-react"
+import {
+  Flower2,
+  ListChecks,
+  Pyramid,
+  Waves,
+  type LucideIcon,
+} from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -39,15 +47,26 @@ const stringifyModes = (modes: Set<string>): string => {
   return VALID_END_SCREEN_MODES.filter((m) => modes.has(m)).join(",")
 }
 
-// WP #879 (EXP-05): the experience-modes availability toggle maps onto the CSV
-// allow-list `experienceModesEnabled` (games_config.experience_modes_enabled).
-// ON unlocks the three launch modes; OFF writes the empty string (none
-// unlocked). flowerbattle is deliberately not manager-toggleable yet.
+// WP-EXP-05 / WP-FLB-18: the experience-modes availability toggle maps onto
+// the CSV allow-list `experienceModesEnabled` (games_config.experience_modes_
+// enabled). ON unlocks all four launch modes; OFF writes the empty string
+// (none unlocked). flowerbattle joined the toggleable set in WP-FLB-18 —
+// making it selectable end-to-end (ConfigSelectQuizz's radio + this toggle
+// together) was called out as playability-critical for that WP.
 const VALID_EXPERIENCE_MODES = [
   "classic",
   "pyramidclimb",
   "deepseaescape",
+  "flowerbattle",
 ] as const
+
+// Blüten-Battle MVP options (WP-FLB-18). Value-bounded <Select> lists — no
+// free-text numeric input — so the client can never send an out-of-range
+// value even before the server whitelist exists to reject one.
+const FLOWER_BATTLE_DEFAULT_TARGET_LEVEL = 10
+const FLOWER_BATTLE_TARGET_LEVEL_OPTIONS = [5, 10, 15, 20] as const
+const FLOWER_BATTLE_DEFAULT_POWERUP_THRESHOLD = 3
+const FLOWER_BATTLE_POWERUP_THRESHOLD_OPTIONS = [1, 2, 3, 4, 5] as const
 
 /**
  * Parse the experience-modes CSV allow-list into the set of known tokens.
@@ -98,6 +117,21 @@ const ConfigGameMode = () => {
   const [experienceModes, setExperienceModes] = useState(
     config.experienceModesEnabled ?? "",
   )
+  // Blüten-Battle MVP options (WP-FLB-18). Defaults: target level 10 (UI-only
+  // concept, no server constant yet); threshold 3 mirrors engine::
+  // flower_battle::powerups::OFFER_THRESHOLD.
+  const [flowerBattleTargetLevel, setFlowerBattleTargetLevel] = useState(
+    config.flowerBattleTargetLevel ?? FLOWER_BATTLE_DEFAULT_TARGET_LEVEL,
+  )
+  const [flowerBattlePowerupsEnabled, setFlowerBattlePowerupsEnabled] =
+    useState(config.flowerBattlePowerupsEnabled ?? true)
+  const [flowerBattleAcidRainEnabled, setFlowerBattleAcidRainEnabled] =
+    useState(config.flowerBattleAcidRainEnabled ?? true)
+  const [flowerBattlePowerupThreshold, setFlowerBattlePowerupThreshold] =
+    useState(
+      config.flowerBattlePowerupThreshold ??
+        FLOWER_BATTLE_DEFAULT_POWERUP_THRESHOLD,
+    )
   const [pendingEndScreenMode, setPendingEndScreenMode] = useState<string | null>(null)
 
   // Keep the toggle in sync with the persisted config: emitConfig round-trips
@@ -136,6 +170,36 @@ const ConfigGameMode = () => {
   useEffect(() => {
     setExperienceModes(config.experienceModesEnabled ?? "")
   }, [config.experienceModesEnabled])
+
+  // PENDING SERVER PERSISTENCE (see ManagerConfig JSDoc): unlike every other
+  // resync above, these four only overwrite local state once the server
+  // actually echoes a value — config.flowerBattle* stays undefined forever
+  // until the follow-up persistence WP lands, so resyncing unconditionally
+  // would silently discard the manager's local choice on the next unrelated
+  // emitConfig broadcast (e.g. another tab saving a different setting).
+  useEffect(() => {
+    if (config.flowerBattleTargetLevel !== undefined) {
+      setFlowerBattleTargetLevel(config.flowerBattleTargetLevel)
+    }
+  }, [config.flowerBattleTargetLevel])
+
+  useEffect(() => {
+    if (config.flowerBattlePowerupsEnabled !== undefined) {
+      setFlowerBattlePowerupsEnabled(config.flowerBattlePowerupsEnabled)
+    }
+  }, [config.flowerBattlePowerupsEnabled])
+
+  useEffect(() => {
+    if (config.flowerBattleAcidRainEnabled !== undefined) {
+      setFlowerBattleAcidRainEnabled(config.flowerBattleAcidRainEnabled)
+    }
+  }, [config.flowerBattleAcidRainEnabled])
+
+  useEffect(() => {
+    if (config.flowerBattlePowerupThreshold !== undefined) {
+      setFlowerBattlePowerupThreshold(config.flowerBattlePowerupThreshold)
+    }
+  }, [config.flowerBattlePowerupThreshold])
 
   const teamModeToggle = useOptimisticConfigToggle({
     setValue: setTeamMode,
@@ -221,6 +285,50 @@ const ConfigGameMode = () => {
   })
   const handleExperienceModesToggle = (next: boolean) =>
     experienceModesToggle.commit(next ? VALID_EXPERIENCE_MODES.join(",") : "")
+
+  // Blüten-Battle MVP options (WP-FLB-18). Same optimistic-toggle pattern as
+  // every field above, but the toast wording is deliberately different: the
+  // server whitelist doesn't persist these fields yet (see ManagerConfig
+  // JSDoc), so the toast says so explicitly rather than implying a real save.
+  const flowerBattleTargetLevelToggle = useOptimisticConfigToggle({
+    setValue: setFlowerBattleTargetLevel,
+    patchKey: "flowerBattleTargetLevel",
+    toastMessage: (next) =>
+      t("manager:gameMode.flowerBattle.targetLevelSavedLocally", {
+        level: next,
+      }),
+  })
+  const handleFlowerBattleTargetLevelChange = (next: string) =>
+    flowerBattleTargetLevelToggle.commit(Number(next))
+
+  const flowerBattlePowerupsToggle = useOptimisticConfigToggle({
+    setValue: setFlowerBattlePowerupsEnabled,
+    patchKey: "flowerBattlePowerupsEnabled",
+    toastMessage: (next) =>
+      next
+        ? t("manager:gameMode.flowerBattle.powerupsEnabledLocally")
+        : t("manager:gameMode.flowerBattle.powerupsDisabledLocally"),
+  })
+
+  const flowerBattleAcidRainToggle = useOptimisticConfigToggle({
+    setValue: setFlowerBattleAcidRainEnabled,
+    patchKey: "flowerBattleAcidRainEnabled",
+    toastMessage: (next) =>
+      next
+        ? t("manager:gameMode.flowerBattle.acidRainEnabledLocally")
+        : t("manager:gameMode.flowerBattle.acidRainDisabledLocally"),
+  })
+
+  const flowerBattlePowerupThresholdToggle = useOptimisticConfigToggle({
+    setValue: setFlowerBattlePowerupThreshold,
+    patchKey: "flowerBattlePowerupThreshold",
+    toastMessage: (next) =>
+      t("manager:gameMode.flowerBattle.powerupThresholdSavedLocally", {
+        threshold: next,
+      }),
+  })
+  const handleFlowerBattlePowerupThresholdChange = (next: string) =>
+    flowerBattlePowerupThresholdToggle.commit(Number(next))
 
   useEffect(() => {
     if (!endScreenToggle.saving) setPendingEndScreenMode(null)
@@ -314,6 +422,12 @@ const ConfigGameMode = () => {
         icon: Waves,
         label: t(
           "manager:selectQuizz.experienceMode.options.deep_sea_escape.name",
+        ),
+      },
+      flowerbattle: {
+        icon: Flower2,
+        label: t(
+          "manager:selectQuizz.experienceMode.options.flower_battle.name",
         ),
       },
     }),
@@ -474,7 +588,132 @@ const ConfigGameMode = () => {
           </div>
         </div>
 
-        {/* Section 3: Wertung (Scoring Mode) */}
+        {/* Section 3: Blüten-Battle Moduskarte (WP-FLB-18) */}
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-[var(--ink)]">
+            {t("manager:gameMode.sections.flowerBattle")}
+          </h3>
+          <div className="flex flex-col gap-4 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-4">
+            <div className="flex items-start gap-4">
+              <img
+                src={flowerBattleIllustration}
+                alt=""
+                className="size-16 shrink-0"
+              />
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-[var(--ink)]">
+                  {t("manager:gameMode.flowerBattle.name")}
+                </span>
+                <span className="text-xs text-[var(--ink-muted)]">
+                  {t("manager:gameMode.flowerBattle.description")}
+                </span>
+              </div>
+            </div>
+
+            <ul className="flex flex-col gap-1 text-xs text-[var(--ink-muted)]">
+              <li>{t("manager:selectQuizz.experienceMode.devicesOnlyHint")}</li>
+              <li>{t("manager:selectQuizz.experienceMode.teamsRequiredHint")}</li>
+              <li>{t("manager:gameMode.flowerBattle.recommendedParticipants")}</li>
+              <li>{t("manager:gameMode.flowerBattle.backgroundHint")}</li>
+            </ul>
+
+            <div className="flex flex-col gap-4">
+              <LabelRow
+                id="setting-flower-battle-target-level"
+                htmlFor="flower-battle-target-level"
+                label={t("manager:gameMode.flowerBattle.targetLevel.label")}
+                description={t(
+                  "manager:gameMode.flowerBattle.targetLevel.description",
+                )}
+                statusMessage={pendingStatus(
+                  flowerBattleTargetLevelToggle.saving,
+                )}
+              >
+                <Select
+                  id="flower-battle-target-level"
+                  value={String(flowerBattleTargetLevel)}
+                  onChange={(event) =>
+                    handleFlowerBattleTargetLevelChange(event.target.value)
+                  }
+                  disabled={flowerBattleTargetLevelToggle.saving}
+                >
+                  {FLOWER_BATTLE_TARGET_LEVEL_OPTIONS.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </Select>
+              </LabelRow>
+
+              <ToggleField
+                id="setting-flower-battle-powerups"
+                label={t(
+                  "manager:gameMode.flowerBattle.powerupsEnabled.label",
+                )}
+                description={t(
+                  "manager:gameMode.flowerBattle.powerupsEnabled.description",
+                )}
+                checked={flowerBattlePowerupsEnabled}
+                onChange={flowerBattlePowerupsToggle.commit}
+                pending={flowerBattlePowerupsToggle.saving}
+                statusMessage={pendingStatus(
+                  flowerBattlePowerupsToggle.saving,
+                )}
+              />
+
+              <ToggleField
+                id="setting-flower-battle-acid-rain"
+                label={t(
+                  "manager:gameMode.flowerBattle.acidRainEnabled.label",
+                )}
+                description={t(
+                  "manager:gameMode.flowerBattle.acidRainEnabled.description",
+                )}
+                checked={flowerBattleAcidRainEnabled}
+                onChange={flowerBattleAcidRainToggle.commit}
+                pending={flowerBattleAcidRainToggle.saving}
+                statusMessage={pendingStatus(
+                  flowerBattleAcidRainToggle.saving,
+                )}
+              />
+
+              <LabelRow
+                id="setting-flower-battle-powerup-threshold"
+                htmlFor="flower-battle-powerup-threshold"
+                label={t(
+                  "manager:gameMode.flowerBattle.powerupThreshold.label",
+                )}
+                description={t(
+                  "manager:gameMode.flowerBattle.powerupThreshold.description",
+                )}
+                statusMessage={pendingStatus(
+                  flowerBattlePowerupThresholdToggle.saving,
+                )}
+              >
+                <Select
+                  id="flower-battle-powerup-threshold"
+                  value={String(flowerBattlePowerupThreshold)}
+                  onChange={(event) =>
+                    handleFlowerBattlePowerupThresholdChange(
+                      event.target.value,
+                    )
+                  }
+                  disabled={flowerBattlePowerupThresholdToggle.saving}
+                >
+                  {FLOWER_BATTLE_POWERUP_THRESHOLD_OPTIONS.map(
+                    (threshold) => (
+                      <option key={threshold} value={threshold}>
+                        {threshold}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </LabelRow>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Wertung (Scoring Mode) */}
         <div className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-[var(--ink)]">
             {t("manager:gameMode.sections.scoring")}
@@ -499,7 +738,7 @@ const ConfigGameMode = () => {
           </LabelRow>
         </div>
 
-        {/* Section 4: Schule (Klassen-Modus) */}
+        {/* Section 5: Schule (Klassen-Modus) */}
         <div className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-[var(--ink)]">
             {t("manager:gameMode.sections.school")}
@@ -516,7 +755,7 @@ const ConfigGameMode = () => {
           />
         </div>
 
-        {/* Section 5: Endbildschirm (End Screen Modes as ToggleFields) */}
+        {/* Section 6: Endbildschirm (End Screen Modes as ToggleFields) */}
         <div className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-[var(--ink)]">
             {t("manager:gameMode.sections.endScreen")}

@@ -74,4 +74,22 @@ export interface ManagerConfig {
   // CSV allow-list of experience modes (classic,pyramidclimb,deepseaescape,flowerbattle).
   // Empty string = none unlocked. Optional for back-compat.
   experienceModesEnabled?: string
+  // Blüten-Battle (flower_battle) MVP options — WP-FLB-18. Optional, teamMode?-
+  // style back-compat: absent in old/current payloads reads as the UI default.
+  // PENDING SERVER PERSISTENCE: manager:setGameConfig's field whitelist
+  // (rust/server/src/socket/manager/config.rs) does not read these four keys
+  // yet (#933-chain lands that), so the server silently drops them today — the
+  // client emits them anyway (harmless, whitelist ignores unknown keys) and
+  // keeps the choice in local optimistic state until persistence lands.
+  //
+  // Target growth level a team must reach to win the round. UI-only concept
+  // today (no matching engine constant); default 10 if absent.
+  flowerBattleTargetLevel?: number
+  // Power-ups master switch for the round. Default true (on) if absent.
+  flowerBattlePowerupsEnabled?: boolean
+  // Acid-rain hazard switch for the round. Default true (on) if absent.
+  flowerBattleAcidRainEnabled?: boolean
+  // Sun-point threshold that triggers a power-up offer. Mirrors
+  // engine::flower_battle::powerups::OFFER_THRESHOLD (3); default 3 if absent.
+  flowerBattlePowerupThreshold?: number
 }

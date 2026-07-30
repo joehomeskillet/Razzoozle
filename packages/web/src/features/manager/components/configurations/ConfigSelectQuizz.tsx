@@ -25,6 +25,7 @@ import { ParticipantCapSetting } from "@razzoozle/web/features/manager/component
 import { useNavigate } from "@tanstack/react-router"
 import {
   Copy,
+  Flower2,
   ListChecks,
   Play,
   Pyramid,
@@ -36,8 +37,12 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
-/** Manager-selectable experience modes (WP #879 EXP-05) — UI option keys. */
-type ExperienceModeKey = "classic" | "pyramid_climb" | "deep_sea_escape"
+/** Manager-selectable experience modes (WP-EXP-05, extended WP-FLB-18) — UI option keys. */
+type ExperienceModeKey =
+  | "classic"
+  | "pyramid_climb"
+  | "deep_sea_escape"
+  | "flower_battle"
 
 interface ExperienceModeOption {
   key: ExperienceModeKey
@@ -46,10 +51,13 @@ interface ExperienceModeOption {
   /** Token in the experienceModesEnabled CSV allow-list (lowercase, no separators). */
   csvToken: string
   icon: LucideIcon
+  /** Team play is required for this mode (E-13) — surfaces the assignment control. */
+  requiresTeams?: boolean
 }
 
-// Exactly three options per the EXP-05 spec — never extended client-side;
-// flowerbattle lands with its own WP.
+// Four options total. flower_battle joined in WP-FLB-18 (csvToken "flowerbattle"
+// mirrors the allow-list comment in packages/common/src/types/manager.ts —
+// no server-side canonicalization of this token exists yet to grep against).
 const EXPERIENCE_MODE_OPTIONS: readonly ExperienceModeOption[] = [
   { key: "classic", wire: "classic", csvToken: "classic", icon: ListChecks },
   {
@@ -57,12 +65,20 @@ const EXPERIENCE_MODE_OPTIONS: readonly ExperienceModeOption[] = [
     wire: "pyramidClimb",
     csvToken: "pyramidclimb",
     icon: Pyramid,
+    requiresTeams: true,
   },
   {
     key: "deep_sea_escape",
     wire: "deepSeaEscape",
     csvToken: "deepseaescape",
     icon: Waves,
+  },
+  {
+    key: "flower_battle",
+    wire: "flowerBattle",
+    csvToken: "flowerbattle",
+    icon: Flower2,
+    requiresTeams: true,
   },
 ]
 
@@ -349,10 +365,15 @@ const ConfigSelectQuizz = () => {
     }
   }, [experienceModesActive, experienceMode, unlockedExperienceModes])
 
-  // E-13: pyramid_climb is team play — surface the #952 assignment control and
-  // force teamMode in the create payload (server soft-gates it regardless).
-  const pyramidSelected =
-    experienceModesActive && experienceMode === "pyramid_climb"
+  // E-13: pyramid_climb and flower_battle are team play — surface the shared
+  // team-assignment control and force teamMode in the create payload (server
+  // soft-gates it regardless, evaluate_experience_start_gate treats both the
+  // same way).
+  const selectedRequiresTeams =
+    experienceModesActive &&
+    (EXPERIENCE_MODE_OPTIONS.find((o) => o.key === experienceMode)
+      ?.requiresTeams ??
+      false)
 
   const handleSubmit = useCallback(() => {
     if (!selected) {
@@ -387,9 +408,9 @@ const ConfigSelectQuizz = () => {
     }
 
     if (config.teamMode === true) {
-      // E-13: pyramid_climb implies team play — force team mode + assignment
-      // even when the standalone team toggle is off.
-      const effectiveTeamMode = teamMode || pyramidSelected
+      // E-13: pyramid_climb / flower_battle imply team play — force team
+      // mode + assignment even when the standalone team toggle is off.
+      const effectiveTeamMode = teamMode || selectedRequiresTeams
       selectedModes.teamMode = effectiveTeamMode
       if (effectiveTeamMode) {
         selectedModes.teamAssignment = teamAssignment
@@ -424,7 +445,7 @@ const ConfigSelectQuizz = () => {
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
     }
-  }, [socket, selected, config, scoringMode, teamMode, teamAssignment, klassenMode, classId, endScreen, participantCap, experienceModesActive, experienceMode, unlockedExperienceModes, pyramidSelected, t])
+  }, [socket, selected, config, scoringMode, teamMode, teamAssignment, klassenMode, classId, endScreen, participantCap, experienceModesActive, experienceMode, unlockedExperienceModes, selectedRequiresTeams, t])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -549,7 +570,7 @@ const ConfigSelectQuizz = () => {
               onExperienceModeChange={setExperienceMode}
             />
 
-            {pyramidSelected && config.teamMode === true && (
+            {selectedRequiresTeams && config.teamMode === true && (
               <>
                 <p className="text-xs text-[var(--ink-muted)]">
                   {t("manager:selectQuizz.experienceMode.teamsRequiredHint")}

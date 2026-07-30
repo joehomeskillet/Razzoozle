@@ -101,15 +101,111 @@ describe("ConfigGameMode — experience-modes availability toggle (WP-EXP-05)", 
   it("ignores an unknown CSV token without crashing and without a stray badge", () => {
     const html = renderGameMode({
       ...baseConfig,
-      experienceModesEnabled: "classic,flowerbattle,not-a-real-mode",
+      experienceModesEnabled: "classic,not-a-real-mode",
     })
 
     expect(toggleStateAfter(html, "setting-experience-modes")).toBe("true")
     expect(html).toContain(
       "manager:selectQuizz.experienceMode.options.classic.name",
     )
-    // flowerbattle is deliberately not manager-toggleable yet — no badge map
-    // entry exists for it, so it must render nothing rather than throw.
-    expect(html).not.toContain("flowerbattle")
+    expect(html).not.toContain("not-a-real-mode")
+  })
+})
+
+describe("ConfigGameMode — Blüten-Battle mode card (WP-FLB-18)", () => {
+  it("badges flowerbattle alongside the other three when fully unlocked", () => {
+    const html = renderGameMode({
+      ...baseConfig,
+      experienceModesEnabled: "classic,pyramidclimb,deepseaescape,flowerbattle",
+    })
+
+    expect(toggleStateAfter(html, "setting-experience-modes")).toBe("true")
+    expect(html).toContain(
+      "manager:selectQuizz.experienceMode.options.flower_battle.name",
+    )
+  })
+
+  it("renders the mode card unconditionally (independent of the availability toggle)", () => {
+    const html = renderGameMode({
+      ...baseConfig,
+      experienceModesEnabled: "",
+    })
+
+    expect(html).toContain("manager:gameMode.flowerBattle.name")
+    expect(html).toContain("manager:gameMode.flowerBattle.description")
+    expect(html).toContain("manager:selectQuizz.experienceMode.devicesOnlyHint")
+    expect(html).toContain(
+      "manager:selectQuizz.experienceMode.teamsRequiredHint",
+    )
+    expect(html).toContain(
+      "manager:gameMode.flowerBattle.recommendedParticipants",
+    )
+    expect(html).toContain("manager:gameMode.flowerBattle.backgroundHint")
+    // No background/seed selector — only the explanatory hint text.
+    expect(html).not.toContain('id="setting-flower-battle-background"')
+  })
+
+  it("renders exactly the 4 value-bounded target-level options, default 10 selected", () => {
+    const html = renderGameMode(baseConfig)
+
+    const select = /<select[^>]*id="flower-battle-target-level"[^>]*>[\s\S]*?<\/select>/.exec(
+      html,
+    )?.[0]
+    expect(select).toBeDefined()
+    const optionValues = [...(select ?? "").matchAll(/<option value="(\d+)"/g)].map(
+      (m) => m[1],
+    )
+    expect(optionValues).toEqual(["5", "10", "15", "20"])
+    expect(select).toContain('value="10" selected')
+  })
+
+  it("renders exactly the 5 value-bounded power-up threshold options, default 3 selected", () => {
+    const html = renderGameMode(baseConfig)
+
+    const select = /<select[^>]*id="flower-battle-powerup-threshold"[^>]*>[\s\S]*?<\/select>/.exec(
+      html,
+    )?.[0]
+    expect(select).toBeDefined()
+    const optionValues = [...(select ?? "").matchAll(/<option value="(\d+)"/g)].map(
+      (m) => m[1],
+    )
+    expect(optionValues).toEqual(["1", "2", "3", "4", "5"])
+    expect(select).toContain('value="3" selected')
+  })
+
+  it("power-ups and acid-rain toggles default to checked (on)", () => {
+    const html = renderGameMode(baseConfig)
+
+    expect(toggleStateAfter(html, "setting-flower-battle-powerups")).toBe(
+      "true",
+    )
+    expect(toggleStateAfter(html, "setting-flower-battle-acid-rain")).toBe(
+      "true",
+    )
+  })
+
+  it("reflects a persisted config value instead of the default", () => {
+    const html = renderGameMode({
+      ...baseConfig,
+      flowerBattleTargetLevel: 20,
+      flowerBattlePowerupsEnabled: false,
+      flowerBattleAcidRainEnabled: false,
+      flowerBattlePowerupThreshold: 1,
+    })
+
+    const targetSelect = /<select[^>]*id="flower-battle-target-level"[^>]*>[\s\S]*?<\/select>/.exec(
+      html,
+    )?.[0]
+    expect(targetSelect).toContain('value="20" selected')
+    expect(toggleStateAfter(html, "setting-flower-battle-powerups")).toBe(
+      "false",
+    )
+    expect(toggleStateAfter(html, "setting-flower-battle-acid-rain")).toBe(
+      "false",
+    )
+    const thresholdSelect = /<select[^>]*id="flower-battle-powerup-threshold"[^>]*>[\s\S]*?<\/select>/.exec(
+      html,
+    )?.[0]
+    expect(thresholdSelect).toContain('value="1" selected')
   })
 })

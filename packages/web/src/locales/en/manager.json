@@ -554,6 +554,10 @@
         "deep_sea_escape": {
           "name": "Deep Sea Escape",
           "description": "A race against time underwater — correct answers secure the ascent."
+        },
+        "flower_battle": {
+          "name": "Flower Battle",
+          "description": "Teams race to grow their plants — correct answers earn sun points."
         }
       },
       "devicesOnlyHint": "Questions appear on player devices only",
@@ -603,7 +607,8 @@
       "scoring": "Scoring",
       "school": "School",
       "endScreen": "End screen",
-      "experience": "Experience modes"
+      "experience": "Experience modes",
+      "flowerBattle": "Flower Battle"
     },
     "endScreenModeDescription": {
       "full": "Shows the full leaderboard at the end of the game.",
@@ -614,7 +619,35 @@
     "experienceModesTitle": "Experience modes",
     "experienceModesDescription": "Unlocks alternative presentation modes selectable in the Game mode tab. Questions appear on player devices only.",
     "experienceModesEnabled": "Experience modes enabled",
-    "experienceModesDisabled": "Experience modes disabled"
+    "experienceModesDisabled": "Experience modes disabled",
+    "flowerBattle": {
+      "name": "Flower Battle",
+      "description": "Teams grow their plants by answering correctly — first team to reach the target level wins the round.",
+      "recommendedParticipants": "Recommended: at least two teams (same as Pyramid Climb).",
+      "backgroundHint": "The garden background is generated automatically and deterministically per game — no manual selection needed.",
+      "targetLevel": {
+        "label": "Target level",
+        "description": "Growth level a team must reach to win."
+      },
+      "targetLevelSavedLocally": "Target level {{level}} saved locally — server sync coming soon",
+      "powerupsEnabled": {
+        "label": "Power-ups",
+        "description": "Allows sunbeam, fertilizer, and umbrella power-ups during the round."
+      },
+      "powerupsEnabledLocally": "Power-ups enabled (local — server sync coming soon)",
+      "powerupsDisabledLocally": "Power-ups disabled (local — server sync coming soon)",
+      "acidRainEnabled": {
+        "label": "Acid rain",
+        "description": "Adds an acid-rain hazard that can slow plant growth."
+      },
+      "acidRainEnabledLocally": "Acid rain enabled (local — server sync coming soon)",
+      "acidRainDisabledLocally": "Acid rain disabled (local — server sync coming soon)",
+      "powerupThreshold": {
+        "label": "Sun-point threshold",
+        "description": "Sun points required before a power-up is offered."
+      },
+      "powerupThresholdSavedLocally": "Threshold {{threshold}} saved locally — server sync coming soon"
+    }
   },
   "achievementsConfig": {
     "title": "Configure Achievements",

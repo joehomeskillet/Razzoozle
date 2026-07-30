@@ -554,6 +554,10 @@
         "deep_sea_escape": {
           "name": "Tiefsee-Flucht",
           "description": "Ein Tauchgang gegen die Zeit — richtige Antworten sichern den Aufstieg."
+        },
+        "flower_battle": {
+          "name": "Blüten-Battle",
+          "description": "Teams lassen um die Wette Pflanzen wachsen — richtige Antworten bringen Sonnenpunkte."
         }
       },
       "devicesOnlyHint": "Fragen erscheinen nur auf den Spieler-Geräten",
@@ -627,7 +631,8 @@
       "scoring": "Wertung",
       "school": "Schule",
       "endScreen": "Endbildschirm",
-      "experience": "Experience-Modi"
+      "experience": "Experience-Modi",
+      "flowerBattle": "Blüten-Battle"
     },
     "endScreenModeDescription": {
       "full": "Zeigt am Spielende die komplette Rangliste.",
@@ -638,7 +643,35 @@
     "experienceModesTitle": "Experience-Modi",
     "experienceModesDescription": "Schaltet alternative Präsentationsmodi frei, die im Spielmodus-Tab ausgewählt werden können. Fragen erscheinen dabei nur auf den Spieler-Geräten.",
     "experienceModesEnabled": "Experience-Modi aktiviert",
-    "experienceModesDisabled": "Experience-Modi deaktiviert"
+    "experienceModesDisabled": "Experience-Modi deaktiviert",
+    "flowerBattle": {
+      "name": "Blüten-Battle",
+      "description": "Teams lassen ihre Pflanzen wachsen, indem sie Fragen richtig beantworten — wer zuerst die Zielstufe erreicht, gewinnt die Runde.",
+      "recommendedParticipants": "Empfohlen: mindestens zwei Teams (wie bei Pyramiden-Aufstieg).",
+      "backgroundHint": "Der Gartenhintergrund wird pro Spiel automatisch und deterministisch erzeugt — keine manuelle Auswahl nötig.",
+      "targetLevel": {
+        "label": "Zielstufe",
+        "description": "Wachstumsstufe, die ein Team zum Sieg erreichen muss."
+      },
+      "targetLevelSavedLocally": "Zielstufe {{level}} lokal gespeichert — Server-Synchronisierung folgt",
+      "powerupsEnabled": {
+        "label": "Power-ups",
+        "description": "Erlaubt Sonnenstrahl-, Dünger- und Schirm-Power-ups während der Runde."
+      },
+      "powerupsEnabledLocally": "Power-ups aktiviert (lokal — Server-Synchronisierung folgt)",
+      "powerupsDisabledLocally": "Power-ups deaktiviert (lokal — Server-Synchronisierung folgt)",
+      "acidRainEnabled": {
+        "label": "Saurer Regen",
+        "description": "Fügt eine Sauren-Regen-Gefahr hinzu, die das Pflanzenwachstum bremsen kann."
+      },
+      "acidRainEnabledLocally": "Saurer Regen aktiviert (lokal — Server-Synchronisierung folgt)",
+      "acidRainDisabledLocally": "Saurer Regen deaktiviert (lokal — Server-Synchronisierung folgt)",
+      "powerupThreshold": {
+        "label": "Sonnenpunkte-Schwelle",
+        "description": "Anzahl Sonnenpunkte, ab der ein Power-up angeboten wird."
+      },
+      "powerupThresholdSavedLocally": "Schwelle {{threshold}} lokal gespeichert — Server-Synchronisierung folgt"
+    }
   },
   "achievements": {
     "active": "aktiv"
