@@ -9,6 +9,7 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
+import ExperienceStartWarning from "@razzoozle/web/features/manager/components/configurations/ExperienceStartWarning"
 import { useQuestionStore } from "@razzoozle/web/features/game/stores/question"
 import {
   MANAGER_SKIP_EVENTS,
@@ -154,6 +155,8 @@ const ManagerGamePage = () => {
       manager
     >
       <AutoAdvanceCountdown ms={autoAdvanceMs} />
+      {/* E-11rev/E-12rev soft start gates (experience modes, WP #879). */}
+      <ExperienceStartWarning gameId={gameId} />
       {experienceTransition ? (
         <ExperienceDisplay data={experienceTransition} />
       ) : (

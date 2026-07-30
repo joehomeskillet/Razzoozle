@@ -539,6 +539,27 @@
       "selfHint": "Players pick their own team",
       "auto": "Automatic",
       "autoHint": "Server assigns to the smallest team"
+    },
+    "experienceMode": {
+      "label": "Experience mode",
+      "options": {
+        "classic": {
+          "name": "Classic",
+          "description": "The familiar flow, no extra presentation."
+        },
+        "pyramid_climb": {
+          "name": "Pyramid Climb",
+          "description": "Teams climb a pyramid together — correct answers move them up."
+        },
+        "deep_sea_escape": {
+          "name": "Deep Sea Escape",
+          "description": "A race against time underwater — correct answers secure the ascent."
+        }
+      },
+      "devicesOnlyHint": "Questions appear on player devices only",
+      "previewPlaceholder": "Preview coming soon",
+      "teamsRequiredHint": "This mode works best with at least two teams.",
+      "skippedQuestions": "{{count}} questions can't be used in this mode and will be skipped"
     }
   },
   "gameMode": {
@@ -581,14 +602,19 @@
       "flow": "Game flow",
       "scoring": "Scoring",
       "school": "School",
-      "endScreen": "End screen"
+      "endScreen": "End screen",
+      "experience": "Experience modes"
     },
     "endScreenModeDescription": {
       "full": "Shows the full leaderboard at the end of the game.",
       "top3": "Shows only the top three at the end of the game.",
       "private": "Results are visible to the teacher only."
     },
-    "endScreenMinOneActive": "At least one end screen option must remain active."
+    "endScreenMinOneActive": "At least one end screen option must remain active.",
+    "experienceModesTitle": "Experience modes",
+    "experienceModesDescription": "Unlocks alternative presentation modes selectable in the Game mode tab. Questions appear on player devices only.",
+    "experienceModesEnabled": "Experience modes enabled",
+    "experienceModesDisabled": "Experience modes disabled"
   },
   "achievementsConfig": {
     "title": "Configure Achievements",
@@ -991,5 +1017,11 @@
     "saveError": "Could not save template.",
     "deleteError": "Could not delete template."
   },
-  "balanceTeams": "Balance teams"
+  "balanceTeams": "Balance teams",
+  "startWarning": {
+    "title": "Start anyway?",
+    "teamSetupIncomplete": "This mode recommends at least two teams. The current team setup is incomplete.",
+    "confirmAnyway": "Start anyway",
+    "unscoredFiltered": "Some questions will be skipped in this mode."
+  }
 }

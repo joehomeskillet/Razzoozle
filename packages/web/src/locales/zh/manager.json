@@ -539,6 +539,27 @@
       "selfHint": "玩家自己选择队伍",
       "auto": "自动分配",
       "autoHint": "服务器分配到人数最少的队伍"
+    },
+    "experienceMode": {
+      "label": "体验模式",
+      "options": {
+        "classic": {
+          "name": "经典",
+          "description": "熟悉的流程，没有额外呈现。"
+        },
+        "pyramid_climb": {
+          "name": "金字塔攀登",
+          "description": "各队共同攀登金字塔——答对问题可以前进。"
+        },
+        "deep_sea_escape": {
+          "name": "深海逃脱",
+          "description": "一场与时间赛跑的水下逃脱——答对问题确保上浮。"
+        }
+      },
+      "devicesOnlyHint": "问题仅显示在玩家设备上",
+      "previewPlaceholder": "预览即将推出",
+      "teamsRequiredHint": "此模式在至少两个队伍时效果最佳。",
+      "skippedQuestions": "此模式无法使用 {{count}} 个问题，将被跳过"
     }
   },
   "gameMode": {
@@ -581,14 +602,19 @@
       "flow": "游戏流程",
       "scoring": "评分",
       "school": "学校",
-      "endScreen": "结束画面"
+      "endScreen": "结束画面",
+      "experience": "体验模式"
     },
     "endScreenModeDescription": {
       "full": "在游戏结束时显示完整排行榜。",
       "top3": "在游戏结束时仅显示前三名。",
       "private": "结果仅对教师可见。"
     },
-    "endScreenMinOneActive": "至少一个结束画面选项必须保持激活。"
+    "endScreenMinOneActive": "至少一个结束画面选项必须保持激活。",
+    "experienceModesTitle": "体验模式",
+    "experienceModesDescription": "解锁可在「游戏模式」标签页中选择的其他呈现模式。问题仅显示在玩家设备上。",
+    "experienceModesEnabled": "体验模式已启用",
+    "experienceModesDisabled": "体验模式已禁用"
   },
   "achievementsConfig": {
     "title": "配置成就",
@@ -991,5 +1017,11 @@
     "deleteError": "无法删除模板。",
     "questionCount_one": "{{count}} 个问题"
   },
-  "balanceTeams": "平衡队伍"
+  "balanceTeams": "平衡队伍",
+  "startWarning": {
+    "title": "仍要开始吗？",
+    "teamSetupIncomplete": "此模式建议至少两个队伍。当前的队伍分配尚不完整。",
+    "confirmAnyway": "仍要开始",
+    "unscoredFiltered": "此模式下部分问题将被跳过。"
+  }
 }

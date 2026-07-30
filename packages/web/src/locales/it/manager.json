@@ -539,6 +539,27 @@
       "selfHint": "I giocatori scelgono la propria squadra",
       "auto": "Automatico",
       "autoHint": "Il server assegna alla squadra più piccola"
+    },
+    "experienceMode": {
+      "label": "Modalità esperienza",
+      "options": {
+        "classic": {
+          "name": "Classica",
+          "description": "Lo svolgimento abituale, senza presentazione aggiuntiva."
+        },
+        "pyramid_climb": {
+          "name": "Scalata alla piramide",
+          "description": "Le squadre scalano insieme una piramide — le risposte corrette le fanno avanzare."
+        },
+        "deep_sea_escape": {
+          "name": "Fuga negli abissi",
+          "description": "Una corsa contro il tempo sott'acqua — le risposte corrette assicurano la risalita."
+        }
+      },
+      "devicesOnlyHint": "Le domande appaiono solo sui dispositivi dei giocatori",
+      "previewPlaceholder": "Anteprima in arrivo",
+      "teamsRequiredHint": "Questa modalità funziona meglio con almeno due squadre.",
+      "skippedQuestions": "{{count}} domande non possono essere usate in questa modalità e verranno saltate"
     }
   },
   "gameMode": {
@@ -581,14 +602,19 @@
       "flow": "Flusso del gioco",
       "scoring": "Punteggio",
       "school": "Scuola",
-      "endScreen": "Schermata finale"
+      "endScreen": "Schermata finale",
+      "experience": "Modalità esperienza"
     },
     "endScreenModeDescription": {
       "full": "Mostra la classifica completa alla fine del gioco.",
       "top3": "Mostra solo i tre migliori alla fine del gioco.",
       "private": "I risultati sono visibili solo all'insegnante."
     },
-    "endScreenMinOneActive": "Almeno un'opzione della schermata finale deve rimanere attiva."
+    "endScreenMinOneActive": "Almeno un'opzione della schermata finale deve rimanere attiva.",
+    "experienceModesTitle": "Modalità esperienza",
+    "experienceModesDescription": "Sblocca modalità di presentazione alternative selezionabili nella scheda Modalità di gioco. Le domande appaiono solo sui dispositivi dei giocatori.",
+    "experienceModesEnabled": "Modalità esperienza attivate",
+    "experienceModesDisabled": "Modalità esperienza disattivate"
   },
   "achievementsConfig": {
     "title": "Configura obiettivi",
@@ -991,5 +1017,11 @@
     "saveError": "Impossibile salvare il modello.",
     "deleteError": "Impossibile eliminare il modello."
   },
-  "balanceTeams": "Bilancia squadre"
+  "balanceTeams": "Bilancia squadre",
+  "startWarning": {
+    "title": "Avviare comunque?",
+    "teamSetupIncomplete": "Questa modalità consiglia almeno due squadre. La configurazione attuale delle squadre è incompleta.",
+    "confirmAnyway": "Avvia comunque",
+    "unscoredFiltered": "Alcune domande verranno saltate in questa modalità."
+  }
 }
