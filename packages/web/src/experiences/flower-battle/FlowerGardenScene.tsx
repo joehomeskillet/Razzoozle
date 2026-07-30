@@ -46,6 +46,13 @@ const variantForTeam = (seed: number | string, index: number): FlowerVariant => 
  * FlowerGardenScene — deterministic garden stage for Flower Battle presenter
  * display (WP-937). Composes Experience Kit stage layers with vertical safe
  * zones: hud (0–16 %), background (16–64 %), actors (64–100 %).
+ *
+ * WP-958D: the hud/actors bands themselves render no artwork (hud is an
+ * empty reservation, actors only draws the narrow plant graphics) — the
+ * app-wide icon backdrop showed through around them. A single opaque
+ * full-scene fill sits behind all three zones so the scene is opaque edge
+ * to edge, while GardenBackgroundLayer keeps painting its own scenery only
+ * inside the background band.
  */
 export const FlowerGardenScene = ({
   seed,
@@ -67,6 +74,11 @@ export const FlowerGardenScene = ({
           data-team-count={visibleTeams.length}
           className="relative h-full w-full"
         >
+          <div
+            data-testid="garden-scene-backdrop"
+            className="absolute inset-0 bg-surface-2"
+            aria-hidden="true"
+          />
           <ExperienceSafeArea className="relative h-full w-full">
             <ExperienceLayer name="hud" className="absolute inset-x-0 top-0">
               <div
@@ -101,7 +113,14 @@ export const FlowerGardenScene = ({
                     key={`${team.name}-${index}`}
                     data-testid={`garden-team-slot-${index}`}
                     data-team-name={team.name}
-                    className="relative flex h-full min-w-0 flex-1 items-end justify-center"
+                    // WP-958D: at 1–2 teams flex-1 gives the slot almost the
+                    // full row width, and the plant's own aspect-preserving
+                    // svg scaling then grows to fill it, dwarfing the scene.
+                    // max-w (in container-query width units, so it stays
+                    // correct at any scene size) caps the slot regardless of
+                    // team count; the 3–4 team slots are already narrower
+                    // than the cap, so nothing changes there.
+                    className="relative flex h-full min-w-0 max-w-[26cqw] flex-1 items-end justify-center"
                   >
                     <FlowerPlant
                       variant={variantForTeam(seed, index)}

@@ -25,6 +25,11 @@ describe("ExperienceStage", () => {
     expect(html).toContain("overflow-x-hidden")
   })
 
+  it("has a dvh-based max-height ceiling so an indefinite ancestor can never let aspect-video overflow the viewport (WP-958D)", () => {
+    const html = renderToStaticMarkup(<ExperienceStage>Test</ExperienceStage>)
+    expect(html).toMatch(/max-h-\[\d+dvh\]/)
+  })
+
   it("renders children", () => {
     const html = renderToStaticMarkup(
       <ExperienceStage>
