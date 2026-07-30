@@ -31,7 +31,8 @@ describe("TextAnswersDisplay SSR Parity", () => {
     acceptedAnswers: ["Hello World"],
     matchMode: "normalized" as const,
     correctChunks: ["The", "correct", "sentence"],
-    isSentenceBuilder: true,
+    isTypeAnswer: true,
+    isSentenceBuilder: false,
   }
 
   it("renders text responses sorted by frequency", () => {
@@ -49,9 +50,23 @@ describe("TextAnswersDisplay SSR Parity", () => {
     expect(html).toContain(">3<")
   })
 
-  it("renders accepted answers legend", () => {
+  it("renders accepted answers legend when isTypeAnswer is true", () => {
     const html = renderToStaticMarkup(<TextAnswersDisplay {...defaultProps} />)
-    expect(html).toContain("state-correct-soft")
+    // Legend has mb-4 class marker in the wrapper
+    expect(html).toContain("mb-4")
+  })
+
+  it("does NOT render legend container when isSentenceBuilder even with acceptedAnswers", () => {
+    const props = {
+      ...defaultProps,
+      isTypeAnswer: false,
+      isSentenceBuilder: true,
+      acceptedAnswers: ["Hello World"],
+    }
+    const html = renderToStaticMarkup(<TextAnswersDisplay {...props} />)
+    // The legend is wrapped in <div className="mb-4 flex ...">
+    // This container should not exist in sentence-builder mode
+    expect(html).not.toContain("mb-4 flex flex-wrap gap-2")
   })
 
   it("renders scroll container", () => {
@@ -65,7 +80,12 @@ describe("TextAnswersDisplay SSR Parity", () => {
   })
 
   it("renders correct chunks when isSentenceBuilder", () => {
-    const html = renderToStaticMarkup(<TextAnswersDisplay {...defaultProps} />)
+    const props = {
+      ...defaultProps,
+      isTypeAnswer: false,
+      isSentenceBuilder: true,
+    }
+    const html = renderToStaticMarkup(<TextAnswersDisplay {...props} />)
     expect(html).toContain("Correct Sentence")
   })
 
