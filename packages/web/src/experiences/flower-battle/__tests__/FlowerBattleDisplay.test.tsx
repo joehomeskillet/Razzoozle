@@ -52,6 +52,7 @@ vi.mock("motion/react", () => ({
 }))
 
 import { FlowerBattleDisplay } from "../FlowerBattleDisplay"
+import { GardenBattleCanvasHost } from "../GardenBattleCanvasHost"
 import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
 
 const flowerBattleEnvelope = (
@@ -96,39 +97,28 @@ const flowerBattleEnvelope = (
 })
 
 describe("FlowerBattleDisplay", () => {
-  it("renders the garden scene and presenter HUD from a real payload", () => {
+  it("renders GardenBattleCanvasHost and presenter HUD from a real payload (WP-PIX-05B)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
 
     expect(html).toContain('data-testid="flower-battle-display"')
-    expect(html).toContain('data-testid="flower-garden-scene"')
+    expect(html).toContain('data-testid="garden-battle-canvas-host"')
+    expect(html).toContain('data-testid="garden-pixi-canvas"')
     expect(html).toContain('data-testid="flower-battle-presenter-hud"')
-    expect(html).toContain('data-testid="garden-team-slot-0"')
-    expect(html).toContain('data-testid="garden-team-slot-1"')
     expect(html).toContain('data-testid="flower-battle-team-hud-0"')
     expect(html).toContain('data-testid="flower-battle-team-hud-1"')
+    // Default quality path is canvas, not the DOM garden scene.
+    expect(html).not.toContain('data-testid="flower-garden-scene"')
   })
 
-  it("binds the wire seed and recipeVersion onto the garden scene", () => {
+  it("binds the wire seed and recipeVersion onto the canvas host", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
 
     expect(html).toContain('data-seed="424242"')
     expect(html).toContain('data-recipe-version="1"')
-  })
-
-  it("feeds FlowerPlant from team.growthStage, not sunPoints", () => {
-    // growthStage=9 but sunPoints=0 — only the wire growthStage field may
-    // reach FlowerPlant; a sunPoints-derived value would render stage 0.
-    const envelope = flowerBattleEnvelope()
-    envelope.payload!.data!.state!.teams[0]!.growthStage = 9
-    envelope.payload!.data!.state!.teams[0]!.sunPoints = 0
-
-    const html = renderToStaticMarkup(<FlowerBattleDisplay data={envelope} />)
-
-    expect(html).toContain('data-growth-stage="9"')
   })
 
   it("threads answered/total into the presenter HUD answer counter", () => {
@@ -151,14 +141,15 @@ describe("FlowerBattleDisplay", () => {
     expect(html).not.toContain('data-testid="question-text"')
   })
 
-  it("renders an empty garden when the payload has no teams yet", () => {
+  it("renders the canvas host when the payload has no teams yet", () => {
     const envelope = flowerBattleEnvelope()
     envelope.payload!.data!.state!.teams = []
 
     const html = renderToStaticMarkup(<FlowerBattleDisplay data={envelope} />)
 
-    expect(html).toContain('data-testid="flower-garden-scene"')
-    expect(html).not.toContain('data-testid="garden-team-slot-0"')
+    expect(html).toContain('data-testid="garden-battle-canvas-host"')
+    expect(html).toContain('data-testid="garden-pixi-canvas"')
+    expect(html).toContain('data-testid="flower-battle-presenter-hud"')
   })
 
   it("renders safely when the envelope has no flowerBattle payload at all (defensive)", () => {
@@ -167,7 +158,25 @@ describe("FlowerBattleDisplay", () => {
     )
 
     expect(html).toContain('data-testid="flower-battle-display"')
+    expect(html).toContain('data-testid="garden-battle-canvas-host"')
+    expect(html).toContain('data-testid="flower-battle-presenter-hud"')
+  })
+
+  it("retains deterministic FlowerGardenScene static fallback contract via host", () => {
+    // Display always mounts GardenBattleCanvasHost; static/error path inside
+    // the host still renders FlowerGardenScene (seed/recipe/teams).
+    const html = renderToStaticMarkup(
+      <GardenBattleCanvasHost
+        teams={flowerBattleEnvelope().payload!.data!.state!.teams}
+        quality="static"
+        seed="424242"
+        recipeVersion={1}
+      />,
+    )
+    expect(html).toContain('data-testid="garden-static-fallback"')
     expect(html).toContain('data-testid="flower-garden-scene"')
+    expect(html).toContain('data-seed="424242"')
+    expect(html).toContain('data-recipe-version="1"')
   })
 
   it("clips its own box so an oversized child can never leak into a page scrollbar (WP-958B)", () => {
@@ -186,7 +195,7 @@ describe("FlowerBattleDisplay", () => {
     expect(html).not.toContain("h-screen")
   })
 
-  it("stacks scene and HUD as flex-column flow children so the team-meter row can never render past the fold (WP-958C)", () => {
+  it("stacks canvas host and HUD as flex-column flow children so the team-meter row can never render past the fold (WP-958C)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
@@ -199,14 +208,16 @@ describe("FlowerBattleDisplay", () => {
     expect(rootMatch).not.toBeNull()
     expect(rootMatch![1]).toContain("flex")
     expect(rootMatch![1]).toContain("flex-col")
+    expect(rootMatch![1]).toContain("h-full")
 
-    // the scene grows to fill whatever space the HUD's natural height
-    // leaves behind, and may shrink below its own content size (min-h-0)
-    // rather than push the HUD off-box.
-    const sceneMatch = html.match(/class="([^"]*)"[^>]*aria-label="Experience viewport"/)
-    expect(sceneMatch).not.toBeNull()
-    expect(sceneMatch![1]).toContain("flex-1")
-    expect(sceneMatch![1]).toContain("min-h-0")
+    // canvas host grows to fill whatever space the HUD's natural height
+    // leaves behind, and may shrink below its own content size (min-h-0).
+    const hostMatch = html.match(
+      /data-testid="garden-battle-canvas-host"[^>]*class="([^"]*)"/,
+    )
+    expect(hostMatch).not.toBeNull()
+    expect(hostMatch![1]).toContain("flex-1")
+    expect(hostMatch![1]).toContain("min-h-0")
 
     // the HUD (and the team-meter row inside it) is a normal flow child,
     // not an absolute overlay — that absolute positioning is exactly what

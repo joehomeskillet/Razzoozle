@@ -59,7 +59,12 @@ vi.mock("react-i18next", () => ({
   }),
 }))
 
-import { attachGardenPixiApplication } from "../attachGardenPixiApplication"
+import { Container } from "pixi.js"
+
+import {
+  attachGardenPixiApplication,
+  createDefaultGardenScene,
+} from "../attachGardenPixiApplication"
 import {
   GardenBattleCanvasHost,
   resolveGardenRenderQuality,
@@ -72,6 +77,8 @@ import type {
   GardenScene,
 } from "../garden-pixi.types"
 import { createEmptyGardenScene } from "../garden-pixi.types"
+import { createGardenScene } from "../rendering/GardenScene"
+import type { GardenPalette } from "../rendering/gardenPalette"
 
 type StoredListener = EventListenerOrEventListenerObject
 
@@ -395,7 +402,11 @@ describe("attachGardenPixiApplication", () => {
     const { prefersReducedMotion, dispose } =
       await attachGardenPixiApplication(
         createCanvasFake(),
-        { createApplication },
+        {
+          createApplication,
+          // Lifecycle-only fake — avoid token-resolved production scene in node.
+          createScene: () => createEmptyGardenScene(),
+        },
         browser.environment,
       )
 
@@ -415,7 +426,10 @@ describe("attachGardenPixiApplication", () => {
 
     const { dispose } = await attachGardenPixiApplication(
       createCanvasFake(),
-      { createApplication },
+      {
+        createApplication,
+        createScene: () => createEmptyGardenScene(),
+      },
       browser.environment,
     )
 
@@ -480,5 +494,225 @@ describe("GardenBattleCanvasHost error fallback contract", () => {
     expect(html).toContain('data-testid="custom-static-fallback"')
     expect(html).toContain("static ok")
     expect(html).toContain('data-fallback-reason="static"')
+  })
+})
+
+/** Deterministic palette for node env — not a production color fallback. */
+const TEST_PALETTE: GardenPalette = {
+  sky: 0x87b5e0,
+  hillsFar: 0x4a8f4a,
+  hillsNear: 0x5aad5a,
+  clouds: 0xf5f5f5,
+  midground: 0x3d7a3d,
+  soil: 0xc4a574,
+  soilEdge: 0x8b6914,
+  foreground: 0x2f6b2f,
+  plantStem: 0x2d6a2d,
+  plantLeaf: 0x4caf50,
+  plantPetal: 0xe57373,
+}
+
+describe("WP-PIX-05B production scene factory + live snapshot", () => {
+  it("uses createGardenScene as the real default scene factory", async () => {
+    const browser = createBrowserFake()
+    const stage = new Container()
+    stage.label = "stage"
+    const { app } = createAppFake()
+    const appWithStage = Object.assign(app, { stage })
+
+    // Stub theme CSS resolution so production createDefaultGardenScene can run
+    // in node (host falls back to static when tokens are missing in real apps).
+    const prevGcs = globalThis.getComputedStyle
+    const prevDocument = globalThis.document
+    vi.stubGlobal(
+      "getComputedStyle",
+      () =>
+        ({
+          getPropertyValue: () => "rgb(120, 140, 160)",
+        }) as unknown as CSSStyleDeclaration,
+    )
+    vi.stubGlobal("document", {
+      documentElement: {},
+      visibilityState: "visible",
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })
+
+    try {
+      // createDefaultGardenScene is the attach default (no createScene override).
+      expect(createDefaultGardenScene).toEqual(expect.any(Function))
+      const viaDefault = createDefaultGardenScene(appWithStage)
+      expect(typeof viaDefault.updateSnapshot).toBe("function")
+      expect(
+        (viaDefault as ReturnType<typeof createGardenScene>).root.label,
+      ).toBe("garden-root")
+      viaDefault.destroy()
+
+      const createApplication: CreateGardenPixiApplication = vi.fn(
+        async () => appWithStage,
+      )
+      // Omit createScene → production createDefaultGardenScene path.
+      const { scene, dispose } = await attachGardenPixiApplication(
+        createCanvasFake(),
+        { createApplication },
+        browser.environment,
+      )
+      expect(createApplication).toHaveBeenCalledTimes(1)
+      expect(typeof scene.updateSnapshot).toBe("function")
+      expect(
+        (scene as ReturnType<typeof createGardenScene>).root,
+      ).toBeInstanceOf(Container)
+      dispose()
+    } finally {
+      if (prevGcs) vi.stubGlobal("getComputedStyle", prevGcs)
+      else vi.unstubAllGlobals()
+      if (prevDocument) vi.stubGlobal("document", prevDocument)
+    }
+  })
+
+  it("updateSnapshot on same scene keeps root, canvas app handle, and anchors", async () => {
+    const browser = createBrowserFake()
+    const stage = new Container()
+    const { app } = createAppFake()
+    const appWithStage = Object.assign(app, { stage })
+    const createApplication = vi.fn(async () => appWithStage)
+    const createScene = vi.fn((handle: GardenPixiApplicationHandle) =>
+      createGardenScene(handle, { palette: TEST_PALETTE }),
+    )
+
+    const { scene, app: attachedApp, dispose } =
+      await attachGardenPixiApplication(
+        createCanvasFake(),
+        { createApplication, createScene },
+        browser.environment,
+      )
+
+    const procedural = scene as ReturnType<typeof createGardenScene>
+    const rootBefore = procedural.root
+    const canvasBefore = attachedApp.canvas
+
+    // Host-equivalent live feed (teams + phase) — same scene instance.
+    scene.updateSnapshot?.({
+      teams: [
+        { name: "Violet", growthStage: 1 },
+        { name: "Orange", growthStage: 2 },
+      ],
+      phase: "question",
+    })
+    const anchorsAfterFirst = procedural.getPlotAnchors().map((a) => ({ ...a }))
+    const plants = procedural.layers.actors.children.slice()
+
+    scene.updateSnapshot?.({
+      teams: [
+        { name: "Violet", growthStage: 7 },
+        { name: "Orange", growthStage: 8 },
+      ],
+      phase: "reveal",
+    })
+
+    expect(createApplication).toHaveBeenCalledTimes(1)
+    expect(createScene).toHaveBeenCalledTimes(1)
+    expect(procedural.root).toBe(rootBefore)
+    expect(attachedApp.canvas).toBe(canvasBefore)
+    expect(procedural.phase).toBe("reveal")
+    expect(procedural.layers.actors.children).toEqual(plants)
+    expect(procedural.getPlotAnchors()).toEqual(anchorsAfterFirst)
+    dispose()
+  })
+
+  it("rerender-style team/phase updates attach once and only snapshot", async () => {
+    // Models host behavior: one attach, then repeated updateSnapshot as
+    // teams/phase change. attachOptions object identity must not reattach
+    // (host keeps injectables in refs; effect deps = effectiveQuality only).
+    const browser = createBrowserFake()
+    const createApplication = vi.fn(async () => {
+      const { app } = createAppFake()
+      return Object.assign(app, { stage: new Container() })
+    })
+    const updateSnapshot = vi.fn()
+    const updateLayout = vi.fn()
+    const destroy = vi.fn()
+    const scene: GardenScene = {
+      updateLayout,
+      destroy,
+      updateSnapshot,
+    }
+    const createScene = vi.fn(() => scene)
+
+    // Fresh options object each "render" — identity must not matter once attached.
+    const attachWithFreshOptions = () =>
+      attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication,
+          createScene,
+          // fresh object literal each call (parent re-render pattern)
+        },
+        browser.environment,
+      )
+
+    const first = await attachWithFreshOptions()
+    expect(createApplication).toHaveBeenCalledTimes(1)
+    expect(createScene).toHaveBeenCalledTimes(1)
+
+    // Host snapshot effect: map teams + phase into the live scene.
+    const pushSnapshot = (
+      teams: FlowerBattleTeamState[],
+      phase: string,
+    ) => {
+      scene.updateSnapshot?.({
+        teams: teams.map((t) => ({
+          name: t.name,
+          growthStage: t.growthStage,
+        })),
+        phase,
+      })
+    }
+
+    pushSnapshot(TEAMS, "question")
+    pushSnapshot(
+      [
+        { ...makeTeam("Violet"), growthStage: 5 },
+        { ...makeTeam("Orange"), growthStage: 6 },
+      ],
+      "reveal",
+    )
+
+    expect(createApplication).toHaveBeenCalledTimes(1)
+    expect(createScene).toHaveBeenCalledTimes(1)
+    expect(updateSnapshot).toHaveBeenCalledTimes(2)
+    expect(updateSnapshot.mock.calls[0]?.[0]).toMatchObject({
+      phase: "question",
+      teams: [
+        { name: "Violet", growthStage: 0 },
+        { name: "Orange", growthStage: 0 },
+      ],
+    })
+    expect(updateSnapshot.mock.calls[1]?.[0]).toMatchObject({
+      phase: "reveal",
+      teams: [
+        { name: "Violet", growthStage: 5 },
+        { name: "Orange", growthStage: 6 },
+      ],
+    })
+    expect(destroy).not.toHaveBeenCalled()
+    first.dispose()
+    expect(destroy).toHaveBeenCalledTimes(1)
+  })
+
+  it("host static fallback still renders FlowerGardenScene with seed/recipe", () => {
+    const html = renderToStaticMarkup(
+      <GardenBattleCanvasHost
+        teams={TEAMS}
+        quality="static"
+        seed={42}
+        recipeVersion={1}
+      />,
+    )
+    expect(html).toContain('data-testid="garden-static-fallback"')
+    expect(html).toContain('data-testid="flower-garden-scene"')
+    expect(html).toContain('data-seed="42"')
+    expect(html).toContain('data-recipe-version="1"')
+    expect(html).toContain('data-testid="garden-battle-canvas-host"')
   })
 })

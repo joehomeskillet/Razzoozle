@@ -2,7 +2,7 @@ import type { ExperienceTransition } from "@razzoozle/common/types/game/experien
 
 import { CURRENT_GARDEN_RECIPE_VERSION } from "./background"
 import { FlowerBattlePresenterHud } from "./FlowerBattlePresenterHud"
-import { FlowerGardenScene } from "./FlowerGardenScene"
+import { GardenBattleCanvasHost } from "./GardenBattleCanvasHost"
 
 export interface FlowerBattleDisplayProps {
   data: ExperienceTransition
@@ -10,9 +10,14 @@ export interface FlowerBattleDisplayProps {
 
 /**
  * FlowerBattleDisplay — binds the live `game:experience` envelope
- * (mode=flowerBattle) to FlowerGardenScene + FlowerBattlePresenterHud for the
- * beamer/kiosk display route (WP-939C). Content-free: reads only
- * teams/background/progress from the payload, never question/answer text.
+ * (mode=flowerBattle) to GardenBattleCanvasHost + FlowerBattlePresenterHud for
+ * the beamer/kiosk display route (WP-939C / WP-PIX-05B). Content-free: reads
+ * only teams/background/progress/phase from the payload, never question text.
+ *
+ * Default path mounts the procedural Pixi garden via GardenBattleCanvasHost
+ * (createGardenScene + updateSnapshot). quality="static" / init errors fall
+ * back to deterministic FlowerGardenScene inside the host. HUD stays a
+ * separate flow child.
  *
  * Purely presentational — no local state. Every render reflects exactly the
  * latest envelope prop, so a reconnect that hands in a fresh envelope never
@@ -33,6 +38,9 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
   const teams = state?.teams ?? []
   const answered = data.answered ?? 0
   const total = data.total ?? 0
+  const seed = state?.background.seed ?? 0
+  const recipeVersion =
+    state?.background.recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION
 
   return (
     <div
@@ -42,10 +50,11 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
       data-phase-duration-ms={data.phaseDurationMs}
       className="display-stage flex h-full w-full flex-col overflow-hidden"
     >
-      <FlowerGardenScene
-        seed={state?.background.seed ?? 0}
-        recipeVersion={state?.background.recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION}
+      <GardenBattleCanvasHost
         teams={teams}
+        seed={seed}
+        recipeVersion={recipeVersion}
+        phase={data.phase}
         className="min-h-0 flex-1"
       />
       <div data-testid="flower-battle-display-hud" className="shrink-0">

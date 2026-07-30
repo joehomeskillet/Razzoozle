@@ -124,7 +124,7 @@ describe("ExperienceDisplay — Content-Free Display", () => {
     )
 
     expect(markup).toContain('data-testid="flower-battle-display"')
-    expect(markup).toContain('data-testid="flower-garden-scene"')
+    expect(markup).toContain('data-testid="garden-battle-canvas-host"')
     expect(markup).not.toContain('data-testid="question-text"')
   })
 })

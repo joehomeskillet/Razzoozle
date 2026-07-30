@@ -8,7 +8,6 @@
  */
 
 import {
-  createEmptyGardenScene,
   GARDEN_CANVAS_BACKGROUND,
   type CreateGardenPixiApplication,
   type CreateGardenScene,
@@ -16,6 +15,14 @@ import {
   type GardenPixiInitOptions,
   type GardenScene,
 } from "./garden-pixi.types"
+import { createGardenScene } from "./rendering/GardenScene"
+
+/**
+ * Production default scene factory (WP-PIX-05B).
+ * Procedural layers + plants; host feeds roster via updateSnapshot.
+ */
+export const createDefaultGardenScene: CreateGardenScene = (app) =>
+  createGardenScene(app)
 
 export interface GardenPixiResizeObserver {
   observe(target: Element): void
@@ -108,7 +115,7 @@ export async function attachGardenPixiApplication(
 ): Promise<AttachGardenPixiResult> {
   const createApplication =
     options.createApplication ?? createDefaultApplication
-  const createScene = options.createScene ?? (() => createEmptyGardenScene())
+  const createScene = options.createScene ?? createDefaultGardenScene
   const background = options.background ?? GARDEN_CANVAS_BACKGROUND
   const antialias = options.antialias ?? true
 

@@ -1,7 +1,7 @@
 /**
- * Shared contracts for the Flower Battle PixiJS canvas host (WP-02).
- * Scene content (layers, plants) lands in WP-05 — only the lifecycle shell
- * and a placeholder GardenScene live here.
+ * Shared contracts for the Flower Battle PixiJS canvas host (WP-02 / WP-PIX-05B).
+ * Production attaches `createGardenScene` (procedural layers + plants).
+ * Empty placeholder remains for tests that inject lifecycle-only fakes.
  */
 
 import type { ReactNode } from "react"
@@ -13,12 +13,23 @@ import type { FlowerBattleTeamState } from "./flower-battle-scene.types"
 export type GardenRenderQuality = "high" | "medium" | "low" | "static"
 
 /**
- * Minimal scene contract the host resizes/destroys.
- * WP-05 replaces the empty placeholder with real layer content.
+ * Live roster slice the host pushes into a procedural scene without recreating
+ * the Application, canvas, scene root, or stable plot anchors.
+ */
+export interface GardenSceneLiveSnapshot {
+  teams: readonly { name: string; growthStage: number }[]
+  /** Experience / question phase label (optional; does not move anchors). */
+  phase?: string
+}
+
+/**
+ * Minimal scene contract the host resizes/destroys and optionally snapshots.
+ * Production `createGardenScene` implements updateSnapshot; empty fakes omit it.
  */
 export interface GardenScene {
   updateLayout(width: number, height: number): void
   destroy(): void
+  updateSnapshot?(snapshot: GardenSceneLiveSnapshot): void
 }
 
 /**
@@ -82,6 +93,11 @@ export interface GardenBattleCanvasHostProps {
   seed?: number | string
   /** Recipe version for the DOM static fallback. */
   recipeVersion?: number | string
+  /**
+   * Live experience / question phase for `scene.updateSnapshot`.
+   * Does not remount the Pixi Application or scene root.
+   */
+  phase?: string
   /** Override static fallback markup (defaults to FlowerGardenScene). */
   fallback?: ReactNode
 }

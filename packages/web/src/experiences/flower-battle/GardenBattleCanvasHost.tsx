@@ -1,9 +1,11 @@
 /**
  * GardenBattleCanvasHost — PixiJS Application lifecycle shell for the Flower
- * Battle presenter scene (WP-02 / ADR-013).
+ * Battle presenter scene (WP-02 / WP-PIX-05B / ADR-013).
  *
- * Owns mount/resize/visibility/destroy. Does NOT own scene content (WP-05),
- * asset loading (WP-03), or the default display path (feature gate later).
+ * Owns mount/resize/visibility/destroy and live roster snapshots into the
+ * procedural garden scene. Default createScene is createGardenScene; quality
+ * "static" or init errors fall back to FlowerGardenScene. Does NOT own asset
+ * loading (WP-03).
  */
 
 import {
@@ -165,6 +167,7 @@ export function GardenBattleCanvasHost({
   className = "",
   seed,
   recipeVersion,
+  phase,
   fallback,
   attachOptions,
   environment,
@@ -183,11 +186,16 @@ export function GardenBattleCanvasHost({
   )
   const useStatic = effectiveQuality === "static" || error !== null
 
-  // Stable callback refs so effect deps stay narrow.
+  // Stable callback / inject refs so parent re-renders never re-init Pixi
+  // solely due to attachOptions/environment object identity (WP-PIX-05B).
   const onReadyRef = useRef(onReady)
   const onErrorRef = useRef(onError)
+  const attachOptionsRef = useRef(attachOptions)
+  const environmentRef = useRef(environment)
   onReadyRef.current = onReady
   onErrorRef.current = onError
+  attachOptionsRef.current = attachOptions
+  environmentRef.current = environment
 
   useEffect(() => {
     if (effectiveQuality === "static") {
@@ -207,12 +215,13 @@ export function GardenBattleCanvasHost({
 
     void (async () => {
       try {
+        const inject = attachOptionsRef.current
         const result = await attachGardenPixiApplication(
           canvas,
           {
-            ...attachOptions,
+            ...inject,
             onReady: (handle, nextScene) => {
-              attachOptions?.onReady?.(handle, nextScene)
+              inject?.onReady?.(handle, nextScene)
               if (cancelled) return
               // Production Application satisfies GardenPixiApplicationHandle.
               const pixiApp = handle as unknown as Application
@@ -223,7 +232,7 @@ export function GardenBattleCanvasHost({
               onReadyRef.current?.(pixiApp)
             },
           },
-          environment,
+          environmentRef.current,
         )
 
         if (cancelled) {
@@ -253,7 +262,20 @@ export function GardenBattleCanvasHost({
       disposeRef.current = undefined
       // Avoid setState-after-unmount; next mount starts from idle defaults.
     }
-  }, [effectiveQuality, attachOptions, environment])
+    // attachOptions / environment read via refs — identity must not reattach.
+  }, [effectiveQuality])
+
+  // Push live roster + phase into the same scene instance (no remount).
+  useEffect(() => {
+    if (!scene || typeof scene.updateSnapshot !== "function") return
+    scene.updateSnapshot({
+      teams: teams.map((team) => ({
+        name: team.name,
+        growthStage: team.growthStage,
+      })),
+      phase,
+    })
+  }, [scene, teams, phase])
 
   const contextValue = useMemo<GardenPixiHookValue>(
     () => ({ app, isReady, error, scene }),
@@ -299,6 +321,11 @@ export function GardenBattleCanvasHost({
           data-quality={effectiveQuality}
           data-ready={isReady ? "true" : "false"}
           data-reduced-motion={prefersReducedMotion ? "true" : "false"}
+          data-seed={seed ?? 0}
+          data-recipe-version={
+            recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION
+          }
+          data-phase={phase ?? ""}
           className={`relative h-full w-full min-h-0 overflow-hidden ${className}`.trim()}
         >
           {useStatic ? (
