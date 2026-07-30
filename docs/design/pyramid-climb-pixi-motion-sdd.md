@@ -774,7 +774,7 @@ Pflicht:
 
 ### WP-08: Backend-State und Events
 
-- serverautoritatitive Policy
+- serverautoritative Policy
 - versionierte Events
 - keine Renderbegriffe
 
