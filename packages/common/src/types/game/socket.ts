@@ -48,6 +48,9 @@ export interface MessageGameId {
   // v2.0 host-token auth: the manager attaches its server-minted host token on every
   // control emit so the server can verify game ownership. Optional for backward-compat.
   hostToken?: string
+  // E-11rev (WP #878/#879): host override after a soft START_WARNING — re-emitting
+  // START_GAME with `confirmed: true` skips the soft start gate.
+  confirmed?: boolean
 }
 
 export interface SocketAuthPayload {
@@ -77,6 +80,9 @@ export type EndScreen = 'full' | 'top3' | 'private'
 /** How players get a team in team-mode games (WP #952). Default server-side: `self`. */
 export type TeamAssignment = 'self' | 'auto'
 
+/** Experience presentation mode (WP #876). Mirrors the rust ExperienceMode binding; clamped server-side against the experienceModesEnabled allow-list. */
+export type ExperienceMode = 'classic' | 'pyramidClimb' | 'deepSeaEscape' | 'flowerBattle'
+
 export interface SelectedModes {
   scoringMode?: 'speed' | 'accuracy'
   teamMode?: boolean
@@ -84,6 +90,8 @@ export interface SelectedModes {
   endScreen?: EndScreen
   /** Per-game participant cap. None or 0 = unlimited (up to server ceiling of 200). Validated and clamped server-side. */
   participantCap?: number
+  /** Experience presentation mode (WP #876). Omitted = classic default on server. */
+  experienceMode?: ExperienceMode
   /** Team assignment: players pick (`self`) or server auto-balances on join (`auto`). Default `self`. */
   teamAssignment?: TeamAssignment
 }
@@ -330,6 +338,18 @@ export interface ServerToClientEvents {
     id: string
     oldId: string
     username: string
+  }) => void
+  // Soft start-gate / unscored-filter warning (WP #878 emit sites, WP #879 UI).
+  // Socket-direct to the starting manager. `teamSetupIncomplete` (E-11rev) is a
+  // warning, NOT a hard block — the host confirms via START_GAME
+  // { confirmed: true }. `unscoredFiltered` (E-12rev) is a pure notice (the
+  // game starts anyway) carrying the skipped question count.
+  [EVENTS.MANAGER.START_WARNING]: (_payload: {
+    gameId: string
+    reason: "teamSetupIncomplete" | "unscoredFiltered"
+    confirmedRequired?: boolean
+    skipped?: number
+    remaining?: number
   }) => void
   // Manager plugin system (server -> client). Broadcast of the installed plugin
   // list whenever it changes (install / remove / config patch).
@@ -706,7 +726,7 @@ export interface ClientToServerEvents {
   [EVENTS.MANAGER.PAUSE_GAME]: (_message: { gameId?: string }) => void
   [EVENTS.MANAGER.RESUME_GAME]: (_message: { gameId?: string }) => void
   // Partial game-config patch (manager-auth-gated server-side)
-  [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean; randomizeAnswers?: boolean; scoringMode?: "speed" | "accuracy"; klassenEnabled?: boolean; endScreenModes?: string }) => void
+  [EVENTS.MANAGER.SET_GAME_CONFIG]: (_payload: { teamMode?: boolean; lowLatencyEnabled?: boolean; joinLocked?: boolean; randomizeAnswers?: boolean; scoringMode?: "speed" | "accuracy"; klassenEnabled?: boolean; endScreenModes?: string; experienceModesEnabled?: string }) => void
   // Achievements config patch (manager-auth-gated server-side)
   [EVENTS.MANAGER.SET_ACHIEVEMENTS_CONFIG]: (_payload: {
     config: Record<

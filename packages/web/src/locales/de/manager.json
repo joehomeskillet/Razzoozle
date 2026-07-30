@@ -645,6 +645,27 @@
       "selfHint": "Spieler wählen ihr Team selbst",
       "auto": "Automatisch",
       "autoHint": "Server teilt dem kleinsten Team zu"
+    },
+    "experienceMode": {
+      "label": "Experience-Modus",
+      "options": {
+        "classic": {
+          "name": "Klassisch",
+          "description": "Der bewährte Spielablauf ohne Zusatzpräsentation."
+        },
+        "pyramid_climb": {
+          "name": "Pyramiden-Aufstieg",
+          "description": "Teams erklimmen gemeinsam eine Pyramide — richtige Antworten bringen sie voran."
+        },
+        "deep_sea_escape": {
+          "name": "Tiefsee-Flucht",
+          "description": "Ein Tauchgang gegen die Zeit — richtige Antworten sichern den Aufstieg."
+        }
+      },
+      "devicesOnlyHint": "Fragen erscheinen nur auf den Spieler-Geräten",
+      "previewPlaceholder": "Vorschau folgt",
+      "teamsRequiredHint": "Dieser Modus funktioniert am besten mit mindestens zwei Teams.",
+      "skippedQuestions": "{{count}} Fragen können in diesem Modus nicht verwendet werden und werden übersprungen"
     }
   },
   "achievementsConfig": {
@@ -711,14 +732,19 @@
       "flow": "Spielablauf",
       "scoring": "Wertung",
       "school": "Schule",
-      "endScreen": "Endbildschirm"
+      "endScreen": "Endbildschirm",
+      "experience": "Experience-Modi"
     },
     "endScreenModeDescription": {
       "full": "Zeigt am Spielende die komplette Rangliste.",
       "top3": "Zeigt am Spielende nur die besten drei.",
       "private": "Ergebnisse sind nur für die Lehrperson sichtbar."
     },
-    "endScreenMinOneActive": "Mindestens eine Endbildschirm-Option muss aktiv bleiben."
+    "endScreenMinOneActive": "Mindestens eine Endbildschirm-Option muss aktiv bleiben.",
+    "experienceModesTitle": "Experience-Modi",
+    "experienceModesDescription": "Schaltet alternative Präsentationsmodi frei, die im Spielmodus-Tab ausgewählt werden können. Fragen erscheinen dabei nur auf den Spieler-Geräten.",
+    "experienceModesEnabled": "Experience-Modi aktiviert",
+    "experienceModesDisabled": "Experience-Modi deaktiviert"
   },
   "achievements": {
     "active": "aktiv"
@@ -1097,5 +1123,11 @@
     "saveError": "Vorlage konnte nicht gespeichert werden.",
     "deleteError": "Vorlage konnte nicht gelöscht werden."
   },
-  "balanceTeams": "Teams ausgleichen"
+  "balanceTeams": "Teams ausgleichen",
+  "startWarning": {
+    "title": "Wirklich starten?",
+    "teamSetupIncomplete": "Für diesen Modus werden mindestens zwei Teams empfohlen. Die aktuelle Team-Aufteilung ist unvollständig.",
+    "confirmAnyway": "Trotzdem starten",
+    "unscoredFiltered": "Einige Fragen werden in diesem Modus übersprungen."
+  }
 }

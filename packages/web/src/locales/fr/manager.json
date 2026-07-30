@@ -645,6 +645,27 @@
       "selfHint": "Les joueurs choisissent leur équipe",
       "auto": "Automatique",
       "autoHint": "Le serveur assigne à la plus petite équipe"
+    },
+    "experienceMode": {
+      "label": "Mode d'expérience",
+      "options": {
+        "classic": {
+          "name": "Classique",
+          "description": "Le déroulement habituel, sans présentation supplémentaire."
+        },
+        "pyramid_climb": {
+          "name": "Ascension de la pyramide",
+          "description": "Les équipes gravissent ensemble une pyramide — les bonnes réponses les font avancer."
+        },
+        "deep_sea_escape": {
+          "name": "Évasion des abysses",
+          "description": "Une course contre la montre sous l'eau — les bonnes réponses assurent la remontée."
+        }
+      },
+      "devicesOnlyHint": "Les questions n'apparaissent que sur les appareils des joueurs",
+      "previewPlaceholder": "Aperçu à venir",
+      "teamsRequiredHint": "Ce mode fonctionne mieux avec au moins deux équipes.",
+      "skippedQuestions": "{{count}} questions ne peuvent pas être utilisées dans ce mode et seront ignorées"
     }
   },
   "gameMode": {
@@ -687,14 +708,19 @@
       "flow": "Flux du jeu",
       "scoring": "Notation",
       "school": "École",
-      "endScreen": "Écran de fin"
+      "endScreen": "Écran de fin",
+      "experience": "Modes d'expérience"
     },
     "endScreenModeDescription": {
       "full": "Affiche le classement complet à la fin du jeu.",
       "top3": "Affiche uniquement les trois meilleurs à la fin du jeu.",
       "private": "Les résultats sont visibles uniquement par l'enseignant."
     },
-    "endScreenMinOneActive": "Au moins une option d'écran de fin doit rester active."
+    "endScreenMinOneActive": "Au moins une option d'écran de fin doit rester active.",
+    "experienceModesTitle": "Modes d'expérience",
+    "experienceModesDescription": "Débloque des modes de présentation alternatifs sélectionnables dans l'onglet Mode de jeu. Les questions n'apparaissent que sur les appareils des joueurs.",
+    "experienceModesEnabled": "Modes d'expérience activés",
+    "experienceModesDisabled": "Modes d'expérience désactivés"
   },
   "achievementsConfig": {
     "title": "Configurer les succès",
@@ -1097,5 +1123,11 @@
     "saveError": "Impossible d'enregistrer le modele.",
     "deleteError": "Impossible de supprimer le modele."
   },
-  "balanceTeams": "Équilibrer les équipes"
+  "balanceTeams": "Équilibrer les équipes",
+  "startWarning": {
+    "title": "Démarrer quand même ?",
+    "teamSetupIncomplete": "Ce mode recommande au moins deux équipes. La répartition actuelle des équipes est incomplète.",
+    "confirmAnyway": "Démarrer quand même",
+    "unscoredFiltered": "Certaines questions seront ignorées dans ce mode."
+  }
 }

@@ -645,6 +645,27 @@
       "selfHint": "Los jugadores eligen su equipo",
       "auto": "Automático",
       "autoHint": "El servidor asigna al equipo más pequeño"
+    },
+    "experienceMode": {
+      "label": "Modo de experiencia",
+      "options": {
+        "classic": {
+          "name": "Clásico",
+          "description": "El desarrollo habitual, sin presentación adicional."
+        },
+        "pyramid_climb": {
+          "name": "Ascenso a la pirámide",
+          "description": "Los equipos escalan juntos una pirámide — las respuestas correctas los hacen avanzar."
+        },
+        "deep_sea_escape": {
+          "name": "Fuga en las profundidades",
+          "description": "Una carrera contra el tiempo bajo el agua — las respuestas correctas aseguran la subida."
+        }
+      },
+      "devicesOnlyHint": "Las preguntas solo aparecen en los dispositivos de los jugadores",
+      "previewPlaceholder": "La vista previa llegará pronto",
+      "teamsRequiredHint": "Este modo funciona mejor con al menos dos equipos.",
+      "skippedQuestions": "{{count}} preguntas no se pueden usar en este modo y se omitirán"
     }
   },
   "gameMode": {
@@ -687,14 +708,19 @@
       "flow": "Flujo del juego",
       "scoring": "Puntuación",
       "school": "Escuela",
-      "endScreen": "Pantalla final"
+      "endScreen": "Pantalla final",
+      "experience": "Modos de experiencia"
     },
     "endScreenModeDescription": {
       "full": "Muestra la clasificación completa al final del juego.",
       "top3": "Muestra solo los tres mejores al final del juego.",
       "private": "Los resultados solo son visibles para el profesor."
     },
-    "endScreenMinOneActive": "Debe permanecer activa al menos una opción de pantalla final."
+    "endScreenMinOneActive": "Debe permanecer activa al menos una opción de pantalla final.",
+    "experienceModesTitle": "Modos de experiencia",
+    "experienceModesDescription": "Habilita modos de presentación alternativos que se pueden elegir en la pestaña de modo de juego. Las preguntas solo aparecen en los dispositivos de los jugadores.",
+    "experienceModesEnabled": "Modos de experiencia activados",
+    "experienceModesDisabled": "Modos de experiencia desactivados"
   },
   "achievementsConfig": {
     "title": "Configurar logros",
@@ -1097,5 +1123,11 @@
     "saveError": "No se pudo guardar la plantilla.",
     "deleteError": "No se pudo eliminar la plantilla."
   },
-  "balanceTeams": "Equilibrar equipos"
+  "balanceTeams": "Equilibrar equipos",
+  "startWarning": {
+    "title": "¿Iniciar de todos modos?",
+    "teamSetupIncomplete": "Este modo recomienda al menos dos equipos. La configuración actual de equipos está incompleta.",
+    "confirmAnyway": "Iniciar de todos modos",
+    "unscoredFiltered": "Algunas preguntas se omitirán en este modo."
+  }
 }

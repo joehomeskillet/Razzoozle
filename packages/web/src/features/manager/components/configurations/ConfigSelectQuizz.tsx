@@ -1,8 +1,12 @@
 import { EVENTS } from "@razzoozle/common/constants"
-import type { SelectedModes } from "@razzoozle/common/types/game/socket"
+import type {
+  ExperienceMode,
+  SelectedModes,
+} from "@razzoozle/common/types/game/socket"
 import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
+import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
 import Select from "@razzoozle/web/components/Select"
 import ToggleField from "@razzoozle/web/components/ui/ToggleField"
 import { ActionFooter, LabelRow } from "@razzoozle/web/components/ui"
@@ -19,11 +23,219 @@ import { useConfig } from "@razzoozle/web/features/manager/contexts/config-conte
 import { useClassManager } from "@razzoozle/web/features/manager/components/configurations/klassen/useClassManager"
 import { ParticipantCapSetting } from "@razzoozle/web/features/manager/components/configurations/ParticipantCapSetting"
 import { useNavigate } from "@tanstack/react-router"
-import { Copy, ListChecks, Play } from "lucide-react"
+import {
+  Copy,
+  ListChecks,
+  Play,
+  Pyramid,
+  Waves,
+  type LucideIcon,
+} from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+/** Manager-selectable experience modes (WP #879 EXP-05) — UI option keys. */
+type ExperienceModeKey = "classic" | "pyramid_climb" | "deep_sea_escape"
+
+interface ExperienceModeOption {
+  key: ExperienceModeKey
+  /** Wire value for SelectedModes.experienceMode (rust ExperienceMode binding). */
+  wire: ExperienceMode
+  /** Token in the experienceModesEnabled CSV allow-list (lowercase, no separators). */
+  csvToken: string
+  icon: LucideIcon
+}
+
+// Exactly three options per the EXP-05 spec — never extended client-side;
+// flowerbattle lands with its own WP.
+const EXPERIENCE_MODE_OPTIONS: readonly ExperienceModeOption[] = [
+  { key: "classic", wire: "classic", csvToken: "classic", icon: ListChecks },
+  {
+    key: "pyramid_climb",
+    wire: "pyramidClimb",
+    csvToken: "pyramidclimb",
+    icon: Pyramid,
+  },
+  {
+    key: "deep_sea_escape",
+    wire: "deepSeaEscape",
+    csvToken: "deepseaescape",
+    icon: Waves,
+  },
+]
+
+export interface ExperienceModeSectionProps {
+  /** Parsed CSV allow-list (lowercase csvTokens) — parent computes it once. */
+  unlockedExperienceModes: ReadonlySet<string>
+  experienceMode: ExperienceModeKey
+  onExperienceModeChange: (next: ExperienceModeKey) => void
+}
+
+/**
+ * Experience-mode RadioGroup + its own visibility gate (WP-EXP-05). Renders
+ * `null` when no mode is unlocked. Extracted out of ConfigSelectQuizz's
+ * `{selected && (...)}` panel (only mounts after a quiz-row click, which a
+ * static SSR render can never simulate) so the "exactly 3 options" +
+ * "hidden until unlocked" behavior stays independently testable.
+ */
+export const ExperienceModeSection = ({
+  unlockedExperienceModes,
+  experienceMode,
+  onExperienceModeChange,
+}: ExperienceModeSectionProps) => {
+  const { t } = useTranslation()
+
+  const active = EXPERIENCE_MODE_OPTIONS.some((opt) =>
+    unlockedExperienceModes.has(opt.csvToken),
+  )
+
+  if (!active) {
+    return null
+  }
+
+  const selectedOption = EXPERIENCE_MODE_OPTIONS.find(
+    (opt) => opt.key === experienceMode,
+  )
+
+  const options: RadioGroupOption[] = EXPERIENCE_MODE_OPTIONS.map((opt) => {
+    const Icon = opt.icon
+    return {
+      value: opt.key,
+      disabled: !unlockedExperienceModes.has(opt.csvToken),
+      label: (
+        <span className="flex items-start gap-3">
+          <Icon
+            className="mt-0.5 size-5 shrink-0 text-[var(--ink-muted)]"
+            aria-hidden
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-[var(--ink)]">
+              {t(`manager:selectQuizz.experienceMode.options.${opt.key}.name`)}
+            </span>
+            <span className="text-xs font-normal text-[var(--ink-muted)]">
+              {t(
+                `manager:selectQuizz.experienceMode.options.${opt.key}.description`,
+              )}
+            </span>
+            <span className="text-xs font-normal text-[var(--ink-muted)]">
+              {t("manager:selectQuizz.experienceMode.devicesOnlyHint")}
+            </span>
+          </span>
+        </span>
+      ),
+    }
+  })
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium text-[var(--ink)]">
+        {t("manager:selectQuizz.experienceMode.label")}
+      </legend>
+      <RadioGroup
+        name="experience-mode"
+        value={experienceMode}
+        onChange={(v) => onExperienceModeChange(v as ExperienceModeKey)}
+        options={options}
+        aria-label={t("manager:selectQuizz.experienceMode.label")}
+        data-testid="experience-mode-group"
+      />
+      {/* Vorschau-Platzhalter — layout slot only, no artwork (WP-EXP-05). */}
+      <div
+        aria-label={t("manager:selectQuizz.experienceMode.previewPlaceholder")}
+        className="flex h-24 items-center justify-center rounded-[var(--radius-theme)] border border-dashed border-[var(--border-hairline)] bg-[var(--surface)]"
+        data-testid="experience-mode-preview"
+      >
+        <div
+          aria-hidden
+          className="flex items-center gap-2 text-[var(--ink-muted)]"
+        >
+          {selectedOption && <selectedOption.icon className="size-5" />}
+          <span className="text-xs">
+            {t("manager:selectQuizz.experienceMode.previewPlaceholder")}
+          </span>
+        </div>
+      </div>
+    </fieldset>
+  )
+}
+
+/**
+ * Team-assignment radio cards — the shared self/auto pattern, extracted so
+ * both the team-mode section and the pyramid experience mode (E-13, which
+ * implies team play) render the identical control without markup drift.
+ */
+const TeamAssignmentFieldset = ({
+  name,
+  testIdPrefix = "",
+  value,
+  onChange,
+}: {
+  name: string
+  testIdPrefix?: string
+  value: "self" | "auto"
+  onChange: (next: "self" | "auto") => void
+}) => {
+  const { t } = useTranslation()
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium text-[var(--ink)]">
+        {t("manager:selectQuizz.teamAssignment.label")}
+      </legend>
+      <div
+        role="radiogroup"
+        aria-label={t("manager:selectQuizz.teamAssignment.label")}
+        className="flex flex-col gap-2 sm:flex-row sm:gap-4"
+      >
+        {(
+          [
+            {
+              value: "self" as const,
+              labelKey: "manager:selectQuizz.teamAssignment.self",
+              hintKey: "manager:selectQuizz.teamAssignment.selfHint",
+            },
+            {
+              value: "auto" as const,
+              labelKey: "manager:selectQuizz.teamAssignment.auto",
+              hintKey: "manager:selectQuizz.teamAssignment.autoHint",
+            },
+          ] as const
+        ).map((opt) => {
+          const selected = value === opt.value
+          return (
+            <label
+              key={opt.value}
+              className={`flex cursor-pointer items-start gap-2 rounded-[var(--radius-theme)] border px-3 py-2 ${
+                selected
+                  ? "border-[var(--color-primary)] bg-[var(--surface-3)]"
+                  : "border-[var(--border-hairline)] bg-[var(--surface)]"
+              }`}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={opt.value}
+                checked={selected}
+                onChange={() => onChange(opt.value)}
+                className="mt-1"
+                data-testid={`${testIdPrefix}team-assignment-${opt.value}`}
+              />
+              <span className="flex flex-col">
+                <span className="text-sm font-medium text-[var(--ink)]">
+                  {t(opt.labelKey)}
+                </span>
+                <span className="text-xs text-[var(--ink-muted)]">
+                  {t(opt.hintKey)}
+                </span>
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
 
 const ConfigSelectQuizz = () => {
   const { socket } = useSocket()
@@ -39,6 +251,8 @@ const ConfigSelectQuizz = () => {
   const [classId, setClassId] = useState<string>("")
   const [endScreen, setEndScreen] = useState<string>("full")
   const [participantCap, setParticipantCap] = useState<number | null>(null)
+  const [experienceMode, setExperienceMode] =
+    useState<ExperienceModeKey>("classic")
   const [search, setSearch] = useState("")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -102,6 +316,44 @@ const ConfigSelectQuizz = () => {
   const handleSelect = (id: string) => () =>
     setSelected((current) => (current === id ? null : id))
 
+  // Unlocked experience modes from the global CSV allow-list (toggled in the
+  // game-mode tab, WP #879 EXP-05). None unlocked → the RadioGroup stays hidden.
+  const unlockedExperienceModes = useMemo(() => {
+    const tokens = (config.experienceModesEnabled ?? "")
+      .split(",")
+      .map((m) => m.trim().toLowerCase())
+      .filter(Boolean)
+
+    return new Set(tokens)
+  }, [config.experienceModesEnabled])
+
+  const experienceModesActive = EXPERIENCE_MODE_OPTIONS.some((o) =>
+    unlockedExperienceModes.has(o.csvToken),
+  )
+
+  // Keep the selection on an unlocked mode when the allow-list changes.
+  useEffect(() => {
+    if (!experienceModesActive) {
+      return
+    }
+    const current = EXPERIENCE_MODE_OPTIONS.find(
+      (o) => o.key === experienceMode,
+    )
+    if (!current || !unlockedExperienceModes.has(current.csvToken)) {
+      const first = EXPERIENCE_MODE_OPTIONS.find((o) =>
+        unlockedExperienceModes.has(o.csvToken),
+      )
+      if (first) {
+        setExperienceMode(first.key)
+      }
+    }
+  }, [experienceModesActive, experienceMode, unlockedExperienceModes])
+
+  // E-13: pyramid_climb is team play — surface the #952 assignment control and
+  // force teamMode in the create payload (server soft-gates it regardless).
+  const pyramidSelected =
+    experienceModesActive && experienceMode === "pyramid_climb"
+
   const handleSubmit = useCallback(() => {
     if (!selected) {
       return
@@ -122,9 +374,24 @@ const ConfigSelectQuizz = () => {
       hasCustomModes = true
     }
 
+    // Experience presentation mode (WP #879 EXP-05): only send the selected
+    // mode when it is unlocked — the server clamps against the same allow-list.
+    if (experienceModesActive) {
+      const opt = EXPERIENCE_MODE_OPTIONS.find(
+        (o) => o.key === experienceMode,
+      )
+      if (opt && unlockedExperienceModes.has(opt.csvToken)) {
+        selectedModes.experienceMode = opt.wire
+        hasCustomModes = true
+      }
+    }
+
     if (config.teamMode === true) {
-      selectedModes.teamMode = teamMode
-      if (teamMode) {
+      // E-13: pyramid_climb implies team play — force team mode + assignment
+      // even when the standalone team toggle is off.
+      const effectiveTeamMode = teamMode || pyramidSelected
+      selectedModes.teamMode = effectiveTeamMode
+      if (effectiveTeamMode) {
         selectedModes.teamAssignment = teamAssignment
       }
       hasCustomModes = true
@@ -157,7 +424,7 @@ const ConfigSelectQuizz = () => {
     } else {
       socket.emit(EVENTS.GAME.CREATE, selected)
     }
-  }, [socket, selected, config, scoringMode, teamMode, teamAssignment, klassenMode, classId, endScreen, participantCap, t])
+  }, [socket, selected, config, scoringMode, teamMode, teamAssignment, klassenMode, classId, endScreen, participantCap, experienceModesActive, experienceMode, unlockedExperienceModes, pyramidSelected, t])
 
   const handleCopySoloLink = async () => {
     if (!selected) {
@@ -276,6 +543,26 @@ const ConfigSelectQuizz = () => {
               />
             )}
 
+            <ExperienceModeSection
+              unlockedExperienceModes={unlockedExperienceModes}
+              experienceMode={experienceMode}
+              onExperienceModeChange={setExperienceMode}
+            />
+
+            {pyramidSelected && config.teamMode === true && (
+              <>
+                <p className="text-xs text-[var(--ink-muted)]">
+                  {t("manager:selectQuizz.experienceMode.teamsRequiredHint")}
+                </p>
+                <TeamAssignmentFieldset
+                  name="team-assignment-experience"
+                  testIdPrefix="experience-"
+                  value={teamAssignment}
+                  onChange={setTeamAssignment}
+                />
+              </>
+            )}
+
             {config.teamMode === true && (
               <>
                 <ToggleField
@@ -285,61 +572,11 @@ const ConfigSelectQuizz = () => {
                   onChange={setTeamMode}
                 />
                 {teamMode && (
-                  <fieldset className="space-y-2">
-                    <legend className="text-sm font-medium text-[var(--ink)]">
-                      {t("manager:selectQuizz.teamAssignment.label")}
-                    </legend>
-                    <div
-                      role="radiogroup"
-                      aria-label={t("manager:selectQuizz.teamAssignment.label")}
-                      className="flex flex-col gap-2 sm:flex-row sm:gap-4"
-                    >
-                      {(
-                        [
-                          {
-                            value: "self" as const,
-                            labelKey: "manager:selectQuizz.teamAssignment.self",
-                            hintKey: "manager:selectQuizz.teamAssignment.selfHint",
-                          },
-                          {
-                            value: "auto" as const,
-                            labelKey: "manager:selectQuizz.teamAssignment.auto",
-                            hintKey: "manager:selectQuizz.teamAssignment.autoHint",
-                          },
-                        ] as const
-                      ).map((opt) => {
-                        const selected = teamAssignment === opt.value
-                        return (
-                          <label
-                            key={opt.value}
-                            className={`flex cursor-pointer items-start gap-2 rounded-[var(--radius-theme)] border px-3 py-2 ${
-                              selected
-                                ? "border-[var(--color-primary)] bg-[var(--surface-3)]"
-                                : "border-[var(--border-hairline)] bg-[var(--surface)]"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="team-assignment"
-                              value={opt.value}
-                              checked={selected}
-                              onChange={() => setTeamAssignment(opt.value)}
-                              className="mt-1"
-                              data-testid={`team-assignment-${opt.value}`}
-                            />
-                            <span className="flex flex-col">
-                              <span className="text-sm font-medium text-[var(--ink)]">
-                                {t(opt.labelKey)}
-                              </span>
-                              <span className="text-xs text-[var(--ink-muted)]">
-                                {t(opt.hintKey)}
-                              </span>
-                            </span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </fieldset>
+                  <TeamAssignmentFieldset
+                    name="team-assignment"
+                    value={teamAssignment}
+                    onChange={setTeamAssignment}
+                  />
                 )}
               </>
             )}
