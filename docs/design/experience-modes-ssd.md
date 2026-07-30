@@ -19,6 +19,8 @@ Der Razzoozle Presenter stellt interaktive 2D-Cartoon-Szenen für drei Spielmodi
 | **Pyramiden-Aufstieg** | Stufen-Aufstieg/-Abstieg basierend auf Antwort & Confidence | Antworten + Confidence Rating (Höhe vs. Risiko) | Vertikaler Scroll/Parallax, Stufenklettern, Rutschen/Stürzen, Tempelspitze | `team_movement_resolved` |
 | **Tiefsee-Flucht** | U-Boot/Taucher-Propulsion vs. Ozeantiefen-Bedrohung | Kollektive Antworten, Geschwindigkeits-Boost | Unterwasser-Parallax, U-Boot-Antrieb, Kraken-Tentakel, Tiefenmeter | `escape_round_resolved` |
 
+> **Hinweis Blüten-Battle-Events:** Die gelistete Granular-Event-Liste (`growth_changed`, `power_up_applied`, ...) ist die **Ziel-Event-Taxonomie der PixiJS-Ära** (Mapping vom `Domain-Event-Adapter`/`EventQueue` in WP-06/07). Live-Wire heute ist stattdessen ein state-snapshot-förmiger `flowerBattle`-Payload im `game:experience`-Envelope (`ExperienceTransition.payload.data.state: FlowerBattleState` mit `phase`, `teams: FlowerBattleTeamState[]`, `background`, `powerups` — `packages/common/src/types/game/experience.ts`), keine granularen Einzel-Events.
+
 ### 1.2 Visuelle Ebenen und Puppet-Rig Struktur per Modus
 
 | Spielmodus | Foreground Layer | Middleground / Rig Layer | Background / Parallax Layer | Puppet Rig Anatomie |
@@ -72,7 +74,7 @@ Die Presenter-Architektur ist modular aufgebaut und trennt Rendering, Animations
 ### 1.5 State-Sync & Reconnect Machinery (#939, #959)
 
 1. Server sendet strikt monotone `serverRevision` im `game:experience`-Envelope.
-2. Bei Reconnect übermittelt der Client seine `lastSeenRevision`. Backend liefert verpasste Events nach.
+2. Bei Reconnect fordert der Client nichts an: der Server resendet unaufgefordert und idempotent den aktuellen `ExperienceTransition`-Envelope an genau den rejoinenden Socket, ohne die Revision zu erhöhen (`resend_experience_on_display_reconnect`, `rust/server/src/socket/status_emit.rs`, aufgerufen aus `rust/server/src/socket/manager/auth.rs`, WP #939B). Es gibt weder ein Feld für die zuletzt gesehene Client-Revision noch einen aktiven Client-Resync-Request.
 3. Der `StateReconciler` storniert laufende Tweens bei Re-Sync und gleicht die Presenter-Szene direkt an Snapshot v7 an.
 
 ---
@@ -98,11 +100,13 @@ Die folgenden verbindlichen Vorgaben sind im Gesamtsystem verankert:
 
 ### 3.1 Repository-Struktur per Spielmodus
 
-| Spielmodus | Target Path (Rendering & Logic) | UI / Viewport Location | Initialer Zustand | Extraktions-Trigger | Finaler Extracted Location |
-|---|---|---|---|---|---|
-| **Blüten-Battle** | `packages/web/src/features/flower-battle/` | `rendering/pixi/` (WP-05+) | In-Feature integriert | 2. Modus Integration | `packages/web/src/experiences/shared/` |
-| **Pyramiden-Aufstieg** | `packages/web/src/features/pyramid-climb/` | `packages/web/src/experiences/pyramid-climb/` | Shared-Core Nutzung | Löst Extraktion aus | `packages/web/src/experiences/shared/` |
-| **Tiefsee-Flucht** | `packages/web/src/features/deep-sea-escape/` | `packages/web/src/experiences/deep-sea-escape/` | Shared-Core Nutzung | Nach Extraktion | `packages/web/src/experiences/shared/` |
+Live-Code-Konvention (verifiziert: `packages/web/src/experiences/flower-battle/`): alle Modi siedeln unter `packages/web/src/experiences/<mode>/`, der gemeinsame Kern unter `packages/web/src/experiences/shared/`. Ein Pfad mit `features/<mode>/` statt `experiences/<mode>/` als zweitem Segment existiert im Repository nicht — der `features`-Ordner bleibt reserviert für app-weite Feature-Module (`experience`, `experience-kit`, `game`, `manager`, `quizz`, ...), nicht für Spielmodus-Presenter.
+
+| Spielmodus | Repository Path | Initialer Zustand | Extraktions-Trigger | Finaler Extracted Location |
+|---|---|---|---|---|
+| **Blüten-Battle** | `packages/web/src/experiences/flower-battle/` | In-Feature integriert | 2. Modus Integration | `packages/web/src/experiences/shared/` |
+| **Pyramiden-Aufstieg** | `packages/web/src/experiences/pyramid-climb/` | Shared-Core Nutzung | Löst Extraktion aus | `packages/web/src/experiences/shared/` |
+| **Tiefsee-Flucht** | `packages/web/src/experiences/deep-sea-escape/` | Shared-Core Nutzung | Nach Extraktion | `packages/web/src/experiences/shared/` |
 
 ### 3.2 Gemeinsame Kernel-Module (Shared Core)
 
@@ -110,12 +114,12 @@ Die folgenden verbindlichen Vorgaben sind im Gesamtsystem verankert:
 |---|---|---|---|---|
 | `ExperiencePixiApp` | WP-05 (Flower Battle) | `init(container: HTMLElement): Promise<void>` | PixiJS Application Lifecycle, Render-Loop, Viewport-Resize | `packages/web/src/experiences/shared/stage/` |
 | `MotionPixiAdapter` | WP-04 (Flower Battle) | `animatePixiTarget(target: Container, props: AnimProps)` | Adapter-Klasse für `motion`-Tweens auf PixiJS DisplayObjects | `packages/web/src/experiences/shared/animation/` |
-| `PuppetRigFactory` | WP-06 (Flower Battle) | `createPuppetRig(spec: RigSpec): PuppetContainer` | Erzeugung von Container-Hierarchien, Gelenk-Pivots & Rig-Bones | `packages/web/src/experiences/shared/puppet/` |
+| `PuppetRigFactory` | WP-08 (Flower Battle) | `createPuppetRig(spec: RigSpec): PuppetContainer` | Erzeugung von Container-Hierarchien, Gelenk-Pivots & Rig-Bones | `packages/web/src/experiences/shared/puppet/` |
 | `QualityProfiler` | WP-11 (Flower Battle) | `getCurrentTier(): PerformanceTier` | Laufzeit-FPS-Messung, Frame-Time-Heuristik & Tier-Downgrade | `packages/web/src/experiences/shared/quality/` |
-| `EventQueue` | WP-04 (Flower Battle) | `enqueue(event: ExperienceEvent): void` | Entkopplung von WebSocket-Events und Grafik-Animationen | `packages/web/src/experiences/shared/network/` |
+| `EventQueue` | WP-07 (Flower Battle) | `enqueue(event: ExperienceEvent): void` | Entkopplung von WebSocket-Events und Grafik-Animationen | `packages/web/src/experiences/shared/network/` |
 | `StateReconciler` | WP-07 (Flower Battle) | `reconcile(snapshot: SnapshotV7): void` | Revisions-Abgleich & Idempotenz-Enforcement für Snapshot v7 | `packages/web/src/experiences/shared/network/` |
 | `AssetLoader` | WP-03 (Flower Battle) | `loadBundle(namespace: string): Promise<AssetMap>` | Bundled Loader mit Namespace-Prefixing (`fb:`, `pyr:`, `dse:`) | `packages/web/src/experiences/shared/assets/` |
-| `AudioAdapter` | WP-12 (Flower Battle) | `playCue(soundId: string): void` | WebAudio / Event-getriebene Sound-Auslösung | `packages/web/src/experiences/shared/audio/` |
+| `AudioAdapter` | WP-09 (Flower Battle) | `playCue(soundId: string): void` | WebAudio / Event-getriebene Sound-Auslösung (§12 SDD-FB, cross-cutting, erste Cues bei Growth/Bloom-Reaktionen) | `packages/web/src/experiences/shared/audio/` |
 
 ---
 
@@ -125,7 +129,7 @@ Alle Spielmodi senden und empfangen Nachrichten über das standardisierte `game:
 
 ### 4.1 Inbound Events overview
 
-- **Flower Battle:** `growth_changed`, `power_up_applied`, `power_up_expired`, `stage_up`, `team_overtaken`, `round_start`, `round_end`, `state_reconciled` ([SDD-FB §4.3](flower-battle-pixi-spine-sdd.md))
+- **Flower Battle (Ziel-Event-Taxonomie, PixiJS-Ära — Mapping in WP-06/07):** `growth_changed`, `power_up_applied`, `power_up_expired`, `stage_up`, `team_overtaken`, `round_start`, `round_end`, `state_reconciled` ([SDD-FB §4.3](flower-battle-pixi-spine-sdd.md)). Live-Wire heute: state-snapshot-förmiger `flowerBattle`-Payload (`ExperienceTransition.payload.data.state: FlowerBattleState`, `packages/common/src/types/game/experience.ts`), keine Einzel-Events.
 - **Pyramid Climb:** `team_movement_resolved` ([SDD-Pyramid §4.4](pyramid-climb-pixi-motion-sdd.md))
 - **Deep Sea Escape:** `escape_round_resolved` ([SDD-DeepSea §4.4](deep-sea-escape-pixi-motion-sdd.md))
 
@@ -225,7 +229,7 @@ Alle Spielmodi senden und empfangen Nachrichten über das standardisierte `game:
 1. `serverRevision` erhöht sich mit jedem autoritativen Status-Update strikt monoton.
 2. Der `StateReconciler` verarbeitet jedes `eventId` genau einmal (Idempotenz-Set mit Sliding-Window 500).
 3. Bei Ankunft veralteter Reversionen (`serverRevision <= lastAppliedRevision`) wird das Event ohne Animation verworfen.
-4. Bei Lücken im Revisionspfad fordert der Client sofort einen Snapshot v7 Resync an und bricht aktive Tweens ab.
+4. Bei Reconnect fordert der Client nichts aktiv an — der Server resendet unaufgefordert den aktuellen Envelope an genau den rejoinenden Socket (siehe §1.5.2); der `StateReconciler` bricht aktive Tweens ab und snappt auf den empfangenen Snapshot v7 Zustand.
 
 ---
 
@@ -274,7 +278,7 @@ pub fn handle_mode_outcome(
 ### 5.3 Persistence Strategy
 
 - Der Zustand aller 3 Modi wird vollständig im bestehenden Snapshot v7 Datenmodell abgebildet ([SDD-FB §4.2](flower-battle-pixi-spine-sdd.md), [SDD-Pyramid §4.3](pyramid-climb-pixi-motion-sdd.md), [SDD-DeepSea §4.2](deep-sea-escape-pixi-motion-sdd.md)).
-- Konfigurationen (z. B. aktivierter Modus, Parameter) werden in `experience_modes_config` über bestehende DB-Verbindungen gespeichert (#960).
+- Konfigurationen (z. B. aktivierter Modus, Parameter) werden in der bestehenden `games_config`-Tabelle gespeichert (Spalten `experience_modes_enabled`, `flower_battle_target_level`, `flower_battle_powerups_enabled`, `flower_battle_acid_rain_enabled`, `flower_battle_powerup_threshold`; `rust/server/src/db/config.rs`, `db/migrations/024_flower_battle_config.sql`) über bestehende DB-Verbindungen (#960).
 - Keine neue Datenbankschicht erforderlich (WP-01 Stack verifiziert ✓).
 
 ---
@@ -283,22 +287,24 @@ pub fn handle_mode_outcome(
 
 ### 6.1 Detail-Arbeitspakete für Blüten-Battle (Phase 1)
 
-| WP ID | Name | Haupt-Deliverable | Gate |
-|---|---|---|---|
-| **WP-01** | Stack & License Gate | ADR-013 v2 & License Audit (`pixi-spine-license-gate.md`) | Verified Stack ✓ |
-| **WP-02** | Canvas Host & Setup | `ExperienceViewport` & Reduced Motion Baseline | Viewport Contract Test ✓ |
-| **WP-03** | Asset Inventory & Pipeline | Asset Manifest & Namespace Validator | Asset Build Clean ✓ |
-| **WP-04** | Motion & Event Engine | `MotionPixiAdapter` & `EventQueue` | Tween Test Suite ✓ |
-| **WP-05** | Scene Manager & Layers | `GardenPixiApplication` & Render Layers | Layer Order Test ✓ |
-| **WP-06** | Plant Puppet Skeleton | Procedural Stem/Leaf/Petal Rig | Rig Pivot Test ✓ |
-| **WP-07** | State Reconciler | Snapshot v7 Resync Engine | Revision Sync Test ✓ |
-| **WP-08** | Growth & Bloom Anims | Stage Up & Bloom/Wilt Sequence | Anim Frame Test ✓ |
-| **WP-09** | Power-Up Effects | Sunburst, Water Splash, Shear Visuals | Effect Render Test ✓ |
-| **WP-10** | Manager Mode Control | Manager UI Mode Selection & Status | Manager Integration ✓ |
-| **WP-11** | Quality Profiler | Performance Monitor & Auto-Tier Downgrade | FPS Profile Gate ✓ |
-| **WP-12** | Sound Wiring | Event-triggered WebAudio sound cues | Audio Playback Test ✓ |
-| **WP-13** | E2E & Happy Path | Playwright E2E Test Suite | E2E Suite Green ✓ |
-| **WP-14** | Production Release | Release Candidate Integration | `pnpm verify` Clean ✓ |
+1:1 an [SDD-FB §15](flower-battle-pixi-spine-sdd.md) angeglichen (Micro-Work-Packages WP-01..14). **WP-04** ist per [ADR-013-Addendum](flower-battle-pixi-spine-sdd.md) von "Spine-Proof-of-Concept" auf **Puppet-Rig-Proof-of-Concept** korrigiert — die SDD-Kapitelüberschrift selbst wurde nicht textuell umbenannt, nur per Addendum am Dokumentkopf superseded.
+
+| WP ID | Name | Haupt-Deliverable | Gate | Status |
+|---|---|---|---|---|
+| **WP-01** | Stack & License Gate | ADR-013 v2 & License Audit (`pixi-spine-license-gate.md`) | ADR & Lizenznotiz reviewt, keine offene Versionsunklarheit | ✓ |
+| **WP-02** | Canvas Host & Setup | PixiJS Application-Lifecycle, ResizeObserver, Page Visibility, Fehlergrenze & Fallback | 20x Mount/Unmount ohne Listener-/Canvas-/Texture-Leak | In Arbeit |
+| **WP-03** | Asset Inventory & Pipeline | Bundle-Manifeste, Ladefortschritt, Lazy Loading, Asset-Unload | Bundle-Ausfall führt zu Fallback statt Match-Abbruch | Offen |
+| **WP-04** | Puppet-Rig Proof-of-Concept | Neutrale Testpflanze via prozeduralem Puppet-Rig (PixiJS Container-Hierarchie) + zentralem `MotionPixiAdapter` (kein Spine, ADR-013) | Keine direkten Tween-Aufrufe ausserhalb des AnimationController | Offen |
+| **WP-05** | Scene Manager & Layers | `GardenPixiApplication`, Layer-Struktur, responsive Kamera, 2-4 Teambeete, Parallax | Szene mit Dummy-State vollständig testbar | Offen |
+| **WP-06** | Domain-Event-Adapter | Übersetzung bestehender Multiplayer-Events in Garden-Events, Versionierung | Contract Tests grün | Offen |
+| **WP-07** | Event Queue & Reconciliation | `EventQueue`, Priorisierung, Aggregation, Fast-Forward, Snapshot-Abgleich | 50 simulierte Events führen zum korrekten Endzustand | Offen |
+| **WP-08** | Plant Puppet Skeleton | Produktionsfähiges prozedurales Stem/Leaf/Petal-Rig, Skins, Events, Mix-Profil | Asset-Validator meldet fehlende Animationen/Skins/Events | Offen |
+| **WP-09** | Growth & Bloom Anims | Wachstumsschübe, Stage-Up, Streak-/Zeitbonus-Reaktion, Overtake-Reaktion | Jede fachliche Ursache hat konsistente visuelle Reaktion | Offen |
+| **WP-10** | Power-Up Effects | Effekt-Registry: Sunburst, Water Splash, Shear, Schild | Power-ups verändern keine lokale Fachlogik | Offen |
+| **WP-11** | Quality Profiler & Fallback | FPS-Sampling, Auto-Tier-Downgrade, `prefers-reduced-motion`, statischer Fallback | Match bleibt bei absichtlich ausgelöstem Renderfehler spielbar | Offen |
+| **WP-12** | Presenter-Integration | Lobby, Rundenstart, aktive Runde, Rundenende, Reconnect, Matchwechsel | Bestehende Modi unverändert, Regressionstests grün | Offen |
+| **WP-13** | Mobile Team-Pflanze | Reduzierte Spieler-Ansicht (Low-/Static-Profil) | Time-to-interactive der Antwortseite verschlechtert sich nicht relevant | Offen |
+| **WP-14** | Dokumentation & Release | Architektur-, Asset- & Rig-Doku, Lizenzhinweise, Performance-Budgets | `pnpm verify` Clean; neue Reaktion ohne Backend-/Kernszenen-Änderung ergänzbar | Offen |
 
 ### 6.2 Program-Wellen für Pyramide & Tiefsee (Phasen 2 & 3)
 
@@ -317,9 +323,10 @@ pub fn handle_mode_outcome(
 
 1. **Code Integrity:** `pnpm verify` (Clean Build, Linting, Type-Check, Unit Tests).
 2. **E2E Automation:** Isoliertes Playwright E2E Testset pro Modus (Happy-Path + Reconnect-Scenario).
-3. **Visual Integrity:** Zero Asset-Namespace collisions (`pnpm tokens:validate`).
-4. **Performance:** Stabil 60 FPS auf Desktop / 30+ FPS Mobile. Auto-Downgrade auf Static Tier bei Frame-Dips.
-5. **Security:** Cross-Tab sessionToken Integrität (#959B), keine vertraulichen Daten in PixiJS State-Objects.
+3. **Design Token Integrity:** Keine ungemappten Tailwind-Arbitrary-Werte (`pnpm tokens:validate`) — bestehendes Repo-Gate, prüft CSS/Tailwind-Tokens, keine PixiJS-Asset-Namespaces.
+4. **Asset-Namespace Integrity:** Zero PixiJS-Asset-Namespace-Kollisionen (`fb:*`, `pyr:*`, `dse:*`) — künftiges dediziertes Gate aus WP-03 (Asset-Namespace-Validator, noch nicht implementiert).
+5. **Performance:** Stabil 60 FPS auf Desktop / 30+ FPS Mobile. Auto-Downgrade auf Static Tier bei Frame-Dips.
+6. **Security:** Cross-Tab sessionToken Integrität (#959B), keine vertraulichen Daten in PixiJS State-Objects.
 
 ---
 
@@ -350,5 +357,3 @@ Folgende Ansätze sind im Razzoozle-Presenter streng ausgeschlossen:
 - **Keine redundante State-Haltung:** Der Presenter führt keinen parallelen Game State, sondern visualisiert ausschliesslich den serverautoritativen Snapshot v7.
 
 Referenzen: [SDD-FB §17](flower-battle-pixi-spine-sdd.md), [ADR-013 §3](../adr/013-pixi-spine-hybrid-presenter.md), [SDD-Pyramid §16](pyramid-climb-pixi-motion-sdd.md), [SDD-DeepSea §15](deep-sea-escape-pixi-motion-sdd.md).
-
-WP-REPORT: DONE — System Structure Document for experience modes consolidated and written to docs/design/experience-modes-ssd.md.
