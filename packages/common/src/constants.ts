@@ -642,6 +642,11 @@ export const SOUND_SLOTS = [
   "tierSilver",
   "tierGold",
   "tierDiamant",
+  // WP #944: Flower Battle sound slots. flowerBloom intentionally not imported;
+  // tierGold.mp3 (existing chime) reused for final bloom moment (#944 Audit).
+  "flowerFertilizer",
+  "flowerSunbeam",
+  "flowerAcidRain",
 ] as const
 
 export type SoundSlot = (typeof SOUND_SLOTS)[number]
@@ -660,6 +665,9 @@ export const SOUND_DEFAULTS: Record<SoundSlot, string> = {
   tierSilver: "/sounds/silver.mp3",
   tierGold: "/sounds/gold.mp3",
   tierDiamant: "/sounds/diamant.mp3",
+  flowerFertilizer: "/sounds/flowerFertilizer.mp3",
+  flowerSunbeam: "/sounds/flowerSunbeam.mp3",
+  flowerAcidRain: "/sounds/flowerAcidRain.mp3",
 }
 
 // ---- Scoring / timing tuning (server imports these in a later phase) -------

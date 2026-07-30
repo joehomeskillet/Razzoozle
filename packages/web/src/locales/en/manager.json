@@ -462,119 +462,13 @@
     }
   },
   "theme": {
-    "branding": "Branding",
-    "appTitle": "App title",
-    "logo": "Logo",
-    "default": "Default",
-    "showFooter": "Show \"Razzoozle\" footer",
-    "upload": "Image",
-    "preview": {
-      "title": "Preview",
-      "join": "Join",
-      "question": "Question",
-      "leaderboard": "Leaderboard",
-      "openWindow": "Open live preview"
-    },
-    "contrast": {
-      "hint": "Contrast",
-      "fail": "Low contrast"
-    },
-    "uiColors": "UI colors",
-    "colors": {
-      "primary": "Primary",
-      "background": "Background",
-      "accent": "Accent",
-      "text": "Text"
-    },
-    "answerColors": "Answer colors",
-    "contrastNote": "Light primary colors are automatically darkened for text and icons so they stay legible.",
-    "scrim": "Darken background ({{value}}%)",
-    "backgrounds": "Backgrounds",
-    "save": "Save",
-    "reset": "Reset",
-    "toast": {
-      "imageUploaded": "Image uploaded",
-      "saved": "Design saved"
-    },
-    "templates": {
-      "title": "Templates",
-      "save": "Save as template",
-      "saved": "Template saved",
-      "namePrompt": "Template name",
-      "apply": "Apply",
-      "delete": "Delete",
-      "deleteConfirm": "Do you really want to delete the template \"{{name}}\"",
-      "emptyHeadline": "No templates yet",
-      "none": "No templates saved yet",
-      "edit": "Edit",
-      "importError": "Invalid template file",
-      "readError": "Could not read the file",
-      "import": "Import template",
-      "export": "Export template"
-    },
-    "animation": {
-      "title": "Animation",
-      "description": "Fine-tune the in-game feel — spring force, duration and reveal stagger.",
-      "springStiffness": "Spring stiffness",
-      "springDamping": "Spring damping",
-      "durationScale": "Duration scale",
-      "staggerScale": "Stagger scale",
-      "previewLabel": "Preview",
-      "replay": "Replay"
-    },
-    "animatedBg": {
-      "title": "Animated background",
-      "slot": {
-        "auth": "Start & join",
-        "managerGame": "Host screen",
-        "playerGame": "Player phone"
-      },
-      "speed": "Speed",
-      "intensity": "Intensity",
-      "iconCount": "Icons",
-      "color": "Color",
-      "wallpaper": "Background image",
-      "toggle": "Animated background",
-      "mode": {
-        "animated": "Animated",
-        "wallpaper": "Wallpaper"
-      },
-      "css": {
-        "title": "CSS editor",
-        "description": "Custom CSS for the animated background (e.g. override .cb-blob, keyframes).",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "Animated background active"
-    },
     "sounds": {
-      "title": "Sounds",
-      "description": "Upload a custom sound per slot. Empty = default sound.",
-      "default": "Default",
-      "custom": "Custom",
-      "upload": "Upload",
-      "test": "Play",
-      "reset": "Reset",
-      "toast": {
-        "uploaded": "Sound uploaded"
-      },
       "slots": {
-        "answersMusic": "Music (question running)",
-        "answersSound": "Sound (question running)",
-        "podiumThree": "Podium – 3rd place",
-        "podiumSecond": "Podium – 2nd place",
-        "podiumFirst": "Podium – 1st place",
-        "podiumSnearRoll": "Podium – drum roll",
-        "results": "Results",
-        "show": "Reveal",
-        "boump": "Tick / Boump",
-        "tierBronze": "Achievement – Bronze",
-        "tierSilver": "Achievement – Silver",
-        "tierGold": "Achievement – Gold",
-        "tierDiamant": "Achievement – Diamond"
+        "flowerFertilizer": "Fertilizer Sound (Flower Battle)",
+        "flowerSunbeam": "Sunbeam Sound (Flower Battle)",
+        "flowerAcidRain": "Acid Rain Sound (Flower Battle)"
       }
-    },
-    "title": "Design",
-    "intro": "Tailor colors, logo and branding to your school."
+    }
   },
   "submissions": {
     "empty": "No pending suggestions.",

@@ -462,119 +462,13 @@
     }
   },
   "theme": {
-    "branding": "品牌",
-    "appTitle": "应用标题",
-    "logo": "标志",
-    "default": "默认",
-    "showFooter": "显示“Razzoozle”页脚",
-    "upload": "图片",
-    "preview": {
-      "title": "预览",
-      "join": "加入",
-      "question": "题目",
-      "leaderboard": "排行榜",
-      "openWindow": "打开实时预览"
-    },
-    "contrast": {
-      "hint": "对比度",
-      "fail": "对比度过低"
-    },
-    "uiColors": "界面颜色",
-    "colors": {
-      "primary": "主色",
-      "background": "背景",
-      "accent": "强调色",
-      "text": "文字"
-    },
-    "answerColors": "答案颜色",
-    "contrastNote": "浅色的主色会自动加深，用于文字和图标，以保持其可读性。",
-    "scrim": "压暗背景（{{value}}%）",
-    "backgrounds": "背景",
-    "save": "保存",
-    "reset": "重置",
-    "toast": {
-      "imageUploaded": "图片已上传",
-      "saved": "设计已保存"
-    },
-    "templates": {
-      "title": "模板",
-      "save": "另存为模板",
-      "saved": "模板已保存",
-      "namePrompt": "模板名称",
-      "apply": "应用",
-      "delete": "删除",
-      "deleteConfirm": "确定要删除模板“{{name}}”吗",
-      "emptyHeadline": "暂无模板",
-      "none": "尚未保存任何模板",
-      "importError": "无效的模板文件",
-      "readError": "无法读取文件",
-      "import": "导入模板",
-      "export": "导出模板",
-      "edit": "编辑"
-    },
-    "animation": {
-      "title": "动画",
-      "description": "微调游戏手感——弹簧强度、时长和出现错峰。",
-      "springStiffness": "弹簧刚度",
-      "springDamping": "弹簧阻尼",
-      "durationScale": "时长系数",
-      "staggerScale": "错峰系数",
-      "previewLabel": "预览",
-      "replay": "重播"
-    },
-    "animatedBg": {
-      "title": "动态背景",
-      "slot": {
-        "auth": "开始 / 加入",
-        "managerGame": "主持人屏幕",
-        "playerGame": "玩家手机"
-      },
-      "speed": "速度",
-      "intensity": "强度",
-      "iconCount": "图标",
-      "color": "颜色",
-      "wallpaper": "背景图片",
-      "toggle": "动态背景",
-      "mode": {
-        "animated": "动态",
-        "wallpaper": "壁纸"
-      },
-      "css": {
-        "title": "CSS 编辑器",
-        "description": "为动态背景自定义 CSS（例如覆盖 .cb-blob、关键帧）。",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "动态背景已启用"
-    },
     "sounds": {
-      "title": "音效",
-      "description": "为每个声槽上传自定义音效。留空 = 默认音效。",
-      "default": "默认",
-      "custom": "自定义",
-      "upload": "上传",
-      "test": "播放",
-      "reset": "重置",
-      "toast": {
-        "uploaded": "音效已上传"
-      },
       "slots": {
-        "answersMusic": "音乐（答题进行中）",
-        "answersSound": "音效（答题进行中）",
-        "podiumThree": "领奖台 – 第 3 名",
-        "podiumSecond": "领奖台 – 第 2 名",
-        "podiumFirst": "领奖台 – 第 1 名",
-        "podiumSnearRoll": "领奖台 – 鼓声",
-        "results": "结果",
-        "show": "揭晓",
-        "boump": "提示音 / Boump",
-        "tierBronze": "成就 – 铜",
-        "tierSilver": "成就 – 银",
-        "tierGold": "成就 – 金",
-        "tierDiamant": "成就 – 钻石"
+        "flowerFertilizer": "肥料声效（花卉战役）",
+        "flowerSunbeam": "阳光束声效（花卉战役）",
+        "flowerAcidRain": "酸雨声效（花卉战役）"
       }
-    },
-    "title": "设计",
-    "intro": "为你的学校调整颜色、标志和品牌形象。"
+    }
   },
   "submissions": {
     "empty": "没有待处理的建议。",

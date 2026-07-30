@@ -462,119 +462,13 @@
     }
   },
   "theme": {
-    "branding": "Branding",
-    "appTitle": "App-Titel",
-    "logo": "Logo",
-    "default": "Standard",
-    "showFooter": "„Razzoozle\"-Footer zeigen",
-    "upload": "Bild",
-    "preview": {
-      "title": "Vorschau",
-      "join": "Beitritt",
-      "question": "Frage",
-      "leaderboard": "Rangliste",
-      "openWindow": "Live-Vorschau öffnen"
-    },
-    "contrast": {
-      "hint": "Kontrast",
-      "fail": "Kontrast schwach"
-    },
-    "uiColors": "UI-Farben",
-    "colors": {
-      "primary": "Primär",
-      "background": "Hintergrund",
-      "accent": "Akzent",
-      "text": "Text"
-    },
-    "answerColors": "Antwort-Farben",
-    "contrastNote": "Helle Primärfarben werden für Text und Symbole automatisch abgedunkelt, damit sie lesbar bleiben.",
-    "scrim": "Hintergrund abdunkeln ({{value}}%)",
-    "backgrounds": "Hintergründe",
-    "save": "Speichern",
-    "reset": "Zurücksetzen",
-    "toast": {
-      "imageUploaded": "Bild hochgeladen",
-      "saved": "Design gespeichert"
-    },
-    "templates": {
-      "title": "Vorlagen",
-      "save": "Als Vorlage speichern",
-      "saved": "Vorlage gespeichert",
-      "namePrompt": "Name der Vorlage",
-      "apply": "Anwenden",
-      "delete": "Löschen",
-      "deleteConfirm": "Möchtest du die Vorlage „{{name}}\" wirklich löschen",
-      "emptyHeadline": "Noch keine Vorlagen",
-      "none": "Noch keine Vorlagen gespeichert",
-      "edit": "Bearbeiten",
-      "importError": "Ungültige Vorlagen-Datei",
-      "readError": "Datei konnte nicht gelesen werden",
-      "import": "Vorlage importieren",
-      "export": "Vorlage exportieren"
-    },
-    "animation": {
-      "title": "Animation",
-      "description": "Feinabstimmung des Spielgefühls — Federkraft, Dauer und Versatz der Einblendungen.",
-      "springStiffness": "Federsteifigkeit",
-      "springDamping": "Federdämpfung",
-      "durationScale": "Dauer-Faktor",
-      "staggerScale": "Versatz-Faktor",
-      "previewLabel": "Vorschau",
-      "replay": "Abspielen"
-    },
-    "animatedBg": {
-      "title": "Animierter Hintergrund",
-      "slot": {
-        "auth": "Start / Beitritt",
-        "managerGame": "Host-Bildschirm",
-        "playerGame": "Spieler-Handy"
-      },
-      "speed": "Geschwindigkeit",
-      "intensity": "Intensität",
-      "iconCount": "Symbole",
-      "color": "Farbe",
-      "wallpaper": "Hintergrundbild",
-      "toggle": "Animierter Hintergrund",
-      "mode": {
-        "animated": "Animiert",
-        "wallpaper": "Wallpaper"
-      },
-      "css": {
-        "title": "CSS-Editor",
-        "description": "Eigenes CSS für den animierten Hintergrund (z. B. .cb-blob, Keyframes überschreiben).",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "Animierter Hintergrund aktiv"
-    },
     "sounds": {
-      "title": "Sounds",
-      "description": "Eigene Klänge pro Slot hochladen. Leer = Standardklang.",
-      "default": "Standard",
-      "custom": "Eigener",
-      "upload": "Hochladen",
-      "test": "Anhören",
-      "reset": "Zurücksetzen",
-      "toast": {
-        "uploaded": "Sound hochgeladen"
-      },
       "slots": {
-        "answersMusic": "Musik (Frage läuft)",
-        "answersSound": "Sound (Frage läuft)",
-        "podiumThree": "Podium – 3. Platz",
-        "podiumSecond": "Podium – 2. Platz",
-        "podiumFirst": "Podium – 1. Platz",
-        "podiumSnearRoll": "Podium – Trommelwirbel",
-        "results": "Ergebnisse",
-        "show": "Einblendung",
-        "boump": "Tick / Boump",
-        "tierBronze": "Achievement – Bronze",
-        "tierSilver": "Achievement – Silber",
-        "tierGold": "Achievement – Gold",
-        "tierDiamant": "Achievement – Diamant"
+        "flowerFertilizer": "Dünger-Sound (Blüten-Battle)",
+        "flowerSunbeam": "Sonnenstahl-Sound (Blüten-Battle)",
+        "flowerAcidRain": "Saueregen-Sound (Blüten-Battle)"
       }
-    },
-    "title": "Design",
-    "intro": "Passe Farben, Logo und Auftritt an deine Schule an."
+    }
   },
   "submissions": {
     "empty": "Keine ausstehenden Vorschläge.",

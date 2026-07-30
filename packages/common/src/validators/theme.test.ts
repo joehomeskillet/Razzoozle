@@ -39,3 +39,35 @@ describe("themeValidator", () => {
     expect(result.success).toBe(false)
   })
 })
+
+  it("accepts new flower-battle sound slots in theme.sounds", () => {
+    const themeWithFlowerSounds = {
+      ...DEFAULT_THEME,
+      sounds: {
+        ...DEFAULT_THEME.sounds,
+        flowerFertilizer: null,
+        flowerSunbeam: null,
+        flowerAcidRain: null,
+      },
+    }
+    const result = themeValidator.safeParse(themeWithFlowerSounds)
+    expect(result.success).toBe(true)
+  })
+
+  it("validates new flower-battle sound slots with asset refs", () => {
+    const themeWithFlowerAssets = {
+      ...DEFAULT_THEME,
+      sounds: {
+        ...DEFAULT_THEME.sounds,
+        flowerFertilizer: "/theme/flower-custom-1.mp3",
+        flowerSunbeam: "/media/audio/sunbeam.mp3",
+        flowerAcidRain: null,
+      },
+    }
+    const result = themeValidator.safeParse(themeWithFlowerAssets)
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.sounds.flowerFertilizer).toBe("/theme/flower-custom-1.mp3")
+    expect(result.data.sounds.flowerSunbeam).toBe("/media/audio/sunbeam.mp3")
+    expect(result.data.sounds.flowerAcidRain).toBeNull()
+  })

@@ -273,119 +273,13 @@
     "exportQuestionsCsv": "Esporta risposte per domanda come CSV"
   },
   "theme": {
-    "branding": "Branding",
-    "appTitle": "Titolo dell'app",
-    "logo": "Logo",
-    "default": "Predefinito",
-    "showFooter": "Mostra footer «Razzoozle»",
-    "upload": "Immagine",
-    "preview": {
-      "title": "Anteprima",
-      "join": "Partecipa",
-      "question": "Domanda",
-      "leaderboard": "Classifica",
-      "openWindow": "Apri l’anteprima live"
-    },
-    "contrast": {
-      "hint": "Contrasto",
-      "fail": "Contrasto basso"
-    },
-    "uiColors": "Colori dell'interfaccia",
-    "colors": {
-      "primary": "Primario",
-      "background": "Sfondo",
-      "accent": "Accento",
-      "text": "Testo"
-    },
-    "answerColors": "Colori delle risposte",
-    "contrastNote": "I colori primari chiari vengono scuriti automaticamente per testo e icone in modo che restino leggibili.",
-    "scrim": "Scurisci lo sfondo ({{value}}%)",
-    "backgrounds": "Sfondi",
-    "save": "Salva",
-    "reset": "Reimposta",
-    "toast": {
-      "imageUploaded": "Immagine caricata",
-      "saved": "Design salvato"
-    },
-    "templates": {
-      "title": "Modelli",
-      "save": "Salva come modello",
-      "saved": "Modello salvato",
-      "namePrompt": "Nome del modello",
-      "apply": "Applica",
-      "delete": "Elimina",
-      "deleteConfirm": "Vuoi davvero eliminare il modello «{{name}}»",
-      "emptyHeadline": "Ancora nessun modello",
-      "none": "Ancora nessun modello salvato",
-      "edit": "Modifica",
-      "importError": "File modello non valido",
-      "readError": "Impossibile leggere il file",
-      "import": "Importa modello",
-      "export": "Esporta modello"
-    },
-    "animation": {
-      "title": "Animazione",
-      "description": "Regola la sensazione di gioco — forza della molla, durata e sfasamento delle comparse.",
-      "springStiffness": "Rigidità della molla",
-      "springDamping": "Smorzamento della molla",
-      "durationScale": "Fattore di durata",
-      "staggerScale": "Fattore di sfasamento",
-      "previewLabel": "Anteprima",
-      "replay": "Riproduci"
-    },
-    "animatedBg": {
-      "title": "Sfondo animato",
-      "slot": {
-        "auth": "Avvio e accesso",
-        "managerGame": "Schermo host",
-        "playerGame": "Telefono del giocatore"
-      },
-      "speed": "Velocità",
-      "intensity": "Intensità",
-      "iconCount": "Icone",
-      "color": "Colore",
-      "wallpaper": "Immagine di sfondo",
-      "toggle": "Sfondo animato",
-      "mode": {
-        "animated": "Animato",
-        "wallpaper": "Sfondo"
-      },
-      "css": {
-        "title": "Editor CSS",
-        "description": "CSS personalizzato per lo sfondo animato (es. sovrascrivere .cb-blob, keyframes).",
-        "placeholder": "/* .cream-backdrop .cb-blob--a { background: ... } */"
-      },
-      "uploadDisabled": "Sfondo animato attivo"
-    },
     "sounds": {
-      "title": "Suoni",
-      "description": "Carica un suono personalizzato per slot. Vuoto = suono predefinito.",
-      "default": "Predefinito",
-      "custom": "Personalizzato",
-      "upload": "Carica",
-      "test": "Riproduci",
-      "reset": "Reimposta",
-      "toast": {
-        "uploaded": "Suono caricato"
-      },
       "slots": {
-        "answersMusic": "Musica (domanda in corso)",
-        "answersSound": "Suono (domanda in corso)",
-        "podiumThree": "Podio – 3º posto",
-        "podiumSecond": "Podio – 2º posto",
-        "podiumFirst": "Podio – 1º posto",
-        "podiumSnearRoll": "Podio – rullo di tamburi",
-        "results": "Risultati",
-        "show": "Rivelazione",
-        "boump": "Tic / Boump",
-        "tierBronze": "Obiettivo – Bronzo",
-        "tierSilver": "Obiettivo – Argento",
-        "tierGold": "Obiettivo – Oro",
-        "tierDiamant": "Obiettivo – Diamante"
+        "flowerFertilizer": "Suono Fertilizzante (Battaglia Floreale)",
+        "flowerSunbeam": "Suono Raggio Solare (Battaglia Floreale)",
+        "flowerAcidRain": "Suono Pioggia Acida (Battaglia Floreale)"
       }
-    },
-    "title": "Design",
-    "intro": "Adatta colori, logo e immagine alla tua scuola."
+    }
   },
   "submissions": {
     "empty": "Nessuna proposta in sospeso.",

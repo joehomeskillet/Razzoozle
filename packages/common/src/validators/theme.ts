@@ -161,6 +161,9 @@ export const themeValidator = z.object({
       tierSilver: assetRef,
       tierGold: assetRef,
       tierDiamant: assetRef,
+      flowerFertilizer: assetRef,
+      flowerSunbeam: assetRef,
+      flowerAcidRain: assetRef,
     })
     .default({
       answersMusic: null,
@@ -176,6 +179,9 @@ export const themeValidator = z.object({
       tierSilver: null,
       tierGold: null,
       tierDiamant: null,
+      flowerFertilizer: null,
+      flowerSunbeam: null,
+      flowerAcidRain: null,
     }),
   // Skeleton overrides — content lives in files (config/theme/skeleton.css|js),
   // theme.json only carries the enable flags + a cache-bust version.
