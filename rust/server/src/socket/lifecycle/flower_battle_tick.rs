@@ -36,8 +36,8 @@ use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
 use super::flower_battle_emit::{
-    emit_flb_snapshot, emit_game_completed, emit_powerup_offered, emit_round_resolved,
-    is_flower_battle,
+    emit_flb_snapshot, emit_game_completed, emit_player_statuses, emit_powerup_offered,
+    emit_round_resolved, is_flower_battle,
 };
 
 // Vote resolve lives in flower_battle_votes_tick (L-03/L-04).
@@ -102,6 +102,9 @@ pub async fn after_reveal_tick(
                 );
             }
         }
+        // Emit only after the full outcome mutation. The payload must observe
+        // consumed sun, current effects, victory, and every tied winner.
+        emit_player_statuses(io, game_id, &game);
         outcome
     };
 

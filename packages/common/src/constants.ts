@@ -33,6 +33,8 @@ export const EVENTS = {
     POWERUP_APPLIED: "game:flowerBattle:powerupApplied",
     /** S2C: mode finished (results available). */
     GAME_COMPLETED: "game:flowerBattle:gameCompleted",
+    /** S2C: personalized authoritative state for the receiving player. */
+    PLAYER_STATUS: "game:flowerBattle:playerStatus",
     /** C2S: vote for a power-up offer id. */
     SUBMIT_POWERUP_VOTE: "player:flowerBattle:submitPowerupVote",
     /** C2S: vote for a power-up target (team/player). */

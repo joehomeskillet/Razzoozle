@@ -8,6 +8,8 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::experience::FlowerBattlePlayerStatus;
+
 // ============================================================================
 // Core Player Type
 // ============================================================================
@@ -86,8 +88,10 @@ pub struct AnswerAck {
 // FIXME cross-module: status.rs not yet written
 pub type StatusValue = serde_json::Value;
 
-/// Player reconnect payload.
-/// Emitted on `player:successReconnect`.
+/// Player reconnect payload emitted on `player:successReconnect`.
+///
+/// FlowerBattle status is optional for backward compatibility and absent until
+/// reconnect-specific lifecycle wiring supplies it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -100,6 +104,9 @@ pub struct PlayerSuccessReconnect {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub already_answered: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub flower_battle_player_status: Option<FlowerBattlePlayerStatus>,
 }
 
 /// Minimal player info in reconnect.
@@ -315,6 +322,7 @@ mod tests {
                 total: 5,
             },
             already_answered: Some(true),
+            flower_battle_player_status: None,
         };
 
         let json_str = serde_json::to_string(&payload).unwrap();
