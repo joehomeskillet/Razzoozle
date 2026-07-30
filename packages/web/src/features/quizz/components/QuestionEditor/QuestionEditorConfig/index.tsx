@@ -153,7 +153,7 @@ const QuestionEditorConfig = ({ excludeTypes }: QuestionEditorConfigProps) => {
   const currentType = (currentQuestion.type ?? "choice") as QuestionTypeKey
 
   return (
-    <aside className="z-10 m-4 flex shrink-0 flex-col gap-6 self-start overflow-visible rounded-2xl bg-white p-4 shadow-sm xl:mt-6 xl:w-72 xl:overflow-auto">
+    <aside className="z-10 m-4 flex shrink-0 flex-col gap-6 self-start overflow-visible rounded-2xl bg-white p-4 shadow-sm xl:mt-6 xl:w-72 xl:overflow-auto console-scroll">
       {/* Type Change Confirmation Dialog */}
       <AlertDialog
         open={dialogOpen}

@@ -79,8 +79,8 @@ const QuestionEditor = ({ excludeTypes }: QuestionEditorProps) => {
   const isVokabelliste = (currentQuestion.type as string) === "vokabelliste"
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain xl:flex-row xl:overflow-hidden">
-      <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-6 xl:overflow-y-auto">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain console-scroll xl:flex-row xl:overflow-hidden">
+      <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-6 xl:overflow-y-auto console-scroll">
         <Reveal index={0}>
           <QuestionEditorTitle />
         </Reveal>
