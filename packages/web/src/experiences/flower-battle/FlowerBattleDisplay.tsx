@@ -3,7 +3,6 @@ import type { ExperienceTransition } from "@razzoozle/common/types/game/experien
 import { CURRENT_GARDEN_RECIPE_VERSION } from "./background"
 import { FlowerBattlePresenterHud } from "./FlowerBattlePresenterHud"
 import { FlowerGardenScene } from "./FlowerGardenScene"
-import { EXPERIENCE_Z_INDEX } from "../shared/stage/z-index"
 
 export interface FlowerBattleDisplayProps {
   data: ExperienceTransition
@@ -18,6 +17,15 @@ export interface FlowerBattleDisplayProps {
  * Purely presentational — no local state. Every render reflects exactly the
  * latest envelope prop, so a reconnect that hands in a fresh envelope never
  * shows a stale mid-animation snapshot.
+ *
+ * WP-958C: scene and HUD stack as flex-column flow children (scene flex-1
+ * min-h-0, HUD shrink-0) instead of an absolute-inset overlay. The overlay
+ * relied on `.display-stage` resolving a definite height from its ancestor
+ * chain; on routes where that chain is indefinite (e.g. /party/manager),
+ * the absolutely positioned HUD fell back to its static position and
+ * rendered its natural content height *below* the scene, pushing the
+ * team-meter row past the viewport fold. Flow children can never escape
+ * their flex container's box regardless of that chain.
  */
 export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
   const state =
@@ -32,18 +40,15 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
       data-phase={data.phase}
       data-flower-battle-phase={state?.phase}
       data-phase-duration-ms={data.phaseDurationMs}
-      className="display-stage relative h-full w-full overflow-hidden"
+      className="display-stage flex h-full w-full flex-col overflow-hidden"
     >
       <FlowerGardenScene
         seed={state?.background.seed ?? 0}
         recipeVersion={state?.background.recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION}
         teams={teams}
+        className="min-h-0 flex-1"
       />
-      <div
-        data-testid="flower-battle-display-hud"
-        className="absolute inset-0"
-        style={{ zIndex: EXPERIENCE_Z_INDEX.hud }}
-      >
+      <div data-testid="flower-battle-display-hud" className="shrink-0">
         <FlowerBattlePresenterHud
           teams={teams}
           sunPoints={{}}
