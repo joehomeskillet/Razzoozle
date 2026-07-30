@@ -1,4 +1,4 @@
-//! FlowerBattle power-up vote handlers (WP #931).
+//! FlowerBattle power-up vote handlers (WP #931 / SEC-01).
 //!
 //! C2S:
 //! - `player:flowerBattle:submitPowerupVote`
@@ -8,36 +8,19 @@
 //! Evaluation is lifecycle-driven (`VoteState::evaluate_at`, WP #933) — no
 //! timer threads here. Denied paths always log `warn!` and emit a visible
 //! client error event (never silent).
+//!
+//! SEC-01: every vote is gated on `playerToken` (same semantics as answer
+//! SEC-04 / `answer_token_gate`). clientId alone is not auth.
 
+use super::answer::answer_token_gate;
 use super::HandlerCtx;
 use razzoozle_engine::flower_battle::{
     is_eligible_voter, validate_target_choice, VoteChoice, VoteKind,
 };
 use razzoozle_protocol::constants;
-use serde::Deserialize;
+use razzoozle_protocol::experience::{PowerupVotePayload, TargetVotePayload};
 use socketioxide::extract::{Data, SocketRef};
 use std::time::{SystemTime, UNIX_EPOCH};
-
-// ---------------------------------------------------------------------------
-// Wire payloads (typed trust-boundary — never raw Value)
-// ---------------------------------------------------------------------------
-
-/// C2S payload for `player:flowerBattle:submitPowerupVote`.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PowerupVotePayload {
-    pub game_id: String,
-    /// Index into the active offer option list.
-    pub option_index: usize,
-}
-
-/// C2S payload for `player:flowerBattle:submitPowerupTargetVote`.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TargetVotePayload {
-    pub game_id: String,
-    pub target_team_id: String,
-}
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -66,9 +49,18 @@ fn register_submit_powerup_vote(socket: &SocketRef, ctx: HandlerCtx) {
             let client_id = client_id.clone();
             let game_id = payload.game_id.clone();
             let option_index = payload.option_index;
+            let player_token = payload.player_token.clone();
 
             tokio::spawn(async move {
-                handle_powerup_vote_inner(socket, registry, client_id, game_id, option_index).await;
+                handle_powerup_vote_inner(
+                    socket,
+                    registry,
+                    client_id,
+                    game_id,
+                    option_index,
+                    player_token,
+                )
+                .await;
             });
         }
     });
@@ -84,6 +76,7 @@ fn register_submit_powerup_target_vote(socket: &SocketRef, ctx: HandlerCtx) {
             let client_id = client_id.clone();
             let game_id = payload.game_id.clone();
             let target_team_id = payload.target_team_id.clone();
+            let player_token = payload.player_token.clone();
 
             tokio::spawn(async move {
                 handle_powerup_target_vote_inner(
@@ -92,6 +85,7 @@ fn register_submit_powerup_target_vote(socket: &SocketRef, ctx: HandlerCtx) {
                     client_id,
                     game_id,
                     target_team_id,
+                    player_token,
                 )
                 .await;
             });
@@ -105,6 +99,7 @@ async fn handle_powerup_vote_inner(
     client_id: String,
     game_id: String,
     option_index: usize,
+    player_token: String,
 ) {
     let game_opt = {
         let registry = registry.read().await;
@@ -133,6 +128,19 @@ async fn handle_powerup_vote_inner(
         emit_denied(&socket, "errors:game.invalidAnswer");
         return;
     };
+
+    // SEC-01: token↔player match. clientId is client-controlled and alone is
+    // not auth. Pattern mirrors answer.rs:107-119.
+    if !answer_token_gate(player.player_token.as_deref(), Some(player_token.as_str())) {
+        drop(game);
+        tracing::warn!(
+            "submitPowerupVote denied: playerToken mismatch/missing (game={}, client_id={})",
+            game_id,
+            client_id
+        );
+        emit_denied(&socket, "errors:game.invalidAnswer");
+        return;
+    }
 
     let is_bot = player.is_bot.unwrap_or(false);
     let connected = player.connected;
@@ -215,6 +223,7 @@ async fn handle_powerup_target_vote_inner(
     client_id: String,
     game_id: String,
     target_team_id: String,
+    player_token: String,
 ) {
     let game_opt = {
         let registry = registry.read().await;
@@ -243,6 +252,18 @@ async fn handle_powerup_target_vote_inner(
         emit_denied(&socket, "errors:game.invalidAnswer");
         return;
     };
+
+    // SEC-01: token↔player match (same as submitPowerupVote / answer SEC-04).
+    if !answer_token_gate(player.player_token.as_deref(), Some(player_token.as_str())) {
+        drop(game);
+        tracing::warn!(
+            "submitPowerupTargetVote denied: playerToken mismatch/missing (game={}, client_id={})",
+            game_id,
+            client_id
+        );
+        emit_denied(&socket, "errors:game.invalidAnswer");
+        return;
+    }
 
     let is_bot = player.is_bot.unwrap_or(false);
     let connected = player.connected;
@@ -343,36 +364,83 @@ async fn handle_powerup_target_vote_inner(
     }
 }
 
-/// Public entry used by tests / future call-sites (WP contract name).
-pub async fn handle_powerup_vote(
-    socket: SocketRef,
-    registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
-    payload: PowerupVotePayload,
-    client_id: String,
-) {
-    handle_powerup_vote_inner(
-        socket,
-        registry,
-        client_id,
-        payload.game_id,
-        payload.option_index,
-    )
-    .await;
-}
+// ---------------------------------------------------------------------------
+// SEC-01 pure gate tests (socket-free; mirrors answer.rs token gate)
+// ---------------------------------------------------------------------------
 
-/// Public entry used by tests / future call-sites (WP contract name).
-pub async fn handle_powerup_target_vote(
-    socket: SocketRef,
-    registry: std::sync::Arc<tokio::sync::RwLock<crate::state::GameRegistry>>,
-    payload: TargetVotePayload,
-    client_id: String,
-) {
-    handle_powerup_target_vote_inner(
-        socket,
-        registry,
-        client_id,
-        payload.game_id,
-        payload.target_team_id,
-    )
-    .await;
+#[cfg(test)]
+mod tests {
+    use super::answer_token_gate;
+    use razzoozle_engine::flower_battle::{VoteChoice, VoteState};
+
+    /// SEC-01 decision for a power-up vote: whether the supplied token may vote
+    /// for the player identified by `client_id` (looked up → stored token).
+    ///
+    /// Same predicate as the live handlers (`answer_token_gate`); Result form is
+    /// only for assert-friendly unit tests.
+    fn powerup_vote_token_check(
+        stored_token: Option<&str>,
+        supplied_token: &str,
+    ) -> Result<(), &'static str> {
+        if answer_token_gate(stored_token, Some(supplied_token)) {
+            Ok(())
+        } else {
+            Err("playerToken mismatch/missing")
+        }
+    }
+
+    /// SEC-01 Negativ: team of 2 players with valid tokens.
+    /// Vote with Player-A clientId but Player-B token → REJECT.
+    /// Vote with Player-A clientId and Player-A token → ACCEPT (and VoteState records).
+    #[test]
+    fn token_mismatch_rejects_foreign_token_accepts_own() {
+        // Setup: Team with 2 players, both with valid tokens.
+        let token_a = "token-player-a";
+        let token_b = "token-player-b";
+        // Stored token for the player who owns client_id "client-a".
+        let stored_for_a = Some(token_a);
+
+        // Vote-1: client A, payload player_token = B → REJECT
+        let r1 = powerup_vote_token_check(stored_for_a, token_b);
+        assert_eq!(r1, Err("playerToken mismatch/missing"));
+
+        // Vote-2: client A, payload player_token = A → ACCEPT
+        let r2 = powerup_vote_token_check(stored_for_a, token_a);
+        assert_eq!(r2, Ok(()));
+
+        // On accept, VoteState records the vote under client-a (engine path).
+        let mut state = VoteState::new_powerup(
+            10_000,
+            42,
+            vec!["sunbeam".into(), "fertilizer".into(), "acid_rain".into()],
+            "red",
+        );
+        assert!(state
+            .vote(
+                String::from("client-a"),
+                VoteChoice::PowerupOption(0),
+                1_000
+            )
+            .is_ok());
+        assert_eq!(
+            state.votes.get("client-a"),
+            Some(&VoteChoice::PowerupOption(0))
+        );
+        // Foreign-token path never reaches vote(): votes map stays size 1.
+        assert_eq!(state.votes.len(), 1);
+    }
+
+    #[test]
+    fn token_gate_denies_empty_supplied_when_stored() {
+        assert_eq!(
+            powerup_vote_token_check(Some("tok"), ""),
+            Err("playerToken mismatch/missing")
+        );
+    }
+
+    #[test]
+    fn token_gate_allows_legacy_player_without_stored_token() {
+        // Snapshot-restore pre-token era: stored None → allow any supplied.
+        assert_eq!(powerup_vote_token_check(None, "anything"), Ok(()));
+    }
 }

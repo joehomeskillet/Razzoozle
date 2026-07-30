@@ -1,9 +1,15 @@
 //! FlowerBattle engine helpers (pure transforms, no game-state mutation).
 
+pub mod effects;
 pub mod powerups;
 pub mod scoring;
 pub mod votes;
 
+pub use effects::{
+    apply_effects, apply_question_growth, mark_victory_resolved, AppliedEffect, EffectError,
+    EffectsState, OfferedEffect, ACID_RAIN_GROWTH_PENALTY, FERTILIZER_GROWTH_BONUS,
+    NO_FIXED_EXPIRY, SUNBEAM_GROWTH_BONUS, UMBRELLA_INITIAL_QUESTIONS,
+};
 pub use powerups::{
     consume_and_excess, encode_offer_options, existing_offer_or_create, generate_powerup_offer,
     is_positive_option, offer_seed, parse_offer_options, select_offer_options,

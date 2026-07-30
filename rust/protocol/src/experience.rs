@@ -4,6 +4,7 @@
 //! WP #927 — FlowerBattle domain contract (payload body + wire types)
 //! WP #930 — FlowerBattle sun-points meter (per-team accumulation)
 //! WP #931 — FlowerBattle power-up voting (previous_attacker_team_id)
+//! WP #932 — FlowerBattle power-up effect state fields (expires/remaining)
 //! Date: 2026-07-30
 //!
 //! Wire family: `game:experience` with envelope
@@ -116,14 +117,85 @@ pub enum FlowerBattlePhase {
     End,
 }
 
-/// Active temporary effect on a FlowerBattle team.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+/// Active temporary status effect on a FlowerBattle team (WP #932).
+///
+/// Fertilizer is **not** a status — it is applied instantly (+2 growth) and never
+/// stored here. Wire shape is internally tagged (`kind` + camelCase fields).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
-#[serde(rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FlowerBattleEffect {
-    Sunbeam,
-    UmbrellaShield,
-    AcidRain,
+    /// Next base growth ≥1 gets +1; base 0 keeps this status until first ≥1 growth.
+    Sunbeam {
+        #[serde(rename = "expiresAfterQuestionId")]
+        expires_after_question_id: i32,
+    },
+    /// Blocks exactly one negative effect, or expires after `remaining_questions`
+    /// answered-question ticks (starts at 2).
+    UmbrellaShield {
+        #[serde(rename = "remainingQuestions")]
+        remaining_questions: u8,
+    },
+    /// Next positive growth of the victim team is reduced by 1 (min 0), then consumed.
+    /// If an umbrella shield is active on the victim when acid would apply, both are
+    /// consumed and no penalty lands.
+    AcidRain {
+        #[serde(rename = "sourceTeamId")]
+        source_team_id: String,
+        #[serde(rename = "expiresAfterQuestionId")]
+        expires_after_question_id: i32,
+    },
+}
+
+impl FlowerBattleEffect {
+    /// Discriminator key matching wire `kind` / offer option ids.
+    pub fn kind_key(&self) -> &'static str {
+        match self {
+            Self::Sunbeam { .. } => "sunbeam",
+            Self::UmbrellaShield { .. } => "umbrella_shield",
+            Self::AcidRain { .. } => "acid_rain",
+        }
+    }
+
+    #[inline]
+    pub fn is_sunbeam(&self) -> bool {
+        matches!(self, Self::Sunbeam { .. })
+    }
+
+    #[inline]
+    pub fn is_umbrella_shield(&self) -> bool {
+        matches!(self, Self::UmbrellaShield { .. })
+    }
+
+    #[inline]
+    pub fn is_acid_rain(&self) -> bool {
+        matches!(self, Self::AcidRain { .. })
+    }
+
+    /// Negative statuses (max one per target team).
+    #[inline]
+    pub fn is_negative(&self) -> bool {
+        self.is_acid_rain()
+    }
+
+    pub fn sunbeam(expires_after_question_id: i32) -> Self {
+        Self::Sunbeam {
+            expires_after_question_id,
+        }
+    }
+
+    pub fn umbrella_shield(remaining_questions: u8) -> Self {
+        Self::UmbrellaShield {
+            remaining_questions,
+        }
+    }
+
+    pub fn acid_rain(source_team_id: impl Into<String>, expires_after_question_id: i32) -> Self {
+        Self::AcidRain {
+            source_team_id: source_team_id.into(),
+            expires_after_question_id,
+        }
+    }
 }
 
 /// Deterministic garden-background seed + fixed recipe version.
@@ -186,6 +258,38 @@ pub struct FlowerBattleState {
 #[serde(rename_all = "camelCase")]
 pub struct FlowerBattlePayload {
     pub state: FlowerBattleState,
+}
+
+// ============================================================================
+// FlowerBattle power-up vote C2S (WP #931 / SEC-01)
+// ============================================================================
+
+/// C2S payload for `player:flowerBattle:submitPowerupVote`.
+///
+/// `player_token` is **required** on the wire (SEC-01): server matches it against
+/// the stored token for the socket's clientId before recording the vote.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerupVotePayload {
+    pub game_id: String,
+    /// Index into the active offer option list.
+    pub option_index: usize,
+    /// Server-minted per-player secret from `game:successJoin` / localStorage.
+    pub player_token: String,
+}
+
+/// C2S payload for `player:flowerBattle:submitPowerupTargetVote`.
+///
+/// `player_token` is **required** (SEC-01) — same gate as [`PowerupVotePayload`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetVotePayload {
+    pub game_id: String,
+    pub target_team_id: String,
+    /// Server-minted per-player secret from `game:successJoin` / localStorage.
+    pub player_token: String,
 }
 
 // ============================================================================
@@ -270,14 +374,23 @@ mod tests {
 
     #[test]
     fn flower_battle_effect_wire_values() {
-        let effects = [
-            (FlowerBattleEffect::Sunbeam, "sunbeam"),
-            (FlowerBattleEffect::UmbrellaShield, "umbrella_shield"),
-            (FlowerBattleEffect::AcidRain, "acid_rain"),
-        ];
-        for (effect, expected) in effects {
-            assert_eq!(serde_json::to_value(effect).unwrap(), json!(expected));
-        }
+        // Internally tagged objects (WP #932 status payloads).
+        assert_eq!(
+            serde_json::to_value(FlowerBattleEffect::sunbeam(7)).unwrap(),
+            json!({"kind": "sunbeam", "expiresAfterQuestionId": 7})
+        );
+        assert_eq!(
+            serde_json::to_value(FlowerBattleEffect::umbrella_shield(2)).unwrap(),
+            json!({"kind": "umbrella_shield", "remainingQuestions": 2})
+        );
+        assert_eq!(
+            serde_json::to_value(FlowerBattleEffect::acid_rain("red", 3)).unwrap(),
+            json!({
+                "kind": "acid_rain",
+                "sourceTeamId": "red",
+                "expiresAfterQuestionId": 3
+            })
+        );
     }
 
     #[test]
@@ -290,7 +403,7 @@ mod tests {
                     members: vec!["uuid-a".into()],
                     hp: 100.0,
                     shield: 0,
-                    effects: vec![FlowerBattleEffect::Sunbeam],
+                    effects: vec![FlowerBattleEffect::sunbeam(0)],
                     sun_points: 2,
                     previous_attacker_team_id: Some("Violet".into()),
                 }],
@@ -314,7 +427,14 @@ mod tests {
         assert_eq!(FLOWER_BATTLE_RECIPE_VERSION, 1);
         assert_eq!(v["data"]["state"]["teams"][0]["name"], "Rose");
         assert_eq!(v["data"]["state"]["teams"][0]["hp"], 100.0);
-        assert_eq!(v["data"]["state"]["teams"][0]["effects"][0], "sunbeam");
+        assert_eq!(
+            v["data"]["state"]["teams"][0]["effects"][0]["kind"],
+            "sunbeam"
+        );
+        assert_eq!(
+            v["data"]["state"]["teams"][0]["effects"][0]["expiresAfterQuestionId"],
+            0
+        );
         assert_eq!(v["data"]["state"]["teams"][0]["sunPoints"], 2);
         assert_eq!(
             v["data"]["state"]["teams"][0]["previousAttackerTeamId"],
@@ -411,6 +531,43 @@ mod tests {
         let v = serde_json::to_value(&t_without_progress).unwrap();
         assert!(v.get("answered").is_none());
         assert!(v.get("total").is_none());
+    }
+
+    #[test]
+    fn powerup_vote_payload_requires_player_token() {
+        let p = PowerupVotePayload {
+            game_id: "g1".into(),
+            option_index: 1,
+            player_token: "tok-a".into(),
+        };
+        let v = serde_json::to_value(&p).unwrap();
+        assert_eq!(v["gameId"], "g1");
+        assert_eq!(v["optionIndex"], 1);
+        assert_eq!(v["playerToken"], "tok-a");
+        let back: PowerupVotePayload = serde_json::from_value(v).unwrap();
+        assert_eq!(back, p);
+
+        // Missing playerToken must fail deserialize (SEC-01 required field).
+        let missing = json!({"gameId": "g1", "optionIndex": 0});
+        assert!(serde_json::from_value::<PowerupVotePayload>(missing).is_err());
+    }
+
+    #[test]
+    fn target_vote_payload_requires_player_token() {
+        let p = TargetVotePayload {
+            game_id: "g1".into(),
+            target_team_id: "blue".into(),
+            player_token: "tok-b".into(),
+        };
+        let v = serde_json::to_value(&p).unwrap();
+        assert_eq!(v["gameId"], "g1");
+        assert_eq!(v["targetTeamId"], "blue");
+        assert_eq!(v["playerToken"], "tok-b");
+        let back: TargetVotePayload = serde_json::from_value(v).unwrap();
+        assert_eq!(back, p);
+
+        let missing = json!({"gameId": "g1", "targetTeamId": "blue"});
+        assert!(serde_json::from_value::<TargetVotePayload>(missing).is_err());
     }
 
     #[test]
