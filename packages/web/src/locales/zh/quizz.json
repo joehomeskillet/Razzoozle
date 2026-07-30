@@ -208,5 +208,12 @@
     "addZone": "添加区域",
     "removeZone": "删除区域",
     "minZonesRequired": "至少需要一个区域"
+  },
+  "typeCategory": {
+    "basic": "选择",
+    "survey": "问卷与反馈",
+    "numeric": "数值",
+    "text": "文本输入",
+    "arrangement": "排序"
   }
 }
