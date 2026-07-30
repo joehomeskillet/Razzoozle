@@ -377,17 +377,16 @@ mod tests {
         // WP #952: Guard ensures rejoin does not re-assign team if already assigned.
         // Semantics: smallest_team() is only called when player.team_id.is_none().
         let players = snap(&[
-            ("1", true, Some("red")),    // Player already on red
+            ("1", true, Some("red")), // Player already on red
             ("2", true, Some("red")),
-            ("3", true, None),           // New unassigned player
+            ("3", true, None), // New unassigned player
         ]);
-        
+
         // smallest_team would assign Player 3 to blue (0 count vs red's 2)
         let target = smallest_team(&players);
         assert_eq!(target, "blue");
-        
+
         // In login.rs, auto-assign guard checks `player.team_id.is_none()` before calling smallest_team.
         // Player 1 (red) would skip auto-assign on rejoin, preserving their team assignment.
     }
-
 }
