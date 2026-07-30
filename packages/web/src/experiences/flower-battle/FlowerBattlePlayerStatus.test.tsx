@@ -1,4 +1,4 @@
-// Unit tests for FlowerBattlePlayerStatus (WP940 / WP-FLB-15).
+// Unit tests for FlowerBattlePlayerStatus (WP-946-C2 / #979).
 //
 // Pure TSX — no jsdom (vitest `node` env), renderToStaticMarkup only. Hard
 // literals throughout (matches the header/effect-line copy exactly) rather
@@ -8,9 +8,12 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
+import type { FlowerBattlePlayerStatus as FlowerBattlePlayerStatusData } from "@razzoozle/common/types/game/socket"
+
 import {
   FlowerBattlePlayerStatus,
   type FlowerBattleActiveEffect,
+  type FlowerBattlePlayerStatusLegacyProps,
 } from "./FlowerBattlePlayerStatus"
 
 // Mock t() to return the defaultValue with {{placeholder}} interpolation —
@@ -33,7 +36,37 @@ vi.mock("react-i18next", () => ({
   }),
 }))
 
-const baseProps = {
+// FlowerPlant pulls motion/react — static markup mock (same shape as FlowerPlant.test).
+vi.mock("motion/react", () => ({
+  useReducedMotion: () => false,
+  useMotionValue: (initial: number) => {
+    let current = initial
+    return {
+      get: () => current,
+      set: (value: number) => {
+        current = value
+      },
+    }
+  },
+  animate: vi.fn(() => Promise.resolve()),
+  motion: {
+    g: ({
+      children,
+      id,
+      ...rest
+    }: {
+      children?: React.ReactNode
+      id?: string
+      [key: string]: unknown
+    }) => (
+      <g id={id} {...rest}>
+        {children}
+      </g>
+    ),
+  },
+}))
+
+const baseLegacy: FlowerBattlePlayerStatusLegacyProps = {
   mode: "flowerBattle",
   team: "red",
   teamName: "Rot",
@@ -43,71 +76,208 @@ const baseProps = {
   activeEffects: [] as FlowerBattleActiveEffect[],
 }
 
+const baseStatus = (
+  overrides: Partial<FlowerBattlePlayerStatusData> = {},
+): FlowerBattlePlayerStatusData => ({
+  gameId: "g1",
+  questionIndex: 0,
+  teamId: "red",
+  growthStage: 4,
+  maxGrowthStage: 10,
+  sunPoints: 2,
+  activeEffects: [],
+  victoryResolved: false,
+  winnerTeamIds: [],
+  isWinner: false,
+  ...overrides,
+})
+
 describe("FlowerBattlePlayerStatus", () => {
-  it("composes the header with team, growth stage, and sun points", () => {
-    const html = renderToStaticMarkup(<FlowerBattlePlayerStatus {...baseProps} />)
-    expect(html).toContain("Team Rot · Blüte 4/10 · ☀ 2/3")
+  describe("legacy props (deprecated compatibility)", () => {
+    it("composes the header with team, growth stage, and sun points", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} />,
+      )
+      expect(html).toContain("Team Rot · Blüte 4/10 · ☀ 2/3")
+    })
+
+    it("renders the umbrella_shield status line with icon + text label", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          {...baseLegacy}
+          activeEffects={["umbrella_shield"]}
+        />,
+      )
+      expect(html).toContain("☂ Schutz aktiv")
+      expect(html).toContain('data-testid="flower-battle-effect-umbrella-shield"')
+    })
+
+    it("renders the acid_rain status line with icon + text label", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} activeEffects={["acid_rain"]} />,
+      )
+      expect(html).toContain("☁ Nächstes Wachstum −1")
+      expect(html).toContain('data-testid="flower-battle-effect-acid-rain"')
+    })
+
+    it("renders the sunbeam status line with icon + text label", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} activeEffects={["sunbeam"]} />,
+      )
+      expect(html).toContain("☀ Nächstes Wachstum +1")
+      expect(html).toContain('data-testid="flower-battle-effect-sunbeam"')
+    })
+
+    it("renders no status line when no effect is active", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} />,
+      )
+      expect(html).not.toContain("flower-battle-effect-")
+      expect(html).not.toContain("Schutz aktiv")
+      expect(html).not.toContain("Wachstum")
+    })
+
+    it("renders multiple simultaneously active effect lines", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          {...baseLegacy}
+          activeEffects={["umbrella_shield", "sunbeam"]}
+        />,
+      )
+      expect(html).toContain("☂ Schutz aktiv")
+      expect(html).toContain("☀ Nächstes Wachstum +1")
+      expect(html).not.toContain("Nächstes Wachstum −1")
+    })
+
+    it("renders null for a foreign experience mode", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} mode="pyramidClimb" />,
+      )
+      expect(html).toBe("")
+    })
+
+    it("renders null for classic (no experience mode)", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} mode="classic" />,
+      )
+      expect(html).toBe("")
+    })
+
+    it("clamps sun points display at the max threshold", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus {...baseLegacy} sunPoints={99} />,
+      )
+      expect(html).toContain("☀ 3/3")
+    })
+
+    it("legacy compile/render compatibility — Answers-shaped call still mounts", () => {
+      // Mirrors packages/web/.../Answers.tsx call site (flat props).
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          mode="flowerBattle"
+          team="blue"
+          teamName="Blau"
+          growthStage={1}
+          maxGrowthStage={10}
+          sunPoints={0}
+          activeEffects={[]}
+        />,
+      )
+      expect(html).toContain('data-testid="flower-battle-player-status"')
+      expect(html).toContain("Team Blau · Blüte 1/10 · ☀ 0/3")
+      expect(html).toContain('role="status"')
+      expect(html).toContain('aria-live="polite"')
+    })
   })
 
-  it("renders the umbrella_shield status line with icon + text label", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus {...baseProps} activeEffects={["umbrella_shield"]} />,
-    )
-    expect(html).toContain("☂ Schutz aktiv")
-    expect(html).toContain('data-testid="flower-battle-effect-umbrella-shield"')
-  })
+  describe("typed status prop (preferred)", () => {
+    it("renders team label, growth/max, and sun points from status", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus status={baseStatus({ teamId: "green", growthStage: 5, sunPoints: 1 })} />,
+      )
+      expect(html).toContain("Team green · Blüte 5/10 · ☀ 1/3")
+      expect(html).toContain('role="status"')
+      expect(html).toContain('aria-live="polite"')
+    })
 
-  it("renders the acid_rain status line with icon + text label", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus {...baseProps} activeEffects={["acid_rain"]} />,
-    )
-    expect(html).toContain("☁ Nächstes Wachstum −1")
-    expect(html).toContain('data-testid="flower-battle-effect-acid-rain"')
-  })
+    it("renders FlowerPlant at the clamped growth stage", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus status={baseStatus({ growthStage: 7 })} />,
+      )
+      expect(html).toContain('data-testid="flower-battle-player-status-plant"')
+      expect(html).toContain('data-testid="flower-plant-stage-7"')
+      expect(html).toContain('data-growth-stage="7"')
+    })
 
-  it("renders the sunbeam status line with icon + text label", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus {...baseProps} activeEffects={["sunbeam"]} />,
-    )
-    expect(html).toContain("☀ Nächstes Wachstum +1")
-    expect(html).toContain('data-testid="flower-battle-effect-sunbeam"')
-  })
+    it("typed object effects — uses effect.kind for icon+text lines", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({
+            activeEffects: [
+              { kind: "umbrella_shield", remainingQuestions: 2 },
+              { kind: "sunbeam", expiresAfterQuestionId: 4 },
+            ],
+          })}
+        />,
+      )
+      expect(html).toContain("☂ Schutz aktiv")
+      expect(html).toContain("☀ Nächstes Wachstum +1")
+      expect(html).toContain('data-effect-kind="umbrella_shield"')
+      expect(html).toContain('data-effect-kind="sunbeam"')
+      expect(html).toContain('data-testid="flower-battle-effect-umbrella-shield"')
+      expect(html).toContain('data-testid="flower-battle-effect-sunbeam"')
+      // Must not invent/serialize extra effect fields into the DOM.
+      expect(html).not.toContain("remainingQuestions")
+      expect(html).not.toContain("expiresAfterQuestionId")
+    })
 
-  it("renders no status line when no effect is active", () => {
-    const html = renderToStaticMarkup(<FlowerBattlePlayerStatus {...baseProps} />)
-    expect(html).not.toContain("flower-battle-effect-")
-    expect(html).not.toContain("Schutz aktiv")
-    expect(html).not.toContain("Wachstum")
-  })
+    it("renders multiple typed object effects including acid_rain", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({
+            activeEffects: [
+              { kind: "acid_rain", sourceTeamId: "blue", expiresAfterQuestionId: 3 },
+              { kind: "umbrella_shield", remainingQuestions: 1 },
+              { kind: "sunbeam", expiresAfterQuestionId: 3 },
+            ],
+          })}
+        />,
+      )
+      expect(html).toContain("☁ Nächstes Wachstum −1")
+      expect(html).toContain("☂ Schutz aktiv")
+      expect(html).toContain("☀ Nächstes Wachstum +1")
+      expect(html).toContain('data-effect-kind="acid_rain"')
+    })
 
-  it("renders multiple simultaneously active effect lines", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus
-        {...baseProps}
-        activeEffects={["umbrella_shield", "sunbeam"]}
-      />,
-    )
-    expect(html).toContain("☂ Schutz aktiv")
-    expect(html).toContain("☀ Nächstes Wachstum +1")
-    expect(html).not.toContain("Nächstes Wachstum −1")
-  })
+    it("null team → neutral label, no guessed team name", () => {
+      const html = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus status={baseStatus({ teamId: null })} />,
+      )
+      expect(html).toContain("Blüte 4/10 · ☀ 2/3")
+      expect(html).not.toContain("Team red")
+      expect(html).not.toContain("Team null")
+      // Neutral plant (no forced team colour attribute on a guessed team).
+      expect(html).toContain('data-testid="flower-plant-stage-4"')
+    })
 
-  it("renders null for a foreign experience mode", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus {...baseProps} mode="pyramidClimb" />,
-    )
-    expect(html).toBe("")
-  })
+    it("numeric clamp — growthStage and sunPoints", () => {
+      const high = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({ growthStage: 99, sunPoints: 50, maxGrowthStage: 10 })}
+        />,
+      )
+      expect(high).toContain("Blüte 10/10")
+      expect(high).toContain("☀ 3/3")
+      expect(high).toContain('data-testid="flower-plant-stage-10"')
 
-  it("renders null for classic (no experience mode)", () => {
-    const html = renderToStaticMarkup(<FlowerBattlePlayerStatus {...baseProps} mode="classic" />)
-    expect(html).toBe("")
-  })
-
-  it("clamps sun points display at the max threshold", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePlayerStatus {...baseProps} sunPoints={99} />,
-    )
-    expect(html).toContain("☀ 3/3")
+      const low = renderToStaticMarkup(
+        <FlowerBattlePlayerStatus
+          status={baseStatus({ growthStage: -4, sunPoints: -1, maxGrowthStage: 10 })}
+        />,
+      )
+      expect(low).toContain("Blüte 0/10")
+      expect(low).toContain("☀ 0/3")
+      expect(low).toContain('data-testid="flower-plant-stage-0"')
+    })
   })
 })

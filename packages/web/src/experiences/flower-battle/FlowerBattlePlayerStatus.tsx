@@ -1,123 +1,237 @@
 import { useTranslation } from "react-i18next"
+
+import { TEAMS, type Team } from "@razzoozle/common/constants"
+import type {
+  FlowerBattleEffect,
+  FlowerBattlePlayerStatus as FlowerBattlePlayerStatusData,
+} from "@razzoozle/common/types/game/socket"
 import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 
-// WP940 (WP-FLB-15) — player-facing compact status header for the
-// flower_battle experience mode. Renders on the player's own device during
-// SelectAnswer/ShowQuestion; NEVER touches question/answer content — the
-// props below are exhaustively the battle-status data this component needs.
+import { FlowerPlant } from "./FlowerPlant"
+import {
+  clampGrowthStage,
+  type TeamColorKey,
+} from "./flower-plant.constants"
+
+// WP-946-C2 — compact accessible mobile Flower player status.
+// Preferred prop: wire `status` from @razzoozle/common/types/game/socket.
+// Legacy flat props remain as a deprecated compatibility arm so Answers
+// (and sibling consumers) still typecheck until C3 wires the store.
 
 /**
- * Wire values of `FlowerBattleEffect` (rust/protocol/src/experience.rs,
- * `#[serde(rename_all = "snake_case")]`). Kept as a local literal union
- * rather than importing rust/protocol/bindings/FlowerBattleEffect.ts — this
- * package has no established import path for that bindings directory (see
- * packages/common/src/types/game/* for the repo's actual pattern: hand-
- * mirrored TS types, not direct bindings imports).
+ * Wire kind strings for persistent power-up status lines (snake_case).
+ * Kept exported for FlowerPowerupStatusIcons / FlowerPowerupEffects which
+ * still consume the string-literal form until a later wave.
  */
 export type FlowerBattleActiveEffect = "umbrella_shield" | "acid_rain" | "sunbeam"
 
 /**
- * Sun-point threshold shown in the header ("☀ {sunPoints}/3"). No backend
- * constant exists for this yet (WP930 only tracks the accumulator, not a
- * cap) — named here as the single source for this UI-level constant instead
- * of a repeated magic number.
+ * Sun-point threshold shown in the header ("☀ {sunPoints}/3"). UI-level
+ * display cap — backend tracks the accumulator without a named cap.
  */
 const MAX_SUN_POINTS = 3
 
-export interface FlowerBattlePlayerStatusProps {
+const KNOWN_EFFECT_KINDS = new Set<string>([
+  "umbrella_shield",
+  "acid_rain",
+  "sunbeam",
+])
+
+/** @deprecated WP-946-C2 — flat props for pre-C3 call sites (Answers). */
+export interface FlowerBattlePlayerStatusLegacyProps {
   /**
-   * Current experience mode, the ExperienceMode wire value (camelCase, e.g.
-   * from a future `game:experience` player-facing read — see the pending
-   * gating skeleton in Answers.tsx). Renders null for anything other than
-   * `"flowerBattle"`.
+   * Experience mode wire value. Renders null unless `"flowerBattle"`.
+   * @deprecated Use `status` once C3 wires the player store.
    */
   mode: string
-  /** Team id for color lookup (teams.ts convention — red/blue/green/yellow). */
+  /** @deprecated */
   team: string
-  /** Display name for the header (may equal `team` or a custom label). */
+  /** @deprecated */
   teamName: string
-  /**
-   * Contract gap (documented, not worked around with a fake value): WP927/
-   * WP930 shipped `FlowerBattleTeamState.sunPoints` but no growth-stage
-   * field at all. This component's own prop signature (growthStage/
-   * maxGrowthStage) is the interface the eventual data source must satisfy
-   * — it is NOT derived from any existing wire field today.
-   */
+  /** @deprecated */
   growthStage: number
+  /** @deprecated */
   maxGrowthStage: number
+  /** @deprecated */
   sunPoints: number
+  /** @deprecated string kinds only — not full FlowerBattleEffect objects. */
   activeEffects: FlowerBattleActiveEffect[]
 }
 
+/** Preferred props — authoritative socket payload (WP-946-C2). */
+export interface FlowerBattlePlayerStatusTypedProps {
+  status: FlowerBattlePlayerStatusData
+}
+
 /**
- * FlowerBattlePlayerStatus — compact team/growth/sun-points header + at most
- * one status line per active effect (icon + visible text label together,
- * never icon-only). No status line at all when no effect is active.
+ * Discriminated by presence of `status`. Preferred arm first; legacy arm is
+ * a temporary compile-compatibility bridge until C3 removes it.
  */
-export function FlowerBattlePlayerStatus({
-  mode,
-  team,
-  teamName,
-  growthStage,
-  maxGrowthStage,
-  sunPoints,
-  activeEffects,
-}: FlowerBattlePlayerStatusProps) {
+export type FlowerBattlePlayerStatusProps =
+  | FlowerBattlePlayerStatusTypedProps
+  | FlowerBattlePlayerStatusLegacyProps
+
+const isTeamColorKey = (value: string | null | undefined): value is TeamColorKey =>
+  typeof value === "string" && (TEAMS as readonly string[]).includes(value)
+
+const isLegacyProps = (
+  props: FlowerBattlePlayerStatusProps,
+): props is FlowerBattlePlayerStatusLegacyProps => !("status" in props)
+
+const clampSunPoints = (value: number): number => {
+  if (!Number.isFinite(value)) return 0
+  return Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(value)))
+}
+
+const clampMaxGrowth = (value: number): number => {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.floor(value))
+}
+
+/**
+ * Normalize active effects to known kind strings only.
+ * Accepts legacy string kinds and wire objects with `.kind`.
+ * Does not invent missing object fields (remainingQuestions, etc.).
+ */
+const normalizeEffectKinds = (
+  effects: ReadonlyArray<FlowerBattleActiveEffect | FlowerBattleEffect>,
+): FlowerBattleActiveEffect[] => {
+  const kinds: FlowerBattleActiveEffect[] = []
+  for (const effect of effects) {
+    const kind = typeof effect === "string" ? effect : effect.kind
+    if (!KNOWN_EFFECT_KINDS.has(kind)) continue
+    if (!kinds.includes(kind as FlowerBattleActiveEffect)) {
+      kinds.push(kind as FlowerBattleActiveEffect)
+    }
+  }
+  return kinds
+}
+
+const EFFECT_META: Record<
+  FlowerBattleActiveEffect,
+  { testId: string; i18nKey: string; defaultValue: string }
+> = {
+  umbrella_shield: {
+    testId: "flower-battle-effect-umbrella-shield",
+    i18nKey: "flowerBattlePlayerStatus.effect.umbrellaShield",
+    defaultValue: "☂ Schutz aktiv",
+  },
+  acid_rain: {
+    testId: "flower-battle-effect-acid-rain",
+    i18nKey: "flowerBattlePlayerStatus.effect.acidRain",
+    defaultValue: "☁ Nächstes Wachstum −1",
+  },
+  sunbeam: {
+    testId: "flower-battle-effect-sunbeam",
+    i18nKey: "flowerBattlePlayerStatus.effect.sunbeam",
+    defaultValue: "☀ Nächstes Wachstum +1",
+  },
+}
+
+type ResolvedView = {
+  teamId: string | null
+  teamName: string | null
+  growthStage: number
+  maxGrowthStage: number
+  sunPoints: number
+  effectKinds: FlowerBattleActiveEffect[]
+}
+
+const resolveFromStatus = (status: FlowerBattlePlayerStatusData): ResolvedView => {
+  const teamId = status.teamId
+  return {
+    // Null team stays null — never invent a guessed team colour/name.
+    teamId,
+    teamName: teamId,
+    growthStage: clampGrowthStage(status.growthStage),
+    maxGrowthStage: clampMaxGrowth(status.maxGrowthStage),
+    sunPoints: clampSunPoints(status.sunPoints),
+    effectKinds: normalizeEffectKinds(status.activeEffects),
+  }
+}
+
+const resolveFromLegacy = (props: FlowerBattlePlayerStatusLegacyProps): ResolvedView => ({
+  teamId: props.team || null,
+  teamName: props.teamName || props.team || null,
+  growthStage: clampGrowthStage(props.growthStage),
+  maxGrowthStage: clampMaxGrowth(props.maxGrowthStage),
+  sunPoints: clampSunPoints(props.sunPoints),
+  effectKinds: normalizeEffectKinds(props.activeEffects),
+})
+
+/**
+ * FlowerBattlePlayerStatus — compact team/plant/growth/sun-points status for
+ * the mobile player. role="status" + aria-live="polite". Semantic token classes
+ * only. Renders FlowerPlant + one icon+text line per active effect kind.
+ */
+export function FlowerBattlePlayerStatus(props: FlowerBattlePlayerStatusProps) {
   const { t } = useTranslation("game")
 
-  if (mode !== "flowerBattle") {
+  if (isLegacyProps(props) && props.mode !== "flowerBattle") {
     return null
   }
 
-  const safeGrowth = Number.isFinite(growthStage) ? Math.max(0, Math.floor(growthStage)) : 0
-  const safeMaxGrowth = Number.isFinite(maxGrowthStage)
-    ? Math.max(0, Math.floor(maxGrowthStage))
-    : 0
-  const safeSunPoints = Number.isFinite(sunPoints)
-    ? Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(sunPoints)))
-    : 0
-  const colors = teamColor(team)
+  const view = isLegacyProps(props)
+    ? resolveFromLegacy(props)
+    : resolveFromStatus(props.status)
+
+  const plantTeam: Team | undefined = isTeamColorKey(view.teamId)
+    ? view.teamId
+    : undefined
+  const colors = view.teamId ? teamColor(view.teamId) : { bg: "", text: "text-ink" }
+
+  const header = view.teamName
+    ? t("flowerBattlePlayerStatus.header", {
+        defaultValue:
+          "Team {{teamName}} · Blüte {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+        teamName: view.teamName,
+        growthStage: view.growthStage,
+        maxGrowthStage: view.maxGrowthStage,
+        sunPoints: view.sunPoints,
+        maxSunPoints: MAX_SUN_POINTS,
+      })
+    : t("flowerBattlePlayerStatus.headerNeutral", {
+        defaultValue:
+          "Blüte {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+        growthStage: view.growthStage,
+        maxGrowthStage: view.maxGrowthStage,
+        sunPoints: view.sunPoints,
+        maxSunPoints: MAX_SUN_POINTS,
+      })
 
   return (
     <div
       data-testid="flower-battle-player-status"
-      className={`flex flex-col gap-1 rounded-2xl border border-line bg-surface-2 px-4 py-2 ${colors.bg}`}
+      role="status"
+      aria-live="polite"
+      className={`flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-2 ${colors.bg}`.trim()}
     >
-      <p className={`text-sm font-semibold ${colors.text}`}>
-        {t("flowerBattlePlayerStatus.header", {
-          defaultValue:
-            "Team {{teamName}} · Blüte {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
-          teamName,
-          growthStage: safeGrowth,
-          maxGrowthStage: safeMaxGrowth,
-          sunPoints: safeSunPoints,
-          maxSunPoints: MAX_SUN_POINTS,
+      <div
+        className="h-14 w-10 shrink-0"
+        data-testid="flower-battle-player-status-plant"
+      >
+        <FlowerPlant
+          growthStage={view.growthStage}
+          variant="round"
+          teamColor={plantTeam}
+        />
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className={`text-sm font-semibold ${colors.text}`}>{header}</p>
+        {view.effectKinds.map((kind) => {
+          const meta = EFFECT_META[kind]
+          return (
+            <p
+              key={kind}
+              data-testid={meta.testId}
+              data-effect-kind={kind}
+              className="text-xs text-ink-subtle"
+            >
+              {t(meta.i18nKey, { defaultValue: meta.defaultValue })}
+            </p>
+          )
         })}
-      </p>
-      {activeEffects.includes("umbrella_shield") && (
-        <p
-          data-testid="flower-battle-effect-umbrella-shield"
-          className="text-xs text-ink-subtle"
-        >
-          {t("flowerBattlePlayerStatus.effect.umbrellaShield", {
-            defaultValue: "☂ Schutz aktiv",
-          })}
-        </p>
-      )}
-      {activeEffects.includes("acid_rain") && (
-        <p data-testid="flower-battle-effect-acid-rain" className="text-xs text-ink-subtle">
-          {t("flowerBattlePlayerStatus.effect.acidRain", {
-            defaultValue: "☁ Nächstes Wachstum −1",
-          })}
-        </p>
-      )}
-      {activeEffects.includes("sunbeam") && (
-        <p data-testid="flower-battle-effect-sunbeam" className="text-xs text-ink-subtle">
-          {t("flowerBattlePlayerStatus.effect.sunbeam", {
-            defaultValue: "☀ Nächstes Wachstum +1",
-          })}
-        </p>
-      )}
+      </div>
     </div>
   )
 }
