@@ -19,7 +19,7 @@ import {
   accentWash,
   rewardCardClass,
 } from "@razzoozle/web/features/game/components/RewardRow"
-import { useReveal } from "@razzoozle/web/features/game/animation/presets"
+import { DURATION, EASE, useReveal } from "@razzoozle/web/features/game/animation/presets"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Trophy, X } from "lucide-react"
 import { createPortal } from "react-dom"
@@ -79,7 +79,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
                 aria-hidden
                 initial={{ x: "-150%" }}
                 animate={{ x: "150%" }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+                transition={{ duration: DURATION.sheen, ease: EASE.out }}
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent"
               />
             )}
@@ -93,7 +93,7 @@ const ScoreToast = ({ correct, points, visible }: Props) => {
                 <motion.span
                   initial={reduced ? false : { scale: 0.6 }}
                   animate={reduced ? {} : { scale: [0.6, 1.15, 1] }}
-                  transition={reduced ? undefined : { duration: 0.5 }}
+                  transition={reduced ? undefined : { duration: DURATION.slow }}
                   className="flex items-center justify-center"
                   style={{ color: accent }}
                 >

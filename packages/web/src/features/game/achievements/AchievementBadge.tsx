@@ -79,7 +79,7 @@ const PulseRing = ({ tier }: { tier: AchievementTier }) => {
       <motion.span
         className="absolute inset-0 rounded-full ring-4 ring-yellow-300/60"
         animate={{ opacity: [0.4, 0.9, 0.4], scale: [1, 1.08, 1] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: EASE.inOut }}
         aria-hidden
       />
     )
@@ -89,7 +89,7 @@ const PulseRing = ({ tier }: { tier: AchievementTier }) => {
     <motion.span
       className="absolute -inset-0.5 rounded-full ring-2 ring-cyan-300"
       animate={{ opacity: [0.3, 0.8, 0.3] }}
-      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration: 2.2, repeat: Infinity, ease: EASE.inOut }}
       aria-hidden
     />
   )
