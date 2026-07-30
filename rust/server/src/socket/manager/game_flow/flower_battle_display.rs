@@ -62,10 +62,11 @@ pub fn build_flower_battle_payload(game_id: &str, players: &[Player]) -> Experie
 /// this is a display roster (who's on the team), not a start-eligibility
 /// check, so a player who's temporarily offline still keeps their spot.
 ///
-/// `hp`/`shield`/`effects` (growth stage, sun-points-derived shield, active
-/// power-up effects) are #929/#930 docking points: defaulted to a neutral
-/// starting state (garden not yet grown, no shield, no active effects) —
-/// real computation is explicitly out of scope for this WP.
+/// `hp`/`shield`/`effects`/`sun_points` (growth stage, sun-points-derived shield,
+/// active power-up effects, accumulated sun points) are #929/#930 docking points:
+/// defaulted to a neutral starting state (garden not yet grown, no shield, no
+/// active effects, zero sun points) — real computation is explicitly out of
+/// scope for this WP.
 fn project_team_rosters(players: &[Player]) -> Vec<FlowerBattleTeamState> {
     let mut teams: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for p in players {
@@ -87,6 +88,7 @@ fn project_team_rosters(players: &[Player]) -> Vec<FlowerBattleTeamState> {
             hp: 0.0,
             shield: 0,
             effects: vec![],
+            sun_points: 0,
         })
         .collect()
 }
@@ -134,6 +136,7 @@ mod tests {
             assert_eq!(t.hp, 0.0);
             assert_eq!(t.shield, 0);
             assert!(t.effects.is_empty());
+            assert_eq!(t.sun_points, 0);
         }
     }
 
@@ -146,6 +149,7 @@ mod tests {
         let teams = project_team_rosters(&[disconnected, bot]);
         assert_eq!(teams.len(), 1);
         assert_eq!(teams[0].members.len(), 2);
+        assert_eq!(teams[0].sun_points, 0);
     }
 
     #[test]
@@ -223,6 +227,7 @@ mod tests {
             "hp",
             "shield",
             "effects",
+            "sunPoints",
             "background",
             "seed",
             "recipeVersion",
@@ -241,6 +246,7 @@ mod tests {
                     hp: 3.0,
                     shield: 1,
                     effects: vec![FlowerBattleEffect::Sunbeam, FlowerBattleEffect::AcidRain],
+                    sun_points: 2,
                 }],
                 background: FlowerBattleBackground {
                     seed: "game-1".into(),
