@@ -400,5 +400,13 @@
     "addIdea": "添加想法",
     "emptyState": "还没有提交想法。成为第一个吧!",
     "upvoteAria": "支持想法'{{text}}'（{{count}} 票）"
+  },
+  "flowerBattlePlayerStatus": {
+    "header": "队伍 {{teamName}} · 花朵 {{growthStage}}/{{maxGrowthStage}} · ☀ {{sunPoints}}/{{maxSunPoints}}",
+    "effect": {
+      "umbrellaShield": "☂ 保护已启动",
+      "acidRain": "☁ 下次成长 −1",
+      "sunbeam": "☀ 下次成长 +1"
+    }
   }
 }

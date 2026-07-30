@@ -21,6 +21,10 @@ import { ConfidenceSelector, type ConfidenceLevel } from "@razzoozle/web/feature
 import { MicroLessonViewer } from "@razzoozle/web/features/game/components/answers/MicroLessonViewer"
 import CircularTimer from "@razzoozle/web/features/game/components/CircularTimer"
 import {
+  FlowerBattlePlayerStatus,
+  type FlowerBattleActiveEffect,
+} from "@razzoozle/web/experiences/flower-battle/FlowerBattlePlayerStatus"
+import {
   useEvent,
   useSocket,
 } from "@razzoozle/web/features/game/contexts/socket-context"
@@ -47,6 +51,7 @@ interface Props {
 const ACK_PENDING_HINT_MS = 800
 
 const Answers = ({
+  data,
   data: {
     question,
     answers,
@@ -795,6 +800,28 @@ const Answers = ({
   // type-answer. Drives GameHud's `submitted` pill (game:hud.answerSaved).
   const answerLockedIn = choiceLocked || submitted
 
+  // PENDING(WP940/WP-FLB-15): FlowerBattlePlayerStatus integration point.
+  // SELECT_ANSWER carries only question/answer status today — no experience
+  // mode or FlowerBattle team/growth/sun-points data reaches the player at
+  // all (game:experience only broadcasts to the display: room; see
+  // rust/server/src/socket/status_emit.rs broadcast_status's room-targeting
+  // — players are never members of that room). This is a deliberate gating
+  // skeleton, not fake wiring: `data` is cast to an interface with the
+  // FlowerBattle fields this component would need, all currently absent, so
+  // the check is always false until a future WP actually adds a player-
+  // facing FlowerBattle data channel and extends SelectAnswerData with it.
+  const flowerBattleStatus = (
+    data as {
+      experienceMode?: string
+      flowerBattleTeam?: string
+      flowerBattleTeamName?: string
+      flowerBattleGrowthStage?: number
+      flowerBattleMaxGrowthStage?: number
+      flowerBattleSunPoints?: number
+      flowerBattleActiveEffects?: FlowerBattleActiveEffect[]
+    }
+  )
+
   return (
     <QuestionStage
       question={question}
@@ -814,6 +841,22 @@ const Answers = ({
         />
       }
     >
+      {/* PENDING(WP940/WP-FLB-15) gating skeleton — see flowerBattleStatus above.
+          Always inert today (experienceMode is never present on
+          SelectAnswerData); wired here so the integration point is visible
+          in place rather than only in a comment. */}
+      {flowerBattleStatus.experienceMode === "flowerBattle" && (
+        <FlowerBattlePlayerStatus
+          mode={flowerBattleStatus.experienceMode}
+          team={flowerBattleStatus.flowerBattleTeam ?? ""}
+          teamName={flowerBattleStatus.flowerBattleTeamName ?? ""}
+          growthStage={flowerBattleStatus.flowerBattleGrowthStage ?? 0}
+          maxGrowthStage={flowerBattleStatus.flowerBattleMaxGrowthStage ?? 0}
+          sunPoints={flowerBattleStatus.flowerBattleSunPoints ?? 0}
+          activeEffects={flowerBattleStatus.flowerBattleActiveEffects ?? []}
+        />
+      )}
+
       {submittedBy && (
         <p className="text-sm text-[color:var(--game-fg)]/60 text-center">
           {t("game:submittedBy", { name: submittedBy })}
