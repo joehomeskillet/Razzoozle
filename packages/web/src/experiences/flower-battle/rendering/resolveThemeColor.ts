@@ -39,6 +39,8 @@ function clampByte(n: number): number {
   return Math.round(Math.min(255, Math.max(0, n)))
 }
 
+const CSS_NUMBER_PATTERN = /^[+-]?(?:[0-9]*\.[0-9]+|[0-9]+)(?:e[+-]?[0-9]+)?$/i
+
 /**
  * CSS Color 4 `color(srgb …)` channel: unitless number in 0–1, or percentage.
  * Out-of-range values are clamped (browser-serialised mixes can slightly overflow).
@@ -46,14 +48,13 @@ function clampByte(n: number): number {
 function parseSrgbChannel(raw: string): number | null {
   const token = raw.trim()
   if (!token) return null
-  if (token.endsWith("%")) {
-    const pct = Number.parseFloat(token.slice(0, -1))
-    if (!Number.isFinite(pct)) return null
-    return clampByte((pct / 100) * 255)
-  }
-  const n = Number.parseFloat(token)
-  if (!Number.isFinite(n)) return null
-  return clampByte(n * 255)
+  const isPercentage = token.endsWith("%")
+  const numberToken = isPercentage ? token.slice(0, -1) : token
+  if (!CSS_NUMBER_PATTERN.test(numberToken)) return null
+
+  const value = Number(numberToken)
+  if (!Number.isFinite(value)) return null
+  return clampByte((isPercentage ? value / 100 : value) * 255)
 }
 
 function parseCssColorToRgb(
@@ -131,13 +132,16 @@ function normalizeCssColorViaBrowser(
     return null
   }
   styled.style.setProperty("color", cssValue)
+  if (!styled.style.color) return null
   if (typeof probe.setAttribute === "function") {
     probe.setAttribute("data-theme-color-probe", "")
   }
 
   const mount =
-    doc.documentElement ??
-    (typeof document !== "undefined" ? document.documentElement : null)
+    typeof element.appendChild === "function"
+      ? element
+      : (doc.documentElement ??
+        (typeof document !== "undefined" ? document.documentElement : null))
   if (mount && typeof mount.appendChild === "function") {
     mount.appendChild(probe)
   }
@@ -203,11 +207,9 @@ export function resolveThemeTokenColor(
 
   let pixi = cssColorToPixiNumber(raw)
   if (pixi === null) {
-    // Custom props often keep specified color-mix()/var(); let the browser
-    // serialise the used value (typically color(srgb …) or rgb(…)).
-    const normalised =
-      normalizeCssColorViaBrowser(cssVarExpr, element, getStyle) ??
-      normalizeCssColorViaBrowser(raw, element, getStyle)
+    // Validate the computed token text directly before accepting its used value.
+    // Reconstructing var(--token) can turn invalid token text into inherited black.
+    const normalised = normalizeCssColorViaBrowser(raw, element, getStyle)
     if (normalised) {
       pixi = cssColorToPixiNumber(normalised)
     }

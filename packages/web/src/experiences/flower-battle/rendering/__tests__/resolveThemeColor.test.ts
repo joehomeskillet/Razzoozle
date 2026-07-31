@@ -14,6 +14,8 @@ import {
 const CHROMIUM_TEAM_GREEN_RING_SRGB = "color(srgb 0.0906667 0.525333 0.250667)"
 /** Deterministic 0xRRGGBB for the Chromium sample above (round channels). */
 const TEAM_GREEN_RING_PIXI = 0x178640
+const CHROMIUM_SCOPED_RED_RING_SRGB = "color(srgb 0.639216 0.180392 0.180392)"
+const SCOPED_RED_RING_PIXI = 0xa32e2e
 
 describe("cssColorToPixiNumber", () => {
   it("parses hex and rgb", () => {
@@ -40,6 +42,9 @@ describe("cssColorToPixiNumber", () => {
     expect(cssColorToPixiNumber("color(srgb 1 0 0 / 0.4)")).toBe(0xff0000)
     // percentage form
     expect(cssColorToPixiNumber("color(srgb 100% 0% 50%)")).toBe(0xff0080)
+    // signed scientific notation remains valid for numbers and percentages
+    expect(cssColorToPixiNumber("color(srgb 5e-1 1e0 -1e-3)")).toBe(0x80ff00)
+    expect(cssColorToPixiNumber("color(srgb +5e1% 1e2% -1e1%)")).toBe(0x80ff00)
   })
 
   it("rejects invalid input", () => {
@@ -50,6 +55,20 @@ describe("cssColorToPixiNumber", () => {
     ).toBeNull()
     expect(cssColorToPixiNumber("color(display-p3 0.1 0.2 0.3)")).toBeNull()
     expect(cssColorToPixiNumber("color(srgb 0.1 0.2)")).toBeNull()
+  })
+
+  it.each([
+    "color(srgb 0.5oops 0 0)",
+    "color(srgb 50%junk 0 0)",
+    "color(srgb NaN 0 0)",
+    "color(srgb Infinity 0 0)",
+    "color(srgb -Infinity 0 0)",
+    "color(srgb 1e999 0 0)",
+    "color(srgb 1e 0 0)",
+    "color(srgb % 0 0)",
+    "color(srgb 0 0)",
+  ])("rejects malformed color(srgb) channels: %s", (value) => {
+    expect(cssColorToPixiNumber(value)).toBeNull()
   })
 })
 
@@ -139,6 +158,7 @@ describe("browser probe normalisation (DI document)", () => {
     remove: () => void
     setAttribute: (k: string, v: string) => void
     parent: FakeNode | null
+    appendChild?: (n: FakeNode) => FakeNode
   }
 
   let liveProbes: FakeNode[]
@@ -149,7 +169,14 @@ describe("browser probe normalisation (DI document)", () => {
     delete (globalThis as any).document
   })
 
-  function installProbeDocument(resolvedUsedColor: string) {
+  function installProbeDocument(
+    resolvedUsedColor: string,
+    options: {
+      tokenValue?: string
+      scopedResolvedUsedColor?: string
+      rejectedColorValue?: string
+    } = {},
+  ) {
     liveProbes = []
     const documentElement: FakeNode & {
       appendChild: (n: FakeNode) => FakeNode
@@ -169,6 +196,19 @@ describe("browser probe normalisation (DI document)", () => {
         return []
       },
     }
+    const scopedElement: FakeNode & {
+      appendChild: (n: FakeNode) => FakeNode
+    } = {
+      style: { setProperty: () => undefined },
+      remove: () => undefined,
+      setAttribute: () => undefined,
+      parent: documentElement,
+      appendChild(node: FakeNode) {
+        node.parent = scopedElement
+        liveProbes.push(node)
+        return node
+      },
+    }
 
     const doc = {
       documentElement,
@@ -177,7 +217,9 @@ describe("browser probe normalisation (DI document)", () => {
           style: {
             color: "",
             setProperty(k: string, v: string) {
-              if (k === "color") this.color = v
+              if (k === "color") {
+                this.color = v === options.rejectedColorValue ? "" : v
+              }
             },
           },
           parent: null,
@@ -198,18 +240,15 @@ describe("browser probe normalisation (DI document)", () => {
 
     const getComputedStyleFn = (elt: Element) => ({
       getPropertyValue: (prop: string) => {
-        if (prop === "--team-green-ring") {
+        if (prop === "--team-green-ring" || prop === "--surface-2") {
           // Specified custom property form (Chromium).
-          return "color-mix(in srgb, #22c55e, black 32%)"
+          return options.tokenValue ?? "color-mix(in srgb, #22c55e, black 32%)"
         }
         if (prop === "color") {
           // Used value after browser resolves var()/color-mix on the probe.
           const fake = elt as unknown as FakeNode
-          if (
-            fake.style?.color?.includes("team-green-ring") ||
-            fake.style?.color?.includes("color-mix")
-          ) {
-            return resolvedUsedColor
+          if (fake.parent === scopedElement) {
+            return options.scopedResolvedUsedColor ?? resolvedUsedColor
           }
           return resolvedUsedColor
         }
@@ -219,6 +258,7 @@ describe("browser probe normalisation (DI document)", () => {
 
     return {
       element: documentElement as unknown as Element,
+      scopedElement: scopedElement as unknown as Element,
       getComputedStyleFn,
       liveCount: () => liveProbes.length,
     }
@@ -233,6 +273,39 @@ describe("browser probe normalisation (DI document)", () => {
       getComputedStyleFn,
     })
     expect(color).toBe(TEAM_GREEN_RING_PIXI)
+    expect(liveCount()).toBe(0)
+  })
+
+  it("rejects an invalid custom-property color instead of inherited black", () => {
+    const { element, getComputedStyleFn, liveCount } = installProbeDocument(
+      "rgb(0, 0, 0)",
+      {
+        tokenValue: "not-a-color",
+        rejectedColorValue: "not-a-color",
+      },
+    )
+
+    expect(() =>
+      resolveThemeTokenColor("--surface-2" as CssTokenName, {
+        element,
+        getComputedStyleFn,
+      }),
+    ).toThrow(ThemeTokenColorError)
+    expect(liveCount()).toBe(0)
+  })
+
+  it("mounts the probe in the scoped theme element and cleans up", () => {
+    const { scopedElement, getComputedStyleFn, liveCount } =
+      installProbeDocument(CHROMIUM_TEAM_GREEN_RING_SRGB, {
+        scopedResolvedUsedColor: CHROMIUM_SCOPED_RED_RING_SRGB,
+      })
+
+    const color = resolveThemeTokenColor("--team-green-ring" as CssTokenName, {
+      element: scopedElement,
+      getComputedStyleFn,
+    })
+
+    expect(color).toBe(SCOPED_RED_RING_PIXI)
     expect(liveCount()).toBe(0)
   })
 })
