@@ -9,7 +9,10 @@ import {
 } from "@razzoozle/web/features/game/components/player/flower-battle.types"
 import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 
-import { ExperienceHud, type ExperienceHudProps } from "../shared/hud/ExperienceHud"
+import {
+  ExperienceHud,
+  type ExperienceHudProps,
+} from "../shared/hud/ExperienceHud"
 import { PhaseIndicator } from "../shared/hud/PhaseIndicator"
 import { RoundProgress } from "../shared/hud/RoundProgress"
 import { FlowerPowerupStatusIcons } from "./FlowerPowerupStatusIcons"
@@ -29,11 +32,16 @@ const POWERUP_LABEL_KEYS: Record<PowerupType, string> = {
   acid_rain: "flowerBattlePresenter.powerUp.acidRain",
 }
 
-export interface FlowerBattlePresenterHudProps
-  extends Omit<
-    ExperienceHudProps,
-    "question" | "questions" | "answer" | "answers" | "player" | "players" | "playerData"
-  > {
+export interface FlowerBattlePresenterHudProps extends Omit<
+  ExperienceHudProps,
+  | "question"
+  | "questions"
+  | "answer"
+  | "answers"
+  | "player"
+  | "players"
+  | "playerData"
+> {
   teams: FlowerBattleTeamState[]
   sunPoints: FlowerBattleSunPointsByTeam
   powerUp?: PowerUpData
@@ -50,7 +58,9 @@ const resolveSunPoints = (
   const teamKey = teamKeyForIndex(index)
   const override = sunPoints[teamKey]
   const raw = override ?? team.sunPoints
-  return Number.isFinite(raw) ? Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(raw))) : 0
+  return Number.isFinite(raw)
+    ? Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(raw)))
+    : 0
 }
 
 const sunPointsToPercent = (points: number): number =>
@@ -116,7 +126,9 @@ export const FlowerBattlePresenterHud = ({
           const teamKey = teamKeyForIndex(index)
           const points = resolveSunPoints(team, index, sunPoints)
           const colors = teamColor(teamKey)
-          const PowerUpIcon = powerUp?.type ? POWERUP_ICONS[powerUp.type] : Sprout
+          const PowerUpIcon = powerUp?.type
+            ? POWERUP_ICONS[powerUp.type]
+            : Sprout
 
           return (
             <section

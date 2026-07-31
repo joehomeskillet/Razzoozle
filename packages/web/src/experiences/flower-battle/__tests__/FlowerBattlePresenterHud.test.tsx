@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest"
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string; teamName?: string; powerUp?: string }) => {
+    t: (
+      key: string,
+      options?: { defaultValue?: string; teamName?: string; powerUp?: string },
+    ) => {
       if (options?.defaultValue) {
         return options.defaultValue
           .replace("{{teamName}}", options.teamName ?? "")
@@ -99,7 +102,9 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).toContain('data-testid="flower-powerup-status-icons"')
     // sunbeam and umbrella_shield effects are rendered with their status text
     expect(html).toContain('data-testid="flower-powerup-status-sunbeam"')
-    expect(html).toContain('data-testid="flower-powerup-status-umbrella-shield"')
+    expect(html).toContain(
+      'data-testid="flower-powerup-status-umbrella-shield"',
+    )
   })
 
   it("renders icon + text label pairs (no icon-only per a11y)", () => {
