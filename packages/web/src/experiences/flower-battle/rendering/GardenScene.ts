@@ -108,6 +108,10 @@ export interface CreateGardenSceneOptions {
 
 type StageHost = GardenPixiApplicationHandle & {
   stage?: { addChild: (child: Container) => unknown }
+  ticker?: {
+    add?: (fn: (ticker: { deltaTime: number }) => void) => void
+    remove?: (fn: (ticker: { deltaTime: number }) => void) => void
+  }
 }
 
 export function createGardenScene(
@@ -129,9 +133,31 @@ export function createGardenScene(
   }
 
   const attach = options.attachToStage !== false
-  const stage = (app as StageHost).stage
+  const stageHost = app as StageHost
+  const stage = stageHost.stage
   if (attach && stage) {
     stage.addChild(root)
+  }
+
+  // Soft cloud parallax (P1) — far clouds drift slower than near clouds.
+  const cloudSprites = layers.sky.children.filter(
+    (c) => typeof c.label === "string" && c.label.startsWith("cloud-sprite-"),
+  )
+  const cloudBaseX = cloudSprites.map((c) => c.x)
+  let parallaxT = 0
+  const onTick = (ticker: { deltaTime: number }): void => {
+    if (destroyed) return
+    parallaxT += ticker.deltaTime * 0.012
+    for (let i = 0; i < cloudSprites.length; i += 1) {
+      const spr = cloudSprites[i]!
+      const far = String(spr.label).includes("far")
+      const amp = far ? 18 : 36
+      const speed = far ? 0.35 : 0.7
+      spr.x = cloudBaseX[i]! + Math.sin(parallaxT * speed + i) * amp
+    }
+  }
+  if (typeof stageHost.ticker?.add === "function") {
+    stageHost.ticker.add(onTick)
   }
 
   let destroyed = false
@@ -322,6 +348,9 @@ export function createGardenScene(
     destroy(): void {
       if (destroyed) return
       destroyed = true
+      if (typeof stageHost.ticker?.remove === "function") {
+        stageHost.ticker.remove(onTick)
+      }
       for (const plant of plants) {
         plant.destroy()
       }
