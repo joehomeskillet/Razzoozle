@@ -67,7 +67,7 @@ export const GARDEN_PALETTE_TOKENS = {
   soil: "--flower-battle-soil",
   soilEdge: "--flower-battle-soil",
   foreground: "--flower-battle-foreground",
-  plantStem: "--flower-battle-ink",
+  plantStem: "--flower-battle-bush",
   plantLeaf: "--flower-battle-bush",
   plantPetal: "--flower-battle-primary",
   hillsFar: "--flower-battle-hill-back",

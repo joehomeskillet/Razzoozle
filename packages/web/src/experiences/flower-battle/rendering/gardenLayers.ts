@@ -24,6 +24,7 @@ import { Container, Graphics, Sprite, Texture } from "pixi.js"
 import {
   GARDEN_LOGICAL_HEIGHT,
   GARDEN_LOGICAL_WIDTH,
+  type LogicalRect,
 } from "./gardenViewport"
 import type { GardenPalette } from "./gardenPalette"
 import type { PlotAnchor } from "./plotAnchors"
@@ -210,47 +211,55 @@ export function buildSkyLayer(
   withFullBleedSprite(layer, "sky-sprite", assets?.sky, palette.sky)
 
   // Keep sun fully inside the top safe band (below floating presenter chips).
+  // Sun lives in a repositionable holder so `layoutSkyForVisibleRect` can
+  // pull it back into the visible band when a cover-crop host (4:3 crops
+  // left/right, ultrawide crops top) would otherwise amputate it (§12.4).
   const sunX = GARDEN_LOGICAL_WIDTH * 0.86
   const sunY = GARDEN_LOGICAL_HEIGHT * 0.2
+
+  const sunHolder = new Container()
+  sunHolder.label = "sun-holder"
+  sunHolder.position.set(sunX, sunY)
 
   // Always paint a warm glow (token colour) so Kenney's pale disc reads golden.
   {
     const glow = new Graphics()
     glow.label = "sun-glow"
-    glow.circle(sunX, sunY, 90)
+    glow.circle(0, 0, 90)
     glow.fill({ color: palette.sun, alpha: 0.14 })
-    glow.circle(sunX, sunY, 58)
+    glow.circle(0, 0, 58)
     glow.fill({ color: palette.sun, alpha: 0.28 })
     // Soft rays
     for (let i = 0; i < 12; i += 1) {
       const a = (i / 12) * Math.PI * 2
-      const x0 = sunX + Math.cos(a) * 48
-      const y0 = sunY + Math.sin(a) * 48
-      const x1 = sunX + Math.cos(a) * 110
-      const y1 = sunY + Math.sin(a) * 110
+      const x0 = Math.cos(a) * 48
+      const y0 = Math.sin(a) * 48
+      const x1 = Math.cos(a) * 110
+      const y1 = Math.sin(a) * 110
       glow.moveTo(x0, y0)
       glow.lineTo(x1, y1)
       glow.stroke({ color: palette.sun, width: 4, alpha: 0.35 })
     }
-    layer.addChild(glow)
+    sunHolder.addChild(glow)
   }
   if (assets?.sun && assets.sun.width > 0) {
     const sun = new Sprite(assets.sun)
     sun.label = "sun-sprite"
     sun.anchor.set(0.5, 0.5)
-    sun.position.set(sunX, sunY)
+    sun.position.set(0, 0)
     const target = 160
     const s = target / Math.max(assets.sun.width, assets.sun.height)
     sun.scale.set(s)
     sun.tint = palette.sun
-    layer.addChild(sun)
+    sunHolder.addChild(sun)
   } else {
     const g = new Graphics()
     g.label = "sun-disc"
-    g.circle(sunX, sunY, 34)
+    g.circle(0, 0, 34)
     g.fill({ color: palette.sun })
-    layer.addChild(g)
+    sunHolder.addChild(g)
   }
+  layer.addChild(sunHolder)
 
   const cloudTextures = [
     assets?.cloud01,
@@ -322,6 +331,63 @@ export function buildSkyLayer(
   }
 
   return layer
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Sky safe-area relayout (WP immersive §11/§12.4).
+ *
+ * Cover-fit cropping can amputate sky objects on non-16:9 hosts (4:3 crops
+ * left/right, ultrawide crops top). `layoutSkyForVisibleRect` pulls the sun
+ * holder and every cloud sprite back inside the *visible* logical band so
+ * they always render fully — never clipped by the canvas edge. Pure position
+ * update: object identity, textures, and the parallax ticker are untouched
+ * (the scene re-reads cloud base X after calling this).
+ * ────────────────────────────────────────────────────────────────────── */
+
+/** Radius (logical px) of the sun incl. glow rays — clamp margin. */
+const SUN_SAFE_RADIUS = 130
+/** Half-width/height clamp margins for cloud sprites (largest ≈ 300×1.35). */
+const CLOUD_SAFE_MARGIN_X = 220
+const CLOUD_SAFE_MARGIN_Y = 90
+
+const clampValue = (v: number, min: number, max: number): number =>
+  min > max ? (min + max) / 2 : Math.min(Math.max(v, min), max)
+
+export function layoutSkyForVisibleRect(
+  skyLayer: Container,
+  visible: LogicalRect,
+): void {
+  const sunHolder = skyLayer.children.find((c) => c.label === "sun-holder")
+  if (sunHolder) {
+    sunHolder.position.set(
+      clampValue(
+        sunHolder.x,
+        visible.x + SUN_SAFE_RADIUS,
+        visible.x + visible.width - SUN_SAFE_RADIUS,
+      ),
+      clampValue(
+        sunHolder.y,
+        visible.y + SUN_SAFE_RADIUS,
+        visible.y + visible.height * 0.5,
+      ),
+    )
+  }
+  for (const child of skyLayer.children) {
+    if (typeof child.label !== "string") continue
+    if (!child.label.startsWith("cloud-sprite-")) continue
+    child.position.set(
+      clampValue(
+        child.x,
+        visible.x + CLOUD_SAFE_MARGIN_X,
+        visible.x + visible.width - CLOUD_SAFE_MARGIN_X,
+      ),
+      clampValue(
+        child.y,
+        visible.y + CLOUD_SAFE_MARGIN_Y,
+        visible.y + visible.height * 0.55,
+      ),
+    )
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -428,7 +494,19 @@ export function buildMidTreesLayer(
     assets?.trees?.filter((t) => t && t.width > 0) ??
     (assets?.midTrees ? [assets.midTrees] : [])
 
-  if (trees.length > 0) {
+  // Interleave deciduous (round) and conifer (triangle) variants so the
+  // mid-ground never reads as a repeating row of identical shapes.
+  // Manifest order is deciduous ×6 then conifer ×6 — zip them together.
+  const deciduous = trees.slice(0, Math.ceil(trees.length / 2))
+  const conifer = trees.slice(Math.ceil(trees.length / 2))
+  const mixed: Texture[] = []
+  for (let i = 0; i < deciduous.length || i < conifer.length; i += 1) {
+    if (i < deciduous.length) mixed.push(deciduous[i]!)
+    if (i < conifer.length) mixed.push(conifer[i]!)
+  }
+  const orderedTrees = mixed.length > 0 ? mixed : trees
+
+  if (orderedTrees.length > 0) {
     // Varied sizes / mirrors / depths — never a single copy-paste row.
     // Feet sit just behind the fence line; crowns rise into the sky band.
     // Larger heights so mid-ground trees read clearly on the presenter.
@@ -441,17 +519,18 @@ export function buildMidTreesLayer(
       tint: number
       tree: number
     }> = [
-      { x: 140, y: 0.7, height: 360, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
-      { x: 320, y: 0.69, height: 420, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
-      { x: 560, y: 0.71, height: 300, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
-      { x: 980, y: 0.68, height: 460, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
-      { x: 1280, y: 0.7, height: 340, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
-      { x: 1560, y: 0.69, height: 400, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
-      { x: 1780, y: 0.71, height: 320, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
+      { x: 140, y: 0.74, height: 380, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
+      { x: 320, y: 0.73, height: 440, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
+      { x: 560, y: 0.75, height: 320, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
+      { x: 980, y: 0.72, height: 480, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
+      { x: 1280, y: 0.74, height: 360, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
+      { x: 1560, y: 0.73, height: 420, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
+      { x: 1780, y: 0.75, height: 340, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
     ]
+    const treesArr = orderedTrees
     for (let i = 0; i < placements.length; i += 1) {
       const p = placements[i]!
-      const tex = trees[p.tree % trees.length]!
+      const tex = treesArr[p.tree % treesArr.length]!
       const spr = new Sprite(tex)
       spr.label = `mid-tree-${i}`
       spr.anchor.set(0.5, 1)
@@ -484,10 +563,12 @@ export function buildMidTreesLayer(
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Fence — white vertical picket fence along the mid horizon
- * Target height ≈ 8–15 % of scene so it never reads as a solid white slab.
+ * Target height ≈ 8–10 % of scene so it never reads as a solid white slab.
+ * It is a background separator: pickets must stay below the flower heads
+ * (tallest stage tops out ~0.72 H) so it never obscures team flowers.
  * ────────────────────────────────────────────────────────────────────── */
 /** Max fence band height as a fraction of logical scene height. */
-export const FENCE_MAX_HEIGHT_RATIO = 0.12
+export const FENCE_MAX_HEIGHT_RATIO = 0.095
 
 export function buildFenceLayer(
   palette: GardenPalette,
@@ -496,8 +577,8 @@ export function buildFenceLayer(
   const layer = new Container()
   layer.label = "layer-fence"
 
-  // Sit fence just behind plant feet (PLOT_GROUND_Y_RATIO ≈ 0.72).
-  const fenceBottomY = GARDEN_LOGICAL_HEIGHT * 0.7
+  // Sit fence just behind plant feet (PLOT_GROUND_Y_RATIO = 0.80).
+  const fenceBottomY = GARDEN_LOGICAL_HEIGHT * 0.76
   const maxFenceH = GARDEN_LOGICAL_HEIGHT * FENCE_MAX_HEIGHT_RATIO
 
   // No cream underlay — pickets only, grass shows through gaps.

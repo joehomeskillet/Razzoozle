@@ -18,8 +18,8 @@ function readTeamCount(): number {
 
 function teamSnapshots(count: number) {
   const names = ["Violett", "Blau", "Orange", "Grün"]
-  // Growth 0..10 — spread across stages so heads read clearly.
-  const growth = [2, 5, 8, 10]
+  // Growth spread across 0..MAX_GROWTH(=10) — matches live experience range.
+  const growth = [2, 6, 10, 8]
   return Array.from({ length: count }, (_, i) => ({
     name: names[i] ?? `Team ${i + 1}`,
     growthStage: growth[i] ?? 6,
@@ -38,6 +38,20 @@ async function main(): Promise<void> {
 
   const { scene, dispose } = await attachGardenPixiApplication(canvas)
   const procedural = scene as ProceduralGardenScene
+
+  // Debug handles for automated layout verification (read-only, dev-only).
+  ;(window as Window & { __gardenScene?: unknown }).__gardenScene = procedural
+  // Mirror the GardenBattleCanvasHost E2E probe so diagnostics work here too.
+  if (typeof procedural.getE2EIdentity === "function") {
+    Object.defineProperty(canvas, "__razzoozleGardenE2E", {
+      configurable: true,
+      enumerable: false,
+      value: {
+        getE2EIdentity: () => procedural.getE2EIdentity(),
+        getLayoutDiagnostics: () => procedural.getLayoutDiagnostics(),
+      },
+    })
+  }
   if (typeof procedural.updateSnapshot === "function") {
     procedural.updateSnapshot({
       teams: teamSnapshots(teamCount),
@@ -63,12 +77,15 @@ async function main(): Promise<void> {
   const failed = diag?.failedUrls ?? winDiag?.failedUrls ?? []
 
   if (status) {
+    const layout = procedural.getLayoutDiagnostics()
     status.textContent = [
       `teams=${teamCount}`,
       `loaded=${loaded}`,
       `sprites=${used.length}`,
       `missing=${missing.length ? missing.join(",") : "none"}`,
       `failed=${failed.length}`,
+      `anchorsInside=${layout.allAnchorsInsideVisibleRect}`,
+      `plantsInside=${layout.allPlantsInsideVisibleRect}`,
     ].join("\n")
   }
 

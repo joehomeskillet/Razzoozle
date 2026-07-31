@@ -28,6 +28,7 @@ import {
 import type { Application } from "pixi.js"
 
 import { EVENTS } from "@razzoozle/common/constants"
+import { collectGardenExperienceLayoutDiagnostics } from "./experienceLayoutDiagnostics"
 import type { PowerupApplied } from "@razzoozle/common/types/game/socket"
 import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 
@@ -111,6 +112,17 @@ function publishGardenE2EProbe(
       return current.getE2EIdentity()
     },
   }
+  if (typeof scene.getLayoutDiagnostics === "function") {
+    handle.getLayoutDiagnostics = () => {
+      const current = sceneRef.current
+      if (typeof current.getLayoutDiagnostics !== "function") {
+        throw new Error("Garden layout diagnostics scene unavailable")
+      }
+      return current.getLayoutDiagnostics()
+    }
+  }
+  handle.getExperienceLayoutDiagnostics = () =>
+    collectGardenExperienceLayoutDiagnostics(canvas)
 
   Object.defineProperty(canvas, GARDEN_E2E_PROBE_PROPERTY, {
     configurable: true,

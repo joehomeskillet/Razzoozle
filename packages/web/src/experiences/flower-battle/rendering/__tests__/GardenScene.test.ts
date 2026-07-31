@@ -3,12 +3,18 @@
  * Node env + real Pixi Containers/Graphics (no WebGL Application required).
  */
 
-import { Container } from "pixi.js"
+import { Container, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import type { GardenPixiApplicationHandle } from "../../garden-pixi.types"
 import { createGardenScene, LAYER_LABELS } from "../GardenScene"
 import type { GardenPalette } from "../gardenPalette"
+import {
+  computeVisibleLogicalRect,
+  fitLogicalViewport,
+  GARDEN_LOGICAL_HEIGHT,
+  GARDEN_LOGICAL_WIDTH,
+} from "../gardenViewport"
 import { computePlotAnchors } from "../plotAnchors"
 import {
   ThemeTokenColorError,
@@ -90,7 +96,16 @@ describe("createGardenScene", () => {
       const roster = Array.from({ length: teams }, (_, i) => team(`T${i}`, 0))
       scene.updateSnapshot({ teams: roster, phase: "question" })
 
-      const expected = computePlotAnchors(teams)
+      // Anchors derive from the *visible* band so cover-crop hosts never
+      // amputate plants (WP immersive §13). On 16:9 this equals the legacy
+      // full-frame layout; on 4:3/ultrawide it is the cropped inner band.
+      const visible = computeVisibleLogicalRect(fitLogicalViewport(w, h))
+      const expected = computePlotAnchors(
+        teams,
+        GARDEN_LOGICAL_WIDTH,
+        GARDEN_LOGICAL_HEIGHT,
+        visible,
+      )
       expect(scene.getPlotAnchors()).toEqual(expected)
 
       // Letterbox applied to the single root
@@ -386,5 +401,169 @@ describe("SDD §30 probe-v3 contract on procedural scene", () => {
     expect(shrunk.growthStages).toEqual([9])
     expect(shrunk.actorPlants[0]).toBe(violetPlant)
     scene.destroy()
+  })
+
+  describe("safe-content layout (WP immersive §11/§13)", () => {
+    it("pulls plot anchors into the visible band on 4:3 hosts", () => {
+      const app = fakeApp(1024, 768)
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateLayout(1024, 768)
+      scene.updateSnapshot({
+        teams: [team("A", 5), team("B", 5)],
+        phase: "question",
+      })
+
+      const visible = scene.getVisibleRect()!
+      expect(visible).not.toBeNull()
+      expect(visible.x).toBeGreaterThan(0) // 4:3 crops left/right
+
+      for (const a of scene.getPlotAnchors()) {
+        expect(a.x).toBeGreaterThan(visible.x)
+        expect(a.x).toBeLessThan(visible.x + visible.width)
+      }
+      // Plants physically sit on the clamped anchors.
+      for (const [i, plant] of scene.layers.actors.children.entries()) {
+        expect(plant.position.x).toBe(scene.getPlotAnchors()[i]!.x)
+        expect(plant.position.y).toBe(scene.getPlotAnchors()[i]!.y)
+      }
+      scene.destroy()
+    })
+
+    it("repositions anchors on resize without recreating plant instances", () => {
+      const app = fakeApp(1920, 1080)
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateLayout(1920, 1080)
+      scene.updateSnapshot({
+        teams: [team("A", 3), team("B", 3), team("C", 3), team("D", 3)],
+      })
+
+      const anchors16x9 = scene.getPlotAnchors().map((a) => ({ ...a }))
+      const plantsBefore = scene.layers.actors.children.slice()
+      const identityBefore = scene.getE2EIdentity()
+
+      // Host window changes to 4:3 — anchors must move into the new band…
+      scene.updateLayout(1024, 768)
+      const anchors4x3 = scene.getPlotAnchors()
+      expect(anchors4x3).not.toEqual(anchors16x9)
+
+      const visible = scene.getVisibleRect()!
+      for (const a of anchors4x3) {
+        expect(a.x).toBeGreaterThan(visible.x)
+        expect(a.x).toBeLessThan(visible.x + visible.width)
+      }
+
+      // …while plant object identity stays bit-stable (SDD §30).
+      expect(scene.layers.actors.children).toEqual(plantsBefore)
+      const identityAfter = scene.getE2EIdentity()
+      expect(identityAfter.actorPlants).toEqual(identityBefore.actorPlants)
+      expect(identityAfter.root).toBe(identityBefore.root)
+
+      // Back to 16:9 restores the original anchor layout exactly.
+      scene.updateLayout(1920, 1080)
+      expect(scene.getPlotAnchors()).toEqual(anchors16x9)
+      scene.destroy()
+    })
+
+    it("keeps the sun and all clouds inside the visible band on crop hosts", () => {
+      // 1×1 white textures hydrate the sprite path so real `cloud-sprite-*`
+      // and `sun-sprite` children exist (positions are texture-independent).
+      const layerAssets = {
+        sun: Texture.WHITE,
+        cloud01: Texture.WHITE,
+        cloud02: Texture.WHITE,
+        cloud03: Texture.WHITE,
+        cloud04: Texture.WHITE,
+      }
+      for (const [w, h, label] of [
+        [1920, 1080, "16:9"],
+        [1024, 768, "4:3"],
+        [2560, 1080, "ultrawide"],
+        [1366, 768, "notebook"],
+      ] as const) {
+        const app = fakeApp(w, h)
+        const scene = createGardenScene(app, {
+          palette: TEST_PALETTE,
+          layerAssets,
+        })
+        scene.updateLayout(w, h)
+
+        const visible = scene.getVisibleRect()!
+        const sun = scene.layers.sky.children.find(
+          (c) => c.label === "sun-holder",
+        )!
+        expect(sun, label).toBeDefined()
+        expect(sun.position.x, label).toBeGreaterThanOrEqual(visible.x)
+        expect(sun.position.x, label).toBeLessThanOrEqual(
+          visible.x + visible.width,
+        )
+        expect(sun.position.y, label).toBeGreaterThanOrEqual(visible.y)
+        expect(sun.position.y, label).toBeLessThanOrEqual(
+          visible.y + visible.height,
+        )
+
+        const clouds = scene.layers.sky.children.filter(
+          (c) =>
+            typeof c.label === "string" && c.label.startsWith("cloud-sprite-"),
+        )
+        expect(clouds.length, label).toBeGreaterThan(0)
+        for (const cloud of clouds) {
+          expect(cloud.position.x, `${label} ${cloud.label}`).toBeGreaterThanOrEqual(
+            visible.x,
+          )
+          expect(
+            cloud.position.x,
+            `${label} ${cloud.label}`,
+          ).toBeLessThanOrEqual(visible.x + visible.width)
+          expect(cloud.position.y, `${label} ${cloud.label}`).toBeGreaterThanOrEqual(
+            visible.y,
+          )
+          expect(
+            cloud.position.y,
+            `${label} ${cloud.label}`,
+          ).toBeLessThanOrEqual(visible.y + visible.height)
+        }
+        scene.destroy()
+      }
+    })
+
+    it("getLayoutDiagnostics reports the happy-path contract on all hosts", () => {
+      for (const [w, h] of [
+        [1920, 1080],
+        [1600, 900],
+        [1366, 768],
+        [1024, 768],
+        [2560, 1080],
+      ] as const) {
+        const app = fakeApp(w, h)
+        const scene = createGardenScene(app, { palette: TEST_PALETTE })
+        scene.updateLayout(w, h)
+        scene.updateSnapshot({
+          teams: [team("A", 10), team("B", 8), team("C", 6), team("D", 4)],
+        })
+
+        const diag = scene.getLayoutDiagnostics()
+        expect(diag.viewport).toEqual({ width: w, height: h })
+        expect(diag.plotAnchors).toHaveLength(4)
+        expect(diag.plantBoundsLogical).toHaveLength(4)
+        expect(diag.allAnchorsInsideVisibleRect).toBe(true)
+        expect(diag.allPlantsInsideVisibleRect).toBe(true)
+        scene.destroy()
+      }
+    })
+
+    it("getLayoutDiagnostics stays defensive with a zero-size renderer", () => {
+      const app = fakeApp()
+      // Zero-size renderer: the initial updateLayout runs on a degenerate
+      // viewport before any snapshot — diagnostics must not throw and must
+      // report empty (vacuously valid) content.
+      const scene = createGardenScene(
+        { ...app, renderer: { ...app.renderer, width: 0, height: 0 } },
+        { palette: TEST_PALETTE },
+      )
+      const diag = scene.getLayoutDiagnostics()
+      expect(diag.plotAnchors).toEqual([])
+      expect(diag.allAnchorsInsideVisibleRect).toBe(true)
+      scene.destroy()
+    })
   })
 })

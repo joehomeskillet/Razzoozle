@@ -76,6 +76,7 @@ import {
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 import type {
   CreateGardenPixiApplication,
+  GardenE2EProbeHandle,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
@@ -1141,24 +1142,12 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
     }
 
     function canvasProbe(canvas: DomElement): {
-      handle:
-        | {
-            getE2EIdentity: () => ReturnType<
-              NonNullable<GardenScene["getE2EIdentity"]>
-            >
-          }
-        | undefined
+      handle: GardenE2EProbeHandle | undefined
       descriptor: PropertyDescriptor | undefined
     } {
       const target = canvas as unknown as Record<string, unknown>
       return {
-        handle: target[PROBE_KEY] as
-          | {
-              getE2EIdentity: () => ReturnType<
-                NonNullable<GardenScene["getE2EIdentity"]>
-              >
-            }
-          | undefined,
+        handle: target[PROBE_KEY] as GardenE2EProbeHandle | undefined,
         descriptor: Object.getOwnPropertyDescriptor(target, PROBE_KEY),
       }
     }
@@ -1371,6 +1360,67 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       expect(after.descriptor).toBeUndefined()
       expect(after.handle).toBeUndefined()
       expect(sceneDestroy).toHaveBeenCalledTimes(1)
+    })
+
+    it("exposes layout diagnostics on the probe handle when guarded", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      let procedural: ReturnType<typeof createGardenScene> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        procedural = createGardenScene(handle, { palette: TEST_PALETTE })
+        return procedural
+      })
+      const appFake = createAppFake()
+      const createApplication = vi.fn(async () => {
+        return Object.assign(appFake.app, { stage: new Container() })
+      })
+
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            phase: "question",
+            attachOptions: {
+              createApplication,
+              createScene,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+          }),
+        )
+      })
+
+      expect(procedural).toBeDefined()
+      const canvas = findDomCanvas(container)
+      const { handle } = canvasProbe(canvas)
+      expect(typeof handle?.getLayoutDiagnostics).toBe("function")
+      expect(typeof handle?.getExperienceLayoutDiagnostics).toBe("function")
+
+      // Scene-level diagnostics mirror the live procedural scene.
+      const fromProbe = handle!.getLayoutDiagnostics!() as ReturnType<
+        NonNullable<typeof procedural>["getLayoutDiagnostics"]
+      >
+      const fromScene = procedural!.getLayoutDiagnostics()
+      expect(fromProbe.allAnchorsInsideVisibleRect).toBe(
+        fromScene.allAnchorsInsideVisibleRect,
+      )
+      expect(fromProbe.plotAnchors).toEqual(fromScene.plotAnchors)
+
+      // DOM-level diagnostics never throw on a minimal host and report the
+      // defensive unknown layout (no data-presenter-layout ancestor here).
+      const dom = handle!.getExperienceLayoutDiagnostics!()
+      expect(dom.presenterLayout).toBe("unknown")
+      expect(dom.genericBackgroundVisible).toBe(false)
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(canvasProbe(canvas).handle).toBeUndefined()
     })
 
     it("clears the published probe before render-boundary cleanup destroys the scene and app", async () => {

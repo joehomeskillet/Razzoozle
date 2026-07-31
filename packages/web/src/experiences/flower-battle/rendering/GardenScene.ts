@@ -39,14 +39,18 @@ import {
 import {
   createGardenLayers,
   LAYER_LABELS,
+  layoutSkyForVisibleRect,
   syncPlotSoil,
   type GardenLayerSet,
   type LayerAssets,
 } from "./gardenLayers"
 import {
+  computeVisibleLogicalRect,
   fitLogicalViewport,
   GARDEN_LOGICAL_HEIGHT,
   GARDEN_LOGICAL_WIDTH,
+  type LetterboxTransform,
+  type LogicalRect,
 } from "./gardenViewport"
 import {
   computePlotAnchors,
@@ -69,6 +73,22 @@ export interface GardenSceneSnapshot {
   phase?: string
 }
 
+/**
+ * Layout probe for the immersive experience contract (WP §16.2).
+ * All rect values are in *logical* scene coordinates so tests can assert
+ * the safe-content contract without a real canvas.
+ */
+export interface GardenLayoutDiagnostics {
+  viewport: { width: number; height: number }
+  letterbox: LetterboxTransform | null
+  visibleRect: LogicalRect | null
+  plotAnchors: readonly { x: number; y: number }[]
+  /** Per-plant world bounds re-projected into logical coordinates. */
+  plantBoundsLogical: readonly LogicalRect[]
+  allAnchorsInsideVisibleRect: boolean
+  allPlantsInsideVisibleRect: boolean
+}
+
 export interface ProceduralGardenScene extends GardenScene {
   readonly root: Container
   readonly layers: Readonly<GardenLayerSet>
@@ -86,6 +106,9 @@ export interface ProceduralGardenScene extends GardenScene {
   getPlotAnchors(): readonly PlotAnchor[]
   getLogicalSize(): { width: number; height: number }
   getLetterbox(): ReturnType<typeof fitLogicalViewport> | null
+  /** Visible logical band after cover-crop (null before first layout). */
+  getVisibleRect(): LogicalRect | null
+  getLayoutDiagnostics(): GardenLayoutDiagnostics
 }
 
 export interface CreateGardenSceneOptions {
@@ -162,6 +185,7 @@ export function createGardenScene(
 
   let destroyed = false
   let letterbox: ReturnType<typeof fitLogicalViewport> | null = null
+  let lastVisibleRect: LogicalRect | null = null
   let anchors: PlotAnchor[] = []
   let phase: string | null = null
   let lastTeamCount = 0
@@ -198,7 +222,12 @@ export function createGardenScene(
   }
 
   function rebuildPlotsForCount(teamCount: number): void {
-    const nextAnchors = computePlotAnchors(teamCount)
+    const nextAnchors = computePlotAnchors(
+      teamCount,
+      GARDEN_LOGICAL_WIDTH,
+      GARDEN_LOGICAL_HEIGHT,
+      lastVisibleRect ?? undefined,
+    )
     anchors = nextAnchors
     lastTeamCount = teamCount
     ensureTeamTints(teamCount)
@@ -245,6 +274,37 @@ export function createGardenScene(
     }
   }
 
+  /**
+   * Re-derive anchors for the *current* team count after a viewport change.
+   * Pure reposition: plant views, soil containers, and team tints are
+   * reused — only positions move into the visible band (identity-stable,
+   * SDD §30). No-op before the first snapshot or when layout is unchanged.
+   */
+  function relayoutAnchors(): void {
+    if (lastTeamCount === 0 || anchors.length === 0) return
+    anchors = computePlotAnchors(
+      lastTeamCount,
+      GARDEN_LOGICAL_WIDTH,
+      GARDEN_LOGICAL_HEIGHT,
+      lastVisibleRect ?? undefined,
+    )
+    syncPlotSoil(
+      layers.plots,
+      anchors,
+      palette.soil,
+      palette.soilEdge,
+      teamTints,
+      palette.teamMeterFrame,
+      layerAssets?.soilPlots,
+    )
+    for (let i = 0; i < plants.length; i += 1) {
+      const anchor = anchors[i]
+      if (anchor) {
+        plants[i]!.root.position.set(anchor.x, anchor.y)
+      }
+    }
+  }
+
   const scene: ProceduralGardenScene = {
     get root() {
       return root
@@ -274,6 +334,54 @@ export function createGardenScene(
       return letterbox
     },
 
+    getVisibleRect() {
+      return lastVisibleRect
+    },
+
+    getLayoutDiagnostics(): GardenLayoutDiagnostics {
+      const lb = letterbox
+      const vis = lastVisibleRect
+      const plantBoundsLogical: LogicalRect[] = plants.map((plant) => {
+        const b = plant.root.getBounds()
+        if (!lb || !(lb.scale > 0)) {
+          return { x: b.x, y: b.y, width: b.width, height: b.height }
+        }
+        // Re-project world (screen) bounds back into logical coordinates so
+        // the safe-content contract can be asserted transform-agnostically.
+        return {
+          x: (b.x - lb.offsetX) / lb.scale,
+          y: (b.y - lb.offsetY) / lb.scale,
+          width: b.width / lb.scale,
+          height: b.height / lb.scale,
+        }
+      })
+      const rectInside = (r: LogicalRect, tol = 1): boolean =>
+        vis == null ||
+        (r.x >= vis.x - tol &&
+          r.y >= vis.y - tol &&
+          r.x + r.width <= vis.x + vis.width + tol &&
+          r.y + r.height <= vis.y + vis.height + tol)
+      const pointInside = (p: { x: number; y: number }, tol = 1): boolean =>
+        vis == null ||
+        (p.x >= vis.x - tol &&
+          p.x <= vis.x + vis.width + tol &&
+          p.y >= vis.y - tol &&
+          p.y <= vis.y + vis.height + tol)
+      return {
+        viewport: lb
+          ? { width: lb.screen.width, height: lb.screen.height }
+          : { width: GARDEN_LOGICAL_WIDTH, height: GARDEN_LOGICAL_HEIGHT },
+        letterbox: lb,
+        visibleRect: vis,
+        plotAnchors: anchors.map((a) => ({ x: a.x, y: a.y })),
+        plantBoundsLogical,
+        allAnchorsInsideVisibleRect: anchors.every((a) => pointInside(a)),
+        allPlantsInsideVisibleRect: plantBoundsLogical.every((r) =>
+          rectInside(r),
+        ),
+      }
+    },
+
     getE2EIdentity(): GardenE2EIdentity {
       // SDD §30 probe-v3: every per-plant parallel array is sliced to the
       // teamNames length (= the snapshot team count, NOT the layout-padded
@@ -301,6 +409,16 @@ export function createGardenScene(
       letterbox = fitLogicalViewport(width, height)
       root.scale.set(letterbox.scale)
       root.position.set(letterbox.offsetX, letterbox.offsetY)
+      // Safe-content contract (WP immersive §11/§13): compute the visible
+      // logical band after cover-fit and pull sky objects + plot anchors
+      // back inside it, so non-16:9 hosts never amputate gameplay content.
+      lastVisibleRect = computeVisibleLogicalRect(letterbox)
+      layoutSkyForVisibleRect(layers.sky, lastVisibleRect)
+      // Cloud parallax bases follow the clamped cloud positions.
+      for (let i = 0; i < cloudSprites.length; i += 1) {
+        cloudBaseX[i] = cloudSprites[i]!.x
+      }
+      relayoutAnchors()
     },
 
     updateSnapshot(snapshot: GardenSceneSnapshot): void {

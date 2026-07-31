@@ -9,6 +9,7 @@ import type { ReactNode } from "react"
 import type { Application } from "pixi.js"
 
 import type { FlowerBattleTeamState } from "./flower-battle-scene.types"
+import type { GardenExperienceLayoutDiagnostics } from "./experienceLayoutDiagnostics"
 
 /** Render quality tiers. `static` skips WebGL and uses the DOM garden scene. */
 export type GardenRenderQuality = "high" | "medium" | "low" | "static"
@@ -52,6 +53,18 @@ export interface GardenE2EIdentity {
 /** Read-only canvas handle published when `gardenE2EProbe=1` is present. */
 export interface GardenE2EProbeHandle {
   getE2EIdentity(): GardenE2EIdentity
+  /**
+   * Present only when the live scene implements layout diagnostics
+   * (production procedural scene). Returns the scene-level
+   * `GardenLayoutDiagnostics` (logical coords) — see rendering/GardenScene.
+   */
+  getLayoutDiagnostics?(): unknown
+  /**
+   * DOM half of the WP §16.2 layout contract (presenter layout variant,
+   * canvas/root coverage, safe insets, HUD rects, generic-background and
+   * vertical-overflow flags). Always present on the probe handle.
+   */
+  getExperienceLayoutDiagnostics?(): GardenExperienceLayoutDiagnostics
 }
 
 /**
@@ -64,6 +77,12 @@ export interface GardenScene {
   updateSnapshot?(snapshot: GardenSceneLiveSnapshot): void
   /** Optional internal E2E probe — production procedural scene implements it. */
   getE2EIdentity?(): GardenE2EIdentity
+  /**
+   * Optional layout diagnostics probe (WP immersive §16.2). Production
+   * procedural scene implements it; the canvas host re-exports it through
+   * the E2E probe handle when `?gardenE2EProbe=1`.
+   */
+  getLayoutDiagnostics?(): unknown
 }
 
 /**
