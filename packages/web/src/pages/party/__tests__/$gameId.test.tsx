@@ -440,9 +440,7 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
       })
       const prepared = renderToStaticMarkup(<PlayerGamePage />)
       expect(prepared).toContain('data-testid="game-topbar"')
-      expect(prepared).not.toContain(
-        'data-testid="player-topbar-replacement"',
-      )
+      expect(prepared).not.toContain('data-testid="player-topbar-replacement"')
       expect(contentKeyOf(prepared)).toBe(STATUS.SHOW_PREPARED)
 
       setGameStatus(STATUS.SELECT_ANSWER)

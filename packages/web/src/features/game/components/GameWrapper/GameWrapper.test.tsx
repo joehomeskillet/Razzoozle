@@ -39,13 +39,10 @@ vi.mock("motion/react", () => ({
   },
 }))
 
-vi.mock(
-  "@razzoozle/web/features/game/contexts/socket-context",
-  () => ({
-    useSocket: () => ({ isConnected: true, socket: { emit: vi.fn() } }),
-    useEvent: vi.fn(),
-  }),
-)
+vi.mock("@razzoozle/web/features/game/contexts/socket-context", () => ({
+  useSocket: () => ({ isConnected: true, socket: { emit: vi.fn() } }),
+  useEvent: vi.fn(),
+}))
 
 vi.mock("@razzoozle/web/features/game/stores/player", () => ({
   usePlayerStore: () => ({ player: null }),
@@ -86,21 +83,18 @@ vi.mock("@razzoozle/web/components/Loader", () => ({
   default: () => <div data-testid="loader" />,
 }))
 
-vi.mock(
-  "@razzoozle/web/features/manager/components/DisplayControl",
-  () => ({ default: () => null }),
-)
-vi.mock(
-  "@razzoozle/web/features/manager/components/DisplayStatusCard",
-  () => ({ default: () => null }),
-)
+vi.mock("@razzoozle/web/features/manager/components/DisplayControl", () => ({
+  default: () => null,
+}))
+vi.mock("@razzoozle/web/features/manager/components/DisplayStatusCard", () => ({
+  default: () => null,
+}))
 vi.mock("@razzoozle/web/features/manager/components/SimControl", () => ({
   default: () => null,
 }))
-vi.mock(
-  "@razzoozle/web/features/game/components/LowLatencyHealth",
-  () => ({ default: () => null }),
-)
+vi.mock("@razzoozle/web/features/game/components/LowLatencyHealth", () => ({
+  default: () => null,
+}))
 vi.mock("./AvToggles", () => ({ default: () => null }))
 vi.mock("./RejoinQrDialog", () => ({ default: () => null }))
 vi.mock("./GameControlPanel", () => ({ default: () => null }))

@@ -29,7 +29,13 @@ import {
   EASE,
 } from "@razzoozle/web/features/game/animation/presets"
 import { LogOut, Maximize } from "lucide-react"
-import { type PropsWithChildren, type ReactNode, useEffect, useState, useRef } from "react"
+import {
+  type PropsWithChildren,
+  type ReactNode,
+  useEffect,
+  useState,
+  useRef,
+} from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -215,7 +221,7 @@ const GameWrapper = ({
                 ) : !hidePlayerTopbar ? (
                   <div
                     data-testid="game-topbar"
-                    className="flex w-full items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+                    className="border-line bg-surface flex w-full items-center justify-between gap-2 border-b px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
                   >
                     <div className="flex shrink-0 justify-start">
                       {questionStates && (
@@ -250,7 +256,7 @@ const GameWrapper = ({
                       onClick={toggleAuto}
                       aria-pressed={autoOn}
                       className={clsx("min-h-11", {
-                        "border-[var(--accent-tint)] bg-accent-tint text-accent-contrast hover:bg-accent-tint":
+                        "bg-accent-tint text-accent-contrast hover:bg-accent-tint border-[var(--accent-tint)]":
                           autoOn,
                       })}
                       title={t("game:controls.autoTitle")}
@@ -282,18 +288,26 @@ const GameWrapper = ({
                   {/* GROUP B: Media/Display Controls (Icon Buttons) */}
                   <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
                     <AvToggles />
-                    {statusName !== STATUS.FINISHED && lowLatencyEnabled && <LowLatencyHealth />}
+                    {statusName !== STATUS.FINISHED && lowLatencyEnabled && (
+                      <LowLatencyHealth />
+                    )}
                     {statusName !== STATUS.FINISHED && <DisplayControl />}
                     {statusName !== STATUS.FINISHED && <DisplayStatusCard />}
                     {statusName !== STATUS.FINISHED &&
-                      statusName !== STATUS.SHOW_ROUND_RECAP && <GameControlPanel />}
-                    {statusName !== STATUS.FINISHED && import.meta.env.DEV && <SimControl />}
-                    {statusName !== STATUS.FINISHED && inviteCode && statusName !== STATUS.SHOW_ROOM && (
-                      <RejoinQrDialog
-                        inviteCode={inviteCode}
-                        statusName={statusName}
-                      />
+                      statusName !== STATUS.SHOW_ROUND_RECAP && (
+                        <GameControlPanel />
+                      )}
+                    {statusName !== STATUS.FINISHED && import.meta.env.DEV && (
+                      <SimControl />
                     )}
+                    {statusName !== STATUS.FINISHED &&
+                      inviteCode &&
+                      statusName !== STATUS.SHOW_ROOM && (
+                        <RejoinQrDialog
+                          inviteCode={inviteCode}
+                          statusName={statusName}
+                        />
+                      )}
                     <Button
                       variant="secondary"
                       size="icon"
@@ -307,19 +321,21 @@ const GameWrapper = ({
 
                   {/* GROUP C: Phase Actions (Primary Next + Secondary Exit) */}
                   <div className="flex shrink-0 items-center gap-2">
-                    {statusName !== STATUS.FINISHED && statusName !== STATUS.SHOW_ROUND_RECAP && next && (
-                      <Button
-                        data-testid="next-btn"
-                        variant="primary"
-                        size="sm"
-                        className={clsx("min-h-11 px-5", {
-                          "pointer-events-none": isDisabled,
-                        })}
-                        onClick={handleNext}
-                      >
-                        {t(next)}
-                      </Button>
-                    )}
+                    {statusName !== STATUS.FINISHED &&
+                      statusName !== STATUS.SHOW_ROUND_RECAP &&
+                      next && (
+                        <Button
+                          data-testid="next-btn"
+                          variant="primary"
+                          size="sm"
+                          className={clsx("min-h-11 px-5", {
+                            "pointer-events-none": isDisabled,
+                          })}
+                          onClick={handleNext}
+                        >
+                          {t(next)}
+                        </Button>
+                      )}
                     {onBack && (
                       <Button
                         variant="secondary"
@@ -364,19 +380,21 @@ const GameWrapper = ({
                     >
                       <Maximize className="size-5" aria-hidden />
                     </Button>
-                    {statusName !== STATUS.FINISHED && statusName !== STATUS.SHOW_ROUND_RECAP && next && (
-                      <Button
-                        data-testid="next-btn"
-                        variant="primary"
-                        size="sm"
-                        className={clsx("min-h-11 px-5", {
-                          "pointer-events-none": isDisabled,
-                        })}
-                        onClick={handleNext}
-                      >
-                        {t(next)}
-                      </Button>
-                    )}
+                    {statusName !== STATUS.FINISHED &&
+                      statusName !== STATUS.SHOW_ROUND_RECAP &&
+                      next && (
+                        <Button
+                          data-testid="next-btn"
+                          variant="primary"
+                          size="sm"
+                          className={clsx("min-h-11 px-5", {
+                            "pointer-events-none": isDisabled,
+                          })}
+                          onClick={handleNext}
+                        >
+                          {t(next)}
+                        </Button>
+                      )}
                     {onBack && (
                       <Button
                         variant="secondary"
