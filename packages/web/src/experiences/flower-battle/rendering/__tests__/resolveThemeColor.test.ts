@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import type { CssTokenName } from "@razzoozle/common/theme-tokens"
 
 import { GARDEN_PALETTE_TOKENS, resolveGardenPalette } from "../gardenPalette"
 import {
+  _resetColorMixSupportCache,
   cssColorToPixiNumber,
+  detectColorMixSupport,
   resolveThemeTokenColor,
   ThemeTokenColorError,
   THEME_TOKEN_COLOR_ERROR,
@@ -149,6 +151,178 @@ describe("resolveThemeTokenColor", () => {
         }),
       }),
     ).toThrow(ThemeTokenColorError)
+  })
+})
+
+describe("detectColorMixSupport", () => {
+  afterEach(() => {
+    _resetColorMixSupportCache()
+    vi.unstubAllGlobals()
+  })
+
+  it("returns false when CSS.supports is unavailable", () => {
+    // vitest/jsdom provides CSS.supports; stub it off to simulate SSR.
+    vi.stubGlobal("CSS", undefined)
+    expect(detectColorMixSupport()).toBe(false)
+  })
+
+  it("caches the result so the second call does not hit CSS.supports again", () => {
+    const supportsSpy = vi.fn().mockReturnValue(false)
+    vi.stubGlobal("CSS", { supports: supportsSpy })
+    expect(detectColorMixSupport()).toBe(false)
+    expect(detectColorMixSupport()).toBe(false)
+    expect(supportsSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it("returns the CSS.supports verdict (true here: feature available)", () => {
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => true,
+    })
+    expect(detectColorMixSupport()).toBe(true)
+  })
+})
+
+describe("SDD #992: color-mix unsupported → canonical base-token fallback", () => {
+  afterEach(() => {
+    _resetColorMixSupportCache()
+    vi.unstubAllGlobals()
+  })
+
+  /** A trivial getComputedStyle fake that reads a token→value map. */
+  function styleFromMap(
+    map: Record<string, string>,
+  ): (elt: Element) => { getPropertyValue: (prop: string) => string } {
+    return () => ({
+      getPropertyValue: (prop: string) => map[prop] ?? "",
+    })
+  }
+
+  it("falls back from --team-green-ring to --team-green when color-mix unsupported", () => {
+    // Simulate an older browser that does NOT support color-mix but exposes
+    // raw color-mix() text from getPropertyValue. Resolver must NOT throw and
+    // must NOT force the Pixi host into its DOM fallback.
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const map: Record<string, string> = {
+      "--team-green-ring": "color-mix(in srgb, var(--team-green), black 32%)",
+      "--team-green": "#22c55e",
+    }
+    const color = resolveThemeTokenColor("--team-green-ring" as CssTokenName, {
+      element: {} as Element,
+      getComputedStyleFn: styleFromMap(map),
+    })
+    expect(color).toBe(0x22c55e)
+  })
+
+  it("handles nested color-mix(var(--a), color-mix(var(--b), …)) up to depth 2", () => {
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const map: Record<string, string> = {
+      "--a-ring":
+        "color-mix(in srgb, var(--a), color-mix(in srgb, var(--b), black 20%))",
+      "--a": "#112233",
+    }
+    // --a-ring → --a-ring wraps a nested color-mix whose first arg is var(--a).
+    // We extract --a and resolve it directly.
+    const color = resolveThemeTokenColor("--a-ring" as CssTokenName, {
+      element: {} as Element,
+      getComputedStyleFn: styleFromMap(map),
+    })
+    expect(color).toBe(0x112233)
+  })
+
+  it("still throws when color-mix base is a literal colour (no var() to recurse)", () => {
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const map: Record<string, string> = {
+      "--team-green-ring": "color-mix(in srgb, #22c55e, black 32%)",
+    }
+    expect(() =>
+      resolveThemeTokenColor("--team-green-ring" as CssTokenName, {
+        element: {} as Element,
+        getComputedStyleFn: styleFromMap(map),
+      }),
+    ).toThrow(ThemeTokenColorError)
+  })
+
+  it("does not recurse into color-mix when the browser supports color-mix (probe path)", () => {
+    // Browser supports color-mix → getPropertyValue returns the resolved form.
+    // The fallback extraction must NOT run; the existing colour(srgb) parser
+    // handles it directly.
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => true,
+    })
+    const color = resolveThemeTokenColor(
+      "--team-green-ring" as CssTokenName,
+      {
+        element: {} as Element,
+        getComputedStyleFn: styleFromMap({
+          "--team-green-ring": CHROMIUM_TEAM_GREEN_RING_SRGB,
+        }),
+      },
+    )
+    expect(color).toBe(TEAM_GREEN_RING_PIXI)
+  })
+
+  it("falls back to the scoped element's token (scoped theme) without DOM probe", () => {
+    // P1 case 3: scoped theme tokens (defined on a non-document element) must
+    // resolve via the passed-in `element`, not via the global document root.
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const map: Record<string, string> = {
+      "--team-red-ring":
+        "color-mix(in srgb, var(--team-red), black 32%)",
+      "--team-red": "#dc2626",
+    }
+    const scoped = {} as Element
+    const color = resolveThemeTokenColor(
+      "--team-red-ring" as CssTokenName,
+      {
+        element: scoped,
+        getComputedStyleFn: styleFromMap(map),
+      },
+    )
+    expect(color).toBe(0xdc2626)
+  })
+
+  it("logs a console.warn for malformed channels (rgb(NaN, NaN, NaN)) before throwing", () => {
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    const map: Record<string, string> = {
+      "--surface-2": "rgb(NaN, NaN, NaN)",
+    }
+    expect(() =>
+      resolveThemeTokenColor("--surface-2" as CssTokenName, {
+        element: {} as Element,
+        getComputedStyleFn: styleFromMap(map),
+      }),
+    ).toThrow(/invalid color/)
+    expect(warnSpy).toHaveBeenCalled()
+    const message = String(warnSpy.mock.calls[0]?.[0] ?? "")
+    expect(message).toMatch(/rejected malformed value/)
+    expect(message).toContain("--surface-2")
+    warnSpy.mockRestore()
+  })
+
+  it("does NOT log a console.warn for unparseable non-color text", () => {
+    vi.stubGlobal("CSS", {
+      supports: (_prop: string, _value: string) => false,
+    })
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    expect(() =>
+      resolveThemeTokenColor("--surface-2" as CssTokenName, {
+        element: {} as Element,
+        getComputedStyleFn: styleFromMap({ "--surface-2": "purple-ish" }),
+      }),
+    ).toThrow(ThemeTokenColorError)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })
 
