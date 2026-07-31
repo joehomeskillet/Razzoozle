@@ -30,7 +30,7 @@ export interface AssetBundle {
 }
 
 /**
- * Canonical garden bundle names (9 total for WP-03).
+ * Canonical garden bundle names (11 total for WP-03).
  * Team flowers and effects are lazy; boot/background/common are boot|eager.
  */
 export type GardenBundleName =
@@ -57,9 +57,7 @@ export const GARDEN_ASSET_BASE_PATH =
 export const PLACEHOLDER_TEXTURE_DATA_URI =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 
-function placeholderAssets(
-  aliases: readonly string[],
-): Record<string, string> {
+function placeholderAssets(aliases: readonly string[]): Record<string, string> {
   const out: Record<string, string> = {}
   for (const alias of aliases) {
     // Relative key under basePath; tests inject data-URI loaders and ignore path.
