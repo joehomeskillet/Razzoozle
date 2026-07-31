@@ -75,6 +75,12 @@ const DEFAULT_VIEWPORT: TeamSlotViewport = { width: 1024, height: 768 }
  * 3 teams = three equal slots, 4 teams = 2×2 grid, 5+ = deterministic grid
  * fallback, 0 teams = empty. Positions are stable for equal teamCount so
  * React reuses existing DOM nodes across re-renders.
+ *
+ * SDD §30 (probe-v3): each slot div carries test-only `data-team-id` +
+ * `data-plant-stage` attributes so DOM-based probes can cross-check the
+ * rendered plant against the normalized state without inspecting the SVG
+ * internals. `data-team-id` mirrors `team.name` (the wire team identifier)
+ * for forward compatibility if the type ever gains a separate id field.
  */
 export const FlowerGardenScene = ({
   seed,
@@ -155,6 +161,12 @@ export const FlowerGardenScene = ({
                       key={team.name}
                       data-testid={`garden-team-slot-${slot.index}`}
                       data-team-name={team.name}
+                      // SDD §30 probe-v3: test-only attributes expose the
+                      // normalized state (teamId + growthStage) on the
+                      // rendered slot so DOM probes can cross-check
+                      // getTeamSlotLayout output against the live roster.
+                      data-team-id={team.name}
+                      data-plant-stage={team.growthStage}
                       data-slot-x={slot.xPercent}
                       data-slot-y={slot.yPercent}
                       data-slot-w={slot.widthPercent}
