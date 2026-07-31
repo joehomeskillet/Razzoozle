@@ -1,5 +1,8 @@
-import { CloudRain, Sprout, Sun, Umbrella } from "lucide-react"
 import type { ComponentType, SVGProps } from "react"
+import AcidRainIcon from "@razzoozle/web/experiences/flower-battle/assets/icons/AcidRainIcon"
+import FertilizerIcon from "@razzoozle/web/experiences/flower-battle/assets/icons/FertilizerIcon"
+import SunbeamIcon from "@razzoozle/web/experiences/flower-battle/assets/icons/SunbeamIcon"
+import UmbrellaShieldIcon from "@razzoozle/web/experiences/flower-battle/assets/icons/UmbrellaShieldIcon"
 
 // FlowerBattle player-facing UI types (WP #941). Extended by WP #942
 // (power-up target voting) — keep this file a plain barrel of UI-facing
@@ -34,13 +37,17 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 
 // Icon only — name/effect copy lives in locale `game.json` under
 // `flowerBattle.powerupVote.options.<id>.{name,effect}` (i18n-owned, never
-// hardcoded here). Falls back to the lucide icon for all 4 options until the
-// bespoke SVG set from #938.1 lands (grep-verified absent as of WP #941).
+// hardcoded here).
+//
+// WP-C-3: hand-drawn comic set replaces the lucide fallback. Each icon is
+// a 24×24 SVG with `stroke="currentColor"` so the calling button classes
+// can recolor it (e.g. `text-accent-tint` on the selected card).
+// See experiences/flower-battle/assets/icons/* for the source.
 export const POWERUP_ICONS: Record<PowerupType, IconComponent> = {
-  fertilizer: Sprout,
-  sunbeam: Sun,
-  umbrella_shield: Umbrella,
-  acid_rain: CloudRain,
+  fertilizer: FertilizerIcon,
+  sunbeam: SunbeamIcon,
+  umbrella_shield: UmbrellaShieldIcon,
+  acid_rain: AcidRainIcon,
 }
 
 // Mirrors the wire-relevant subset of rust/protocol/bindings/PowerupOffer.ts
