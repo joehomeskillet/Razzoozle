@@ -44,6 +44,21 @@
   --color-team-green: var(--team-green);
   --color-team-yellow: var(--team-yellow);
 
+  /* Flower-Battle Presenter Palette (WP-PRESENTER-3 / SDD §1.7) */
+  --flower-battle-sky: #c9eaef;
+  --flower-battle-sun: #f9b20b;
+  --flower-battle-cloud: #fefbf2;
+  --flower-battle-hill-back: #d5d962;
+  --flower-battle-hill-mid: #80a72d;
+  --flower-battle-bush: #59832c;
+  --flower-battle-fence: #fefbf2;
+  --flower-battle-grass: #d5d962;
+  --flower-battle-soil: #7e4f2c;
+  --flower-battle-foreground: #59832c;
+  --flower-battle-cream: #fefbf2;
+  --flower-battle-ink: #242236;
+  --flower-battle-primary: #803eb4;
+
   /* Tier Base Colors */
   --color-tier-bronze: var(--tier-bronze);
   --color-tier-silver: var(--tier-silver);

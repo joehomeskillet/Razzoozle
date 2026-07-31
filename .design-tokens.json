@@ -45,7 +45,16 @@
     "#ff2d6e",
     "#ff3b30",
     "#ff9900",
-    "#ffffff"
+    "#ffffff",
+    "#c9eaef",
+    "#f9b20b",
+    "#d5d962",
+    "#80a72d",
+    "#59832c",
+    "#7e4f2c",
+    "#fefbf2",
+    "#803eb4",
+    "#242236"
   ],
   "forbidden_fonts": [
     "Inter",

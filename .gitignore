@@ -69,3 +69,17 @@ ds-bundle/
 
 # pnpm store — Runner installs locally, never commit (2026-07-29)
 .pnpm-store/
+
+# === W10: Vendor-Importer (Flower-Battle Assets) ============================
+# User-Prompt §5.3 + §6: vendor-local ist gitignored, runtime-hotlinks verboten.
+
+# Vendor-local: manuell vom User akzeptierte Pakete (kenney.nl, wenrexa.itch.io,
+# opengameart.org, svgrepo, ...). Niemals committet.
+packages/web/src/assets/experiences/flower-battle/vendor-local/
+packages/web/src/assets/experiences/flower-battle/vendor-output/
+!packages/web/src/assets/experiences/flower-battle/vendor-local/README.md
+!packages/web/src/assets/experiences/flower-battle/vendor-local/.gitkeep
+
+# Vendor-Manifest (computed) — wird via pnpm vendor:import regeneriert.
+vendor-manifest.lock.json
+# === End W10 =============================================================
