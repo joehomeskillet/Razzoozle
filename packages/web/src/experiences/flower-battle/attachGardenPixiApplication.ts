@@ -136,7 +136,20 @@ export async function attachGardenPixiApplication(
     antialias: antialias && !prefersReducedMotion,
   })
 
-  const scene = createScene(app)
+  let scene: GardenScene
+  try {
+    scene = createScene(app)
+  } catch (error) {
+    try {
+      app.destroy(
+        { removeView: true },
+        { children: true, texture: true, textureSource: true },
+      )
+    } catch {
+      // Preserve the scene-creation error that caused this cleanup path.
+    }
+    throw error
+  }
   scene.updateLayout(width, height)
 
   let disposed = false

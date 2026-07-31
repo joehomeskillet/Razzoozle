@@ -604,6 +604,32 @@ describe("attachGardenPixiApplication", () => {
     expect(browser.resizeObserver.disconnect).not.toHaveBeenCalled()
   })
 
+  it("cleans up the initialized app without masking a scene creation failure", async () => {
+    const browser = createBrowserFake()
+    const { app, destroy } = createAppFake()
+    const sceneError = new Error("Garden scene creation failed")
+    destroy.mockImplementation(() => {
+      throw new Error("Application destroy failed")
+    })
+
+    await expect(
+      attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication: async () => app,
+          createScene: () => {
+            throw sceneError
+          },
+        },
+        browser.environment,
+      ),
+    ).rejects.toBe(sceneError)
+
+    expect(destroy).toHaveBeenCalledTimes(1)
+    expect(browser.visibilityListeners.size).toBe(0)
+    expect(browser.resizeObserver.disconnect).not.toHaveBeenCalled()
+  })
+
   it("invokes onReady with app and scene after successful attach", async () => {
     const browser = createBrowserFake()
     const { app } = createAppFake()
