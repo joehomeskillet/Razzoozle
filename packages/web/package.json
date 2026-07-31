@@ -10,7 +10,9 @@
     "format:fix": "prettier --write . --log-level warn",
     "start": "vite preview",
     "preview": "vite preview",
-    "garden:manifest": "node src/assets/experiences/flower-battle/scripts/generate-manifest.mjs"
+    "garden:manifest": "node src/assets/experiences/flower-battle/scripts/generate-manifest.mjs",
+    "vendor:import": "node tools/vendor-import.cjs import",
+    "vendor:list": "node tools/vendor-import.cjs list"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",
