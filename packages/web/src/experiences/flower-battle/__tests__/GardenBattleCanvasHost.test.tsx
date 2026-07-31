@@ -1363,6 +1363,89 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       expect(sceneDestroy).toHaveBeenCalledTimes(1)
     })
 
+    it("clears the published probe before render-boundary cleanup destroys the scene and app", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const boundaryError = new Error("expected garden child commit failure")
+      const browser = createBrowserFake()
+      let procedural: ReturnType<typeof createGardenScene> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        procedural = createGardenScene(handle, { palette: TEST_PALETTE })
+        return procedural
+      })
+      const appFake = createAppFake()
+      const createApplication = vi.fn(async () => {
+        return Object.assign(appFake.app, { stage: new Container() })
+      })
+      const onError = vi.fn()
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+      const renderPhase = async (phase: string) => {
+        await flushAct(() => {
+          root.render(
+            createElement(GardenBattleCanvasHost, {
+              teams: TEAMS,
+              quality: "high",
+              phase,
+              attachOptions: {
+                createApplication,
+                createScene,
+                background: TEST_CANVAS_BACKGROUND,
+              },
+              environment: browser.environment,
+              onError,
+              fallback: createElement(
+                "div",
+                { "data-testid": "boundary-static-fallback" },
+                "static",
+              ),
+            }),
+          )
+        })
+      }
+
+      await renderPhase("question")
+      expect(procedural).toBeDefined()
+      const canvas = findDomCanvas(container)
+      expect(canvasProbe(canvas).descriptor).toBeDefined()
+      expect(canvasProbe(canvas).handle).toBeDefined()
+      const host = canvas.parentNode
+      if (!host) throw new Error("garden host unavailable")
+      const setAttribute = host.setAttribute.bind(host)
+      host.setAttribute = (name, value) => {
+        if (name === "data-phase" && value === "boundary-error") {
+          throw boundaryError
+        }
+        setAttribute(name, value)
+      }
+      appFake.destroy.mockImplementation(() => {
+        expect(canvasProbe(canvas).descriptor).toBeUndefined()
+        expect(canvasProbe(canvas).handle).toBeUndefined()
+      })
+      const sceneDestroy = spyOnSceneDestroyAfterProbeClear(
+        procedural!,
+        () => canvas,
+      )
+
+      await renderPhase("boundary-error")
+
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(onError).toHaveBeenCalledWith(boundaryError)
+      const errorFallback = container.children[0] as DomElement
+      expect(errorFallback.getAttribute("data-testid")).toBe(
+        "garden-static-fallback",
+      )
+      expect(errorFallback.getAttribute("data-fallback-reason")).toBe("error")
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+      expect(appFake.destroy).toHaveBeenCalledTimes(1)
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+      expect(appFake.destroy).toHaveBeenCalledTimes(1)
+    })
+
     it("samples the query flag on phase rerender and clears then republishes without reattach", async () => {
       locationSearch = "?gardenE2EProbe=1"
       const browser = createBrowserFake()
