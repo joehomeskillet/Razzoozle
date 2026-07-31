@@ -300,9 +300,21 @@ impl Game {
 
     /// Status block for manager:successReconnect — last recorded manager status
     /// when available; otherwise phase wire-name + waitingForPlayers fallback.
+    /// ShowRoom (lobby) without a recorded status returns SHOW_ROOM with invite
+    /// + teamMode so the manager UI can restore the lobby, not a bare WAIT.
     pub fn manager_reconnect_status(&self) -> (String, serde_json::Value) {
         if let Some((s, data)) = &self.last_manager_status {
             return (Self::status_wire_name(s), data.clone());
+        }
+        if self.engine.phase == GamePhase::ShowRoom {
+            return (
+                "SHOW_ROOM".to_string(),
+                serde_json::json!({
+                    "text": "game:waitingForPlayers",
+                    "inviteCode": self.invite_code,
+                    "teamMode": self.selected_modes.team_mode,
+                }),
+            );
         }
         (
             Self::phase_wire_name(self.engine.phase),

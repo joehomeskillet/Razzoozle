@@ -4,7 +4,7 @@ use crate::bot::BotManager;
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::player::Player;
 use razzoozle_protocol::quizz::Quizz;
-use razzoozle_protocol::status::{GameStatus, PausedData, SelectAnswerData};
+use razzoozle_protocol::status::{GameStatus, PausedData, SelectAnswerData, ShowRoomData};
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -639,7 +639,7 @@ fn test_manager_reconnect_records_status_roundtrip() {
 #[test]
 fn test_manager_reconnect_fallback_when_nothing_recorded() {
     let quiz = test_quiz();
-    let game = Game::new(
+    let mut game = Game::new(
         "game-reconnect-fallback".to_string(),
         "INVITE".to_string(),
         "manager-socket".to_string(),
@@ -647,14 +647,60 @@ fn test_manager_reconnect_fallback_when_nothing_recorded() {
         quiz,
     );
     assert!(game.last_manager_status.is_none());
+    assert_eq!(game.engine.phase, GamePhase::ShowRoom);
+    // phase_wire_name stays WAIT; reconnect status name is SHOW_ROOM.
+    assert_eq!(Game::phase_wire_name(GamePhase::ShowRoom), "WAIT");
 
+    game.selected_modes.team_mode = Some(true);
     let (status_name, status_data) = game.manager_reconnect_status();
 
-    assert_eq!(status_name, Game::phase_wire_name(game.engine.phase));
-    assert_eq!(status_name, "WAIT");
+    assert_eq!(status_name, "SHOW_ROOM");
     assert_eq!(
         status_data,
-        serde_json::json!({ "text": "game:waitingForPlayers" })
+        serde_json::json!({
+            "text": "game:waitingForPlayers",
+            "inviteCode": "INVITE",
+            "teamMode": true,
+        })
+    );
+    // camelCase keys required on the wire payload
+    assert!(status_data.get("inviteCode").is_some());
+    assert!(status_data.get("teamMode").is_some());
+    assert!(status_data.get("invite_code").is_none());
+    assert!(status_data.get("team_mode").is_none());
+}
+
+#[test]
+fn test_manager_reconnect_recorded_status_priority_over_show_room_fallback() {
+    let quiz = test_quiz();
+    let mut game = Game::new(
+        "game-reconnect-priority".to_string(),
+        "INVITE".to_string(),
+        "manager-socket".to_string(),
+        "test-quiz".to_string(),
+        quiz,
+    );
+    assert_eq!(game.engine.phase, GamePhase::ShowRoom);
+    game.selected_modes.team_mode = Some(false);
+
+    let show_room = GameStatus::ShowRoom(ShowRoomData {
+        text: "game:waitingForPlayers".to_string(),
+        invite_code: Some("RECORDED".to_string()),
+        team_mode: Some(false),
+    });
+    game.record_last_manager_status(&show_room);
+
+    let (status_name, status_data) = game.manager_reconnect_status();
+    assert_eq!(status_name, "SHOW_ROOM");
+    assert_eq!(
+        status_data.get("inviteCode").and_then(|v| v.as_str()),
+        Some("RECORDED"),
+        "recorded last_manager_status must win over ShowRoom fallback"
+    );
+    assert_ne!(
+        status_data.get("inviteCode").and_then(|v| v.as_str()),
+        Some("INVITE"),
+        "must not rebuild fallback when a recorded status exists"
     );
 }
 
