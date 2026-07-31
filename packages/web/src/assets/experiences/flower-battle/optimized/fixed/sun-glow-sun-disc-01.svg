@@ -1,0 +1,17 @@
+<!--
+  sun-disc-01.svg - bright daytime sun disc (placeholder for A07 sun-glow).
+  Self-generated, Razzoozle-internal CC0. Dimensions: 256x256.
+  Source category: Noto Emoji 'sun' - https://github.com/googlefonts/noto-emoji
+  (Noto Emoji itself is Apache-2.0; this placeholder is an independent
+  re-derivation released as CC0 by Razzoozle.)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+  <defs>
+    <radialGradient id="sun-disc-gradient" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="1" />
+      <stop offset="70%" stop-color="currentColor" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.7" />
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="92" fill="url(#sun-disc-gradient)" />
+</svg>
