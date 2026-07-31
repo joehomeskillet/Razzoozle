@@ -78,11 +78,16 @@ export interface GardenLayerSet {
  */
 export interface LayerAssets {
   sky?: Texture
+  sun?: Texture
+  cloud01?: Texture
+  cloud02?: Texture
+  cloud03?: Texture
   distantHills?: Texture
   distantBushes?: Texture
   midTrees?: Texture
   fence?: Texture
   grass?: Texture
+  grassDetail?: Texture
   soilPlots?: Texture
   foregroundLeafLeft?: Texture
   foregroundLeafRight?: Texture
@@ -103,10 +108,8 @@ function fillRect(
 }
 
 /**
- * Mount a centred Sprite scaled to cover the full logical viewport, anchored
- * at (0.5, 0.5). The fallback fills the same rectangle with `fallbackColor`.
- * Used for sky / full-bleed layers where the SVG already contains the entire
- * composition.
+ * Mount a full-bleed underlay rect (always) so canvas never shows through,
+ * then optionally a centred Sprite covering the logical viewport.
  */
 function withFullBleedSprite(
   layer: Container,
@@ -114,7 +117,20 @@ function withFullBleedSprite(
   texture: Texture | undefined,
   fallbackColor: number,
 ): void {
-  if (texture) {
+  // Solid underlay prevents white canvas gaps between layers.
+  const underlay = new Graphics()
+  underlay.label = `${childLabel}-underlay`
+  fillRect(
+    underlay,
+    0,
+    0,
+    GARDEN_LOGICAL_WIDTH,
+    GARDEN_LOGICAL_HEIGHT,
+    fallbackColor,
+  )
+  layer.addChild(underlay)
+
+  if (texture && texture.width > 0 && texture.height > 0) {
     const sprite = new Sprite(texture)
     sprite.label = childLabel
     sprite.anchor.set(0.5, 0.5)
@@ -124,19 +140,12 @@ function withFullBleedSprite(
       GARDEN_LOGICAL_HEIGHT / texture.height,
     )
     layer.addChild(sprite)
-    return
   }
-  const g = new Graphics()
-  g.label = `${childLabel}-fallback`
-  fillRect(g, 0, 0, GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT, fallbackColor)
-  layer.addChild(g)
 }
 
 /**
- * Mount a bottom-anchored Sprite that scales to the logical VIEWPORT WIDTH
- * but keeps its intrinsic height (so its silhouette stays consistent across
- * aspect ratios). Anchor is (0.5, 1.0). The fallback fills the same band
- * with `fallbackColor` so the existing visual contract is preserved.
+ * Bottom-anchored band sprite. Always paints a solid colour band first so
+ * there is no transparent gap to the canvas clear colour.
  */
 function withBottomSprite(
   layer: Container,
@@ -147,27 +156,32 @@ function withBottomSprite(
   fallbackTopRatio = 0.78,
 ): void {
   const bandTop = GARDEN_LOGICAL_HEIGHT * fallbackTopRatio
-  const bandHeight = GARDEN_LOGICAL_HEIGHT - bandTop
-  if (texture) {
+  const bandHeight = Math.max(1, bottomY - bandTop)
+
+  const underlay = new Graphics()
+  underlay.label = `${childLabel}-underlay`
+  fillRect(underlay, 0, bandTop, GARDEN_LOGICAL_WIDTH, bandHeight, fallbackColor)
+  layer.addChild(underlay)
+
+  if (texture && texture.width > 0 && texture.height > 0) {
     const sprite = new Sprite(texture)
     sprite.label = childLabel
     sprite.anchor.set(0.5, 1.0)
     sprite.position.set(GARDEN_LOGICAL_WIDTH / 2, bottomY)
-    sprite.scale.set(
-      GARDEN_LOGICAL_WIDTH / texture.width,
-      (bottomY - bandTop) / texture.height,
-    )
+    // Width-fit, proportional height (may extend above bandTop — desired depth).
+    const scaleX = GARDEN_LOGICAL_WIDTH / texture.width
+    const naturalH = texture.height * scaleX
+    const scaleY =
+      naturalH < bandHeight
+        ? bandHeight / texture.height
+        : scaleX
+    sprite.scale.set(scaleX, scaleY)
     layer.addChild(sprite)
-    return
   }
-  const g = new Graphics()
-  g.label = `${childLabel}-fallback`
-  fillRect(g, 0, bandTop, GARDEN_LOGICAL_WIDTH, bandHeight, fallbackColor)
-  layer.addChild(g)
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Sky layer — full-bleed sky sprite with procedural sun + cloud fallback.
+ * Sky layer — full-bleed sky + sun + soft cloud sprites (or procedural).
  * ────────────────────────────────────────────────────────────────────── */
 export function buildSkyLayer(
   palette: GardenPalette,
@@ -178,20 +192,61 @@ export function buildSkyLayer(
 
   withFullBleedSprite(layer, "sky-sprite", assets?.sky, palette.sky)
 
-  if (!assets?.sky) {
-    // Procedural sun + cloud strata (only when no SVG; otherwise the SVG
-    // already paints the composition).
-    const g = layer.children[0] as Graphics
-    // Sun (warm disk + halo)
-    const sunX = GARDEN_LOGICAL_WIDTH * 0.78
-    const sunY = GARDEN_LOGICAL_HEIGHT * 0.16
+  const sunX = GARDEN_LOGICAL_WIDTH * 0.82
+  const sunY = GARDEN_LOGICAL_HEIGHT * 0.14
+
+  if (assets?.sun && assets.sun.width > 0) {
+    const sun = new Sprite(assets.sun)
+    sun.label = "sun-sprite"
+    sun.anchor.set(0.5, 0.5)
+    sun.position.set(sunX, sunY)
+    const target = 220
+    sun.scale.set(target / assets.sun.width, target / assets.sun.height)
+    layer.addChild(sun)
+  } else if (!assets?.sky) {
+    const g = new Graphics()
+    g.label = "sun-fallback"
     g.circle(sunX, sunY, 56)
     g.fill({ color: palette.sun, alpha: 0.18 })
     g.circle(sunX, sunY, 38)
     g.fill({ color: palette.sun, alpha: 0.8 })
     g.circle(sunX, sunY, 28)
     g.fill({ color: palette.sun })
-    // Cloud strata — three soft ovals per stratum, staggered
+    layer.addChild(g)
+  }
+
+  const cloudTextures = [assets?.cloud01, assets?.cloud02, assets?.cloud03].filter(
+    (t): t is Texture => t != null && t.width > 0,
+  )
+  if (cloudTextures.length > 0) {
+    const placements: Array<{
+      x: number
+      y: number
+      scale: number
+      alpha: number
+      tex: number
+    }> = [
+      { x: 280, y: 120, scale: 1.15, alpha: 0.95, tex: 0 },
+      { x: 720, y: 200, scale: 0.95, alpha: 0.88, tex: 1 },
+      { x: 1180, y: 140, scale: 1.05, alpha: 0.9, tex: 2 },
+      { x: 1580, y: 240, scale: 0.85, alpha: 0.8, tex: 0 },
+      { x: 480, y: 300, scale: 0.7, alpha: 0.7, tex: 2 },
+    ]
+    for (let i = 0; i < placements.length; i += 1) {
+      const p = placements[i]!
+      const texture = cloudTextures[p.tex % cloudTextures.length]!
+      const cloud = new Sprite(texture)
+      cloud.label = `cloud-sprite-${i}`
+      cloud.anchor.set(0.5, 0.5)
+      cloud.position.set(p.x, p.y)
+      cloud.alpha = p.alpha
+      const baseW = 280 * p.scale
+      cloud.scale.set(baseW / texture.width, (baseW * 0.4) / texture.height)
+      layer.addChild(cloud)
+    }
+  } else if (!assets?.sky) {
+    const g = new Graphics()
+    g.label = "cloud-fallback"
     const strata = [
       { y: GARDEN_LOGICAL_HEIGHT * 0.1, scale: 1.2, alpha: 0.85 },
       { y: GARDEN_LOGICAL_HEIGHT * 0.2, scale: 1.0, alpha: 0.7 },
@@ -215,6 +270,7 @@ export function buildSkyLayer(
         g.fill({ color: palette.cloud, alpha: stratum.alpha * 0.85 })
       }
     }
+    layer.addChild(g)
   }
 
   return layer
@@ -368,9 +424,9 @@ export function buildFenceLayer(
     layer,
     "fence-sprite",
     assets?.fence,
-    GARDEN_LOGICAL_HEIGHT * 0.76,
+    GARDEN_LOGICAL_HEIGHT * 0.72,
     palette.fence,
-    0.7,
+    0.64,
   )
 
   if (!assets?.fence) {
@@ -406,18 +462,37 @@ export function buildGrassLayer(
   const layer = new Container()
   layer.label = "layer-grass"
 
+  // Lawn covers from just under the fence down to the canvas bottom so no
+  // cream canvas band appears between hills and soil plots.
   withBottomSprite(
     layer,
     "grass-sprite",
     assets?.grass,
     GARDEN_LOGICAL_HEIGHT,
     palette.grass,
-    0.78,
+    0.62,
   )
 
-  if (!assets?.grass) {
-    const g = layer.children[0] as Graphics
-    // Grass tufts as small ellipses (deterministic positions)
+  if (assets?.grassDetail && assets.grassDetail.width > 0) {
+    for (const [x, yPct, s] of [
+      [160, 0.88, 0.9],
+      [480, 0.92, 1.0],
+      [900, 0.86, 0.85],
+      [1320, 0.9, 1.05],
+      [1700, 0.94, 0.95],
+    ] as const) {
+      const tuft = new Sprite(assets.grassDetail)
+      tuft.label = `grass-detail-${x}`
+      tuft.anchor.set(0.5, 1)
+      tuft.position.set(x, GARDEN_LOGICAL_HEIGHT * yPct)
+      const w = 90 * s
+      tuft.scale.set(w / assets.grassDetail.width, (w * 0.45) / assets.grassDetail.height)
+      tuft.alpha = 0.85
+      layer.addChild(tuft)
+    }
+  } else if (!assets?.grass) {
+    const g = new Graphics()
+    g.label = "grass-tufts-fallback"
     const tufts = [
       [80, 0.82], [220, 0.85], [380, 0.83], [560, 0.86], [740, 0.84],
       [920, 0.87], [1100, 0.83], [1280, 0.85], [1460, 0.82], [1640, 0.86],
@@ -428,6 +503,7 @@ export function buildGrassLayer(
       g.ellipse(x, GARDEN_LOGICAL_HEIGHT * yPct, 18, 6)
       g.fill({ color: palette.foreground, alpha: 0.65 })
     }
+    layer.addChild(g)
   }
 
   return layer
@@ -656,32 +732,53 @@ export function syncPlotSoil(
   edgeColor: number,
   teamTint: readonly number[],
   frameColor?: number,
+  soilTexture?: Texture,
 ): void {
   plotsLayer.removeChildren().forEach((child) => {
     child.destroy({ children: true })
   })
 
   for (const anchor of anchors) {
-    const mound = new Graphics()
-    mound.label = `soil-plot-${anchor.index}`
-    mound.position.set(anchor.x, anchor.y)
     const tint = teamTint[anchor.index] ?? soilColor
-    mound.ellipse(0, 10, 78, 30)
-    mound.fill({ color: edgeColor })
-    mound.ellipse(0, 0, 68, 24)
-    mound.fill({ color: soilColor })
-    // Soft team tint band on the soil lip
-    mound.ellipse(0, -6, 44, 11)
-    mound.fill({ color: tint, alpha: 0.5 })
-    // Team-meter frame outline (ring around the tint band)
+    const holder = new Container()
+    holder.label = `soil-plot-${anchor.index}`
+    holder.position.set(anchor.x, anchor.y)
+
+    if (soilTexture && soilTexture.width > 0) {
+      const sprite = new Sprite(soilTexture)
+      sprite.label = `soil-sprite-${anchor.index}`
+      sprite.anchor.set(0.5, 0.85)
+      const targetW = 200
+      sprite.scale.set(
+        targetW / soilTexture.width,
+        (targetW * 0.45) / soilTexture.height,
+      )
+      holder.addChild(sprite)
+      // Soft team-tint lip above the mound
+      const lip = new Graphics()
+      lip.label = `soil-tint-${anchor.index}`
+      lip.ellipse(0, -8, 48, 12)
+      lip.fill({ color: tint, alpha: 0.45 })
+      holder.addChild(lip)
+    } else {
+      const mound = new Graphics()
+      mound.label = `soil-graphics-${anchor.index}`
+      mound.ellipse(0, 10, 78, 30)
+      mound.fill({ color: edgeColor })
+      mound.ellipse(0, 0, 68, 24)
+      mound.fill({ color: soilColor })
+      mound.ellipse(0, -6, 44, 11)
+      mound.fill({ color: tint, alpha: 0.5 })
+      holder.addChild(mound)
+    }
+
     if (frameColor !== undefined) {
       const circle = new Graphics()
       circle.label = `plot-frame-${anchor.index}`
-      circle.position.set(anchor.x, anchor.y - 6)
-      circle.ellipse(0, 0, 44, 11)
-      circle.stroke({ color: frameColor, width: 1.5, alpha: 0.6 })
-      plotsLayer.addChild(circle)
+      circle.ellipse(0, -6, 48, 12)
+      circle.stroke({ color: frameColor, width: 1.5, alpha: 0.55 })
+      holder.addChild(circle)
     }
-    plotsLayer.addChild(mound)
+    plotsLayer.addChild(holder)
   }
 }

@@ -680,7 +680,7 @@ describe("attachGardenPixiApplication", () => {
 
 describe("garden canvas background token", () => {
   it("defaults to GARDEN_CANVAS_BACKGROUND token resolved before Pixi init", async () => {
-    expect(GARDEN_CANVAS_BACKGROUND).toBe("--surface-2")
+    expect(GARDEN_CANVAS_BACKGROUND).toBe("--flower-battle-sky")
 
     const browser = createBrowserFake()
     const createApplication = vi.fn(async () => createAppFake().app)
@@ -692,8 +692,8 @@ describe("garden canvas background token", () => {
       () =>
         ({
           getPropertyValue: (prop: string) => {
-            expect(prop).toBe("--surface-2")
-            return "#f4f1ea"
+            expect(prop).toBe("--flower-battle-sky")
+            return "#c9eaef"
           },
         }) as unknown as CSSStyleDeclaration,
     )
@@ -715,7 +715,7 @@ describe("garden canvas background token", () => {
       )
 
       expect(createApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ background: 0xf4f1ea }),
+        expect.objectContaining({ background: 0xc9eaef }),
       )
       dispose()
     } finally {

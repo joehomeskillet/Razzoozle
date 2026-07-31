@@ -15,14 +15,22 @@
  * check them in a single call rather than relying on canvas existence.
  */
 
-import { Container } from "pixi.js"
+import { Container, Texture } from "pixi.js"
 
+import type {
+  GardenAssetDiagnostics,
+  PlantHeadTextures,
+} from "../assets/loadGardenSceneAssets"
 import type {
   GardenE2EIdentity,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
-import { defaultPlantColors, DummyPlantView } from "./DummyPlantView"
+import {
+  defaultPlantColors,
+  DummyPlantView,
+  plantHeadKeyForIndex,
+} from "./DummyPlantView"
 import {
   resolveGardenPalette,
   resolveTeamPlotColors,
@@ -33,6 +41,7 @@ import {
   LAYER_LABELS,
   syncPlotSoil,
   type GardenLayerSet,
+  type LayerAssets,
 } from "./gardenLayers"
 import {
   fitLogicalViewport,
@@ -70,6 +79,8 @@ export interface ProceduralGardenScene extends GardenScene {
    * further normalization happened in between.
    */
   readonly revision: number
+  /** Asset-load diagnostics from the attach path (null when procedural-only). */
+  readonly assetDiagnostics: GardenAssetDiagnostics | null
   updateSnapshot(snapshot: GardenSceneSnapshot): void
   getE2EIdentity(): GardenE2EIdentity
   getPlotAnchors(): readonly PlotAnchor[]
@@ -87,6 +98,12 @@ export interface CreateGardenSceneOptions {
    * scene graph). Default true when stage is present.
    */
   attachToStage?: boolean
+  /** Preloaded layer textures (production path after loadGardenSceneAssets). */
+  layerAssets?: LayerAssets
+  /** Preloaded flower-head textures per style. */
+  plantHeads?: Partial<PlantHeadTextures>
+  /** Diagnostics snapshot for E2E / window probe. */
+  assetDiagnostics?: GardenAssetDiagnostics | null
 }
 
 type StageHost = GardenPixiApplicationHandle & {
@@ -99,11 +116,14 @@ export function createGardenScene(
 ): ProceduralGardenScene {
   const resolveColor = options.resolveColor ?? resolveThemeTokenColor
   const palette = options.palette ?? resolveGardenPalette(resolveColor)
+  const layerAssets = options.layerAssets
+  const plantHeads = options.plantHeads
+  const assetDiagnostics = options.assetDiagnostics ?? null
 
   const root = new Container()
   root.label = "garden-root"
 
-  const layers = createGardenLayers(palette)
+  const layers = createGardenLayers(palette, layerAssets)
   for (const layer of layers.ordered) {
     root.addChild(layer)
   }
@@ -124,6 +144,12 @@ export function createGardenScene(
   const plants: DummyPlantView[] = []
   const teamNames: string[] = []
   let teamTints: number[] = []
+
+  function headTextureForIndex(index: number): Texture | undefined {
+    if (!plantHeads) return undefined
+    const key = plantHeadKeyForIndex(index)
+    return plantHeads[key]
+  }
 
   function ensureTeamTints(count: number): void {
     if (teamTints.length >= count) return
@@ -157,6 +183,7 @@ export function createGardenScene(
       palette.soilEdge,
       teamTints,
       palette.teamMeterFrame,
+      layerAssets?.soilPlots,
     )
 
     // Grow/shrink plant views while reusing existing instances by index.
@@ -170,13 +197,14 @@ export function createGardenScene(
     while (plants.length < teamCount) {
       const index = plants.length
       const tint = teamTints[index] ?? palette.plantPetal
-      const plant = new DummyPlantView(
-        {
+      const plant = new DummyPlantView({
+        colors: {
           ...defaultPlantColors(palette),
           petal: tint,
         },
-        `actor-plant-${index}`,
-      )
+        label: `actor-plant-${index}`,
+        headTexture: headTextureForIndex(index),
+      })
       plants.push(plant)
       // SDD §30 probe-v3: per-plant team name parallel to the actorPlants
       // array; defaults to "" until the next updateSnapshot applies a name.
@@ -203,6 +231,9 @@ export function createGardenScene(
     },
     get revision() {
       return revision
+    },
+    get assetDiagnostics() {
+      return assetDiagnostics
     },
 
     getPlotAnchors() {

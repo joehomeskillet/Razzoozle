@@ -1,12 +1,21 @@
 /**
  * Imperative PixiJS application lifecycle for the Flower Battle presenter
- * canvas (WP-02). Mirrors the ParticleCanvas attach/cleanup pattern so unit
- * tests can inject browser + Application fakes without jsdom or WebGL.
+ * canvas (WP-02 / WP-19). Mirrors the ParticleCanvas attach/cleanup pattern so
+ * unit tests can inject browser + Application fakes without jsdom or WebGL.
  *
- * Lifecycle: init → ResizeObserver → visibility pause/resume → dispose
- * (scene → textures → Application → listeners).
+ * Lifecycle:
+ *   init Application
+ *   → load garden SVG bundle (production default only)
+ *   → createGardenScene with textures
+ *   → ResizeObserver + visibility pause/resume
+ *   → dispose (scene → Application → listeners)
  */
 
+import {
+  clearGardenAssetDiagnostics,
+  loadGardenSceneAssets,
+  publishGardenAssetDiagnostics,
+} from "./assets/loadGardenSceneAssets"
 import {
   GARDEN_CANVAS_BACKGROUND,
   type CreateGardenPixiApplication,
@@ -16,11 +25,14 @@ import {
   type GardenScene,
 } from "./garden-pixi.types"
 import { createGardenScene } from "./rendering/GardenScene"
+import { resolveGardenPalette } from "./rendering/gardenPalette"
 import { resolveThemeTokenColor } from "./rendering/resolveThemeColor"
 
 /**
  * Production default scene factory (WP-PIX-05B).
- * Procedural layers + plants; host feeds roster via updateSnapshot.
+ * Used only when no preloaded assets are available (tests / static).
+ * Production attach path loads assets first, then calls createGardenScene
+ * with the loaded LayerAssets map.
  */
 export const createDefaultGardenScene: CreateGardenScene = (app) =>
   createGardenScene(app)
@@ -59,6 +71,11 @@ export interface AttachGardenPixiOptions {
   background?: number
   antialias?: boolean
   onReady?: (app: GardenPixiApplicationHandle, scene: GardenScene) => void
+  /**
+   * When true (default for production default scene), await the garden SVG
+   * bundle before createGardenScene. Injected test createScene skips loading.
+   */
+  loadAssets?: boolean
 }
 
 export interface AttachGardenPixiResult {
@@ -145,7 +162,37 @@ export async function attachGardenPixiApplication(
 
   let scene: GardenScene
   try {
-    scene = createScene(app)
+    // Production path: load SVG textures BEFORE scene construction so layers
+    // mount Sprites instead of procedural Graphics. Injected createScene
+    // (unit tests) skips the network/Pixi Assets work unless loadAssets=true.
+    const shouldLoadAssets =
+      options.loadAssets === true ||
+      (options.loadAssets !== false && options.createScene == null)
+
+    if (shouldLoadAssets && options.createScene == null) {
+      const palette = resolveGardenPalette(resolveThemeTokenColor)
+      const loaded = await loadGardenSceneAssets(palette)
+      publishGardenAssetDiagnostics(loaded.diagnostics)
+      if (
+        typeof console !== "undefined" &&
+        typeof console.info === "function"
+      ) {
+        console.info("[flower-battle] garden assets", {
+          complete: loaded.complete,
+          loaded: loaded.diagnostics.loadedAliases.length,
+          missing: loaded.diagnostics.missingAliases,
+          usedSprites: loaded.diagnostics.usedSpriteAliases,
+        })
+      }
+      scene = createGardenScene(app, {
+        palette,
+        layerAssets: loaded.layers,
+        plantHeads: loaded.plantHeads,
+        assetDiagnostics: loaded.diagnostics,
+      })
+    } else {
+      scene = createScene(app)
+    }
   } catch (error) {
     try {
       app.destroy(
@@ -199,6 +246,7 @@ export async function attachGardenPixiApplication(
       "visibilitychange",
       onVisibilityChange,
     )
+    clearGardenAssetDiagnostics()
 
     try {
       scene.destroy()

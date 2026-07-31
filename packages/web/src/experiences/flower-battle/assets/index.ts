@@ -54,3 +54,27 @@ export type {
   LoadProgress,
   LoadProgressCallback,
 } from "./garden-asset-types"
+
+export {
+  GARDEN_SCENE_ASSET_URLS,
+  GARDEN_SCENE_REQUIRED_ALIASES,
+} from "./garden-scene-asset-urls"
+
+export type {
+  GardenSceneAssetAlias,
+  GardenSceneRequiredAlias,
+} from "./garden-scene-asset-urls"
+
+export {
+  bakeSvgForPixi,
+  clearGardenAssetDiagnostics,
+  hexToCssColor,
+  loadGardenSceneAssets,
+  publishGardenAssetDiagnostics,
+} from "./loadGardenSceneAssets"
+
+export type {
+  GardenAssetDiagnostics,
+  GardenSceneLoadedAssets,
+  PlantHeadTextures,
+} from "./loadGardenSceneAssets"
