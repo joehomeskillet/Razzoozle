@@ -27,21 +27,22 @@ import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
 /**
- * #982 / wp-b813aed8d3fc: pre-game choreography phases. A typed Flower status
- * can already be hydrated (guarded reconnect hydrate, WP-946-C1-R1) while the
- * game is still in start/wait/prepared — those phases must NOT flip into
- * gameplay chrome: the start screen stays centered, the topbar stays visible,
- * and the transition key stays the default per-status key.
+ * Positive whitelist of Flower Battle gameplay phases. Only these statuses
+ * show the compact player HUD even when the typed store is hydrated.
+ * SHOW_ROOM and any unknown status return false.
  */
-const FLOWER_BATTLE_PRE_GAMEPLAY_STATUSES: ReadonlySet<string> = new Set([
-  STATUS.SHOW_START,
-  STATUS.WAIT,
-  STATUS.SHOW_PREPARED,
+const FLOWER_BATTLE_GAMEPLAY_STATUSES: ReadonlySet<string> = new Set([
+  STATUS.SHOW_QUESTION,
+  STATUS.SELECT_ANSWER,
+  STATUS.SHOW_RESULT,
+  STATUS.PAUSED,
+  STATUS.FINISHED,
 ])
 
 /**
- * Explicit Flower Battle gameplay predicate: typed store presence AND a real
- * gameplay phase. Exported for focused route-integration tests (WP-946-C3).
+ * Explicit Flower Battle gameplay predicate: typed store presence AND a
+ * recognised gameplay phase. Exported for focused route-integration tests.
+ * SHOW_ROOM and unknown statuses always return false.
  */
 export const isFlowerBattleGameplay = (
   statusName: string | null,
@@ -49,7 +50,7 @@ export const isFlowerBattleGameplay = (
 ): boolean =>
   flowerBattlePlayerStatus != null &&
   statusName != null &&
-  !FLOWER_BATTLE_PRE_GAMEPLAY_STATUSES.has(statusName)
+  FLOWER_BATTLE_GAMEPLAY_STATUSES.has(statusName)
 
 /** Exported for focused route-integration tests (WP-946-C3). */
 export const PlayerGamePage = () => {

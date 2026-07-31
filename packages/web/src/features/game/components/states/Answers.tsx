@@ -74,9 +74,6 @@ const Answers = ({
     segments,
     slotOptions,
     matchItems,
-    // Low-latency server-timing anchors (all OPTIONAL — undefined in normal
-    // mode). Used ONLY to render the countdown, never for scoring.
-    serverNowMs,
     answerDeadlineAtServerMs,
   },
 }: Props) => {
@@ -709,9 +706,9 @@ const Answers = ({
     const id = setInterval(tick, 250)
 
     return () => clearInterval(id)
-    // ServerNowMs is included so a re-anchored question restarts the timer.
+    // data.serverNowMs restarts the timer on a re-anchored question.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [lowLatency, answerDeadlineAtServerMs, serverNowMs, clockOffsetMs])
+  }, [lowLatency, answerDeadlineAtServerMs, data.serverNowMs, clockOffsetMs])
 
   // Normal-mode countdown: keep listening to the server COOLDOWN broadcast. In
   // low-latency mode the server still emits COOLDOWN, but the local server-clock

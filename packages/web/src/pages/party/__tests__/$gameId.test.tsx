@@ -253,8 +253,8 @@ const contentKeyOf = (html: string) => {
   return match![1]
 }
 
-const setGameStatus = (name: string, data: unknown = {}) => {
-  playerStore.status = { name, data } as Status
+const setGameStatus = <N extends Status>(name: N, data: unknown = {}) => {
+  playerStore.status = { name, data } as never
 }
 
 describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
@@ -283,12 +283,14 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
     expect(classic).toContain('data-testid="game-topbar"')
   })
 
-  it("pins contentTransitionKey=flowerBattle across answer/result/finish phases", () => {
+  it("pins contentTransitionKey=flowerBattle across all gameplay phases", () => {
     playerStore.flowerBattlePlayerStatus = makeFlowerStatus()
 
     const phases = [
+      STATUS.SHOW_QUESTION,
       STATUS.SELECT_ANSWER,
       STATUS.SHOW_RESULT,
+      STATUS.PAUSED,
       STATUS.FINISHED,
     ] as const
 
@@ -297,7 +299,13 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
       return contentKeyOf(renderToStaticMarkup(<PlayerGamePage />))
     })
 
-    expect(keys).toEqual(["flowerBattle", "flowerBattle", "flowerBattle"])
+    expect(keys).toEqual([
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+      "flowerBattle",
+    ])
     expect(new Set(keys).size).toBe(1)
 
     setGameStatus(STATUS.SELECT_ANSWER)
@@ -434,6 +442,7 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
         STATUS.SHOW_QUESTION,
         STATUS.SELECT_ANSWER,
         STATUS.SHOW_RESULT,
+        STATUS.PAUSED,
         STATUS.FINISHED,
       ]) {
         expect(isFlowerBattleGameplay(name, makeFlowerStatus())).toBe(true)
@@ -444,6 +453,21 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
       expect(isFlowerBattleGameplay(STATUS.SELECT_ANSWER, null)).toBe(false)
       expect(isFlowerBattleGameplay(null, makeFlowerStatus())).toBe(false)
       expect(isFlowerBattleGameplay(null, null)).toBe(false)
+    })
+
+    it("is false for SHOW_ROOM even with non-null flower status", () => {
+      expect(isFlowerBattleGameplay(STATUS.SHOW_ROOM, makeFlowerStatus())).toBe(
+        false,
+      )
+    })
+
+    it("is false for unknown statuses even with non-null flower status", () => {
+      expect(isFlowerBattleGameplay("SOME_UNKNOWN", makeFlowerStatus())).toBe(
+        false,
+      )
+      expect(isFlowerBattleGameplay("SHOW_RESPONSES", makeFlowerStatus())).toBe(
+        false,
+      )
     })
   })
 })
