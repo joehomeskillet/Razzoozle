@@ -11,4 +11,4 @@ optionIndex: number, optionId: string,
 /**
  * Server epoch ms — anchors client-side target-vote window.
  */
-selectedAtServerMs: bigint, };
+selectedAtServerMs: number, };

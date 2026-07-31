@@ -348,6 +348,7 @@ pub struct PowerupSelected {
     pub option_index: usize,
     pub option_id: String,
     /// Server epoch ms — anchors client-side target-vote window.
+    #[ts(type = "number")]
     pub selected_at_server_ms: i64,
 }
 
