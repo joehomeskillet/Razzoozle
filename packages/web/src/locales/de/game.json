@@ -458,31 +458,41 @@
     },
     "reveal": {
       "correct": {
-        "title": "Richtig",
+        "headline": "Richtig",
         "subline": "Deine Blüte wächst!"
       },
       "incorrect": {
-        "title": "Schade"
+        "headline": "Schade",
+        "subline": "Versuch's beim nächsten Mal!"
       },
       "timeout": {
-        "title": "Zeit um"
+        "headline": "Zeit um",
+        "subline": "Keine Antwort gewertet."
       },
       "noAnswer": {
-        "title": "Keine Antwort"
+        "headline": "Keine Antwort",
+        "subline": "Diesmal leer ausgegangen."
       },
       "partial": {
-        "title": "Teilweise richtig"
-      },
-      "multipleCorrect": {
-        "title": "Mehrere richtig"
+        "headline": "Teilpunkte",
+        "subline": "Ein bisschen Sonne für dein Team."
       },
       "serverCorrected": {
-        "title": "Korrigiert"
+        "headline": "Korrigiert",
+        "subline": "Antwort wurde nachträglich angepasst."
       },
       "reconnect": {
-        "title": "Weitergespielt"
+        "headline": "Weiter im Rennen",
+        "subline": "Du bist wieder dabei."
       },
-      "correctAnswer": "Richtige Antwort"
+      "multipleCorrect": {
+        "headline": "Mehrere richtig",
+        "subline": "Mehr als eine Antwort zählte."
+      },
+      "stageLine": "Blüte {{stage}}/{{max}}",
+      "sunLine": "☀ {{sunPoints}}/{{max}}",
+      "growthDelta": "+{{count}} Wachstum",
+      "correctAnswerLabel": "Richtige Antwort"
     },
     "teams": {
       "red": "Rot",
