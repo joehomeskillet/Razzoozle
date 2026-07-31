@@ -450,6 +450,52 @@
       "disabledReason": {
         "recentlyAttacked": "Just attacked — choose another team"
       }
+    },
+    "header": {
+      "teamLabel": "Team {{name}}",
+      "flower": "Blossom {{current}}/{{max}}",
+      "sun": "Sun {{current}}/{{max}}"
+    },
+    "reveal": {
+      "correct": {
+        "title": "Correct",
+        "subline": "Your blossom grows!"
+      },
+      "incorrect": {
+        "title": "Too bad"
+      },
+      "timeout": {
+        "title": "Time's up"
+      },
+      "noAnswer": {
+        "title": "No answer"
+      },
+      "partial": {
+        "title": "Partly correct"
+      },
+      "multipleCorrect": {
+        "title": "Multiple correct"
+      },
+      "serverCorrected": {
+        "title": "Corrected"
+      },
+      "reconnect": {
+        "title": "Continued"
+      },
+      "correctAnswer": "Correct answer"
+    },
+    "teams": {
+      "red": "Red",
+      "blue": "Blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "violet": "Violet",
+      "orange": "Orange"
+    },
+    "winner": {
+      "singular": "Winner: {{team}}",
+      "plural": "Winners: {{teams}} ({{count}} teams)",
+      "tie": "Tie: {{teams}}"
     }
   },
   "flowerPowerupEffects": {

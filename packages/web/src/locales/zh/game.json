@@ -450,6 +450,52 @@
       "disabledReason": {
         "recentlyAttacked": "刚被攻击过——请选择其他队伍"
       }
+    },
+    "header": {
+      "teamLabel": "{{name}}队",
+      "flower": "花朵 {{current}}/{{max}}",
+      "sun": "阳光 {{current}}/{{max}}"
+    },
+    "reveal": {
+      "correct": {
+        "title": "正确",
+        "subline": "你的花朵在生长!"
+      },
+      "incorrect": {
+        "title": "可惜"
+      },
+      "timeout": {
+        "title": "时间到"
+      },
+      "noAnswer": {
+        "title": "未作答"
+      },
+      "partial": {
+        "title": "部分正确"
+      },
+      "multipleCorrect": {
+        "title": "多个正确"
+      },
+      "serverCorrected": {
+        "title": "已修正"
+      },
+      "reconnect": {
+        "title": "继续游戏"
+      },
+      "correctAnswer": "正确答案"
+    },
+    "teams": {
+      "red": "红色",
+      "blue": "蓝色",
+      "green": "绿色",
+      "yellow": "黄色",
+      "violet": "紫色",
+      "orange": "橙色"
+    },
+    "winner": {
+      "singular": "获胜队伍: {{team}}",
+      "plural": "获胜队伍: {{teams}} ({{count}} 支队伍)",
+      "tie": "平局: {{teams}}"
     }
   },
   "flowerPowerupEffects": {
