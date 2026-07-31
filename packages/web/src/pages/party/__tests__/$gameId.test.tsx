@@ -14,8 +14,13 @@ import { STATUS } from "@razzoozle/common/types/game/status"
 
 // --- Controllable player store mock ----------------------------------------
 
+type MockGameStatus = {
+  name: Status
+  data: unknown
+}
+
 type PlayerStoreSlice = {
-  status: Status | null
+  status: MockGameStatus | null
   flowerBattlePlayerStatus: FlowerBattlePlayerStatusData | null
   player: { username?: string; points?: number } | null
   setPlayer: ReturnType<typeof vi.fn>
@@ -253,8 +258,8 @@ const contentKeyOf = (html: string) => {
   return match![1]
 }
 
-const setGameStatus = <N extends Status>(name: N, data: unknown = {}) => {
-  playerStore.status = { name, data } as never
+const setGameStatus = (name: Status, data: unknown = {}) => {
+  playerStore.status = { name, data }
 }
 
 describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
