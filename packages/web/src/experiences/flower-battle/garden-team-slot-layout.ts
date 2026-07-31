@@ -53,7 +53,8 @@ interface GridShape {
 }
 
 const computeGridShape = (teamCount: number): GridShape => {
-  if (teamCount <= 1) return { columns: teamCount, rows: 1 }
+  if (teamCount === 0) return { columns: 0, rows: 0 }
+  if (teamCount === 1) return { columns: 1, rows: 1 }
   if (teamCount === 2) return { columns: 2, rows: 1 }
   if (teamCount === 3) return { columns: 3, rows: 1 }
   if (teamCount === 4) return { columns: 2, rows: 2 }
@@ -63,12 +64,32 @@ const computeGridShape = (teamCount: number): GridShape => {
   return { columns: 4, rows: Math.ceil(teamCount / 4) }
 }
 
+/** Centre-only single slot dimensions (1 team: smaller, centred in viewport). */
+const SINGLE_SLOT_WIDTH_PERCENT = 40
+const SINGLE_SLOT_HEIGHT_PERCENT = 70
+
 const buildGridSlots = (
   teamCount: number,
   columns: number,
   rows: number,
 ): TeamSlotPosition[] => {
   if (teamCount <= 0 || columns <= 0 || rows <= 0) return []
+  // 1-Team-Sonderfall: zentrierter, kleinerer Slot (User-P0 §20.3).
+  if (teamCount === 1 && columns === 1 && rows === 1) {
+    const slotWidth = SINGLE_SLOT_WIDTH_PERCENT
+    const slotHeight = SINGLE_SLOT_HEIGHT_PERCENT
+    const xPercent = (100 - slotWidth) / 2
+    const yPercent = (100 - slotHeight) / 2
+    return [
+      {
+        index: 0,
+        xPercent,
+        yPercent,
+        widthPercent: slotWidth,
+        heightPercent: slotHeight,
+      },
+    ]
+  }
   const availableHeight =
     100 -
     TEAM_SLOT_TOP_PADDING_PERCENT -
