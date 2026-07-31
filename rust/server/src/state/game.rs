@@ -322,6 +322,18 @@ impl Game {
         )
     }
 
+    /// Status block for player:successReconnect — replay a recorded status when
+    /// available; otherwise preserve the player phase fallback (ShowRoom = WAIT).
+    pub fn player_reconnect_status(&self) -> (String, serde_json::Value) {
+        if let Some((s, data)) = &self.last_manager_status {
+            return (Self::status_wire_name(s), data.clone());
+        }
+        (
+            Self::phase_wire_name(self.engine.phase),
+            serde_json::json!({ "text": "game:waitingForPlayers" }),
+        )
+    }
+
     /// Arm a fresh abort signal for a new abortable wait, returning the handle
     /// the waiting task should select on. Replaces any prior (stale) handle.
     pub fn arm_abort(&mut self) -> Arc<tokio::sync::Notify> {

@@ -638,9 +638,49 @@ fn test_manager_reconnect_records_status_roundtrip() {
 
 #[test]
 fn test_manager_reconnect_fallback_when_nothing_recorded() {
+    for (team_mode, expected_team_mode) in [
+        (Some(true), serde_json::json!(true)),
+        (Some(false), serde_json::json!(false)),
+        (None, serde_json::Value::Null),
+    ] {
+        let quiz = test_quiz();
+        let mut game = Game::new(
+            "game-reconnect-fallback".to_string(),
+            "INVITE".to_string(),
+            "manager-socket".to_string(),
+            "test-quiz".to_string(),
+            quiz,
+        );
+        assert!(game.last_manager_status.is_none());
+        assert_eq!(game.engine.phase, GamePhase::ShowRoom);
+        // phase_wire_name stays WAIT; manager reconnect status name is SHOW_ROOM.
+        assert_eq!(Game::phase_wire_name(GamePhase::ShowRoom), "WAIT");
+
+        game.selected_modes.team_mode = team_mode;
+        let (status_name, status_data) = game.manager_reconnect_status();
+
+        assert_eq!(status_name, "SHOW_ROOM");
+        assert_eq!(
+            status_data,
+            serde_json::json!({
+                "text": "game:waitingForPlayers",
+                "inviteCode": "INVITE",
+                "teamMode": expected_team_mode,
+            })
+        );
+        // camelCase keys required on the wire payload
+        assert!(status_data.get("inviteCode").is_some());
+        assert!(status_data.get("teamMode").is_some());
+        assert!(status_data.get("invite_code").is_none());
+        assert!(status_data.get("team_mode").is_none());
+    }
+}
+
+#[test]
+fn test_player_reconnect_fallback_when_nothing_recorded() {
     let quiz = test_quiz();
-    let mut game = Game::new(
-        "game-reconnect-fallback".to_string(),
+    let game = Game::new(
+        "game-player-reconnect-fallback".to_string(),
         "INVITE".to_string(),
         "manager-socket".to_string(),
         "test-quiz".to_string(),
@@ -648,26 +688,38 @@ fn test_manager_reconnect_fallback_when_nothing_recorded() {
     );
     assert!(game.last_manager_status.is_none());
     assert_eq!(game.engine.phase, GamePhase::ShowRoom);
-    // phase_wire_name stays WAIT; reconnect status name is SHOW_ROOM.
-    assert_eq!(Game::phase_wire_name(GamePhase::ShowRoom), "WAIT");
 
-    game.selected_modes.team_mode = Some(true);
-    let (status_name, status_data) = game.manager_reconnect_status();
+    let (status_name, status_data) = game.player_reconnect_status();
 
-    assert_eq!(status_name, "SHOW_ROOM");
+    assert_eq!(status_name, "WAIT");
     assert_eq!(
         status_data,
-        serde_json::json!({
-            "text": "game:waitingForPlayers",
-            "inviteCode": "INVITE",
-            "teamMode": true,
-        })
+        serde_json::json!({ "text": "game:waitingForPlayers" })
     );
-    // camelCase keys required on the wire payload
-    assert!(status_data.get("inviteCode").is_some());
-    assert!(status_data.get("teamMode").is_some());
-    assert!(status_data.get("invite_code").is_none());
-    assert!(status_data.get("team_mode").is_none());
+}
+
+#[test]
+fn test_player_reconnect_recorded_status_priority_over_phase_fallback() {
+    let quiz = test_quiz();
+    let mut game = Game::new(
+        "game-player-reconnect-priority".to_string(),
+        "INVITE".to_string(),
+        "manager-socket".to_string(),
+        "test-quiz".to_string(),
+        quiz,
+    );
+    let paused = GameStatus::Paused(PausedData {
+        reason: Some("recorded-player-status".to_string()),
+    });
+    game.record_last_manager_status(&paused);
+
+    let (status_name, status_data) = game.player_reconnect_status();
+
+    assert_eq!(status_name, "PAUSED");
+    assert_eq!(
+        status_data.get("reason").and_then(|value| value.as_str()),
+        Some("recorded-player-status")
+    );
 }
 
 #[test]

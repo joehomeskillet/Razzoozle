@@ -344,7 +344,7 @@ pub(super) fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                                 let total_questions = game.engine.quiz.questions.len() as i32;
 
                                 // Get the game status (mirrors Node's playerStatus.get or lastBroadcastStatus)
-                                let (status_name, status_data) = game.manager_reconnect_status();
+                                let (status_name, status_data) = game.player_reconnect_status();
                                 let status =
                                     serde_json::json!({ "name": status_name, "data": status_data });
 
