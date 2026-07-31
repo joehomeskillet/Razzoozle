@@ -80,6 +80,7 @@ const baseStatus = (
   overrides: Partial<FlowerBattlePlayerStatusData> = {},
 ): FlowerBattlePlayerStatusData => ({
   gameId: "g1",
+  revision: "1",
   questionIndex: 0,
   teamId: "red",
   growthStage: 4,
