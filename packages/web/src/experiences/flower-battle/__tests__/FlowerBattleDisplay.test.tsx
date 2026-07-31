@@ -233,5 +233,13 @@ describe("FlowerBattleDisplay", () => {
     expect(hudMatch).not.toBeNull()
     expect(hudMatch![1]).not.toContain("absolute")
     expect(hudMatch![1]).not.toContain("inset-0")
+
+    // WP-994: presenter HUD root must not stretch to h-full of the stage
+    // (that double-filled the flex column with ExperienceHud h-full and pushed
+    // team meters under the fold at 1366x768).
+    const presenterMatch =
+      /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
+    expect(presenterMatch).not.toBeNull()
+    expect(presenterMatch![1].split(/\s+/)).not.toContain("h-full")
   })
 })

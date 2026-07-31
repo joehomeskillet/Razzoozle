@@ -97,7 +97,10 @@ export const FlowerBattlePresenterHud = ({
   return (
     <div
       data-testid="flower-battle-presenter-hud"
-      className={`flex h-full w-full flex-col gap-3 ${className}`.trim()}
+      // WP-994: natural height inside Display's overflow-hidden flex column.
+      // Root h-full stacked with ExperienceHud's h-full and pushed team meters
+      // past the fold at laptop viewports (measured 1366x768).
+      className={`flex w-full flex-col gap-3 ${className}`.trim()}
     >
       <ExperienceHud
         {...experienceHudProps}

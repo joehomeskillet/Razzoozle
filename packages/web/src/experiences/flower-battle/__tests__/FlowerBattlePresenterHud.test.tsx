@@ -52,6 +52,28 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).toContain('data-testid="flower-battle-team-hud-1"')
   })
 
+  // WP-994: PresenterHud must size to content inside Display's overflow-hidden
+  // flex column. Root h-full + shared ExperienceHud h-full stretched the HUD
+  // past the viewport at 1366x768 (team-meter top ~780 under display bottom 768).
+  it("sizes to natural height (no root h-full) so team meters stay inside the display viewport (WP-994)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattlePresenterHud
+        teams={baseTeams}
+        sunPoints={{ red: 2, blue: 1 }}
+      />,
+    )
+
+    const rootMatch =
+      /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
+    expect(rootMatch).not.toBeNull()
+    const rootClass = rootMatch![1]
+    expect(rootClass).toContain("flex")
+    expect(rootClass).toContain("flex-col")
+    expect(rootClass).toContain("w-full")
+    // Natural content height — do not claim 100% of the display stage.
+    expect(rootClass.split(/\s+/)).not.toContain("h-full")
+  })
+
   it("shows sun-point meters via RoundProgress primitives", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
