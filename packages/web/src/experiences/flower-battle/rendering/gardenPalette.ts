@@ -1,6 +1,16 @@
 /**
  * Garden scene palette bound to project theme tokens (WP-PIX-05A).
  * No hardcoded production colors — every channel is a CssTokenName.
+ *
+ * WP-PRESENTER-3: extended with the atmospheric layer roles so the new
+ * 13-layer scene graph (sky → distant hills → distant bushes → mid trees →
+ * fence → grass → soil → flower teams → weather → powerup → ambient →
+ * presenter hud → event banner) can resolve per-layer colors via the same
+ * single token-source / theme-token resolver pipeline.
+ *
+ * All tokens are existing CssTokenName entries — no new design tokens are
+ * introduced here. New semantic keys map to the closest existing palette
+ * channel (e.g. cloud → surface, sun → accent, fence → field-cream).
  */
 
 import type { CssTokenName } from "@razzoozle/common/theme-tokens"
@@ -11,32 +21,59 @@ import {
 } from "./resolveThemeColor"
 
 export interface GardenPalette {
+  // Backdrop / sky
   sky: number
-  hillsFar: number
-  hillsNear: number
-  clouds: number
+  sun: number
+  cloud: number
+  // Distant hills
+  hillBack: number
+  hillMid: number
+  // Distant bushes + mid trees
+  bushBack: number
+  bushMid: number
   midground: number
+  // Fence
+  fence: number
+  // Grass + soil
+  grass: number
   soil: number
   soilEdge: number
+  // Foreground frame
   foreground: number
+  // Plant visuals
   plantStem: number
   plantLeaf: number
   plantPetal: number
+  // Reused compatibility aliases (preserve existing public field names)
+  hillsFar: number
+  hillsNear: number
+  clouds: number
+  // Team-meter frame on the soil lip
+  teamMeterFrame: number
 }
 
-/** Semantic token map for the procedural garden. */
+/** Semantic token map for the procedural garden (WP-PRESENTER-3 extended). */
 export const GARDEN_PALETTE_TOKENS = {
   sky: "--surface-2",
-  hillsFar: "--team-green",
-  hillsNear: "--state-correct",
-  clouds: "--surface",
+  sun: "--color-accent",
+  cloud: "--surface",
+  hillBack: "--team-green",
+  hillMid: "--state-correct",
+  bushBack: "--team-green-ring",
+  bushMid: "--team-green-ring",
   midground: "--team-green-ring",
+  fence: "--color-field-cream",
+  grass: "--state-correct",
   soil: "--color-field-cream",
   soilEdge: "--surface-muted",
   foreground: "--surface-3",
   plantStem: "--status-online-text",
   plantLeaf: "--team-green-ring",
   plantPetal: "--status-online-bg",
+  hillsFar: "--team-green",
+  hillsNear: "--state-correct",
+  clouds: "--surface",
+  teamMeterFrame: "--color-field-ink",
 } as const satisfies Record<keyof GardenPalette, CssTokenName>
 
 /** Stable team order for plot tinting (matches TEAMS / presenter slots). */

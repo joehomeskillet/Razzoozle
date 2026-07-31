@@ -500,6 +500,8 @@ describe("resolveGardenPalette with productive token values", () => {
     "--surface-3": "#f3f4f6",
     "--status-online-text": "#166534",
     "--status-online-bg": "#dcfce7",
+    "--color-accent": "#f59e0b",
+    "--color-field-ink": "#1f2937",
   }
 
   it("resolves full garden palette including color-mix ring tokens", () => {

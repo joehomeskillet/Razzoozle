@@ -156,6 +156,7 @@ export function createGardenScene(
       palette.soil,
       palette.soilEdge,
       teamTints,
+      palette.teamMeterFrame,
     )
 
     // Grow/shrink plant views while reusing existing instances by index.
