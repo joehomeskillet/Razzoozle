@@ -1,0 +1,16 @@
+{
+  "hash": "192d6a1dcd95fcac",
+  "measurements": {
+    "plantHeightsPx": [
+      400,
+      300,
+      200,
+      100
+    ],
+    "visiblePlotCount": 4,
+    "cloudCount": 3
+  },
+  "fixtureTitle": "Game-Completed: violett gewinnt",
+  "viewportLabel": "Smartphone Probe",
+  "updatedAt": "2026-07-31T14:55:56.555Z"
+}
