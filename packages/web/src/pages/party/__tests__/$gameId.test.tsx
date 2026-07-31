@@ -254,7 +254,7 @@ const makeFlowerStatus = (
 })
 
 const contentKeyOf = (html: string) => {
-  const match = html.match(/data-content-transition-key="([^"]*)"/)
+  const match = /data-content-transition-key="([^"]*)"/.exec(html)
   expect(match).not.toBeNull()
   return match![1]
 }
@@ -348,7 +348,7 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
     expect(html).not.toContain('data-testid="flower-battle-player-status"')
     expect(contentKeyOf(html)).toBe(STATUS.SELECT_ANSWER)
 
-    const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+    const sectionMatch = /<section[^>]*class="([^"]*)"/.exec(html)
     expect(sectionMatch).not.toBeNull()
     expect(sectionMatch![1]).toMatch(/(^|\s)min-h-dvh(\s|$)/)
     expect(sectionMatch![1]).toMatch(/(^|\s)w-full(\s|$)/)
@@ -360,7 +360,7 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
     setGameStatus(STATUS.SELECT_ANSWER)
 
     const html = renderToStaticMarkup(<PlayerGamePage />)
-    const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+    const sectionMatch = /<section[^>]*class="([^"]*)"/.exec(html)
     expect(sectionMatch).not.toBeNull()
     const sectionClass = sectionMatch![1]
 
