@@ -247,15 +247,52 @@ function isTexture(value: unknown): value is Texture {
   )
 }
 
-async function loadHtmlImage(dataUri: string): Promise<HTMLImageElement> {
+async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
   const img = new Image()
   img.decoding = "async"
+  img.crossOrigin = "anonymous"
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
-    img.onerror = () => reject(new Error("SVG image decode failed"))
-    img.src = dataUri
+    img.onerror = () => reject(new Error("Image decode failed"))
+    img.src = src
   })
   return img
+}
+
+function isRasterUrl(url: string): boolean {
+  return /\.png(\?|#|$)/i.test(url) || /\.jpe?g(\?|#|$)/i.test(url)
+}
+
+/**
+ * Load a PNG/JPEG URL into a Pixi Texture, 2× upscaling small sources so
+ * mid-ground props (Kenney trees ~128px) stay soft rather than blocky.
+ */
+export async function loadRasterTexture(
+  url: string,
+  _alias: GardenSceneAssetAlias,
+): Promise<Texture> {
+  const img = await loadHtmlImage(url)
+  const iw = Math.max(1, img.naturalWidth || 64)
+  const ih = Math.max(1, img.naturalHeight || 64)
+  const maxSide = Math.max(iw, ih)
+  // Upscale tiny props; keep large sample plates (1024) as-is.
+  const upscale = maxSide < 512 ? 2 : 1
+  const canvas = document.createElement("canvas")
+  canvas.width = iw * upscale
+  canvas.height = ih * upscale
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return Texture.from(img)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+  const texture = Texture.from(canvas)
+  try {
+    texture.source.scaleMode = "linear"
+  } catch {
+    // ignore
+  }
+  return texture
 }
 
 /**
@@ -329,22 +366,30 @@ function paletteFillForAlias(
     bg_cloud_01: palette.cloud,
     bg_cloud_02: palette.cloud,
     bg_cloud_03: palette.cloud,
+    bg_cloud_04: palette.cloud,
     bg_hill_back_01: palette.hillBack,
     bg_bush_back_01: palette.bushBack,
     bg_tree_mid_01: palette.midground,
+    bg_tree_02: palette.midground,
+    bg_tree_03: palette.foreground,
+    bg_tree_04: palette.midground,
+    bg_tree_05: palette.foreground,
+    bg_tree_06: palette.midground,
     env_fence_white: palette.fence,
     env_grass_base: palette.grass,
     env_grass_detail_01: palette.foreground,
+    env_grass_detail_02: palette.foreground,
+    env_grass_detail_03: palette.foreground,
     env_soil_plot_01: palette.soil,
     env_foreground_leaf_left: palette.foreground,
     env_foreground_leaf_right: palette.foreground,
     env_foreground_bush_01: palette.bushMid,
-    // Concrete petal / face colours (no white+tint — SVG faces stay readable).
-    plant_head_round: palette.plantPetal,
-    plant_head_bell: palette.plantPetal,
-    plant_head_sun: palette.sun,
-    plant_head_tulip: palette.plantPetal,
-    face_emote_happy: palette.plantPetal,
+    // White petal mask → DummyPlantView tints per team colour.
+    plant_head_round: 0xffffff,
+    plant_head_bell: 0xffffff,
+    plant_head_sun: 0xffffff,
+    plant_head_tulip: 0xffffff,
+    face_emote_happy: 0xffffff,
   }
   return {
     fill: hexToCssColor(map[alias]),
@@ -374,18 +419,21 @@ export async function loadGardenSceneAssets(
   for (const alias of aliases) {
     const url = GARDEN_SCENE_ASSET_URLS[alias]
     try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        missingAliases.push(alias)
-        failedUrls.push(url)
-        fallbackAliases.push(alias)
-        continue
+      let texture: Texture
+      if (isRasterUrl(url)) {
+        texture = await loadRasterTexture(url, alias)
+      } else {
+        const response = await fetch(url)
+        if (!response.ok) {
+          missingAliases.push(alias)
+          failedUrls.push(url)
+          fallbackAliases.push(alias)
+          continue
+        }
+        const raw = await response.text()
+        const baked = bakeSvgForPixi(raw, paletteFillForAlias(alias, palette))
+        texture = await rasterizeSvgToTexture(baked, alias)
       }
-      const raw = await response.text()
-      const baked = bakeSvgForPixi(raw, paletteFillForAlias(alias, palette))
-      // Always canvas-rasterise at viewBox-native (or 2×) resolution.
-      // Pixi Assets.load on bare SVG data-URIs often yields 300×150 bitmaps.
-      const texture = await rasterizeSvgToTexture(baked, alias)
       if (!isTexture(texture)) {
         missingAliases.push(alias)
         failedUrls.push(url)
@@ -401,18 +449,36 @@ export async function loadGardenSceneAssets(
     }
   }
 
+  const trees = [
+    texturesByAlias.bg_tree_mid_01,
+    texturesByAlias.bg_tree_02,
+    texturesByAlias.bg_tree_03,
+    texturesByAlias.bg_tree_04,
+    texturesByAlias.bg_tree_05,
+    texturesByAlias.bg_tree_06,
+  ].filter((t): t is Texture => t != null)
+
+  const grassDetails = [
+    texturesByAlias.env_grass_detail_01,
+    texturesByAlias.env_grass_detail_02,
+    texturesByAlias.env_grass_detail_03,
+  ].filter((t): t is Texture => t != null)
+
   const layers: LayerAssets = {
     sky: texturesByAlias.bg_sky_day,
     sun: texturesByAlias.bg_sun_glow,
     cloud01: texturesByAlias.bg_cloud_01,
     cloud02: texturesByAlias.bg_cloud_02,
     cloud03: texturesByAlias.bg_cloud_03,
+    cloud04: texturesByAlias.bg_cloud_04,
     distantHills: texturesByAlias.bg_hill_back_01,
     distantBushes: texturesByAlias.bg_bush_back_01,
     midTrees: texturesByAlias.bg_tree_mid_01,
+    trees,
     fence: texturesByAlias.env_fence_white,
     grass: texturesByAlias.env_grass_base,
     grassDetail: texturesByAlias.env_grass_detail_01,
+    grassDetails,
     soilPlots: texturesByAlias.env_soil_plot_01,
     foregroundLeafLeft: texturesByAlias.env_foreground_leaf_left,
     foregroundLeafRight: texturesByAlias.env_foreground_leaf_right,
@@ -433,9 +499,12 @@ export async function loadGardenSceneAssets(
     bg_cloud_01: layers.cloud01,
     bg_cloud_02: layers.cloud02,
     bg_cloud_03: layers.cloud03,
+    bg_cloud_04: layers.cloud04,
     bg_hill_back_01: layers.distantHills,
     bg_bush_back_01: layers.distantBushes,
     bg_tree_mid_01: layers.midTrees,
+    bg_tree_02: texturesByAlias.bg_tree_02,
+    bg_tree_03: texturesByAlias.bg_tree_03,
     env_fence_white: layers.fence,
     env_grass_base: layers.grass,
     env_soil_plot_01: layers.soilPlots,

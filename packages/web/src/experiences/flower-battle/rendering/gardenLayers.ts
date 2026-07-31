@@ -32,9 +32,10 @@ export const LAYER_LABELS = [
   "layer-sky",
   "layer-distant-hills",
   "layer-distant-bushes",
-  "layer-mid-trees",
-  // Grass under the fence: solid lawn strips must not paint over pickets.
+  // Lawn first, then trees (so trunks aren't buried under solid grass),
+  // then fence in front of trunks, then plots/flowers.
   "layer-grass",
+  "layer-mid-trees",
   "layer-fence",
   "layer-soil-plots",
   "layer-flower-teams",
@@ -52,8 +53,8 @@ export interface GardenLayerSet {
   sky: Container
   distantHills: Container
   distantBushes: Container
-  midTrees: Container
   grass: Container
+  midTrees: Container
   fence: Container
   soilPlots: Container
   flowerTeams: Container
@@ -83,12 +84,17 @@ export interface LayerAssets {
   cloud01?: Texture
   cloud02?: Texture
   cloud03?: Texture
+  cloud04?: Texture
   distantHills?: Texture
   distantBushes?: Texture
+  /** Primary tree (compat). */
   midTrees?: Texture
+  /** Individual Kenney tree variants for non-repeating mid-ground. */
+  trees?: Texture[]
   fence?: Texture
   grass?: Texture
   grassDetail?: Texture
+  grassDetails?: Texture[]
   soilPlots?: Texture
   foregroundLeafLeft?: Texture
   foregroundLeafRight?: Texture
@@ -216,34 +222,43 @@ export function buildSkyLayer(
     layer.addChild(g)
   }
 
-  const cloudTextures = [assets?.cloud01, assets?.cloud02, assets?.cloud03].filter(
-    (t): t is Texture => t != null && t.width > 0,
-  )
+  const cloudTextures = [
+    assets?.cloud01,
+    assets?.cloud02,
+    assets?.cloud03,
+    assets?.cloud04,
+  ].filter((t): t is Texture => t != null && t.width > 0)
   if (cloudTextures.length > 0) {
+    // Far (smaller, higher) + near (larger, lower) depth bands.
     const placements: Array<{
       x: number
       y: number
       scale: number
       alpha: number
       tex: number
+      depth: "far" | "near"
     }> = [
-      { x: 280, y: 120, scale: 1.15, alpha: 0.95, tex: 0 },
-      { x: 720, y: 200, scale: 0.95, alpha: 0.88, tex: 1 },
-      { x: 1180, y: 140, scale: 1.05, alpha: 0.9, tex: 2 },
-      { x: 1580, y: 240, scale: 0.85, alpha: 0.8, tex: 0 },
-      { x: 480, y: 300, scale: 0.7, alpha: 0.7, tex: 2 },
+      { x: 220, y: 100, scale: 0.85, alpha: 0.75, tex: 0, depth: "far" },
+      { x: 620, y: 150, scale: 0.7, alpha: 0.7, tex: 1, depth: "far" },
+      { x: 1100, y: 90, scale: 0.9, alpha: 0.72, tex: 2, depth: "far" },
+      { x: 1500, y: 130, scale: 0.65, alpha: 0.68, tex: 3, depth: "far" },
+      { x: 380, y: 210, scale: 1.25, alpha: 0.95, tex: 0, depth: "near" },
+      { x: 900, y: 250, scale: 1.1, alpha: 0.9, tex: 1, depth: "near" },
+      { x: 1400, y: 200, scale: 1.35, alpha: 0.92, tex: 2, depth: "near" },
+      { x: 1700, y: 280, scale: 0.95, alpha: 0.85, tex: 3, depth: "near" },
     ]
     for (let i = 0; i < placements.length; i += 1) {
       const p = placements[i]!
       const texture = cloudTextures[p.tex % cloudTextures.length]!
       const cloud = new Sprite(texture)
-      cloud.label = `cloud-sprite-${i}`
+      cloud.label = `cloud-sprite-${p.depth}-${i}`
       cloud.anchor.set(0.5, 0.5)
       cloud.position.set(p.x, p.y)
       cloud.alpha = p.alpha
-      const baseW = 280 * p.scale
+      const baseW = 300 * p.scale
       const s = baseW / texture.width
       cloud.scale.set(s)
+      // Soft white/cream clouds; Kenney PNGs keep their shading.
       layer.addChild(cloud)
     }
   } else if (!assets?.sky) {
@@ -293,9 +308,9 @@ export function buildDistantHillsLayer(
     layer,
     "distant-hills-sprite",
     assets?.distantHills,
-    GARDEN_LOGICAL_HEIGHT * 0.7,
+    GARDEN_LOGICAL_HEIGHT * 0.72,
     palette.hillBack,
-    0.48,
+    0.42,
   )
 
   if (!assets?.distantHills) {
@@ -349,9 +364,9 @@ export function buildDistantBushesLayer(
     layer,
     "distant-bushes-sprite",
     assets?.distantBushes,
-    GARDEN_LOGICAL_HEIGHT * 0.72,
+    GARDEN_LOGICAL_HEIGHT * 0.74,
     palette.bushBack,
-    0.58,
+    0.55,
   )
 
   if (!assets?.distantBushes) {
@@ -385,31 +400,60 @@ export function buildMidTreesLayer(
   const layer = new Container()
   layer.label = "layer-mid-trees"
 
-  withBottomSprite(
-    layer,
-    "mid-trees-sprite",
-    assets?.midTrees,
-    GARDEN_LOGICAL_HEIGHT * 0.74,
-    palette.midground,
-    0.5,
-  )
+  const trees =
+    assets?.trees?.filter((t) => t && t.width > 0) ??
+    (assets?.midTrees ? [assets.midTrees] : [])
 
-  if (!assets?.midTrees) {
-    const g = layer.children[0] as Graphics
-    for (const x of [180, 560, 1380, 1720]) {
-      // Trunk
-      g.roundRect(x - 8, GARDEN_LOGICAL_HEIGHT * 0.52, 16, 110, 4)
-      g.fill({ color: palette.foreground, alpha: 0.85 })
-      // Foliage cluster
-      g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.5, 56, 46)
-      g.fill({ color: palette.midground })
-      g.ellipse(x - 30, GARDEN_LOGICAL_HEIGHT * 0.52, 36, 30)
-      g.fill({ color: palette.midground, alpha: 0.9 })
-      g.ellipse(x + 28, GARDEN_LOGICAL_HEIGHT * 0.53, 36, 30)
-      g.fill({ color: palette.midground, alpha: 0.9 })
+  if (trees.length > 0) {
+    // Varied sizes / mirrors / depths — never a single copy-paste row.
+    // Feet sit just behind the fence line; crowns rise into the sky band.
+    const placements: Array<{
+      x: number
+      y: number
+      height: number
+      flip: boolean
+      alpha: number
+      tint: number
+      tree: number
+    }> = [
+      { x: 140, y: 0.78, height: 280, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
+      { x: 320, y: 0.77, height: 340, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
+      { x: 560, y: 0.79, height: 240, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
+      { x: 980, y: 0.76, height: 380, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
+      { x: 1280, y: 0.78, height: 270, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
+      { x: 1560, y: 0.77, height: 330, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
+      { x: 1780, y: 0.79, height: 250, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
+    ]
+    for (let i = 0; i < placements.length; i += 1) {
+      const p = placements[i]!
+      const tex = trees[p.tree % trees.length]!
+      const spr = new Sprite(tex)
+      spr.label = `mid-tree-${i}`
+      spr.anchor.set(0.5, 1)
+      spr.position.set(p.x, GARDEN_LOGICAL_HEIGHT * p.y)
+      const s = p.height / tex.height
+      spr.scale.set(p.flip ? -s : s, s)
+      spr.alpha = p.alpha
+      spr.tint = p.tint
+      layer.addChild(spr)
     }
+    return layer
   }
 
+  // Procedural fallback row
+  const g = new Graphics()
+  g.label = "mid-trees-fallback"
+  for (const x of [180, 560, 1380, 1720]) {
+    g.roundRect(x - 8, GARDEN_LOGICAL_HEIGHT * 0.52, 16, 110, 4)
+    g.fill({ color: palette.foreground, alpha: 0.85 })
+    g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.5, 56, 46)
+    g.fill({ color: palette.midground })
+    g.ellipse(x - 30, GARDEN_LOGICAL_HEIGHT * 0.52, 36, 30)
+    g.fill({ color: palette.midground, alpha: 0.9 })
+    g.ellipse(x + 28, GARDEN_LOGICAL_HEIGHT * 0.53, 36, 30)
+    g.fill({ color: palette.midground, alpha: 0.9 })
+  }
+  layer.addChild(g)
   return layer
 }
 
@@ -476,21 +520,34 @@ export function buildGrassLayer(
     0.72,
   )
 
-  if (assets?.grassDetail && assets.grassDetail.width > 0) {
-    for (const [x, yPct, s] of [
-      [160, 0.88, 0.9],
-      [480, 0.92, 1.0],
-      [900, 0.86, 0.85],
-      [1320, 0.9, 1.05],
-      [1700, 0.94, 0.95],
-    ] as const) {
-      const tuft = new Sprite(assets.grassDetail)
+  const tuftTextures = (
+    assets?.grassDetails?.length
+      ? assets.grassDetails
+      : assets?.grassDetail
+        ? [assets.grassDetail]
+        : []
+  ).filter((t): t is Texture => t != null && t.width > 0)
+  if (tuftTextures.length > 0) {
+    const spots = [
+      [160, 0.88, 1.2, 0],
+      [360, 0.91, 1.0, 1],
+      [580, 0.87, 1.3, 2],
+      [820, 0.93, 0.95, 0],
+      [1080, 0.89, 1.15, 1],
+      [1320, 0.92, 1.05, 2],
+      [1540, 0.88, 1.25, 0],
+      [1760, 0.94, 1.0, 1],
+    ] as const
+    for (const [x, yPct, sc, ti] of spots) {
+      const tex = tuftTextures[ti % tuftTextures.length]!
+      const tuft = new Sprite(tex)
       tuft.label = `grass-detail-${x}`
       tuft.anchor.set(0.5, 1)
       tuft.position.set(x, GARDEN_LOGICAL_HEIGHT * yPct)
-      const w = 90 * s
-      tuft.scale.set(w / assets.grassDetail.width)
-      tuft.alpha = 0.85
+      const h = 48 * sc
+      tuft.scale.set(h / tex.height)
+      tuft.alpha = 0.9
+      tuft.tint = palette.foreground
       layer.addChild(tuft)
     }
   } else if (!assets?.grass) {
@@ -686,8 +743,8 @@ export function createGardenLayers(
     sky,
     distantHills,
     distantBushes,
-    midTrees,
     grass,
+    midTrees,
     fence,
     soilPlots,
     flowerTeams,
@@ -702,8 +759,8 @@ export function createGardenLayers(
     sky,
     distantHills,
     distantBushes,
-    midTrees,
     grass,
+    midTrees,
     fence,
     soilPlots,
     flowerTeams,

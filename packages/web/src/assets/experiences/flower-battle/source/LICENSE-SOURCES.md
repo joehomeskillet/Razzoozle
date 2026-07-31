@@ -31,6 +31,37 @@ Jeder Eintrag folgt diesem Format:
 
 ---
 
+## Texture Set v1 (2026-07-31)
+
+Finale P0-Auswahl: siehe `../texture-selection-manifest.json` und
+`../kenney-import-sha256.txt`.
+
+### Kenney Background Elements via Tiddybub (`kenney-background-elements`)
+
+**Quelle:** https://kenney.nl/assets/background-elements  
+**Spiegel:** https://github.com/Tiddybub/2d-assets  
+**Commit:** `e0cbe0d995554a490d4c182fe9beb8769ffbb606`  
+**Pfad:** `tiles-terrain/background-elements/`  
+**Lizenz:** CC0-1.0  
+**Abrufdatum:** 2026-07-31  
+**Status:** Imported  
+**Verwendung:** Sonne, Wolken, Einzelbäume, Hügel-/Wald-Samples, Grass-Tufts  
+**Runtime:** `optimized/fixed/kenney-*.png` (SHA-256 in `kenney-import-sha256.txt`)
+
+#### Importierte Dateien (Auswahl)
+- `PNG/sun.png` → `kenney-sun-01.png`
+- `PNG/cloud5–8.png` → `kenney-cloud-0{1–4}.png`
+- `PNG/tree01,05,10,15,20,25.png` → `kenney-tree-0{1–6}.png`
+- `PNG/grass1,3,5.png` → `kenney-grass-tuft-0{1–3}.png`
+- `Samples/uncolored_hills.png` → `kenney-hills-uncolored.png`
+- `Samples/uncolored_forest.png` → `kenney-forest-uncolored.png`
+
+#### Notizen
+- Vector-Sky und Lattenzaun bleiben Razzoozle-interne CC0-SVGs (schärfer in 1920-Breite).
+- Kein vollständiges 1-GB-Repo im Razzoozle-Tree.
+
+---
+
 ## Externe Quellen & CC0 Raw-Material
 
 Diese Einträge sind als **Vorlagen** zu sehen, die vor dem Commit mit echten Import-Daten gefüllt werden.

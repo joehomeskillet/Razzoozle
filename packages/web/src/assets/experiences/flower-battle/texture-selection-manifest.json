@@ -1,0 +1,203 @@
+{
+  "name": "flower-battle-texture-set-v1",
+  "selectedAt": "2026-07-31",
+  "styleTarget": "casual-mobile-garden-2.5d-frontal",
+  "primaryExternalSource": {
+    "repository": "Tiddybub/2d-assets",
+    "commit": "e0cbe0d995554a490d4c182fe9beb8769ffbb606",
+    "pack": "tiles-terrain/background-elements",
+    "upstream": "https://kenney.nl/assets/background-elements",
+    "license": "CC0-1.0"
+  },
+  "entries": [
+    {
+      "alias": "bg_sky_day",
+      "runtimePath": "optimized/fixed/sky-day.svg",
+      "sourceRepository": "Razzoozle-internal",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 86,
+      "selected": true,
+      "note": "Full-bleed sky gradient; vector-sharp at any resolution"
+    },
+    {
+      "alias": "bg_sun_glow",
+      "runtimePath": "optimized/fixed/kenney-sun-01.png",
+      "sourceRepository": "Tiddybub/2d-assets",
+      "sourceCommit": "e0cbe0d995554a490d4c182fe9beb8769ffbb606",
+      "sourcePack": "tiles-terrain/background-elements",
+      "sourceFile": "PNG/sun.png",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 88,
+      "selected": true
+    },
+    {
+      "alias": "bg_cloud_01",
+      "runtimePath": "optimized/fixed/kenney-cloud-01.png",
+      "sourceRepository": "Tiddybub/2d-assets",
+      "sourceCommit": "e0cbe0d995554a490d4c182fe9beb8769ffbb606",
+      "sourcePack": "tiles-terrain/background-elements",
+      "sourceFile": "PNG/cloud5.png",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 90,
+      "selected": true
+    },
+    {
+      "alias": "bg_cloud_02",
+      "runtimePath": "optimized/fixed/kenney-cloud-02.png",
+      "sourceFile": "PNG/cloud6.png",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 90,
+      "selected": true
+    },
+    {
+      "alias": "bg_cloud_03",
+      "runtimePath": "optimized/fixed/kenney-cloud-03.png",
+      "sourceFile": "PNG/cloud7.png",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 90,
+      "selected": true
+    },
+    {
+      "alias": "bg_cloud_04",
+      "runtimePath": "optimized/fixed/kenney-cloud-04.png",
+      "sourceFile": "PNG/cloud8.png",
+      "license": "CC0-1.0",
+      "layer": "layer-sky",
+      "styleScore": 90,
+      "selected": true
+    },
+    {
+      "alias": "bg_hill_back_01",
+      "runtimePath": "optimized/fixed/distant-hills-01.svg",
+      "sourceRepository": "Razzoozle-internal",
+      "sourceFile": "distant-hills-01.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-distant-hills",
+      "styleScore": 84,
+      "selected": true,
+      "note": "Tinted at runtime with --flower-battle-hill-back"
+    },
+    {
+      "alias": "bg_bush_back_01",
+      "runtimePath": "optimized/fixed/distant-bushes-01.svg",
+      "sourceRepository": "Razzoozle-internal",
+      "sourceFile": "distant-bushes-01.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-distant-bushes",
+      "styleScore": 83,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_mid_01",
+      "runtimePath": "optimized/fixed/kenney-tree-01.png",
+      "sourceFile": "PNG/tree01.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_02",
+      "runtimePath": "optimized/fixed/kenney-tree-02.png",
+      "sourceFile": "PNG/tree05.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_03",
+      "runtimePath": "optimized/fixed/kenney-tree-03.png",
+      "sourceFile": "PNG/tree10.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_04",
+      "runtimePath": "optimized/fixed/kenney-tree-04.png",
+      "sourceFile": "PNG/tree15.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_05",
+      "runtimePath": "optimized/fixed/kenney-tree-05.png",
+      "sourceFile": "PNG/tree20.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "bg_tree_06",
+      "runtimePath": "optimized/fixed/kenney-tree-06.png",
+      "sourceFile": "PNG/tree25.png",
+      "license": "CC0-1.0",
+      "layer": "layer-mid-trees",
+      "styleScore": 91,
+      "selected": true
+    },
+    {
+      "alias": "env_fence_white",
+      "runtimePath": "optimized/fixed/fence-white-01.svg",
+      "sourceRepository": "Razzoozle-internal",
+      "license": "CC0-1.0",
+      "layer": "layer-fence",
+      "styleScore": 87,
+      "selected": true,
+      "note": "Full-width vector picket strip (sharp); Kenney fence.png kept as optional segment"
+    },
+    {
+      "alias": "env_grass_base",
+      "runtimePath": "optimized/fixed/lawn-01.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-grass",
+      "styleScore": 85,
+      "selected": true,
+      "note": "Short upright blades; no long diagonal streaks"
+    },
+    {
+      "alias": "env_grass_detail_01",
+      "runtimePath": "optimized/fixed/kenney-grass-tuft-01.png",
+      "sourceFile": "PNG/grass1.png",
+      "license": "CC0-1.0",
+      "layer": "layer-grass",
+      "styleScore": 88,
+      "selected": true
+    },
+    {
+      "alias": "env_soil_plot_01",
+      "runtimePath": "optimized/fixed/soil-plot-team-01.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-soil-plots",
+      "styleScore": 84,
+      "selected": true
+    },
+    {
+      "alias": "env_foreground_leaf_left",
+      "runtimePath": "optimized/fixed/foreground-leaf-left.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-foreground-frame",
+      "styleScore": 82,
+      "selected": true
+    },
+    {
+      "alias": "plant_head_round",
+      "runtimePath": "optimized/fixed/flower-head-round.svg",
+      "license": "CC0-1.0",
+      "layer": "layer-flower-teams",
+      "styleScore": 86,
+      "selected": true,
+      "note": "White-baked petals + team Sprite.tint"
+    }
+  ]
+}

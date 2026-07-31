@@ -133,7 +133,10 @@ export class DummyPlantView {
     const leafSpan = 28 + 18 * t
     const stemW = 10 + 6 * t
 
+    // Soft contact shadow on the soil so plants sit in the bed.
     this.stem.clear()
+    this.stem.ellipse(0, 8, 34 + 10 * t, 12 + 3 * t)
+    this.stem.fill({ color: this.colors.stem, alpha: 0.18 })
     this.stem.roundRect(-stemW / 2, -stemH, stemW, stemH, stemW / 2)
     this.stem.fill({ color: this.colors.stem })
 
@@ -162,12 +165,12 @@ export class DummyPlantView {
       const diameter = Math.max(48, headR * 2.8)
       const tw = Math.max(1, this.headTexture?.width || 1)
       const th = Math.max(1, this.headTexture?.height || 1)
-      // Uniform scale preserves face proportions. Colours are baked into the
-      // SVG at load time — leave tint white so multi-colour faces stay visible.
+      // Uniform scale. Petals are white-baked so team tint multiplies cleanly;
+      // dark face ink stays readable after tint.
       const s = diameter / Math.max(tw, th)
       this.headSprite.scale.set(s, s)
       this.headSprite.position.set(0, -stemH)
-      this.headSprite.tint = 0xffffff
+      this.headSprite.tint = this.colors.petal
     } else if (this.growthStage > 0) {
       for (let i = 0; i < 8; i += 1) {
         const angle = (i / 8) * Math.PI * 2
