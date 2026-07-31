@@ -64,10 +64,39 @@ export function resolveGardenRenderQuality(
 }
 
 function readPrefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return false
   }
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
+/**
+ * Format a non-Error Pixi init rejection without Object default stringification
+ * (`[object Object]`), which oxlint no-base-to-string rejects.
+ */
+function formatUnknownPixiInitError(caught: unknown): string {
+  if (caught == null) return "PixiJS init failed"
+  if (typeof caught === "string") return caught
+  if (
+    typeof caught === "number" ||
+    typeof caught === "boolean" ||
+    typeof caught === "bigint"
+  ) {
+    return String(caught)
+  }
+  if (typeof caught === "symbol") {
+    return caught.description ?? "PixiJS init failed"
+  }
+  try {
+    const json = JSON.stringify(caught)
+    if (typeof json === "string") return json
+  } catch {
+    // Circular / non-serializable values fall through.
+  }
+  return "PixiJS init failed"
 }
 
 interface StaticFallbackProps {
@@ -91,11 +120,16 @@ function GardenStaticFallback({
     <div
       data-testid="garden-static-fallback"
       data-fallback-reason={reason}
-      className="relative h-full w-full overflow-hidden bg-surface"
+      className="bg-surface relative h-full w-full overflow-hidden"
       role="region"
       aria-label="Flower Battle garden scene (static)"
     >
-      <div id="garden-status" aria-live="polite" aria-atomic="true" className="sr-only">
+      <div
+        id="garden-status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
         {reason === "error"
           ? `Garden scene unavailable${errorMessage ? `: ${errorMessage}` : ""}`
           : "Garden scene static view"}
@@ -147,8 +181,7 @@ class GardenCanvasErrorBoundary extends Component<
   }
 }
 
-export interface GardenBattleCanvasHostInternalProps
-  extends GardenBattleCanvasHostProps {
+export interface GardenBattleCanvasHostInternalProps extends GardenBattleCanvasHostProps {
   /** Test-only: inject attach options (Application/scene factories). */
   attachOptions?: AttachGardenPixiOptions
   /** Test-only: inject browser environment for attach. */
@@ -250,7 +283,7 @@ export function GardenBattleCanvasHost({
         const nextError =
           caught instanceof Error
             ? caught
-            : new Error(String(caught ?? "PixiJS init failed"))
+            : new Error(formatUnknownPixiInitError(caught))
         setError(nextError)
         onErrorRef.current?.(nextError)
       }
@@ -322,11 +355,9 @@ export function GardenBattleCanvasHost({
           data-ready={isReady ? "true" : "false"}
           data-reduced-motion={prefersReducedMotion ? "true" : "false"}
           data-seed={seed ?? 0}
-          data-recipe-version={
-            recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION
-          }
+          data-recipe-version={recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION}
           data-phase={phase ?? ""}
-          className={`relative h-full w-full min-h-0 overflow-hidden ${className}`.trim()}
+          className={`relative h-full min-h-0 w-full overflow-hidden ${className}`.trim()}
         >
           {useStatic ? (
             staticNode
@@ -346,9 +377,7 @@ export function GardenBattleCanvasHost({
                 aria-atomic="true"
                 className="sr-only"
               >
-                {isReady
-                  ? "Garden scene ready"
-                  : "Garden scene loading"}
+                {isReady ? "Garden scene ready" : "Garden scene loading"}
               </div>
             </>
           )}

@@ -389,15 +389,11 @@ export function createGardenAssetLoader(
       }
 
       const aliases = aliasesByName.get(name) ?? []
-      try {
-        await unloadAssets(aliases)
-        aliasesByName.delete(name)
-        loadedByName.delete(name)
-        setStatus(name, "unloaded")
-      } catch (err) {
-        // Failed unload preserves retryable loaded state (Finding 3)
-        throw err
-      }
+      // Failed unload must propagate so loaded state stays retryable (Finding 3).
+      await unloadAssets(aliases)
+      aliasesByName.delete(name)
+      loadedByName.delete(name)
+      setStatus(name, "unloaded")
     })()
 
     inflightUnloads.set(name, unloadWork)

@@ -29,10 +29,14 @@ export interface ResolveThemeColorOptions {
   /** Defaults to document.documentElement when available. */
   element?: Element
   /** Defaults to global getComputedStyle when available. */
-  getComputedStyleFn?: (elt: Element) => { getPropertyValue: (prop: string) => string }
+  getComputedStyleFn?: (elt: Element) => {
+    getPropertyValue: (prop: string) => string
+  }
 }
 
-function parseCssColorToRgb(raw: string): { r: number; g: number; b: number } | null {
+function parseCssColorToRgb(
+  raw: string,
+): { r: number; g: number; b: number } | null {
   const value = raw.trim().toLowerCase()
   if (!value) return null
 
@@ -54,9 +58,8 @@ function parseCssColorToRgb(raw: string): { r: number; g: number; b: number } | 
     }
   }
 
-  const rgbMatch = value.match(
-    /^rgba?\(\s*([0-9.]+)\s*[, ]\s*([0-9.]+)\s*[, ]\s*([0-9.]+)/,
-  )
+  const rgbMatch =
+    /^rgba?\(\s*([0-9.]+)\s*[, ]\s*([0-9.]+)\s*[, ]\s*([0-9.]+)/.exec(value)
   if (rgbMatch) {
     const r = Number(rgbMatch[1])
     const g = Number(rgbMatch[2])
@@ -105,7 +108,10 @@ export function resolveThemeTokenColor(
     (typeof document !== "undefined" ? document.documentElement : null)
 
   if (!element) {
-    throw new ThemeTokenColorError(token, "no element to read CSS variables from")
+    throw new ThemeTokenColorError(
+      token,
+      "no element to read CSS variables from",
+    )
   }
 
   const raw = getStyle(element).getPropertyValue(property).trim()
