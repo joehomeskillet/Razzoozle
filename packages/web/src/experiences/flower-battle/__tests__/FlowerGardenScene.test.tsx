@@ -113,15 +113,17 @@ describe("FlowerGardenScene", () => {
     }
   })
 
-  it("caps teams at four slots", () => {
+  it("renders a grid fallback for 5+ teams — no silent cap-at-4 (WP-D-1, SDD §20.3)", () => {
     const html = renderScene(6)
-    expect(html).toContain('data-team-count="4"')
-    expect(html).not.toContain('data-testid="garden-team-slot-4"')
+    expect(html).toContain('data-team-count="6"')
+    expect(html).toContain('data-testid="garden-team-slot-5"')
+    expect(html).toContain('data-slot-count="6"')
   })
 
   it("renders zero team slots for an empty team list (no lower bound, live 958D report)", () => {
     const html = renderScene(0)
     expect(html).toContain('data-team-count="0"')
+    expect(html).toContain('data-slot-count="0"')
     expect(html).not.toContain('data-testid="garden-team-slot-0"')
   })
 
@@ -137,7 +139,6 @@ describe("FlowerGardenScene", () => {
     const slotMatch =
       /data-testid="garden-team-slot-0"[^>]*class="([^"]*)"/.exec(html)
     expect(slotMatch).not.toBeNull()
-    // Container-relative (cqw) so the cap scales with the scene, not px.
     expect(slotMatch![1]).toMatch(/max-w-\[\d+cqw\]/)
   })
 
@@ -150,7 +151,6 @@ describe("FlowerGardenScene", () => {
         ).exec(html)
         expect(slotMatch).not.toBeNull()
         expect(slotMatch![1]).not.toMatch(/max-w-/)
-        expect(slotMatch![1]).toMatch(/flex-1/)
       }
     }
   })
@@ -164,10 +164,32 @@ describe("FlowerGardenScene", () => {
     expect(backdropMatch![1]).not.toMatch(/bg-\S+\/\d+/)
     expect(backdropMatch![1]).toMatch(/\bbg-\S+/)
 
-    // The backdrop must render before (i.e. behind) the safe-area zones.
     const backdropIndex = html.indexOf('data-testid="garden-scene-backdrop"')
     const hudZoneIndex = html.indexOf('aria-label="hud layer"')
     expect(backdropIndex).toBeGreaterThan(-1)
     expect(backdropIndex).toBeLessThan(hudZoneIndex)
+  })
+
+  it("positions each slot via absolute coordinates from getTeamSlotLayout (WP-D-1)", () => {
+    const html = renderScene(3)
+    const slotMatch =
+      /data-testid="garden-team-slot-0"[^>]*data-slot-x="([^"]+)"[^>]*data-slot-y="([^"]+)"[^>]*data-slot-w="([^"]+)"[^>]*data-slot-h="([^"]+)"/.exec(
+        html,
+      )
+    expect(slotMatch).not.toBeNull()
+    const [, x, y, w, h] = slotMatch!
+    expect(Number(x)).toBeGreaterThan(0)
+    expect(Number(y)).toBeGreaterThanOrEqual(0)
+    expect(Number(w)).toBeGreaterThan(0)
+    expect(Number(h)).toBeGreaterThan(0)
+    expect(slotMatch![0]).toContain("data-slot-x")
+  })
+
+  it("re-rendering with the same teamCount keeps slot positions identical (WP-D-1)", () => {
+    const first = renderScene(3, 7)
+    const second = renderScene(3, 7)
+    const xFirst = /data-slot-x="([^"]+)"/.exec(first)?.[1]
+    const xSecond = /data-slot-x="([^"]+)"/.exec(second)?.[1]
+    expect(xFirst).toBe(xSecond)
   })
 })
