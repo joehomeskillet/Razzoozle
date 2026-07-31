@@ -819,16 +819,25 @@ describe("GardenBattleCanvasHost error fallback contract", () => {
 /** Deterministic palette for node env — not a production color fallback. */
 const TEST_PALETTE: GardenPalette = {
   sky: 0x87b5e0,
-  hillsFar: 0x4a8f4a,
-  hillsNear: 0x5aad5a,
-  clouds: 0xf5f5f5,
+  sun: 0xffd54a,
+  cloud: 0xf5f5f5,
+  hillBack: 0x4a8f4a,
+  hillMid: 0x5aad5a,
+  bushBack: 0x3d7a3d,
+  bushMid: 0x3d7a3d,
   midground: 0x3d7a3d,
+  fence: 0xfaf6e8,
+  grass: 0x6bbf59,
   soil: 0xc4a574,
   soilEdge: 0x8b6914,
   foreground: 0x2f6b2f,
   plantStem: 0x2d6a2d,
   plantLeaf: 0x4caf50,
   plantPetal: 0xe57373,
+  hillsFar: 0x4a8f4a,
+  hillsNear: 0x5aad5a,
+  clouds: 0xf5f5f5,
+  teamMeterFrame: 0x222222,
 }
 
 describe("WP-PIX-05B production scene factory + live snapshot", () => {
