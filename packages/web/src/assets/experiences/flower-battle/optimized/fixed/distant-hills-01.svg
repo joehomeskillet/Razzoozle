@@ -1,0 +1,15 @@
+<!--
+  distant-hills-01.svg  - rolling distant hills silhouette (parallax back layer).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 1920x400. Two hill ridges for depth.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 400" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g id="distant-hills-back">
+    <!-- back ridge (lighter / farther) -->
+    <path d="M 0 400 L 0 280 Q 240 220 480 260 Q 720 300 960 240 Q 1200 180 1440 220 Q 1680 260 1920 200 L 1920 400 Z"
+          fill="currentColor" opacity="0.45" />
+    <!-- front ridge (darker / closer) -->
+    <path d="M 0 400 L 0 340 Q 200 290 400 320 Q 600 350 800 300 Q 1000 250 1200 290 Q 1400 330 1600 280 Q 1800 240 1920 260 L 1920 400 Z"
+          fill="currentColor" opacity="0.7" />
+  </g>
+</svg>

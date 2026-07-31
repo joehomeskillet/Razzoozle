@@ -1,0 +1,26 @@
+<!--
+  soil-plot-team-01.svg  - cartoon soil mound base (team plot under flower bed).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 240x100. Mound with subtle soil texture specks.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 100" aria-hidden="true">
+  <g id="soil-plot-team-01">
+    <!-- main soil mound (slightly trapezoidal) -->
+    <path d="M 30 90 L 50 40 Q 120 22 190 40 L 210 90 Z" fill="currentColor" />
+    <!-- highlight on top -->
+    <path d="M 60 50 Q 120 36 180 50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+    <!-- soil texture specks -->
+    <g fill="var(--line)" opacity="0.45">
+      <circle cx="70" cy="68" r="1.5" />
+      <circle cx="90" cy="76" r="1.5" />
+      <circle cx="110" cy="62" r="1.5" />
+      <circle cx="130" cy="78" r="1.5" />
+      <circle cx="150" cy="68" r="1.5" />
+      <circle cx="170" cy="76" r="1.5" />
+      <circle cx="190" cy="66" r="1.5" />
+      <circle cx="80" cy="84" r="1.5" />
+      <circle cx="120" cy="86" r="1.5" />
+      <circle cx="160" cy="84" r="1.5" />
+    </g>
+  </g>
+</svg>

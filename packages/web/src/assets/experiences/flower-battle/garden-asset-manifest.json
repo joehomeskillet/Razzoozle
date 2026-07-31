@@ -1,0 +1,392 @@
+{
+  "$schema": "./garden-asset-manifest.schema.json",
+  "generated_at": "2026-07-31T13:24:14.750Z",
+  "generator": "generate-manifest.mjs",
+  "fixed_dir": "/nvmetank1/projects/Razzoozle/source/.claude/worktrees/wp-presenter-1/packages/web/src/assets/experiences/flower-battle/optimized/fixed",
+  "abrufdatum": "2026-07-31",
+  "asset_count": 26,
+  "alias_count": 15,
+  "aliases": {
+    "bg_bush_back_01": "distant-bushes-01.svg",
+    "bg_cloud_01": "cloud-soft-01.svg",
+    "bg_cloud_02": "cloud-soft-02.svg",
+    "bg_cloud_03": "cloud-soft-03.svg",
+    "bg_hill_back_01": "distant-hills-01.svg",
+    "bg_sky_day": "sky-day.svg",
+    "bg_sun_glow": "sun-glow.svg",
+    "bg_tree_mid_01": "mid-trees-01.svg",
+    "env_fence_white": "fence-white-01.svg",
+    "env_foreground_bush_01": "foreground-bush-01.svg",
+    "env_foreground_leaf_left": "foreground-leaf-left.svg",
+    "env_foreground_leaf_right": "foreground-leaf-right.svg",
+    "env_grass_base": "lawn-01.svg",
+    "env_grass_detail_01": "lawn-detail-grass-tufts-01.svg",
+    "env_soil_plot_01": "soil-plot-team-01.svg"
+  },
+  "assets": [
+    {
+      "file": "distant-bushes-01.svg",
+      "alias": "bg_bush_back_01",
+      "sha256": "c0f557d870c3c203f26f5660b3cd50ab39a64caf72692070e344e3c195a0c102",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1159,
+      "geometry": {
+        "viewBox": "0 0 1920 300",
+        "width": 1920,
+        "height": 300
+      }
+    },
+    {
+      "file": "cloud-soft-01.svg",
+      "alias": "bg_cloud_01",
+      "sha256": "8a26fc165784a45c22811f8e5db52499cefad4c18a3188057aade1ccd50f9abe",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 857,
+      "geometry": {
+        "viewBox": "0 0 320 120",
+        "width": 320,
+        "height": 120
+      }
+    },
+    {
+      "file": "cloud-soft-02.svg",
+      "alias": "bg_cloud_02",
+      "sha256": "f2b3c0ad6d59125ead69550df87612f3718df5c3c3f3e897e01a754be336a443",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 708,
+      "geometry": {
+        "viewBox": "0 0 280 100",
+        "width": 280,
+        "height": 100
+      }
+    },
+    {
+      "file": "cloud-soft-03.svg",
+      "alias": "bg_cloud_03",
+      "sha256": "3cd390e4fc80e847d67b20a198baf771b2dcd6e1c3ac3ce2683a4f9f1166cdfc",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 835,
+      "geometry": {
+        "viewBox": "0 0 360 140",
+        "width": 360,
+        "height": 140
+      }
+    },
+    {
+      "file": "distant-hills-01.svg",
+      "alias": "bg_hill_back_01",
+      "sha256": "5174835ddedacc9125b3b39a917b605b48e8b2aa99f77feaca67ebf27a005c8b",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 787,
+      "geometry": {
+        "viewBox": "0 0 1920 400",
+        "width": 1920,
+        "height": 400
+      }
+    },
+    {
+      "file": "sky-day.svg",
+      "alias": "bg_sky_day",
+      "sha256": "d9050409cf6db162f1fac1bea347f11559b8ac2d641c63f9fec4963d5f61dadf",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 973,
+      "geometry": {
+        "viewBox": "0 0 1920 1080",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "file": "sun-glow.svg",
+      "alias": "bg_sun_glow",
+      "sha256": "c3a8a3a125d9000700ebffe0f3a9ce5c5ac58aed42042dbe9124c2e0ae423114",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1711,
+      "geometry": {
+        "viewBox": "0 0 256 256",
+        "width": 256,
+        "height": 256
+      }
+    },
+    {
+      "file": "mid-trees-01.svg",
+      "alias": "bg_tree_mid_01",
+      "sha256": "0c0ab49f1dc5a871cd1bb3ffc12e66f1bf45cae390fce6c8d195129bf34588b1",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1924,
+      "geometry": {
+        "viewBox": "0 0 1920 350",
+        "width": 1920,
+        "height": 350
+      }
+    },
+    {
+      "file": "fence-white-01.svg",
+      "alias": "env_fence_white",
+      "sha256": "255547cdc9d87e358fc93e1bf32f9d9c57a5224450c18b6747df8e261f4d3ba7",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 4055,
+      "geometry": {
+        "viewBox": "0 0 1920 200",
+        "width": 1920,
+        "height": 200
+      }
+    },
+    {
+      "file": "foreground-bush-01.svg",
+      "alias": "env_foreground_bush_01",
+      "sha256": "7b7b724a534aeec8336bb9db962ae240a92ee2fb23f048ace398892259ac8dcb",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1119,
+      "geometry": {
+        "viewBox": "0 0 200 200",
+        "width": 200,
+        "height": 200
+      }
+    },
+    {
+      "file": "foreground-leaf-left.svg",
+      "alias": "env_foreground_leaf_left",
+      "sha256": "c2993c8f74ad78ecf0d6234b12e7d0d13b03ce9ffe2e0b4f6e93498ffb3a3043",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1315,
+      "geometry": {
+        "viewBox": "0 0 300 400",
+        "width": 300,
+        "height": 400
+      }
+    },
+    {
+      "file": "foreground-leaf-right.svg",
+      "alias": "env_foreground_leaf_right",
+      "sha256": "6998cf3112b23be3dcc3ef66464e5edf115c9fa31f7209dd88f9ed9b0a7cfca6",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1289,
+      "geometry": {
+        "viewBox": "0 0 300 400",
+        "width": 300,
+        "height": 400
+      }
+    },
+    {
+      "file": "lawn-01.svg",
+      "alias": "env_grass_base",
+      "sha256": "8e24d67bc5b87f63f0c0b2adce135da44da727f905fb715a96367e93191bc9e5",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 2407,
+      "geometry": {
+        "viewBox": "0 0 1920 600",
+        "width": 1920,
+        "height": 600
+      }
+    },
+    {
+      "file": "lawn-detail-grass-tufts-01.svg",
+      "alias": "env_grass_detail_01",
+      "sha256": "5e7f6876da49e54d7c1c62d4ba235d76e73137e70b51cc2063eb55151ae50f9a",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1754,
+      "geometry": {
+        "viewBox": "0 0 400 200",
+        "width": 400,
+        "height": 200
+      }
+    },
+    {
+      "file": "soil-plot-team-01.svg",
+      "alias": "env_soil_plot_01",
+      "sha256": "63a2dea68c2b550cb6d6502beeb69d7f68a57a8f9519ee948491777427bb5bb0",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1110,
+      "geometry": {
+        "viewBox": "0 0 240 100",
+        "width": 240,
+        "height": 100
+      }
+    },
+    {
+      "file": "acid-cloud.svg",
+      "alias": null,
+      "sha256": "f74fdd7d069796572015be0ebb9ffcf603e58f0256cbbe275fb622e8fbb26c8f",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1520,
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "file": "fertilizer.svg",
+      "alias": null,
+      "sha256": "a70ca197c140eec4b234d44343afcf4fc61fa56dc18ef8cde836b59f8a8d288d",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1240,
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "file": "flower-head-bell.svg",
+      "alias": null,
+      "sha256": "7bfab9577d83467ab7ad4e526a7e4faf2909fc518bd0b2c77325bbab28d01489",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 781,
+      "geometry": {
+        "viewBox": "-40 -40 80 80",
+        "width": 80,
+        "height": 80
+      }
+    },
+    {
+      "file": "flower-head-round.svg",
+      "alias": null,
+      "sha256": "b54243a406702155cb741222517f362e04ab84f0790ff481dcdcd46831a8827f",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1087,
+      "geometry": {
+        "viewBox": "-40 -40 80 80",
+        "width": 80,
+        "height": 80
+      }
+    },
+    {
+      "file": "flower-head-sun.svg",
+      "alias": null,
+      "sha256": "170f1535485ab5c4c746754c911ab17a00f8da4f2d5d328a0cafd77d27e3d1ef",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1215,
+      "geometry": {
+        "viewBox": "-40 -40 80 80",
+        "width": 80,
+        "height": 80
+      }
+    },
+    {
+      "file": "flower-head-tulip.svg",
+      "alias": null,
+      "sha256": "f6d126af49c9111ce2b8225119d80d2f16e768bade9c7d44bc1f931bf9a1faf7",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 848,
+      "geometry": {
+        "viewBox": "-40 -40 80 80",
+        "width": 80,
+        "height": 80
+      }
+    },
+    {
+      "file": "garden-bed.svg",
+      "alias": null,
+      "sha256": "68ba3a7c5493ce05d43b2cb2e20b54dd1fbefec02bd0188dd85955ff0ccab0ed",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 581,
+      "geometry": {
+        "viewBox": "0 0 200 300",
+        "width": 200,
+        "height": 300
+      }
+    },
+    {
+      "file": "garden-ground.svg",
+      "alias": null,
+      "sha256": "b7bb69b5583ad7392b1a2188f4991c62de7608d487bcc0ae78681ae96f1cbee8",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 787,
+      "geometry": {
+        "viewBox": "0 0 200 300",
+        "width": 200,
+        "height": 300
+      }
+    },
+    {
+      "file": "manager-illustration.svg",
+      "alias": null,
+      "sha256": "31b9e229b1cac3fbb863c993216752670d32a42fc6713f37ba70535507e1c4e5",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1206,
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "file": "sunbeam.svg",
+      "alias": null,
+      "sha256": "8d9dd5b7bd930927060e1bf9bc2b3e67246e5d47a5a3837d7eb770f1da34ffd3",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1017,
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "file": "umbrella.svg",
+      "alias": null,
+      "sha256": "e5382e5f846b04208cc8f6fabe4007a6ece4e7e5c9f3ad744e041bd4f51f8bd6",
+      "license": "CC0 (Razzoozle-internal, self-generated)",
+      "abrufdatum": "2026-07-31",
+      "status": "Imported",
+      "bytes": 1157,
+      "geometry": {
+        "viewBox": "0 0 64 64",
+        "width": 64,
+        "height": 64
+      }
+    }
+  ]
+}

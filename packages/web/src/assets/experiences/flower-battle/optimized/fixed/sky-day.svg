@@ -1,0 +1,19 @@
+<!--
+  sky-day.svg  - bright daytime sky backdrop for Flower Battle presenter.
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 1920x1080 (16:9 stage fill). Tokens via currentColor + var(--sky-color-*).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky-day-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--sky-color-top, currentColor)" stop-opacity="0.95" />
+      <stop offset="55%" stop-color="var(--sky-color-mid, currentColor)" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="var(--sky-color-bottom, currentColor)" stop-opacity="0.45" />
+    </linearGradient>
+  </defs>
+  <g id="sky-fill">
+    <rect x="0" y="0" width="1920" height="1080" fill="url(#sky-day-gradient)" />
+    <!-- subtle horizon glow -->
+    <ellipse cx="960" cy="980" rx="1200" ry="120" fill="currentColor" opacity="0.18" />
+  </g>
+</svg>

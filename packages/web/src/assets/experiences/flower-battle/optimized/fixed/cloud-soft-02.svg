@@ -1,0 +1,15 @@
+<!--
+  cloud-soft-02.svg  - medium soft cartoon cloud (4 overlapping circles + flat base).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 280x100.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 100" aria-hidden="true">
+  <g id="cloud-soft-02">
+    <circle cx="60" cy="50" r="32" fill="currentColor" opacity="0.95" />
+    <circle cx="110" cy="36" r="38" fill="currentColor" opacity="0.95" />
+    <circle cx="166" cy="32" r="34" fill="currentColor" opacity="0.95" />
+    <circle cx="216" cy="50" r="30" fill="currentColor" opacity="0.95" />
+    <!-- soft underside for cartoon shading -->
+    <ellipse cx="140" cy="78" rx="110" ry="12" fill="currentColor" opacity="0.65" />
+  </g>
+</svg>

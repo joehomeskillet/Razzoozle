@@ -1,0 +1,25 @@
+<!--
+  foreground-leaf-right.svg  - foreground cartoon leaf cluster on right edge (parallax front layer, mirror of left).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 300x400.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" aria-hidden="true">
+  <g id="foreground-leaf-right" fill="currentColor">
+    <!-- big leaf 1 (pointing down-right) -->
+    <g transform="translate(160 180) rotate(30)">
+      <path d="M 0 0 Q 60 -40 100 0 Q 60 40 0 0 Z" opacity="0.95" />
+      <path d="M 0 0 Q 50 -30 90 -2" fill="none" stroke="var(--line)" stroke-width="2" stroke-linecap="round" opacity="0.55" />
+    </g>
+    <!-- big leaf 2 (pointing up-right) -->
+    <g transform="translate(220 250) rotate(-40)">
+      <path d="M 0 0 Q 60 -50 110 -10 Q 70 30 0 0 Z" opacity="0.9" />
+      <path d="M 0 0 Q 50 -40 100 -8" fill="none" stroke="var(--line)" stroke-width="2" stroke-linecap="round" opacity="0.5" />
+    </g>
+    <!-- small accent leaf -->
+    <g transform="translate(250 100) rotate(60)">
+      <path d="M 0 0 Q 36 -22 60 0 Q 36 22 0 0 Z" opacity="0.85" />
+    </g>
+    <!-- stem running down the side -->
+    <path d="M 270 0 Q 240 80 210 200 Q 190 300 170 400" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" opacity="0.7" />
+  </g>
+</svg>

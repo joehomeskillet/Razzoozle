@@ -9,7 +9,8 @@
     "format": "prettier --check . --log-level warn",
     "format:fix": "prettier --write . --log-level warn",
     "start": "vite preview",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "garden:manifest": "node src/assets/experiences/flower-battle/scripts/generate-manifest.mjs"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",

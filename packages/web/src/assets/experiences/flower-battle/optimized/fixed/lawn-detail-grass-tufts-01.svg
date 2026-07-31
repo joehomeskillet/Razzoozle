@@ -1,0 +1,44 @@
+<!--
+  lawn-detail-grass-tufts-01.svg  - cartoon grass tuft cluster (overlay detail).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 400x200. 6 tufts in a row, drawn as triangular fan-shapes.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" aria-hidden="true">
+  <g id="lawn-grass-tufts" fill="currentColor">
+    <!-- tuft 1 -->
+    <g transform="translate(40 160)">
+      <path d="M -16 0 L -10 -50 L -4 0 Z" opacity="0.95" />
+      <path d="M -4 0 L 0 -58 L 4 0 Z" opacity="1" />
+      <path d="M 4 0 L 10 -50 L 16 0 Z" opacity="0.9" />
+    </g>
+    <!-- tuft 2 -->
+    <g transform="translate(110 170)">
+      <path d="M -14 0 L -8 -42 L -2 0 Z" opacity="0.9" />
+      <path d="M -2 0 L 2 -50 L 6 0 Z" opacity="1" />
+      <path d="M 6 0 L 12 -42 L 18 0 Z" opacity="0.85" />
+    </g>
+    <!-- tuft 3 (centerpiece) -->
+    <g transform="translate(190 150)">
+      <path d="M -20 0 L -12 -68 L -4 0 Z" opacity="0.95" />
+      <path d="M -4 0 L 0 -78 L 4 0 Z" opacity="1" />
+      <path d="M 4 0 L 12 -68 L 20 0 Z" opacity="0.9" />
+    </g>
+    <!-- tuft 4 -->
+    <g transform="translate(260 168)">
+      <path d="M -14 0 L -8 -46 L -2 0 Z" opacity="0.9" />
+      <path d="M -2 0 L 2 -54 L 6 0 Z" opacity="1" />
+      <path d="M 6 0 L 12 -46 L 18 0 Z" opacity="0.85" />
+    </g>
+    <!-- tuft 5 -->
+    <g transform="translate(330 162)">
+      <path d="M -16 0 L -10 -52 L -4 0 Z" opacity="0.95" />
+      <path d="M -4 0 L 0 -60 L 4 0 Z" opacity="1" />
+      <path d="M 4 0 L 10 -52 L 16 0 Z" opacity="0.9" />
+    </g>
+    <!-- tuft 6 (rightmost) -->
+    <g transform="translate(380 175)">
+      <path d="M -12 0 L -6 -38 L 0 0 Z" opacity="0.9" />
+      <path d="M 0 0 L 6 -44 L 12 0 Z" opacity="0.95" />
+    </g>
+  </g>
+</svg>
