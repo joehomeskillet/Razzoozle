@@ -45,14 +45,17 @@ vi.mock("@razzoozle/web/features/game/components/GameWrapper", () => ({
   default: ({
     children,
     contentTransitionKey,
+    managerKioskFullBleed,
     statusName,
   }: {
     children: ReactNode
     contentTransitionKey?: string
+    managerKioskFullBleed?: boolean
     statusName?: string
   }) => (
     <main
       data-content-transition-key={contentTransitionKey ?? statusName ?? "none"}
+      data-manager-kiosk-full-bleed={managerKioskFullBleed ? "true" : undefined}
     >
       {children}
     </main>
@@ -132,4 +135,20 @@ describe("SatelliteManagerPage content transition key", () => {
       expect(html).toContain(`data-content-transition-key="${statusName}"`)
     },
   )
+})
+
+describe("SatelliteManagerPage kiosk chrome", () => {
+  it("opts into full bleed without replacing the stable Flower Battle key", () => {
+    const phases = flowerCases.map(({ statusName, phase }) =>
+      renderPage(statusName, {
+        mode: "flowerBattle",
+        phase,
+      }),
+    )
+
+    for (const html of phases) {
+      expect(html).toContain('data-manager-kiosk-full-bleed="true"')
+      expect(html).toContain('data-content-transition-key="flowerBattle"')
+    }
+  })
 })

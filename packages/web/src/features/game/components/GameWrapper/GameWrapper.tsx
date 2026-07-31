@@ -60,6 +60,7 @@ type Props = PropsWithChildren & {
   onBack?: () => void
   manager?: boolean
   controls?: boolean
+  managerKioskFullBleed?: boolean
 }
 
 const GameWrapper = ({
@@ -72,6 +73,7 @@ const GameWrapper = ({
   onBack,
   manager,
   controls = true,
+  managerKioskFullBleed = false,
 }: Props) => {
   const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
@@ -151,6 +153,7 @@ const GameWrapper = ({
   }
 
   const audience = audienceFromWrapperProps(manager, controls)
+  const isManagerKioskFullBleed = manager && managerKioskFullBleed
 
   return (
     <GameAudienceContext.Provider value={audience}>
@@ -238,7 +241,7 @@ const GameWrapper = ({
                 ) : null)}
 
               {/* Presenter-Toolbar (REFACTORED): only when manager && controls */}
-              {manager && controls && (
+              {manager && !isManagerKioskFullBleed && controls && (
                 <div
                   data-testid="presenter-toolbar"
                   className="flex w-full flex-wrap items-center justify-between gap-2 p-4"
@@ -354,7 +357,7 @@ const GameWrapper = ({
               )}
 
               {/* Display mode fallback (manager && !controls): preserve existing bar layout */}
-              {manager && !controls && (
+              {manager && !isManagerKioskFullBleed && !controls && (
                 <div className="flex w-full flex-wrap items-center justify-between gap-2 p-4">
                   <div className="flex shrink-0 justify-start">
                     {questionStates && (
@@ -415,7 +418,10 @@ const GameWrapper = ({
               <div
                 aria-disabled={!isConnected}
                 className={clsx(
-                  "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-4",
+                  "flex min-h-0 flex-1 flex-col",
+                  isManagerKioskFullBleed
+                    ? "w-full overflow-hidden"
+                    : "justify-center overflow-y-auto px-4 pt-2 pb-4",
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
                   // pb-24 pad that cleared it is gone — manager and player share

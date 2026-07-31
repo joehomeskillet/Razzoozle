@@ -5,6 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 // Hoisted by vitest; they only exist so GameWrapper can render server-side.
 // The pure button-resilience tests below never touch these modules.
 
+const socketState = vi.hoisted(() => ({ isConnected: true }))
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, options?: { defaultValue?: string }) =>
@@ -40,7 +42,10 @@ vi.mock("motion/react", () => ({
 }))
 
 vi.mock("@razzoozle/web/features/game/contexts/socket-context", () => ({
-  useSocket: () => ({ isConnected: true, socket: { emit: vi.fn() } }),
+  useSocket: () => ({
+    isConnected: socketState.isConnected,
+    socket: { emit: vi.fn() },
+  }),
   useEvent: vi.fn(),
 }))
 
@@ -54,7 +59,7 @@ vi.mock("@razzoozle/web/features/game/stores/manager", () => ({
 
 vi.mock("@razzoozle/web/features/game/stores/question", () => ({
   useQuestionStore: () => ({
-    questionStates: null,
+    questionStates: { current: 1, total: 2 },
     setQuestionStates: vi.fn(),
   }),
 }))
@@ -102,6 +107,10 @@ vi.mock("./GameControlPanel", () => ({ default: () => null }))
 import { STATUS } from "@razzoozle/common/types/game/status"
 
 import GameWrapper from "./GameWrapper"
+
+beforeEach(() => {
+  socketState.isConnected = true
+})
 
 describe("GameWrapper button resilience", () => {
   beforeEach(() => {
@@ -180,7 +189,7 @@ describe("GameWrapper button resilience", () => {
 
 describe("GameWrapper route-level height chain (WP-958D)", () => {
   const sectionClassOf = (html: string) => {
-    const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+    const sectionMatch = /<section[^>]*class="([^"]*)"/.exec(html)
     expect(sectionMatch).not.toBeNull()
     return sectionMatch![1]
   }
@@ -240,9 +249,95 @@ describe("GameWrapper route-level height chain (WP-958D)", () => {
   })
 })
 
+describe("GameWrapper manager kiosk full-bleed chrome", () => {
+  const contentShellClassOf = (html: string) => {
+    const match = /<div aria-disabled="(?:true|false)" class="([^"]*)"/.exec(
+      html,
+    )
+    expect(match).not.toBeNull()
+    return match![1]
+  }
+
+  it.each([true, false])(
+    "suppresses manager chrome and removes content padding when controls=$controls",
+    (controls) => {
+      const html = renderToStaticMarkup(
+        <GameWrapper
+          statusName={STATUS.SHOW_QUESTION}
+          contentTransitionKey="flowerBattle"
+          manager
+          controls={controls}
+          managerKioskFullBleed
+        >
+          <div data-testid="satellite-garden">garden</div>
+        </GameWrapper>,
+      )
+
+      expect(html).not.toContain('data-testid="presenter-toolbar"')
+      expect(html).not.toContain("1 / 2")
+      expect(html).toContain('data-testid="satellite-garden"')
+      expect(html).toContain('data-content-transition-key="flowerBattle"')
+
+      const contentShellClass = contentShellClassOf(html)
+      expect(contentShellClass).toContain("overflow-hidden")
+      expect(contentShellClass).not.toContain("overflow-y-auto")
+      expect(contentShellClass).not.toContain("justify-center")
+      expect(contentShellClass).not.toContain("px-4")
+      expect(contentShellClass).not.toContain("pt-2")
+      expect(contentShellClass).not.toContain("pb-4")
+    },
+  )
+
+  it.each([true, false])(
+    "keeps the default manager chrome and scroll shell when controls=$controls",
+    (controls) => {
+      const html = renderToStaticMarkup(
+        <GameWrapper
+          statusName={STATUS.SHOW_QUESTION}
+          manager
+          controls={controls}
+        >
+          <div>manager content</div>
+        </GameWrapper>,
+      )
+
+      expect(html).toContain("1 / 2")
+      if (controls) {
+        expect(html).toContain('data-testid="presenter-toolbar"')
+      }
+
+      const contentShellClass = contentShellClassOf(html)
+      expect(contentShellClass).toContain("justify-center")
+      expect(contentShellClass).toContain("overflow-y-auto")
+      expect(contentShellClass).toContain("px-4")
+      expect(contentShellClass).toContain("pt-2")
+      expect(contentShellClass).toContain("pb-4")
+    },
+  )
+
+  it("keeps the reconnecting banner visible in full-bleed kiosk mode", () => {
+    socketState.isConnected = false
+
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls={false}
+        managerKioskFullBleed
+      >
+        <div>satellite garden</div>
+      </GameWrapper>,
+    )
+
+    expect(html).toContain('role="status"')
+    expect(html).toContain("common:reconnecting")
+    expect(contentShellClassOf(html)).toContain("overflow-hidden")
+  })
+})
+
 describe("GameWrapper content transition key (WP-958F-W)", () => {
   const contentKeyOf = (html: string) => {
-    const match = html.match(/data-content-transition-key="([^"]*)"/)
+    const match = /data-content-transition-key="([^"]*)"/.exec(html)
     expect(match).not.toBeNull()
     return match![1]
   }
@@ -323,7 +418,7 @@ describe("GameWrapper content transition key (WP-958F-W)", () => {
       </GameWrapper>,
     )
 
-    const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+    const sectionMatch = /<section[^>]*class="([^"]*)"/.exec(html)
     expect(sectionMatch).not.toBeNull()
     const sectionClass = sectionMatch![1]
     expect(sectionClass).toMatch(/(^|\s)w-full(\s|$)/)
@@ -336,7 +431,7 @@ describe("GameWrapper content transition key (WP-958F-W)", () => {
 
 describe("GameWrapper player Flower HUD chrome (WP-946-C3)", () => {
   const contentKeyOf = (html: string) => {
-    const match = html.match(/data-content-transition-key="([^"]*)"/)
+    const match = /data-content-transition-key="([^"]*)"/.exec(html)
     expect(match).not.toBeNull()
     return match![1]
   }
@@ -396,8 +491,8 @@ describe("GameWrapper player Flower HUD chrome (WP-946-C3)", () => {
 
     expect(html).toContain('data-testid="game-topbar"')
     // Topbar uses mapped semantic surface token (not bare white chrome).
-    const topbarMatch = html.match(
-      /data-testid="game-topbar"[^>]*class="([^"]*)"/,
+    const topbarMatch = /data-testid="game-topbar"[^>]*class="([^"]*)"/.exec(
+      html,
     )
     expect(topbarMatch).not.toBeNull()
     expect(topbarMatch![1]).toContain("bg-surface")
@@ -453,7 +548,7 @@ describe("GameWrapper player Flower HUD chrome (WP-946-C3)", () => {
     )
 
     for (const html of [classic, flower]) {
-      const sectionMatch = html.match(/<section[^>]*class="([^"]*)"/)
+      const sectionMatch = /<section[^>]*class="([^"]*)"/.exec(html)
       expect(sectionMatch).not.toBeNull()
       const sectionClass = sectionMatch![1]
       // Player route keeps min-h-dvh growth (not presenter h-dvh).

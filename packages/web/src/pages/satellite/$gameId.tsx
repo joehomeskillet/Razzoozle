@@ -66,6 +66,7 @@ export function SatelliteManagerPage() {
       statusName={status?.name}
       manager
       controls={false}
+      managerKioskFullBleed
       contentTransitionKey={
         experienceTransition && experienceTransition.mode !== "classic"
           ? experienceTransition.mode
