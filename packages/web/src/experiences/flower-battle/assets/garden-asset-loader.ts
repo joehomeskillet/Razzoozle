@@ -137,12 +137,39 @@ export function createPixiAssetLoaderFn(
 
     onProgress?.(total, total)
 
+    const normalized: Record<string, unknown> = {}
+
     if (loaded && typeof loaded === "object" && !Array.isArray(loaded)) {
-      return loaded as Record<string, unknown>
+      const loadedObj = loaded as Record<string, unknown>
+      for (const [alias, src] of Object.entries(assets)) {
+        if (alias in loadedObj && loadedObj[alias] !== undefined) {
+          normalized[alias] = loadedObj[alias]
+        } else if (src in loadedObj && loadedObj[src] !== undefined) {
+          normalized[alias] = loadedObj[src]
+        } else {
+          const matchKey = Object.keys(loadedObj).find(
+            (k) =>
+              k === alias || k === src || k.endsWith(src) || src.endsWith(k),
+          )
+          if (matchKey && loadedObj[matchKey] !== undefined) {
+            normalized[alias] = loadedObj[matchKey]
+          } else {
+            try {
+              const res = PixiAssets.get?.(alias)
+              if (res !== undefined) {
+                normalized[alias] = res
+              }
+            } catch {
+              // Best-effort lookup fallback
+            }
+          }
+        }
+      }
+      return normalized
     }
 
     // Single-asset load returns the resource directly.
-    if (aliases.length === 1) {
+    if (aliases.length === 1 && loaded !== undefined) {
       return { [aliases[0]!]: loaded }
     }
     return {}
@@ -171,24 +198,26 @@ export function createGardenAssetLoader(
   deps: GardenAssetLoaderDeps = {},
 ): GardenAssetLoader {
   const basePath = deps.basePath ?? GARDEN_ASSET_BASE_PATH
-  const loadAssets =
-    deps.loadAssets ??
-    // Prefer placeholder path when no custom loader — avoids accidental WebGL
-    // in unit tests. Production hosts should pass createPixiAssetLoaderFn().
-    createPlaceholderAssetLoaderFn()
+  const loadAssets = deps.loadAssets ?? createPixiAssetLoaderFn(basePath)
   const unloadAssets = deps.unloadAssets ?? createDefaultUnloader()
 
   const statusByName = new Map<string, BundleStatus>()
   const loadedByName = new Map<string, Assets>()
   const inflight = new Map<string, Promise<Assets>>()
+  const inflightUnloads = new Map<string, Promise<void>>()
   /** Aliases currently held for each loaded bundle (for unload). */
   const aliasesByName = new Map<string, string[]>()
+  const progressCallbacksByName = new Map<string, Set<LoadProgressCallback>>()
 
   function setStatus(name: string, status: BundleStatus): void {
     statusByName.set(name, status)
   }
 
-  function makeError(name: string, message: string, cause?: unknown): BundleError {
+  function makeError(
+    name: string,
+    message: string,
+    cause?: unknown,
+  ): BundleError {
     return { name, message, cause }
   }
 
@@ -209,46 +238,97 @@ export function createGardenAssetLoader(
     return result
   }
 
+  function dispatchProgress(name: string, loaded: number, total: number): void {
+    const callbacks = progressCallbacksByName.get(name)
+    if (callbacks) {
+      for (const cb of callbacks) {
+        try {
+          cb(loaded, total)
+        } catch {
+          // Ignore errors in user callbacks
+        }
+      }
+    }
+  }
+
   async function loadBundle(
     name: string,
     onProgress?: LoadProgressCallback,
   ): Promise<Assets> {
+    if (onProgress) {
+      let callbacks = progressCallbacksByName.get(name)
+      if (!callbacks) {
+        callbacks = new Set()
+        progressCallbacksByName.set(name, callbacks)
+      }
+      callbacks.add(onProgress)
+    }
+
     const existingInflight = inflight.get(name)
     if (existingInflight) {
-      // Share the load; still fan progress if a late subscriber arrives mid-flight
-      // is best-effort only (primary progress already owned by first caller).
       return existingInflight
     }
 
     const cached = loadedByName.get(name)
     if (cached && !cached.fallback && statusByName.get(name) === "loaded") {
       const total = Object.keys(cached.resources).length
-      onProgress?.(total, total)
+      dispatchProgress(name, total, total)
       return cached
     }
 
     const work = (async (): Promise<Assets> => {
       const bundle = getGardenBundle(name)
       if (!bundle) {
-        onProgress?.(0, 0)
+        dispatchProgress(name, 0, 0)
         return fallbackResult(name, `Unknown garden asset bundle: ${name}`)
       }
 
       setStatus(name, "loading")
       const resolved = resolveBundleAssets(bundle, basePath)
-      const total = Object.keys(resolved).length
+      const aliases = Object.keys(resolved)
+      const total = aliases.length
 
       try {
-        const resources = await loadAssets(resolved, onProgress)
+        const resources = await loadAssets(resolved, (loaded, t) => {
+          dispatchProgress(name, loaded, t)
+        })
+
+        const loadedKeys = resources ? Object.keys(resources) : []
+        const isComplete =
+          resources != null &&
+          aliases.every(
+            (alias) => alias in resources && resources[alias] !== undefined,
+          )
+
+        if (!isComplete) {
+          dispatchProgress(name, total, total)
+          return fallbackResult(
+            name,
+            `Manifest count mismatch for bundle ${name}: expected ${total} assets, got ${loadedKeys.length}`,
+          )
+        }
+
         const result: Assets = {
           name,
-          resources: resources ?? {},
+          resources,
           fallback: false,
         }
+
+        // If unloadBundle was called while load was in flight, do not resurrect assets (Finding 1)
+        if (statusByName.get(name) === "unloaded") {
+          try {
+            await unloadAssets(aliases)
+          } catch {
+            // Best-effort cleanup
+          }
+          dispatchProgress(name, total, total)
+          return result
+        }
+
         setStatus(name, "loaded")
         loadedByName.set(name, result)
-        aliasesByName.set(name, Object.keys(resolved))
-        onProgress?.(total, total)
+        aliasesByName.set(name, aliases)
+        dispatchProgress(name, total, total)
         return result
       } catch (cause) {
         const message =
@@ -256,8 +336,7 @@ export function createGardenAssetLoader(
             ? cause.message
             : `Failed to load bundle: ${name}`
         // Ensure progress observers see a terminal state without throwing.
-        // Report total/total (monotonic) to avoid resetting progress to 0.
-        onProgress?.(total, total)
+        dispatchProgress(name, total, total)
         return fallbackResult(name, message, cause)
       }
     })()
@@ -267,24 +346,57 @@ export function createGardenAssetLoader(
       return await work
     } finally {
       inflight.delete(name)
+      progressCallbacksByName.delete(name)
     }
   }
 
   async function unloadBundle(name: string): Promise<void> {
-    // Idempotent: if already unloaded or never loaded, return early.
+    const existingInflightUnload = inflightUnloads.get(name)
+    if (existingInflightUnload) {
+      return existingInflightUnload
+    }
+
     const currentStatus = statusByName.get(name)
-    if (currentStatus === "unloaded" || currentStatus === "idle" || currentStatus === undefined) {
+    if (
+      currentStatus === "unloaded" ||
+      currentStatus === "idle" ||
+      currentStatus === undefined
+    ) {
       return
     }
-    const aliases = aliasesByName.get(name) ?? []
+
+    const unloadWork = (async (): Promise<void> => {
+      if (statusByName.get(name) === "loading") {
+        setStatus(name, "unloaded")
+        const loadPromise = inflight.get(name)
+        if (loadPromise) {
+          try {
+            await loadPromise
+          } catch {
+            // Best-effort load await
+          }
+        }
+        return
+      }
+
+      const aliases = aliasesByName.get(name) ?? []
+      try {
+        await unloadAssets(aliases)
+        aliasesByName.delete(name)
+        loadedByName.delete(name)
+        setStatus(name, "unloaded")
+      } catch (err) {
+        // Failed unload preserves retryable loaded state (Finding 3)
+        throw err
+      }
+    })()
+
+    inflightUnloads.set(name, unloadWork)
     try {
-      await unloadAssets(aliases)
-    } catch {
-      // Unload is best-effort; tracking is still cleared.
+      await unloadWork
+    } finally {
+      inflightUnloads.delete(name)
     }
-    aliasesByName.delete(name)
-    loadedByName.delete(name)
-    setStatus(name, "unloaded")
   }
 
   function preloadBundle(name: string): void {

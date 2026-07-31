@@ -309,9 +309,7 @@ describe("garden-asset-loader", () => {
         if (fail) throw new Error("boom")
         const total = Object.keys(assets).length
         onProgress?.(total, total)
-        return Object.fromEntries(
-          Object.keys(assets).map((k) => [k, { k }]),
-        )
+        return Object.fromEntries(Object.keys(assets).map((k) => [k, { k }]))
       },
     })
 
@@ -421,7 +419,10 @@ describe("createPixiAssetLoaderFn with mocked pixi.js", () => {
 
   it("loads via Pixi Assets when init succeeds", async () => {
     pixiAssetsMock.init.mockResolvedValueOnce(undefined)
-    pixiAssetsMock.load.mockResolvedValueOnce({ tex: { placeholder: true } })
+    pixiAssetsMock.load.mockResolvedValueOnce({
+      "boot-clear-color": { placeholder: true },
+      "boot-logo-mark": { placeholder: true },
+    })
 
     const loader = createGardenAssetLoader({
       loadAssets: createPixiAssetLoaderFn("/test-base"),
@@ -429,7 +430,10 @@ describe("createPixiAssetLoaderFn with mocked pixi.js", () => {
 
     const result = await loader.loadBundle("boot")
     expect(result.fallback).toBe(false)
-    expect(result.resources).toEqual({ tex: { placeholder: true } })
+    expect(result.resources).toEqual({
+      "boot-clear-color": { placeholder: true },
+      "boot-logo-mark": { placeholder: true },
+    })
     expect(pixiAssetsMock.add).toHaveBeenCalled()
     expect(pixiAssetsMock.load).toHaveBeenCalledTimes(1)
     expect(loader.getBundleStatus("boot")).toBe("loaded")
@@ -509,5 +513,179 @@ describe("garden-asset-loader idempotent unload", () => {
     // Second unload should be no-op
     await loader.unloadBundle("boot")
     expect(loader.getBundleStatus("boot")).toBe("unloaded")
+  })
+})
+
+describe("WP-03 review findings regression suite", () => {
+  it("finding 1: load completion must not resurrect assets after unload", async () => {
+    let releaseLoad!: () => void
+    const loadGate = new Promise<void>((resolve) => {
+      releaseLoad = resolve
+    })
+    const unloadedAliases: string[][] = []
+
+    const loader = createGardenAssetLoader({
+      loadAssets: async (assets, onProgress) => {
+        const keys = Object.keys(assets)
+        onProgress?.(0, keys.length)
+        await loadGate
+        onProgress?.(keys.length, keys.length)
+        return Object.fromEntries(keys.map((k) => [k, { data: k }]))
+      },
+      unloadAssets: async (aliases) => {
+        unloadedAliases.push([...aliases])
+      },
+    })
+
+    const loadPromise = loader.loadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("loading")
+
+    // Trigger unload while load is still in flight
+    const unloadPromise = loader.unloadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
+
+    // Now release the load adapter
+    releaseLoad()
+    await loadPromise
+    await unloadPromise
+
+    // Status remains unloaded and asset is not stored in loadedByName
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
+    expect(loader.getLoadedAssets("boot")).toBeUndefined()
+    expect(unloadedAliases).toHaveLength(1)
+    expect(unloadedAliases[0]).toEqual(["boot-clear-color", "boot-logo-mark"])
+  })
+
+  it("finding 2: deduped concurrent callers must all receive progress callbacks", async () => {
+    let releaseLoad!: () => void
+    const loadGate = new Promise<void>((resolve) => {
+      releaseLoad = resolve
+    })
+
+    const loader = createGardenAssetLoader({
+      loadAssets: async (assets, onProgress) => {
+        const keys = Object.keys(assets)
+        onProgress?.(0, keys.length)
+        await loadGate
+        onProgress?.(keys.length, keys.length)
+        return Object.fromEntries(keys.map((k) => [k, { data: k }]))
+      },
+    })
+
+    const prog1: Array<[number, number]> = []
+    const prog2: Array<[number, number]> = []
+
+    const p1 = loader.loadBundle("boot", (l, t) => prog1.push([l, t]))
+    const p2 = loader.loadBundle("boot", (l, t) => prog2.push([l, t]))
+
+    releaseLoad()
+    await Promise.all([p1, p2])
+
+    expect(prog1.length).toBeGreaterThan(0)
+    expect(prog2.length).toBeGreaterThan(0)
+    expect(prog1[prog1.length - 1]).toEqual([2, 2])
+    expect(prog2[prog2.length - 1]).toEqual([2, 2])
+  })
+
+  it("finding 3: concurrent unload calls adapter once", async () => {
+    let unloadCalls = 0
+    let releaseUnload!: () => void
+    const unloadGate = new Promise<void>((resolve) => {
+      releaseUnload = resolve
+    })
+
+    const loader = createGardenAssetLoader({
+      loadAssets: createPlaceholderAssetLoaderFn(),
+      unloadAssets: async () => {
+        unloadCalls += 1
+        await unloadGate
+      },
+    })
+
+    await loader.loadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("loaded")
+
+    const u1 = loader.unloadBundle("boot")
+    const u2 = loader.unloadBundle("boot")
+
+    releaseUnload()
+    await Promise.all([u1, u2])
+
+    expect(unloadCalls).toBe(1)
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
+  })
+
+  it("finding 3: failed unload preserves retryable loaded state", async () => {
+    let failUnload = true
+    const loader = createGardenAssetLoader({
+      loadAssets: createPlaceholderAssetLoaderFn(),
+      unloadAssets: async () => {
+        if (failUnload) {
+          throw new Error("GPU unload failed")
+        }
+      },
+    })
+
+    await loader.loadBundle("boot")
+    expect(loader.getBundleStatus("boot")).toBe("loaded")
+
+    // Failed unload throws and leaves state as loaded
+    await expect(loader.unloadBundle("boot")).rejects.toThrow(
+      "GPU unload failed",
+    )
+    expect(loader.getBundleStatus("boot")).toBe("loaded")
+    expect(loader.getLoadedAssets("boot")).toBeDefined()
+
+    // Retry unload after fixing adapter
+    failUnload = false
+    await expect(loader.unloadBundle("boot")).resolves.toBeUndefined()
+    expect(loader.getBundleStatus("boot")).toBe("unloaded")
+    expect(loader.getLoadedAssets("boot")).toBeUndefined()
+  })
+
+  it("finding 4: normalizes Pixi v8 URL keys to alias result keys", async () => {
+    pixiAssetsMock.init.mockResolvedValueOnce(undefined)
+    // Pixi returns keys formatted as full path URLs
+    pixiAssetsMock.load.mockResolvedValueOnce({
+      "/test-base/placeholder/boot-clear-color.png": { tex: 1 },
+      "/test-base/placeholder/boot-logo-mark.png": { tex: 2 },
+    })
+
+    const loadAssets = createPixiAssetLoaderFn("/test-base")
+    const res = await loadAssets({
+      "boot-clear-color": "placeholder/boot-clear-color.png",
+      "boot-logo-mark": "placeholder/boot-logo-mark.png",
+    })
+
+    expect(res["boot-clear-color"]).toEqual({ tex: 1 })
+    expect(res["boot-logo-mark"]).toEqual({ tex: 2 })
+  })
+
+  it("finding 5: public default loader does not report fake placeholder success", async () => {
+    pixiAssetsMock.init.mockRejectedValueOnce(new Error("No WebGL context"))
+
+    const loader = createGardenAssetLoader()
+    const result = await loader.loadBundle("boot")
+
+    expect(result.fallback).toBe(true)
+    expect(result.error?.message).toMatch(/No WebGL context/)
+    expect(loader.getBundleStatus("boot")).toBe("error")
+  })
+
+  it("finding 6: manifest count mismatch returns fallback result", async () => {
+    const loader = createGardenAssetLoader({
+      loadAssets: async () => {
+        // Return incomplete resources missing boot-logo-mark
+        return {
+          "boot-clear-color": { ok: true },
+        }
+      },
+    })
+
+    const result = await loader.loadBundle("boot")
+
+    expect(result.fallback).toBe(true)
+    expect(result.error?.message).toMatch(/Manifest count mismatch/)
+    expect(loader.getBundleStatus("boot")).toBe("error")
   })
 })
