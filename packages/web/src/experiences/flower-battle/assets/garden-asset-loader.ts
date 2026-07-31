@@ -255,6 +255,23 @@ export function createGardenAssetLoader(
     name: string,
     onProgress?: LoadProgressCallback,
   ): Promise<Assets> {
+    const existingInflight = inflight.get(name)
+    const cached = loadedByName.get(name)
+    if (
+      !existingInflight &&
+      cached &&
+      !cached.fallback &&
+      statusByName.get(name) === "loaded"
+    ) {
+      const total = Object.keys(cached.resources).length
+      try {
+        onProgress?.(total, total)
+      } catch {
+        // Ignore errors in user callbacks
+      }
+      return cached
+    }
+
     if (onProgress) {
       let callbacks = progressCallbacksByName.get(name)
       if (!callbacks) {
@@ -264,16 +281,8 @@ export function createGardenAssetLoader(
       callbacks.add(onProgress)
     }
 
-    const existingInflight = inflight.get(name)
     if (existingInflight) {
       return existingInflight
-    }
-
-    const cached = loadedByName.get(name)
-    if (cached && !cached.fallback && statusByName.get(name) === "loaded") {
-      const total = Object.keys(cached.resources).length
-      dispatchProgress(name, total, total)
-      return cached
     }
 
     const work = (async (): Promise<Assets> => {

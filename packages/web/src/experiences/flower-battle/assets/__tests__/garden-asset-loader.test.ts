@@ -587,6 +587,30 @@ describe("WP-03 review findings regression suite", () => {
     expect(prog2[prog2.length - 1]).toEqual([2, 2])
   })
 
+  it("finding 2: cached loads notify only their current callback once", async () => {
+    const loader = createGardenAssetLoader({
+      loadAssets: createPlaceholderAssetLoaderFn(),
+    })
+    const initial = await loader.loadBundle("boot")
+    let firstCachedCalls = 0
+    let secondCachedCalls = 0
+
+    const firstCached = await loader.loadBundle("boot", () => {
+      firstCachedCalls += 1
+    })
+
+    expect(firstCached).toBe(initial)
+    expect(firstCachedCalls).toBe(1)
+
+    const secondCached = await loader.loadBundle("boot", () => {
+      secondCachedCalls += 1
+    })
+
+    expect(secondCached).toBe(initial)
+    expect(firstCachedCalls).toBe(1)
+    expect(secondCachedCalls).toBe(1)
+  })
+
   it("finding 3: concurrent unload calls adapter once", async () => {
     let unloadCalls = 0
     let releaseUnload!: () => void
