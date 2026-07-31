@@ -4,7 +4,6 @@ import CricleCheck from "@razzoozle/web/features/game/components/icons/CricleChe
 import CricleXmark from "@razzoozle/web/features/game/components/icons/CricleXmark"
 import RewardStack from "@razzoozle/web/features/game/components/RewardStack"
 import { WordCloudDisplay } from "@razzoozle/web/features/game/components/answers/WordCloudDisplay"
-import { FlowerBattleReveal } from "@razzoozle/web/experiences/flower-battle/FlowerBattleReveal"
 import RoundRecapStrip from "@razzoozle/web/features/game/recap/RoundRecapStrip"
 import { useAnswerStore } from "@razzoozle/web/features/game/stores/answer"
 import { usePlayerStore } from "@razzoozle/web/features/game/stores/player"
@@ -210,23 +209,6 @@ const Result = ({
       className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center rounded-[var(--radius-theme)]"
     >
 
-      {!poll && audience === "player" && player.flowerBattlePlayerStatus && (
-        <motion.div
-          data-testid="flower-battle-result-reveal"
-          className="w-full"
-          variants={reveal.pop()}
-          initial="hidden"
-          animate="visible"
-          transition={reveal.snap}
-        >
-          <FlowerBattleReveal
-            kind={correct ? "correct" : "incorrect"}
-            status={player.flowerBattlePlayerStatus}
-            previousStatus={null}
-            correctAnswer={correct ? null : correctAnswer}
-          />
-        </motion.div>
-      )}
       {!poll && (
         // Moment of truth: the verdict icon pops in (overshoot scale) so the
         // correct/wrong reveal lands as a beat. Opacity-only when reduced.
