@@ -288,6 +288,44 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     },
   )
 
+  it("experience-immersive keeps floating overlay toolbar and full-bleed content", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        contentTransitionKey="flowerBattle"
+        manager
+        controls
+        presenterLayout="experience-immersive"
+      >
+        <div data-testid="immersive-garden">garden</div>
+      </GameWrapper>,
+    )
+
+    expect(html).toContain('data-presenter-layout="experience-immersive"')
+    expect(html).toContain('data-testid="presenter-toolbar"')
+    expect(html).toContain('data-toolbar-variant="overlay"')
+    expect(html).toContain('data-testid="immersive-garden"')
+    // Cream underlay skipped so body field cannot peek around the canvas.
+    expect(html).not.toContain("cream-field")
+
+    const contentShellClass = contentShellClassOf(html)
+    expect(contentShellClass).toContain("overflow-hidden")
+    expect(contentShellClass).not.toContain("px-4")
+    expect(contentShellClass).not.toContain("overflow-y-auto")
+  })
+
+  it("normal presenterLayout keeps cream field and flow toolbar", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic content</div>
+      </GameWrapper>,
+    )
+
+    expect(html).toContain('data-presenter-layout="normal"')
+    expect(html).toContain("cream-field")
+    expect(html).toContain('data-toolbar-variant="flow"')
+  })
+
   it.each([true, false])(
     "keeps the default manager chrome and scroll shell when controls=$controls",
     (controls) => {

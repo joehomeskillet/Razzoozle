@@ -201,45 +201,39 @@ describe("FlowerBattleDisplay", () => {
     expect(html).not.toContain("h-screen")
   })
 
-  it("stacks canvas host and HUD as flex-column flow children so the team-meter row can never render past the fold (WP-958C)", () => {
+  it("uses full-bleed canvas + absolute HUD overlays for experience-immersive stage", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
 
-    // root becomes a flex column: scene + HUD share its box top-to-bottom
-    // instead of the HUD floating on an absolute inset-0 overlay whose
-    // height depended on an ancestor chain that .display-stage doesn't
-    // always get (root-caused live on /party/manager, WP-958C).
+    // Immersive stage: relative box, full height, clipped — canvas is the
+    // background of the whole presenter surface, HUD floats on top.
     const rootMatch =
       /data-testid="flower-battle-display"[^>]*class="([^"]*)"/.exec(html)
     expect(rootMatch).not.toBeNull()
-    expect(rootMatch![1]).toContain("flex")
-    expect(rootMatch![1]).toContain("flex-col")
+    expect(rootMatch![1]).toContain("relative")
     expect(rootMatch![1]).toContain("h-full")
+    expect(rootMatch![1]).toContain("overflow-hidden")
+    expect(html).toContain('data-presenter-layout="experience-immersive"')
 
-    // canvas host grows to fill whatever space the HUD's natural height
-    // leaves behind, and may shrink below its own content size (min-h-0).
+    // Canvas host is absolute inset-0 (not a flex-1 flow sibling under HUD).
     const hostMatch =
       /data-testid="garden-battle-canvas-host"[^>]*class="([^"]*)"/.exec(html)
     expect(hostMatch).not.toBeNull()
-    expect(hostMatch![1]).toContain("flex-1")
-    expect(hostMatch![1]).toContain("min-h-0")
+    expect(hostMatch![1]).toContain("absolute")
+    expect(hostMatch![1]).toContain("inset-0")
 
-    // the HUD (and the team-meter row inside it) is a normal flow child,
-    // not an absolute overlay — that absolute positioning is exactly what
-    // let it escape the visible box when the ancestor height chain broke.
+    // HUD shell is absolute overlay with pointer-events-none (chips re-enable).
     const hudMatch =
       /data-testid="flower-battle-display-hud"[^>]*class="([^"]*)"/.exec(html)
     expect(hudMatch).not.toBeNull()
-    expect(hudMatch![1]).not.toContain("absolute")
-    expect(hudMatch![1]).not.toContain("inset-0")
+    expect(hudMatch![1]).toContain("absolute")
+    expect(hudMatch![1]).toContain("inset-0")
+    expect(hudMatch![1]).toContain("pointer-events-none")
 
-    // WP-994: presenter HUD root must not stretch to h-full of the stage
-    // (that double-filled the flex column with ExperienceHud h-full and pushed
-    // team meters under the fold at 1366x768).
-    const presenterMatch =
-      /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
-    expect(presenterMatch).not.toBeNull()
-    expect(presenterMatch![1].split(/\s+/)).not.toContain("h-full")
+    // Overlay HUD variant exposes team meters + answer counter.
+    expect(html).toContain('data-hud-variant="overlay"')
+    expect(html).toContain('data-testid="flower-battle-team-meters"')
+    expect(html).toContain('data-testid="hud-answer-counter"')
   })
 })

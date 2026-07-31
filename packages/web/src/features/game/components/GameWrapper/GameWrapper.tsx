@@ -39,6 +39,8 @@ import {
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
+type PresenterLayout = "normal" | "experience-immersive"
+
 type Props = PropsWithChildren & {
   statusName: Status | undefined
   // WP-958F-W: when set, pins the animated content subtree key so experience
@@ -60,8 +62,22 @@ type Props = PropsWithChildren & {
   onBack?: () => void
   manager?: boolean
   controls?: boolean
+  /**
+   * Satellite/display kiosk: suppress manager chrome and pad so the experience
+   * canvas owns the full content box (no interactive toolbar).
+   */
   managerKioskFullBleed?: boolean
+  /**
+   * Presenter layout variant driven by live experience state (not CSS/URL).
+   * `experience-immersive` keeps manager controls as floating overlays over a
+   * full-bleed game surface; `normal` keeps the classic cream + toolbar flow.
+   */
+  presenterLayout?: PresenterLayout
 }
+
+/** Glass chip shell for floating presenter controls over the game canvas. */
+const OVERLAY_CHIP =
+  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[color-mix(in_srgb,var(--surface)_90%,transparent)] shadow-md backdrop-blur-sm"
 
 const GameWrapper = ({
   children,
@@ -74,6 +90,7 @@ const GameWrapper = ({
   manager,
   controls = true,
   managerKioskFullBleed = false,
+  presenterLayout = "normal",
 }: Props) => {
   const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
@@ -154,6 +171,15 @@ const GameWrapper = ({
 
   const audience = audienceFromWrapperProps(manager, controls)
   const isManagerKioskFullBleed = manager && managerKioskFullBleed
+  const isExperienceImmersive =
+    manager && presenterLayout === "experience-immersive"
+  // Full-bleed content shell: satellite kiosk OR immersive experience on the
+  // phone manager — both need the game to own the entire content box.
+  const isContentFullBleed = isManagerKioskFullBleed || isExperienceImmersive
+  // Flow toolbar (classic cream presenter). Immersive keeps controls, but as
+  // an absolute overlay so the canvas is not pushed down.
+  const showFlowToolbar = manager && !isContentFullBleed
+  const showOverlayToolbar = isExperienceImmersive && controls
 
   return (
     <GameAudienceContext.Provider value={audience}>
@@ -179,12 +205,38 @@ const GameWrapper = ({
           // client keeps the legacy min-h-dvh growth (long grids scroll).
           manager ? "h-dvh overflow-hidden" : "min-h-dvh",
         )}
-        style={{ "--game-fg": "#0E1120" } as React.CSSProperties}
+        style={
+          {
+            "--game-fg": "#0E1120",
+            // Experience safe-area contract (React HUD ↔ Pixi content).
+            ...(isExperienceImmersive
+              ? {
+                  "--experience-safe-top": "4.75rem",
+                  "--experience-safe-bottom": "7.5rem",
+                  "--experience-safe-left": "0.75rem",
+                  "--experience-safe-right": "0.75rem",
+                }
+              : null),
+          } as React.CSSProperties
+        }
         data-audience={audience}
+        data-presenter-layout={
+          isExperienceImmersive ? "experience-immersive" : "normal"
+        }
       >
-        <div className="cream-field pointer-events-none fixed inset-0" />
+        {/* Body cream gradient is the app-wide field. Immersive experience owns
+            the full viewport with its canvas — skip the cream-field underlay so
+            nothing peeks between canvas edges and the shell. */}
+        {!isExperienceImmersive && (
+          <div className="cream-field pointer-events-none fixed inset-0" />
+        )}
 
-        <div className="z-10 flex w-full flex-1 flex-col justify-between">
+        <div
+          className={clsx(
+            "z-10 flex w-full flex-1 flex-col",
+            isContentFullBleed ? "min-h-0" : "justify-between",
+          )}
+        >
           {!isConnected && !statusName ? (
             <div className="flex h-full w-full flex-1 flex-col items-center justify-center">
               <Loader className="h-30" />
@@ -240,10 +292,11 @@ const GameWrapper = ({
                   </div>
                 ) : null)}
 
-              {/* Presenter-Toolbar (REFACTORED): only when manager && controls */}
-              {manager && !isManagerKioskFullBleed && controls && (
+              {/* Presenter-Toolbar (flow): classic cream presenter only */}
+              {showFlowToolbar && controls && (
                 <div
                   data-testid="presenter-toolbar"
+                  data-toolbar-variant="flow"
                   className="flex w-full flex-wrap items-center justify-between gap-2 p-4"
                 >
                   {/* GROUP A: Progress + Auto-Mode */}
@@ -356,8 +409,8 @@ const GameWrapper = ({
                 </div>
               )}
 
-              {/* Display mode fallback (manager && !controls): preserve existing bar layout */}
-              {manager && !isManagerKioskFullBleed && !controls && (
+              {/* Display mode fallback (manager && !controls): classic flow only */}
+              {showFlowToolbar && !controls && (
                 <div className="flex w-full flex-wrap items-center justify-between gap-2 p-4">
                   <div className="flex shrink-0 justify-start">
                     {questionStates && (
@@ -415,12 +468,141 @@ const GameWrapper = ({
                 </div>
               )}
 
+              {/* Immersive experience: floating glass-chip toolbar over the game */}
+              {showOverlayToolbar && (
+                <div
+                  data-testid="presenter-toolbar"
+                  data-toolbar-variant="overlay"
+                  className="pointer-events-none absolute inset-x-0 top-0 z-30 flex w-full flex-wrap items-start justify-between gap-2 p-2 sm:p-3"
+                >
+                  <div
+                    className={clsx(
+                      "pointer-events-auto flex shrink-0 items-center gap-2 p-1",
+                      OVERLAY_CHIP,
+                    )}
+                  >
+                    {questionStates && (
+                      <div className="flex min-h-11 items-center rounded-lg bg-white/90 px-3 text-base font-bold text-black sm:px-4 sm:text-lg">
+                        {`${questionStates.current} / ${questionStates.total}`}
+                      </div>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={toggleAuto}
+                      aria-pressed={autoOn}
+                      className={clsx("min-h-11", {
+                        "bg-accent-tint text-accent-contrast hover:bg-accent-tint border-[var(--accent-tint)]":
+                          autoOn,
+                      })}
+                      title={t("game:controls.autoTitle")}
+                    >
+                      <span
+                        className={clsx(
+                          "relative h-5 w-9 rounded-full transition-colors",
+                          autoOn
+                            ? "bg-[var(--accent-contrast)]"
+                            : "bg-[color:var(--color-field-ink)]/20",
+                        )}
+                      >
+                        <span
+                          className={clsx(
+                            "absolute top-0.5 size-4 rounded-full bg-white transition-[left]",
+                            autoOn ? "left-[18px]" : "left-0.5",
+                          )}
+                        />
+                      </span>
+                      <span className="hidden sm:inline">
+                        {t("game:controls.autoMode")}{" "}
+                        {autoOn
+                          ? t("game:controls.autoOn")
+                          : t("game:controls.autoOff")}
+                      </span>
+                    </Button>
+                  </div>
+
+                  <div
+                    className={clsx(
+                      "pointer-events-auto flex max-w-full flex-1 flex-wrap items-center justify-center gap-1.5 p-1 sm:gap-2",
+                      OVERLAY_CHIP,
+                    )}
+                  >
+                    <AvToggles />
+                    {statusName !== STATUS.FINISHED && lowLatencyEnabled && (
+                      <LowLatencyHealth />
+                    )}
+                    {statusName !== STATUS.FINISHED && <DisplayControl />}
+                    {statusName !== STATUS.FINISHED && <DisplayStatusCard />}
+                    {statusName !== STATUS.FINISHED &&
+                      statusName !== STATUS.SHOW_ROUND_RECAP && (
+                        <GameControlPanel />
+                      )}
+                    {statusName !== STATUS.FINISHED && import.meta.env.DEV && (
+                      <SimControl />
+                    )}
+                    {statusName !== STATUS.FINISHED &&
+                      inviteCode &&
+                      statusName !== STATUS.SHOW_ROOM && (
+                        <RejoinQrDialog
+                          inviteCode={inviteCode}
+                          statusName={statusName}
+                        />
+                      )}
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={toggleFullscreen}
+                      title={t("game:controls.fullscreen")}
+                      aria-label={t("game:controls.fullscreen")}
+                    >
+                      <Maximize className="size-5" aria-hidden />
+                    </Button>
+                  </div>
+
+                  <div
+                    className={clsx(
+                      "pointer-events-auto flex shrink-0 items-center gap-2 p-1",
+                      OVERLAY_CHIP,
+                    )}
+                  >
+                    {statusName !== STATUS.FINISHED &&
+                      statusName !== STATUS.SHOW_ROUND_RECAP &&
+                      next && (
+                        <Button
+                          data-testid="next-btn"
+                          variant="primary"
+                          size="sm"
+                          className={clsx("min-h-11 px-5", {
+                            "pointer-events-none": isDisabled,
+                          })}
+                          onClick={handleNext}
+                        >
+                          {t(next)}
+                        </Button>
+                      )}
+                    {onBack && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={onBack}
+                      >
+                        <LogOut className="size-5" aria-hidden />
+                        <span className="hidden sm:inline">
+                          {t("common:exit")}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div
                 aria-disabled={!isConnected}
                 className={clsx(
                   "flex min-h-0 flex-1 flex-col",
-                  isManagerKioskFullBleed
-                    ? "w-full overflow-hidden"
+                  isContentFullBleed
+                    ? "relative w-full overflow-hidden"
                     : "justify-center overflow-y-auto px-4 pt-2 pb-4",
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
@@ -443,7 +625,10 @@ const GameWrapper = ({
                     data-content-transition-key={
                       contentTransitionKey ?? statusName ?? "none"
                     }
-                    className="flex min-h-0 w-full flex-1 flex-col justify-center"
+                    className={clsx(
+                      "flex min-h-0 w-full flex-1 flex-col",
+                      isContentFullBleed ? "h-full" : "justify-center",
+                    )}
                     initial={reveal.reduced ? false : { opacity: 0, y: 8 }}
                     animate={
                       reveal.reduced ? { opacity: 1 } : { opacity: 1, y: 0 }

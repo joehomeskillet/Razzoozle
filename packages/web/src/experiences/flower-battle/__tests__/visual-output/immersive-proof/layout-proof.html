@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Experience Immersive Layout Proof</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --radius-theme: 12px;
+      --border-hairline: rgba(14,17,32,0.12);
+      --surface: #FEFBF2;
+      --game-fg: #0E1120;
+      --experience-safe-top: 4.75rem;
+      --experience-safe-bottom: 7.5rem;
+      --experience-safe-left: 0.75rem;
+      --experience-safe-right: 0.75rem;
+      --color-field-ink: #0E1120;
+    }
+    body { margin: 0; background: radial-gradient(circle at 20% 0%, #f6efe3, #e8dfd0 60%, #ddd2c0); font-family: system-ui, sans-serif; }
+    .garden-mock {
+      background:
+        linear-gradient(#87CEEB 0 42%, transparent 42%),
+        linear-gradient(#c5e07a 42% 62%, #8fbf4a 62% 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .garden-mock::before {
+      content: "";
+      position: absolute; left: 0; right: 0; top: 58%; height: 12%;
+      background: repeating-linear-gradient(90deg, #f7f7f7 0 14px, transparent 14px 28px);
+      opacity: 0.9;
+    }
+    .plant {
+      position: absolute; bottom: 28%; width: 48px; text-align: center;
+      transform: translateX(-50%);
+    }
+    .plant .head { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto; }
+    .plant .stem { width: 6px; height: 70px; background: #2f5d2a; margin: 0 auto; }
+    .plant .soil { width: 56px; height: 18px; background: #6b3f22; border-radius: 40%; margin: 0 auto; }
+    .chip {
+      border-radius: var(--radius-theme);
+      border: 1px solid var(--border-hairline);
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      box-shadow: 0 4px 14px rgba(0,0,0,.12);
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <div data-presenter-layout="experience-immersive" class="relative flex h-dvh w-full overflow-hidden">
+    <!-- NO cream-field in immersive -->
+    <div class="z-10 flex min-h-0 w-full flex-1 flex-col">
+      <!-- Overlay toolbar -->
+      <div data-testid="presenter-toolbar" data-toolbar-variant="overlay"
+           class="pointer-events-none absolute inset-x-0 top-0 z-30 flex w-full flex-wrap items-start justify-between gap-2 p-3">
+        <div class="pointer-events-auto chip flex items-center gap-2 p-1">
+          <div class="min-h-11 flex items-center rounded-lg bg-white/90 px-4 font-bold">1 / 12</div>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm font-semibold">Auto-Modus aus</button>
+        </div>
+        <div class="pointer-events-auto chip flex flex-wrap items-center justify-center gap-2 p-1">
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">Audio</button>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">Display</button>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">Überspringen</button>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">+10s</button>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">QR</button>
+        </div>
+        <div class="pointer-events-auto chip flex items-center gap-2 p-1">
+          <button class="min-h-11 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white">Auflösen</button>
+          <button class="min-h-11 rounded-lg bg-white px-3 text-sm">Beenden</button>
+        </div>
+      </div>
+
+      <div class="relative min-h-0 flex-1 overflow-hidden w-full">
+        <div data-testid="flower-battle-display" data-presenter-layout="experience-immersive"
+             class="relative h-full w-full overflow-hidden">
+          <div data-testid="garden-battle-canvas-host" class="absolute inset-0 z-0 h-full w-full garden-mock">
+            <div class="plant" style="left:25%"><div class="head" style="background:#7c3aed"></div><div class="stem"></div><div class="soil"></div></div>
+            <div class="plant" style="left:50%"><div class="head" style="background:#2563eb"></div><div class="stem"></div><div class="soil"></div></div>
+            <div class="plant" style="left:75%"><div class="head" style="background:#16a34a"></div><div class="stem"></div><div class="soil"></div></div>
+            <div style="position:absolute;left:8px;top:40%;background:rgba(255,255,255,.8);padding:4px 8px;font:12px monospace;border-radius:6px">
+              layout=experience-immersive<br/>canvas=absolute inset-0<br/>cream-field=hidden
+            </div>
+          </div>
+          <div data-testid="flower-battle-display-hud" class="pointer-events-none absolute inset-0 z-20">
+            <div data-testid="flower-battle-presenter-hud" data-hud-variant="overlay" class="relative h-full w-full">
+              <div data-testid="flower-battle-team-meters"
+                   class="pointer-events-auto absolute bottom-3 left-3 z-20 flex max-w-[68%] flex-row flex-wrap gap-2">
+                <section class="chip p-2 text-sm font-semibold">Rot · ☀ 2/3</section>
+                <section class="chip p-2 text-sm font-semibold">Blau · ☀ 1/3</section>
+                <section class="chip p-2 text-sm font-semibold">Grün · ☀ 0/3</section>
+              </div>
+              <div class="pointer-events-auto absolute bottom-3 right-3 z-20">
+                <div data-testid="hud-answer-counter" class="chip px-4 py-2 text-sm font-bold">3/10 beantwortet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -34,14 +34,21 @@ export function normalizePlotTeamCount(teamCount: number): number {
  * Evenly spaced ground anchors along the actor band of the logical frame.
  * Pure function of (viewport constants, teamCount) — never growth/phase.
  */
+/**
+ * Ground contact Y as a fraction of logical height.
+ * Lower-mid third so plants stay fully inside the React bottom safe area
+ * (team HUD + answer counter) while remaining large and readable.
+ */
+export const PLOT_GROUND_Y_RATIO = 0.72
+
 export function computePlotAnchors(
   teamCount: number,
   logicalWidth: number = GARDEN_LOGICAL_WIDTH,
   logicalHeight: number = GARDEN_LOGICAL_HEIGHT,
 ): PlotAnchor[] {
   const count = normalizePlotTeamCount(teamCount)
-  // Actor band starts at 64 % (garden-scene-safe-zones); plant feet sit mid-band.
-  const groundY = logicalHeight * 0.82
+  // Actor band: plant feet in lower-mid third (above bottom HUD safe band).
+  const groundY = logicalHeight * PLOT_GROUND_Y_RATIO
   const sideMargin = logicalWidth * 0.12
   const usable = logicalWidth - sideMargin * 2
   const step = count === 1 ? 0 : usable / (count - 1)
