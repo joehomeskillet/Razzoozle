@@ -33,8 +33,9 @@ export const LAYER_LABELS = [
   "layer-distant-hills",
   "layer-distant-bushes",
   "layer-mid-trees",
-  "layer-fence",
+  // Grass under the fence: solid lawn strips must not paint over pickets.
   "layer-grass",
+  "layer-fence",
   "layer-soil-plots",
   "layer-flower-teams",
   "layer-weather",
@@ -52,8 +53,8 @@ export interface GardenLayerSet {
   distantHills: Container
   distantBushes: Container
   midTrees: Container
-  fence: Container
   grass: Container
+  fence: Container
   soilPlots: Container
   flowerTeams: Container
   weather: Container
@@ -109,7 +110,8 @@ function fillRect(
 
 /**
  * Mount a full-bleed underlay rect (always) so canvas never shows through,
- * then optionally a centred Sprite covering the logical viewport.
+ * then optionally a centred Sprite covering the logical viewport with
+ * **uniform** scale (object-fit: cover) — no X/Y stretch distortion.
  */
 function withFullBleedSprite(
   layer: Container,
@@ -135,17 +137,20 @@ function withFullBleedSprite(
     sprite.label = childLabel
     sprite.anchor.set(0.5, 0.5)
     sprite.position.set(GARDEN_LOGICAL_WIDTH / 2, GARDEN_LOGICAL_HEIGHT / 2)
-    sprite.scale.set(
+    // Cover: fill the logical frame, preserve aspect (may crop edges).
+    const scale = Math.max(
       GARDEN_LOGICAL_WIDTH / texture.width,
       GARDEN_LOGICAL_HEIGHT / texture.height,
     )
+    sprite.scale.set(scale)
     layer.addChild(sprite)
   }
 }
 
 /**
  * Bottom-anchored band sprite. Always paints a solid colour band first so
- * there is no transparent gap to the canvas clear colour.
+ * there is no transparent gap to the canvas clear colour. Sprite uses
+ * **uniform** width-fit scale so silhouettes keep their authored proportions.
  */
 function withBottomSprite(
   layer: Container,
@@ -168,14 +173,9 @@ function withBottomSprite(
     sprite.label = childLabel
     sprite.anchor.set(0.5, 1.0)
     sprite.position.set(GARDEN_LOGICAL_WIDTH / 2, bottomY)
-    // Width-fit, proportional height (may extend above bandTop — desired depth).
-    const scaleX = GARDEN_LOGICAL_WIDTH / texture.width
-    const naturalH = texture.height * scaleX
-    const scaleY =
-      naturalH < bandHeight
-        ? bandHeight / texture.height
-        : scaleX
-    sprite.scale.set(scaleX, scaleY)
+    // Uniform width-fit — never non-uniform stretch (that caused "scattered"/warped look).
+    const scale = GARDEN_LOGICAL_WIDTH / texture.width
+    sprite.scale.set(scale)
     layer.addChild(sprite)
   }
 }
@@ -201,7 +201,8 @@ export function buildSkyLayer(
     sun.anchor.set(0.5, 0.5)
     sun.position.set(sunX, sunY)
     const target = 220
-    sun.scale.set(target / assets.sun.width, target / assets.sun.height)
+    const s = target / Math.max(assets.sun.width, assets.sun.height)
+    sun.scale.set(s)
     layer.addChild(sun)
   } else if (!assets?.sky) {
     const g = new Graphics()
@@ -241,7 +242,8 @@ export function buildSkyLayer(
       cloud.position.set(p.x, p.y)
       cloud.alpha = p.alpha
       const baseW = 280 * p.scale
-      cloud.scale.set(baseW / texture.width, (baseW * 0.4) / texture.height)
+      const s = baseW / texture.width
+      cloud.scale.set(s)
       layer.addChild(cloud)
     }
   } else if (!assets?.sky) {
@@ -286,13 +288,14 @@ export function buildDistantHillsLayer(
   const layer = new Container()
   layer.label = "layer-distant-hills"
 
+  // Sit just above the lawn line so the ridge reads as far horizon.
   withBottomSprite(
     layer,
     "distant-hills-sprite",
     assets?.distantHills,
-    GARDEN_LOGICAL_HEIGHT * 0.62,
+    GARDEN_LOGICAL_HEIGHT * 0.7,
     palette.hillBack,
-    0.5,
+    0.48,
   )
 
   if (!assets?.distantHills) {
@@ -346,9 +349,9 @@ export function buildDistantBushesLayer(
     layer,
     "distant-bushes-sprite",
     assets?.distantBushes,
-    GARDEN_LOGICAL_HEIGHT * 0.66,
+    GARDEN_LOGICAL_HEIGHT * 0.72,
     palette.bushBack,
-    0.66,
+    0.58,
   )
 
   if (!assets?.distantBushes) {
@@ -386,9 +389,9 @@ export function buildMidTreesLayer(
     layer,
     "mid-trees-sprite",
     assets?.midTrees,
-    GARDEN_LOGICAL_HEIGHT * 0.62,
+    GARDEN_LOGICAL_HEIGHT * 0.74,
     palette.midground,
-    0.52,
+    0.5,
   )
 
   if (!assets?.midTrees) {
@@ -424,9 +427,9 @@ export function buildFenceLayer(
     layer,
     "fence-sprite",
     assets?.fence,
-    GARDEN_LOGICAL_HEIGHT * 0.72,
+    GARDEN_LOGICAL_HEIGHT * 0.76,
     palette.fence,
-    0.64,
+    0.68,
   )
 
   if (!assets?.fence) {
@@ -462,15 +465,15 @@ export function buildGrassLayer(
   const layer = new Container()
   layer.label = "layer-grass"
 
-  // Lawn covers from just under the fence down to the canvas bottom so no
-  // cream canvas band appears between hills and soil plots.
+  // Lawn starts just below the fence line. Underlay must NOT start as high as
+  // the horizon — that buried trees/fence under a solid green slab.
   withBottomSprite(
     layer,
     "grass-sprite",
     assets?.grass,
     GARDEN_LOGICAL_HEIGHT,
     palette.grass,
-    0.62,
+    0.72,
   )
 
   if (assets?.grassDetail && assets.grassDetail.width > 0) {
@@ -486,7 +489,7 @@ export function buildGrassLayer(
       tuft.anchor.set(0.5, 1)
       tuft.position.set(x, GARDEN_LOGICAL_HEIGHT * yPct)
       const w = 90 * s
-      tuft.scale.set(w / assets.grassDetail.width, (w * 0.45) / assets.grassDetail.height)
+      tuft.scale.set(w / assets.grassDetail.width)
       tuft.alpha = 0.85
       layer.addChild(tuft)
     }
@@ -614,10 +617,8 @@ export function buildForegroundFrame(
       left.label = "foreground-leaf-left-sprite"
       left.anchor.set(0, 1)
       left.position.set(0, GARDEN_LOGICAL_HEIGHT)
-      left.scale.set(
-        300 / leftTexture.width,
-        400 / leftTexture.height,
-      )
+      // Uniform scale to ~380px tall frame leaves.
+      left.scale.set(380 / leftTexture.height)
       layer.addChild(left)
     }
     if (rightTexture) {
@@ -625,10 +626,7 @@ export function buildForegroundFrame(
       right.label = "foreground-leaf-right-sprite"
       right.anchor.set(1, 1)
       right.position.set(GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT)
-      right.scale.set(
-        300 / rightTexture.width,
-        400 / rightTexture.height,
-      )
+      right.scale.set(380 / rightTexture.height)
       layer.addChild(right)
     }
     return layer
@@ -671,8 +669,8 @@ export function createGardenLayers(
   const distantHills = buildDistantHillsLayer(palette, assets)
   const distantBushes = buildDistantBushesLayer(palette, assets)
   const midTrees = buildMidTreesLayer(palette, assets)
-  const fence = buildFenceLayer(palette, assets)
   const grass = buildGrassLayer(palette, assets)
+  const fence = buildFenceLayer(palette, assets)
   const soilPlots = buildSoilPlotLayer()
   const flowerTeams = buildFlowerTeamsLayer()
   const weather = buildWeatherEffectsLayer()
@@ -689,8 +687,8 @@ export function createGardenLayers(
     distantHills,
     distantBushes,
     midTrees,
-    fence,
     grass,
+    fence,
     soilPlots,
     flowerTeams,
     weather,
@@ -705,8 +703,8 @@ export function createGardenLayers(
     distantHills,
     distantBushes,
     midTrees,
-    fence,
     grass,
+    fence,
     soilPlots,
     flowerTeams,
     weather,
@@ -749,10 +747,7 @@ export function syncPlotSoil(
       sprite.label = `soil-sprite-${anchor.index}`
       sprite.anchor.set(0.5, 0.85)
       const targetW = 200
-      sprite.scale.set(
-        targetW / soilTexture.width,
-        (targetW * 0.45) / soilTexture.height,
-      )
+      sprite.scale.set(targetW / soilTexture.width)
       holder.addChild(sprite)
       // Soft team-tint lip above the mound
       const lip = new Graphics()

@@ -13,7 +13,7 @@
  * zero missing required aliases.
  */
 
-import { Assets, Texture } from "pixi.js"
+import { Texture } from "pixi.js"
 
 import type { LayerAssets } from "../rendering/gardenLayers"
 import type { GardenPalette } from "../rendering/gardenPalette"
@@ -134,34 +134,106 @@ function toDataUri(svgText: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`
 }
 
+export interface SvgViewBox {
+  minX: number
+  minY: number
+  width: number
+  height: number
+}
+
+/** Parse the root SVG viewBox; returns null if missing/invalid. */
+export function parseSvgViewBox(svg: string): SvgViewBox | null {
+  const match = svg.match(
+    /viewBox\s*=\s*["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/i,
+  )
+  if (!match) return null
+  const minX = Number(match[1])
+  const minY = Number(match[2])
+  const width = Number(match[3])
+  const height = Number(match[4])
+  if (
+    ![minX, minY, width, height].every(Number.isFinite) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null
+  }
+  return { minX, minY, width, height }
+}
+
 /**
  * Rewrite `viewBox="minX minY w h"` with negative minX/minY into a positive
  * box and wrap children in a compensating translate. Negative-origin SVGs
  * often decode as blank/black bitmaps in Chromium Image + Pixi paths.
  */
 export function normalizeSvgViewBox(svg: string): string {
-  const match = svg.match(
-    /viewBox\s*=\s*["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/i,
-  )
-  if (!match) return svg
-  const minX = Number(match[1])
-  const minY = Number(match[2])
-  const w = Number(match[3])
-  const h = Number(match[4])
-  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return svg
-  if (minX >= 0 && minY >= 0) return svg
+  const vb = parseSvgViewBox(svg)
+  if (!vb) return svg
+  if (vb.minX >= 0 && vb.minY >= 0) return svg
 
   let out = svg.replace(
-    match[0],
-    `viewBox="0 0 ${w} ${h}"`,
+    /viewBox\s*=\s*["'][^"']*["']/i,
+    `viewBox="0 0 ${vb.width} ${vb.height}"`,
   )
-  // Insert a single wrapping group just inside the root <svg>.
   out = out.replace(
     /(<svg\b[^>]*>)/i,
-    `$1<g transform="translate(${-minX} ${-minY})">`,
+    `$1<g transform="translate(${-vb.minX} ${-vb.minY})">`,
   )
   out = out.replace(/<\/svg>\s*$/i, "</g></svg>")
   return out
+}
+
+/**
+ * Force explicit width/height on the root <svg>. Without them, Chromium
+ * often decodes SVGs as the 300×150 default → massive upscale + pixelation.
+ */
+export function ensureSvgIntrinsicSize(
+  svg: string,
+  width: number,
+  height: number,
+): string {
+  const w = Math.max(1, Math.round(width))
+  const h = Math.max(1, Math.round(height))
+  return svg.replace(/<svg\b([^>]*)>/i, (_full, attrs: string) => {
+    let next = attrs
+      .replace(/\swidth\s*=\s*["'][^"']*["']/gi, "")
+      .replace(/\sheight\s*=\s*["'][^"']*["']/gi, "")
+    return `<svg${next} width="${w}" height="${h}">`
+  })
+}
+
+/**
+ * Choose canvas pixel size for an alias from its viewBox.
+ * Full-width layers stay at design resolution; small props are 2× supersampled.
+ */
+export function targetRasterSize(
+  alias: GardenSceneAssetAlias,
+  vb: SvgViewBox,
+): { width: number; height: number } {
+  const isHead = alias.startsWith("plant_head_") || alias.startsWith("face_")
+  if (isHead) {
+    return { width: 256, height: 256 }
+  }
+
+  // Wide stage strips (sky/hills/fence/lawn/trees): keep design pixels.
+  if (vb.width >= 960) {
+    const maxSide = 2048
+    if (vb.width <= maxSide && vb.height <= maxSide) {
+      return { width: Math.round(vb.width), height: Math.round(vb.height) }
+    }
+    const s = maxSide / Math.max(vb.width, vb.height)
+    return {
+      width: Math.round(vb.width * s),
+      height: Math.round(vb.height * s),
+    }
+  }
+
+  // Clouds, tufts, soil mounds, leaves: 2× supersample for crisp scale-up.
+  const scale = 2
+  return {
+    width: Math.round(vb.width * scale),
+    height: Math.round(vb.height * scale),
+  }
 }
 
 function isTexture(value: unknown): value is Texture {
@@ -175,15 +247,7 @@ function isTexture(value: unknown): value is Texture {
   )
 }
 
-/**
- * Rasterise an SVG data-URI via HTMLImageElement → Canvas2D → Pixi Texture.
- * Canvas intermediate avoids black-square textures that Texture.from(img)
- * sometimes produces for SVG sources with transparent backgrounds.
- */
-async function textureFromImage(
-  dataUri: string,
-  size = 256,
-): Promise<Texture> {
+async function loadHtmlImage(dataUri: string): Promise<HTMLImageElement> {
   const img = new Image()
   img.decoding = "async"
   await new Promise<void>((resolve, reject) => {
@@ -191,22 +255,66 @@ async function textureFromImage(
     img.onerror = () => reject(new Error("SVG image decode failed"))
     img.src = dataUri
   })
+  return img
+}
+
+/**
+ * High-quality SVG → Canvas2D → Pixi Texture path used for every garden
+ * asset. Always preserves aspect ratio and uses viewBox-sized pixels so
+ * stage strips are sharp at 1920 logical width (no 300×150 default).
+ */
+export async function rasterizeSvgToTexture(
+  bakedSvg: string,
+  alias: GardenSceneAssetAlias,
+): Promise<Texture> {
+  const vb =
+    parseSvgViewBox(bakedSvg) ??
+    ({ minX: 0, minY: 0, width: 256, height: 256 } satisfies SvgViewBox)
+  const target = targetRasterSize(alias, vb)
+  // Tell the browser the intrinsic pixel size before decode.
+  const sized = ensureSvgIntrinsicSize(bakedSvg, target.width, target.height)
+  const dataUri = toDataUri(sized)
+  const img = await loadHtmlImage(dataUri)
+
   const canvas = document.createElement("canvas")
-  canvas.width = size
-  canvas.height = size
+  canvas.width = target.width
+  canvas.height = target.height
   const ctx = canvas.getContext("2d")
   if (!ctx) {
-    return Texture.from(img)
+    const fallback = Texture.from(img)
+    return fallback
   }
-  ctx.clearRect(0, 0, size, size)
-  // Contain-fit the SVG into the square canvas.
-  const iw = img.naturalWidth || size
-  const ih = img.naturalHeight || size
-  const scale = Math.min(size / iw, size / ih)
-  const dw = iw * scale
-  const dh = ih * scale
-  ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh)
-  return Texture.from(canvas)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.clearRect(0, 0, target.width, target.height)
+
+  // Heads: contain-fit into square. Everything else: stretch to target
+  // (target already matches aspect of viewBox).
+  if (alias.startsWith("plant_head_") || alias.startsWith("face_")) {
+    const iw = img.naturalWidth || target.width
+    const ih = img.naturalHeight || target.height
+    const s = Math.min(target.width / iw, target.height / ih)
+    const dw = iw * s
+    const dh = ih * s
+    ctx.drawImage(
+      img,
+      (target.width - dw) / 2,
+      (target.height - dh) / 2,
+      dw,
+      dh,
+    )
+  } else {
+    ctx.drawImage(img, 0, 0, target.width, target.height)
+  }
+
+  const texture = Texture.from(canvas)
+  // Prefer smooth filtering when the sprite is scaled on screen.
+  try {
+    texture.source.scaleMode = "linear"
+  } catch {
+    // Older pixi texture sources may not expose scaleMode — ignore.
+  }
+  return texture
 }
 
 function paletteFillForAlias(
@@ -245,19 +353,6 @@ function paletteFillForAlias(
   }
 }
 
-let assetsInitPromise: Promise<void> | null = null
-
-async function ensurePixiAssetsInit(): Promise<void> {
-  assetsInitPromise ??= Assets.init({ skipDetections: true }).catch(
-    (err: unknown) => {
-      assetsInitPromise = null
-      const cause = err instanceof Error ? err : new Error(String(err))
-      throw new Error(cause.message, { cause })
-    },
-  )
-  await assetsInitPromise
-}
-
 /**
  * Load every garden-scene production SVG, bake colours, return typed maps.
  * Safe to call once per attach; concurrent callers should share externally.
@@ -265,13 +360,11 @@ async function ensurePixiAssetsInit(): Promise<void> {
 export async function loadGardenSceneAssets(
   palette: GardenPalette,
 ): Promise<GardenSceneLoadedAssets> {
-  await ensurePixiAssetsInit()
-
   const aliases = Object.keys(
     GARDEN_SCENE_ASSET_URLS,
   ) as GardenSceneAssetAlias[]
 
-  // Sequential load keeps Pixi Assets registration deterministic for ~20 SVGs.
+  // Sequential load keeps memory + main-thread rasterisation predictable.
   const texturesByAlias: Record<string, Texture> = {}
   const loadedAliases: string[] = []
   const missingAliases: string[] = []
@@ -290,38 +383,9 @@ export async function loadGardenSceneAssets(
       }
       const raw = await response.text()
       const baked = bakeSvgForPixi(raw, paletteFillForAlias(alias, palette))
-      const dataUri = toDataUri(baked)
-      // Unique alias per bake so remount/palette changes do not hit stale cache.
-      const pixiAlias = `garden-scene:${alias}:${loadedAliases.length}`
-      let texture: Texture | null = null
-      // Flower heads use negative viewBoxes — prefer HTMLImageElement rasterisation.
-      const preferImage = alias.startsWith("plant_head_") || alias.startsWith("face_")
-      if (preferImage) {
-        try {
-          texture = await textureFromImage(dataUri)
-        } catch {
-          // Fall through to Pixi Assets.
-        }
-      }
-      if (!texture) {
-        try {
-          Assets.add({ alias: pixiAlias, src: dataUri })
-          const loaded = await Assets.load(pixiAlias)
-          if (isTexture(loaded)) texture = loaded
-        } catch {
-          // Fall through to HTMLImageElement path.
-        }
-      }
-      if (!texture) {
-        try {
-          texture = await textureFromImage(dataUri)
-        } catch {
-          missingAliases.push(alias)
-          failedUrls.push(url)
-          fallbackAliases.push(alias)
-          continue
-        }
-      }
+      // Always canvas-rasterise at viewBox-native (or 2×) resolution.
+      // Pixi Assets.load on bare SVG data-URIs often yields 300×150 bitmaps.
+      const texture = await rasterizeSvgToTexture(baked, alias)
       if (!isTexture(texture)) {
         missingAliases.push(alias)
         failedUrls.push(url)
