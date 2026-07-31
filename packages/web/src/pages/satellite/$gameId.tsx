@@ -1,9 +1,7 @@
 import { EVENTS } from "@razzoozle/common/constants"
 import { ExperienceDisplay } from "@razzoozle/web/features/game/components/display/ExperienceDisplay"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
-import {
-  socketClient,
-} from "@razzoozle/web/features/game/contexts/socket-context"
+import { socketClient } from "@razzoozle/web/features/game/contexts/socket-context"
 import { useManagerGameSession } from "@razzoozle/web/features/game/hooks/useManagerGameSession"
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useEffect } from "react"
@@ -54,8 +52,8 @@ export function SatelliteManagerPage() {
   // scenarios, plus optional satelliteToken fallback).
   const { status, CurrentComponent, experienceTransition } =
     useManagerGameSession(gameIdParam, {
-    reconnectIfConnected: true,
-  })
+      reconnectIfConnected: true,
+    })
 
   // Render the manager presentation chrome (background + question counter +
   // rejoin QR) with `controls={false}`, so GameWrapper suppresses every manager
@@ -68,7 +66,11 @@ export function SatelliteManagerPage() {
       statusName={status?.name}
       manager
       controls={false}
-      contentTransitionKey={experienceTransition && experienceTransition.mode !== "classic" ? experienceTransition.mode : undefined}
+      contentTransitionKey={
+        experienceTransition && experienceTransition.mode !== "classic"
+          ? experienceTransition.mode
+          : undefined
+      }
     >
       {experienceTransition ? (
         <ExperienceDisplay data={experienceTransition} />
