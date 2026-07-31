@@ -378,6 +378,24 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
     expect(html).toContain('data-testid="player-footer"')
   })
 
+  it("places the Flower HUD before the animated content instead of inside it", () => {
+    playerStore.flowerBattlePlayerStatus = makeFlowerStatus()
+    setGameStatus(STATUS.SELECT_ANSWER)
+
+    const html = renderToStaticMarkup(<PlayerGamePage />)
+    const hudIndex = html.indexOf('data-testid="flower-battle-player-hud-slot"')
+    const scrollShellIndex = html.indexOf("overflow-y-auto")
+    const transitionIndex = html.indexOf(
+      'data-content-transition-key="flowerBattle"',
+    )
+    const stageIndex = html.indexOf('data-testid="state-SELECT_ANSWER"')
+
+    expect(hudIndex).toBeGreaterThan(-1)
+    expect(scrollShellIndex).toBeGreaterThan(hudIndex)
+    expect(transitionIndex).toBeGreaterThan(scrollShellIndex)
+    expect(stageIndex).toBeGreaterThan(transitionIndex)
+  })
+
   // #982 / wp-b813aed8d3fc: the guarded reconnect hydrate (WP-946-C1-R1) can
   // fill the typed store BEFORE gameplay starts. Pre-game choreography phases
   // must keep classic chrome — centered screen, visible topbar, default
@@ -422,11 +440,15 @@ describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
       })
       const prepared = renderToStaticMarkup(<PlayerGamePage />)
       expect(prepared).toContain('data-testid="game-topbar"')
+      expect(prepared).not.toContain(
+        'data-testid="player-topbar-replacement"',
+      )
       expect(contentKeyOf(prepared)).toBe(STATUS.SHOW_PREPARED)
 
       setGameStatus(STATUS.SELECT_ANSWER)
       const gameplay = renderToStaticMarkup(<PlayerGamePage />)
       expect(gameplay).toContain('data-testid="flower-battle-player-hud-slot"')
+      expect(gameplay).toContain('data-testid="player-topbar-replacement"')
       expect(gameplay).not.toContain('data-testid="game-topbar"')
       expect(contentKeyOf(gameplay)).toBe("flowerBattle")
     })

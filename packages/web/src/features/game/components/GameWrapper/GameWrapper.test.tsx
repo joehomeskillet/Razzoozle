@@ -363,6 +363,36 @@ describe("GameWrapper player Flower HUD chrome (WP-946-C3)", () => {
     expect(contentKeyOf(html)).toBe("flowerBattle")
   })
 
+  it("renders a player topbar replacement before the animated content subtree", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SELECT_ANSWER}
+        contentTransitionKey="flowerBattle"
+        hidePlayerTopbar
+        playerTopbarReplacement={
+          <div data-testid="flower-battle-player-hud-slot">hud</div>
+        }
+      >
+        <div data-testid="flower-battle-stage">stage</div>
+      </GameWrapper>,
+    )
+
+    const replacementIndex = html.indexOf(
+      'data-testid="flower-battle-player-hud-slot"',
+    )
+    const scrollShellIndex = html.indexOf("overflow-y-auto")
+    const transitionIndex = html.indexOf(
+      'data-content-transition-key="flowerBattle"',
+    )
+    const stageIndex = html.indexOf('data-testid="flower-battle-stage"')
+
+    expect(replacementIndex).toBeGreaterThan(-1)
+    expect(scrollShellIndex).toBeGreaterThan(replacementIndex)
+    expect(transitionIndex).toBeGreaterThan(scrollShellIndex)
+    expect(stageIndex).toBeGreaterThan(transitionIndex)
+    expect(html).not.toContain('data-testid="game-topbar"')
+  })
+
   it("keeps the player topbar on classic / join screens (hidePlayerTopbar off)", () => {
     const html = renderToStaticMarkup(
       <GameWrapper statusName={STATUS.SHOW_START}>

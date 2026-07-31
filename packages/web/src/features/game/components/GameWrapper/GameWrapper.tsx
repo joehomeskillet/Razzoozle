@@ -29,7 +29,7 @@ import {
   EASE,
 } from "@razzoozle/web/features/game/animation/presets"
 import { LogOut, Maximize } from "lucide-react"
-import { type PropsWithChildren, useEffect, useState, useRef } from "react"
+import { type PropsWithChildren, type ReactNode, useEffect, useState, useRef } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 
@@ -39,6 +39,11 @@ type Props = PropsWithChildren & {
   // scenes (Flower/Pixi) survive Question → Result → next Question. When omitted,
   // falls back to statusName (classic remount / re-animation behavior).
   contentTransitionKey?: string
+  /**
+   * Optional player chrome rendered in the topbar region, outside the
+   * scrollable and animated game-content subtree.
+   */
+  playerTopbarReplacement?: ReactNode
   /**
    * WP-946-C3: hide the player top chrome (question progress + AV toggles)
    * on Flower Battle gameplay. The compact FlowerBattlePlayerStatus HUD
@@ -55,6 +60,7 @@ const GameWrapper = ({
   children,
   statusName,
   contentTransitionKey,
+  playerTopbarReplacement,
   hidePlayerTopbar = false,
   onNext,
   onBack,
@@ -195,27 +201,35 @@ const GameWrapper = ({
                 </div>
               )}
 
-              {/* Player-Top-Bar: classic/join only. Flower Battle gameplay
-                  (hidePlayerTopbar) drops this white/surface chrome so the
-                  compact status HUD owns the top of the phone UI (WP-946-C3). */}
-              {!manager && !hidePlayerTopbar && (
-                <div
-                  data-testid="game-topbar"
-                  className="flex w-full items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
-                >
-                  <div className="flex shrink-0 justify-start">
-                    {questionStates && (
-                      <div className="flex items-center gap-1 text-sm font-semibold text-[color:var(--game-fg)]">
-                        <span>{t("game:questionPrefix")}</span>
-                        <span>{`${questionStates.current} / ${questionStates.total}`}</span>
-                      </div>
-                    )}
+              {/* Player topbar region stays outside the scrollable, animated
+                  content shell. Flower Battle supplies its compact HUD here;
+                  classic/join/waiting retain the default player chrome. */}
+              {!manager &&
+                (playerTopbarReplacement !== undefined ? (
+                  <div
+                    data-testid="player-topbar-replacement"
+                    className="w-full shrink-0 px-4 pt-[max(0.5rem,env(safe-area-inset-top))]"
+                  >
+                    {playerTopbarReplacement}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <AvToggles />
+                ) : !hidePlayerTopbar ? (
+                  <div
+                    data-testid="game-topbar"
+                    className="flex w-full items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+                  >
+                    <div className="flex shrink-0 justify-start">
+                      {questionStates && (
+                        <div className="flex items-center gap-1 text-sm font-semibold text-[color:var(--game-fg)]">
+                          <span>{t("game:questionPrefix")}</span>
+                          <span>{`${questionStates.current} / ${questionStates.total}`}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <AvToggles />
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null)}
 
               {/* Presenter-Toolbar (REFACTORED): only when manager && controls */}
               {manager && controls && (
@@ -383,12 +397,7 @@ const GameWrapper = ({
               <div
                 aria-disabled={!isConnected}
                 className={clsx(
-                  "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pb-4",
-                  // Without the player top bar, keep safe-area inset on the
-                  // content shell so notches do not clip the compact FLB HUD.
-                  hidePlayerTopbar && !manager
-                    ? "pt-[max(0.5rem,env(safe-area-inset-top))]"
-                    : "pt-2",
+                  "flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 pt-2 pb-4",
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
                   // pb-24 pad that cleared it is gone — manager and player share

@@ -266,6 +266,15 @@ export const PlayerGamePage = () => {
     status.name,
     flowerBattlePlayerStatus,
   )
+  const flowerBattlePlayerTopbar =
+    flowerBattleGameplay && flowerBattlePlayerStatus ? (
+      <div
+        data-testid="flower-battle-player-hud-slot"
+        className="mx-auto w-full max-w-md shrink-0"
+      >
+        <FlowerBattlePlayerStatus status={flowerBattlePlayerStatus} />
+      </div>
+    ) : undefined
 
   return (
     <GameWrapper
@@ -274,17 +283,8 @@ export const PlayerGamePage = () => {
       // answers_locked (SHOW_RESPONSES), resolution (SHOW_RESULT), and finish.
       contentTransitionKey={flowerBattleGameplay ? "flowerBattle" : undefined}
       hidePlayerTopbar={flowerBattleGameplay}
+      playerTopbarReplacement={flowerBattlePlayerTopbar}
     >
-      {/* flowerBattleGameplay implies a hydrated store; the explicit non-null
-          check keeps TS narrowing without widening the predicate signature. */}
-      {flowerBattleGameplay && flowerBattlePlayerStatus && (
-        <div
-          data-testid="flower-battle-player-hud-slot"
-          className="mx-auto mb-2 w-full max-w-md shrink-0"
-        >
-          <FlowerBattlePlayerStatus status={flowerBattlePlayerStatus} />
-        </div>
-      )}
       {CurrentComponent && (
         <CurrentComponent
           {...(CurrentComponent === Result ? { audience: "player" } : {})}
