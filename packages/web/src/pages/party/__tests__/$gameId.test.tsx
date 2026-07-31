@@ -8,6 +8,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { EVENTS } from "@razzoozle/common/constants"
 import type { FlowerBattlePlayerStatus as FlowerBattlePlayerStatusData } from "@razzoozle/common/types/game/socket"
 import type { Status } from "@razzoozle/common/types/game/status"
 import { STATUS } from "@razzoozle/common/types/game/status"
@@ -118,9 +119,13 @@ vi.mock("@tanstack/react-router", () => ({
   useParams: () => ({ gameId: "game-a" }),
 }))
 
+const { socketEmit } = vi.hoisted(() => ({
+  socketEmit: vi.fn(),
+}))
+
 vi.mock("@razzoozle/web/features/game/contexts/socket-context", () => ({
   socketClient: { emit: vi.fn() },
-  useSocket: () => ({ isConnected: true, socket: { emit: vi.fn() } }),
+  useSocket: () => ({ isConnected: true, socket: { emit: socketEmit } }),
   useEvent: vi.fn(),
   useClockSync: vi.fn(),
 }))
@@ -234,6 +239,7 @@ vi.mock("@razzoozle/web/features/game/stores/manager", () => ({
   useManagerStore: () => ({ gameId: null, inviteCode: null }),
 }))
 
+import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
 import { PlayerGamePage, isFlowerBattleGameplay } from "../$gameId"
 
 const makeFlowerStatus = (
@@ -262,6 +268,47 @@ const contentKeyOf = (html: string) => {
 const setGameStatus = (name: Status, data: unknown = {}) => {
   playerStore.status = { name, data }
 }
+
+describe("PlayerGamePage reconnect bootstrap", () => {
+  it("sets the route gameId before emitting PLAYER.RECONNECT", () => {
+    vi.useFakeTimers()
+    vi.stubGlobal("localStorage", { getItem: () => null })
+    vi.mocked(useEvent).mockClear()
+    playerStore.setGameId.mockClear()
+    socketEmit.mockClear()
+
+    try {
+      renderToStaticMarkup(<PlayerGamePage />)
+
+      const connectHandler = vi
+        .mocked(useEvent)
+        .mock.calls.find(([event]) => event === "connect")?.[1] as
+        (() => void) | undefined
+      if (!connectHandler) {
+        throw new Error("PlayerGamePage did not register a connect handler")
+      }
+
+      connectHandler()
+
+      expect(playerStore.setGameId).toHaveBeenCalledTimes(1)
+      expect(playerStore.setGameId).toHaveBeenCalledWith("game-a")
+      expect(socketEmit).toHaveBeenCalledWith(EVENTS.PLAYER.RECONNECT, {
+        gameId: "game-a",
+        playerToken: undefined,
+        lastServerSeq: undefined,
+      })
+
+      const setGameIdOrder = playerStore.setGameId.mock.invocationCallOrder[0]
+      const reconnectEmitOrder = socketEmit.mock.invocationCallOrder[0]
+      expect(setGameIdOrder).toBeDefined()
+      expect(reconnectEmitOrder).toBeDefined()
+      expect(setGameIdOrder!).toBeLessThan(reconnectEmitOrder!)
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
+  })
+})
 
 describe("PlayerGamePage Flower HUD integration (WP-946-C3)", () => {
   beforeEach(() => {

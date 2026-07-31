@@ -96,6 +96,7 @@ export const PlayerGamePage = () => {
     if (gameIdParam) {
       // Reuse the durable clientId (carried in the socket handshake auth) plus
       // the last server sequence so resume can show "answered" if appropriate.
+      setGameId(gameIdParam)
       socket.emit(EVENTS.PLAYER.RECONNECT, {
         gameId: gameIdParam,
         playerToken:
