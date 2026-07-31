@@ -334,6 +334,29 @@ impl Game {
         )
     }
 
+    /// Full `GameStatus` round-trip from the stored `(Status, data)` tuple.
+    /// Returns `None` when no status has been recorded yet — caller must fall
+    /// back to a phase-driven placeholder rather than emit an empty envelope.
+    /// Used by the reconnect path to re-send `game:status` directly (separate
+    /// from the bundled `manager:successReconnect`) so a manager that misses the
+    /// first envelope still gets a single authoritative replay.
+    pub fn last_manager_game_status(&self) -> Option<GameStatus> {
+        let (status, data) = self.last_manager_status.as_ref()?;
+        let combined = serde_json::json!({
+            "name": status,
+            "data": data,
+        });
+        match serde_json::from_value::<GameStatus>(combined) {
+            Ok(game_status) => Some(game_status),
+            Err(error) => {
+                warn!(
+                    "last_manager_game_status: failed to deserialize recorded status: {error}"
+                );
+                None
+            }
+        }
+    }
+
     /// Arm a fresh abort signal for a new abortable wait, returning the handle
     /// the waiting task should select on. Replaces any prior (stale) handle.
     pub fn arm_abort(&mut self) -> Arc<tokio::sync::Notify> {

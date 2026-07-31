@@ -20,6 +20,7 @@
 //! Display emit does **not** require a connected manager socket.
 
 use crate::socket::manager::game_flow::flower_battle_display;
+use crate::socket::lifecycle::flower_battle_emit::{self, is_flower_battle};
 use crate::state::{get_now_ms, Game};
 use razzoozle_engine::state::GamePhase;
 use razzoozle_protocol::constants;
@@ -531,6 +532,14 @@ fn emit_reconnect_event<T: serde::Serialize>(socket: &SocketRef, event: &str, pa
 ///
 /// During the reveal-to-tick window, reconnect replays only `answers_locked`.
 /// The post-tick live `resolution` then supplies the first authoritative state.
+///
+/// WP #966 (envelope-resend): the successReconnect payload is now augmented
+/// with a separate `game:status` emit (so a manager that misses the first
+/// envelope still gets a single authoritative replay) plus, for an active
+/// FlowerBattle game, `game:flowerBattle:snapshot` and a per-player
+/// `game:flowerBattle:playerStatus` for every currently-connected player. The
+/// per-player status uses the LIVE revision (no bump) — the live `tick` path
+/// is the sole authority for monotonic revision increments.
 pub fn complete_manager_reconnect(
     socket: &SocketRef,
     game_ref: &Arc<Mutex<Game>>,
@@ -567,11 +576,78 @@ pub fn complete_manager_reconnect(
         &(game.players.len() as i32),
     );
 
+    // WP #966 — resend `game:status` separately so a manager that missed the
+    // first envelope (display rejoined mid-round) still gets the authoritative
+    // replay. No-op when the game hasn't recorded a status yet — that's the
+    // pure lobby case where the manager_reconnect_status fallback already
+    // surfaces SHOW_ROOM inside successReconnect.
+    if let Some(game_status) = game.last_manager_game_status() {
+        emit_reconnect_event(socket, constants::game::STATUS, &game_status);
+    }
+
+    // WP #966 — for active FlowerBattle games the manager's display also needs
+    // the mode envelope replayed (snapshot) plus per-player status for any
+    // connected players still on the wire. Helpers do not mutate the live
+    // revision counter (no bump) — the tick path owns monotonic revisions.
+    if is_flower_battle(&game) {
+        emit_flb_snapshot_to_socket(socket, &game);
+        emit_flb_player_statuses_to_socket(socket, &game);
+    }
+
     #[cfg(test)]
     run_reconnect_join_hook(&game_id);
 
     for transition in reconnect_experience_transitions(&game, was_display_member) {
         emit_reconnect_event(socket, constants::experience::TRANSITION, &transition);
+    }
+}
+
+/// Replay `game:flowerBattle:snapshot` directly to a single reconnecting socket.
+/// Mirrors `flower_battle_emit::emit_flb_snapshot` but addresses the
+/// `SocketRef` (not the room) — the reconnecting manager is now in the
+/// `display:{gameId}` room (see `complete_manager_reconnect`), so the room
+/// broadcast would reach other display-room members too, which is intentional.
+/// On the wire path we deliberately duplicate via direct emit so a freshly
+/// attached display socket cannot miss the envelope if its room join lands
+/// after the broadcast tick.
+fn emit_flb_snapshot_to_socket(socket: &SocketRef, game: &Game) {
+    let payload = serde_json::json!({
+        "gameId": game.game_id,
+        "growthStage": game.flower_battle_effects.growth_stage,
+        "sunPoints": game.flower_battle_sun_points,
+        "winnerTeamIds": game.flower_battle_winner_team_ids,
+        "victoryResolved": game.flower_battle_effects.victory_resolved,
+        "offers": game.flower_battle_offers.values().cloned().collect::<Vec<_>>(),
+    });
+    if let Err(error) = socket.emit(constants::flower_battle::SNAPSHOT, &payload) {
+        tracing::warn!(
+            "manager:reconnect failed to emit flowerBattle snapshot socketId={} error={}",
+            socket.id,
+            error
+        );
+    }
+}
+
+/// Replay `game:flowerBattle:playerStatus` to the reconnecting socket for each
+/// player that is currently connected. Uses the LIVE revision (no bump) so the
+/// reconnect replay cannot outrace the tick path's monotonic counter. Skips
+/// disconnected players (no team identity would survive anyway). Players with
+/// no `team_id` get a zeroed-team payload — never a guessed first map key.
+fn emit_flb_player_statuses_to_socket(socket: &SocketRef, game: &Game) {
+    if !is_flower_battle(game) {
+        return;
+    }
+    let revision = game.flower_battle_player_status_revision;
+    for player in game.players.iter().filter(|player| player.connected) {
+        let status = flower_battle_emit::build_player_status(&game.game_id, game, player, revision);
+        if let Err(error) = socket.emit(constants::flower_battle::PLAYER_STATUS, &status) {
+            tracing::warn!(
+                "manager:reconnect failed to emit flowerBattle playerStatus socketId={} playerId={} error={}",
+                socket.id,
+                player.id,
+                error
+            );
+        }
     }
 }
 
