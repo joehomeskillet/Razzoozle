@@ -451,6 +451,9 @@
         "recentlyAttacked": "Gerade angegriffen — wähle ein anderes Team"
       }
     },
+    "eventBubble": {
+      "teamAction": "Team {{teamName}} setzt {{powerupName}} ein"
+    },
     "header": {
       "teamLabel": "Team {{name}}",
       "flower": "Blüte {{current}}/{{max}}",

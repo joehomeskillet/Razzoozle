@@ -6,6 +6,11 @@
  * procedural garden scene. Default createScene is createGardenScene; quality
  * "static" or init errors fall back to FlowerGardenScene. Does NOT own asset
  * loading (WP-03).
+ *
+ * Also hosts the FlowerEventBubble overlay (WP-D-2 / SDD §20.5): subscribes to
+ * the S2C `game:flowerBattle:powerupApplied` envelope, surfaces a transient
+ * comic speech bubble in the safe area, and clears it on auto-dismiss or
+ * replacement.
  */
 
 import {
@@ -22,12 +27,20 @@ import {
 } from "react"
 import type { Application } from "pixi.js"
 
+import { EVENTS } from "@razzoozle/common/constants"
+import type { PowerupApplied } from "@razzoozle/common/types/game/socket"
+import { useEvent } from "@razzoozle/web/features/game/contexts/socket-context"
+
 import { CURRENT_GARDEN_RECIPE_VERSION } from "./background"
 import {
   attachGardenPixiApplication,
   type AttachGardenPixiOptions,
   type GardenPixiEnvironment,
 } from "./attachGardenPixiApplication"
+import {
+  FlowerEventBubble,
+  type FlowerEventBubbleEvent,
+} from "./FlowerEventBubble"
 import { FlowerGardenScene } from "./FlowerGardenScene"
 import type {
   GardenBattleCanvasHostProps,
@@ -261,6 +274,20 @@ export interface GardenBattleCanvasHostInternalProps extends GardenBattleCanvasH
 }
 
 /**
+ * Map a POWERUP_APPLIED envelope to the minimal presenter bubble payload. Drops
+ * the gameId, targetTeamId, and applied-result kind (presenter doesn't need
+ * scoring detail; the source team is the headline actor).
+ */
+const toBubbleEvent = (payload: PowerupApplied): FlowerEventBubbleEvent | null => {
+  if (!payload || typeof payload.sourceTeamId !== "string") return null
+  return {
+    teamId: payload.sourceTeamId,
+    powerupType: payload.optionId as FlowerEventBubbleEvent["powerupType"],
+    issuedAtServerMs: Date.now(),
+  }
+}
+
+/**
  * React host for the Pixi garden canvas. Default quality path initializes
  * PixiJS; `quality="static"` or init errors fall back to FlowerGardenScene.
  */
@@ -283,6 +310,9 @@ export function GardenBattleCanvasHost({
   const [scene, setScene] = useState<GardenScene | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  // WP-D-2: transient presenter event surfaced as a comic speech bubble
+  // (SDD §20.5). Replaced on every POWERUP_APPLIED, cleared on auto-dismiss.
+  const [currentEvent, setCurrentEvent] = useState<FlowerEventBubbleEvent | null>(null)
 
   const prefersReducedMotion = useMemo(() => readPrefersReducedMotion(), [])
   const effectiveQuality = resolveGardenRenderQuality(
@@ -302,6 +332,17 @@ export function GardenBattleCanvasHost({
   onErrorRef.current = onError
   attachOptionsRef.current = attachOptions
   environmentRef.current = environment
+
+  const dismissBubble = useCallback(() => {
+    setCurrentEvent(null)
+  }, [])
+
+  // WP-D-2: subscribe to POWERUP_APPLIED so the bubble replaces the prior event
+  // (no stacking per SDD §20.5). Guarded against null payloads defensively.
+  useEvent(EVENTS.FLOWER_BATTLE.POWERUP_APPLIED, (payload) => {
+    const next = toBubbleEvent(payload)
+    if (next) setCurrentEvent(next)
+  })
 
   const disposeCurrentGarden = useCallback(
     (canvas: HTMLCanvasElement | null): void => {
@@ -481,6 +522,13 @@ export function GardenBattleCanvasHost({
               >
                 {isReady ? "Garden scene ready" : "Garden scene loading"}
               </div>
+              {/* WP-D-2: transient comic speech bubble for power-up events
+                  (SDD §20.5). Sits in the top safe area so it never covers a
+                  plant or the presenter HUD shell. */}
+              <FlowerEventBubble
+                event={currentEvent}
+                onDismiss={dismissBubble}
+              />
             </>
           )}
         </div>
