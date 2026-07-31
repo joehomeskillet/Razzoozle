@@ -34,7 +34,7 @@ const searchSchema = z.object({
   token: z.coerce.string().optional(),
 })
 
-const SatelliteManagerPage = () => {
+export function SatelliteManagerPage() {
   const { gameId: gameIdParam } = useParams({ from: "/satellite/$gameId" })
 
   // Drive the TV into fullscreen on the Pi's kiosk browser. Best-effort: some
@@ -64,7 +64,12 @@ const SatelliteManagerPage = () => {
   // so the skip/back buttons are absent too — the phone is the controller, the
   // satellite is a pure display.
   return (
-    <GameWrapper statusName={status?.name} manager controls={false}>
+    <GameWrapper
+      statusName={status?.name}
+      manager
+      controls={false}
+      contentTransitionKey={experienceTransition && experienceTransition.mode !== "classic" ? experienceTransition.mode : undefined}
+    >
       {experienceTransition ? (
         <ExperienceDisplay data={experienceTransition} />
       ) : (
