@@ -1,0 +1,14 @@
+<!--
+  sky-day-alt-01.svg - horizon cloud band (placeholder for A14 sky-day-alt).
+  Self-generated, Razzoozle-internal CC0. Dimensions: 1920x400.
+  Source category: Kenney 'Background Elements' (CC0).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky-alt-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--flower-battle-cloud, currentColor)" stop-opacity="0" />
+      <stop offset="100%" stop-color="var(--flower-battle-cloud, currentColor)" stop-opacity="0.6" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="400" fill="url(#sky-alt-gradient)" />
+</svg>

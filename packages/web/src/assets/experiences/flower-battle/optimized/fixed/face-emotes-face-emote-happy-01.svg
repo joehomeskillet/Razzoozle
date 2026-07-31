@@ -1,0 +1,11 @@
+<!--
+  face-emote-happy-01.svg - happy face emote (placeholder for A34 face-emotes).
+  Self-generated, Razzoozle-internal CC0. Dimensions: 128x128.
+  Source category: Kenney 'Emotes Pack' (CC0).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-hidden="true">
+  <circle cx="64" cy="64" r="56" fill="var(--flower-battle-primary, currentColor)" stroke="var(--flower-battle-ink, currentColor)" stroke-width="4" />
+  <circle cx="46" cy="52" r="6" fill="var(--flower-battle-ink, currentColor)" />
+  <circle cx="82" cy="52" r="6" fill="var(--flower-battle-ink, currentColor)" />
+  <path d="M40 78 Q64 100 88 78" fill="none" stroke="var(--flower-battle-ink, currentColor)" stroke-width="4" stroke-linecap="round" />
+</svg>

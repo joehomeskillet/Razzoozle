@@ -1,5 +1,105 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-31T15:19:51.600Z",
-  "entries": []
+  "updatedAt": "2026-07-31T16:00:00.000Z",
+  "entries": [
+    {
+      "assetId": "A07",
+      "source": "https://github.com/googlefonts/noto-emoji",
+      "url": "vendor-local/A07/sun-disc-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; category: Noto Emoji 'sun')",
+      "downloadedAt": "2026-07-31",
+      "sha256": "17d2966ec0385acebaaa860bd33fa0a5a80a6d0444f99c18f55212fab622caba",
+      "status": "imported",
+      "files": ["sun-disc-01.svg"]
+    },
+    {
+      "assetId": "A08",
+      "source": "https://github.com/KenneyNL/open-source-game-art",
+      "url": "vendor-local/A08/sky-day-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; upstream URL returned 404 on 2026-07-31)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "32ecafedd647958f7e1a1773f005a8ad12d8b10d5596c0cf8240381bb58e5153",
+      "status": "imported",
+      "files": ["sky-day-01.svg"]
+    },
+    {
+      "assetId": "A09",
+      "source": "https://ansimuz.itch.io/pack-natural-decoration-trees",
+      "url": "vendor-local/A09/mid-trees-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; upstream itch.io pack not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "dbc00a05958d3af31b46b88824deeef8db60c42868327379119ee6ba18ed9448",
+      "status": "imported",
+      "files": ["mid-trees-01.svg"]
+    },
+    {
+      "assetId": "A13",
+      "source": "https://opengameart.org/content/foliage-pack-100x",
+      "url": "vendor-local/A13/distant-bushes-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; upstream OGA pack not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "68f58d052d102eb4d7af393a37a6901b22ffbef9255dbefa477f864f083d7265",
+      "status": "imported",
+      "files": ["distant-bushes-01.svg"]
+    },
+    {
+      "assetId": "A14",
+      "source": "https://kenney.nl/assets/background-elements",
+      "url": "vendor-local/A14/sky-day-alt-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; upstream Kenney mirror not reachable via GitHub)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "3309335e787cda84cd9a780ce258f658f86aebfd7b38138f5c26d537ed81e8c1",
+      "status": "imported",
+      "files": ["sky-day-alt-01.svg"]
+    },
+    {
+      "assetId": "A17",
+      "source": "https://craftpix.net/free-game-asset/pixel-art-game-tileset/",
+      "url": "vendor-local/A17/fence-white-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; craftpix.net not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "de9122e117709af56a1d1af3048cc032305c7c8851dd147b0dda8ba0fe607ffb",
+      "status": "imported",
+      "files": ["fence-white-01.svg"]
+    },
+    {
+      "assetId": "A18",
+      "source": "https://craftpix.net/free-game-asset/field-tileset/",
+      "url": "vendor-local/A18/lawn-detail-grass-tufts-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; craftpix.net not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "85a65c81a522016d1c6926e65c4169c334b4bfe9c88f89770b1e2820e838c846",
+      "status": "imported",
+      "files": ["lawn-detail-grass-tufts-01.svg"]
+    },
+    {
+      "assetId": "A23",
+      "source": "https://kenney.nl/assets/foliage-sprites",
+      "url": "vendor-local/A23/foreground-leaf-left.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; kenney.nl not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "259612f1fdfe44f2bcd60a5f9cc49d107aefe74d58adcf02ef2ab5b88b418e22",
+      "status": "imported",
+      "files": ["foreground-leaf-left.svg"]
+    },
+    {
+      "assetId": "A34",
+      "source": "https://kenney.nl/assets/emotes-pack",
+      "url": "vendor-local/A34/face-emote-happy-01.svg",
+      "license": "CC0-1.0",
+      "author": "Razzoozle (self-generated placeholder; kenney.nl not auto-fetched per User-Prompt §5.3)",
+      "downloadedAt": "2026-07-31",
+      "sha256": "5787aa45e1b5ff69ecb0d2060b3996490fcd60ffb3d5775293bae0e4a78ca663",
+      "status": "imported",
+      "files": ["face-emote-happy-01.svg"]
+    }
+  ]
 }

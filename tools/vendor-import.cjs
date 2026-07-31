@@ -17,7 +17,7 @@
  */
 
 const { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, statSync } = require("node:fs")
-const { join } = require("node:path")
+const { join, dirname } = require("node:path")
 
 const REPO_ROOT = join(__dirname, "..", "..")
 const VENDOR_LOCAL = join(REPO_ROOT, "packages/web/src/assets/experiences/flower-battle/vendor-local")

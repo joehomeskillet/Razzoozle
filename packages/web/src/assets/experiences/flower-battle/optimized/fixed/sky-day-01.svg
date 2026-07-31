@@ -1,0 +1,18 @@
+<!--
+  sky-day-01.svg - bright daytime sky gradient (placeholder for A08 sky-day).
+  Self-generated, Razzoozle-internal CC0. Dimensions: 1920x1080.
+  Source category: Kenney 'Background Elements' (CC0) - upstream repo
+  https://github.com/KenneyNL/open-source-game-art NOT FOUND (404 as of
+  2026-07-31); this placeholder is an independent Razzoozle re-derivation
+  matching the project's existing sky-day.svg template.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky-day-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--flower-battle-sky, currentColor)" stop-opacity="0.95" />
+      <stop offset="55%" stop-color="var(--flower-battle-sky, currentColor)" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="var(--flower-battle-sky, currentColor)" stop-opacity="1" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky-day-gradient)" />
+</svg>
