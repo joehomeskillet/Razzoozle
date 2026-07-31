@@ -363,7 +363,6 @@ export const PlayerGamePage = () => {
       // Stable key keeps plant/HUD/answer subtree mounted across SELECT_ANSWER,
       // answers_locked (SHOW_RESPONSES), resolution (SHOW_RESULT), and finish.
       contentTransitionKey={flowerBattleGameplay ? "flowerBattle" : undefined}
-      hidePlayerTopbar={flowerBattleGameplay}
       playerTopbarReplacement={flowerBattlePlayerTopbar}
     >
       {CurrentComponent && (
