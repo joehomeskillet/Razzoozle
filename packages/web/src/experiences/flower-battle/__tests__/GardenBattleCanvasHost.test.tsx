@@ -342,7 +342,7 @@ async function flushAct(run?: () => void | Promise<void>): Promise<void> {
   })
   await act(async () => {
     await new Promise<void>((resolve) => {
-      setImmediate(resolve)
+      setTimeout(resolve, 0)
     })
   })
 }
@@ -1153,6 +1153,35 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       }
     }
 
+    function installProbeSentinel(canvas: DomElement): void {
+      Object.defineProperty(canvas, PROBE_KEY, {
+        configurable: true,
+        enumerable: false,
+        writable: false,
+        value: {
+          getE2EIdentity: () => ({
+            root: {},
+            actorPlants: [],
+            labels: [],
+          }),
+        },
+      })
+    }
+
+    function spyOnSceneDestroyAfterProbeClear(
+      scene: ReturnType<typeof createGardenScene>,
+      canvas: () => DomElement,
+    ) {
+      const realDestroy = scene.destroy.bind(scene)
+      const destroy = vi.fn(() => {
+        expect(canvasProbe(canvas()).descriptor).toBeUndefined()
+        expect(canvasProbe(canvas()).handle).toBeUndefined()
+        realDestroy()
+      })
+      scene.destroy = destroy
+      return destroy
+    }
+
     beforeEach(() => {
       const browser = createBrowserFake()
       domDocument = createDomDocument()
@@ -1207,9 +1236,9 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         procedural = createGardenScene(handle, { palette: TEST_PALETTE })
         return procedural
       })
+      const appFake = createAppFake()
       const createApplication = vi.fn(async () => {
-        const { app } = createAppFake()
-        return Object.assign(app, { stage: new Container() })
+        return Object.assign(appFake.app, { stage: new Container() })
       })
 
       const container = domDocument.createElement("div")
@@ -1256,9 +1285,9 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         procedural = createGardenScene(handle, { palette: TEST_PALETTE })
         return procedural
       })
+      const appFake = createAppFake()
       const createApplication = vi.fn(async () => {
-        const { app } = createAppFake()
-        return Object.assign(app, { stage: new Container() })
+        return Object.assign(appFake.app, { stage: new Container() })
       })
 
       const container = domDocument.createElement("div")
@@ -1315,6 +1344,14 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       expect(canvasObj[PROBE_KEY]).toBe(handle)
       expect(canvasObj[PROBE_KEY]).not.toBe(impostor)
 
+      appFake.destroy.mockImplementation(() => {
+        expect(canvasProbe(canvas).descriptor).toBeUndefined()
+        expect(canvasProbe(canvas).handle).toBeUndefined()
+      })
+      const sceneDestroy = spyOnSceneDestroyAfterProbeClear(
+        procedural!,
+        () => canvas,
+      )
       await flushAct(() => {
         root.unmount()
       })
@@ -1323,6 +1360,369 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       const after = canvasProbe(canvas)
       expect(after.descriptor).toBeUndefined()
       expect(after.handle).toBeUndefined()
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+    })
+
+    it("samples the query flag on phase rerender and clears then republishes without reattach", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      let procedural: ReturnType<typeof createGardenScene> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        procedural = createGardenScene(handle, { palette: TEST_PALETTE })
+        return procedural
+      })
+      const { app, destroy } = createAppFake()
+      const appWithStage = Object.assign(app, { stage: new Container() })
+      const createApplication = vi.fn(async () => appWithStage)
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      const renderPhase = async (phase: string) => {
+        await flushAct(() => {
+          root.render(
+            createElement(GardenBattleCanvasHost, {
+              teams: TEAMS,
+              quality: "high",
+              phase,
+              attachOptions: {
+                createApplication,
+                createScene,
+                background: TEST_CANVAS_BACKGROUND,
+              },
+              environment: browser.environment,
+              fallback: createElement("div", null, "static"),
+            }),
+          )
+        })
+      }
+
+      await renderPhase("question")
+      const canvas = findDomCanvas(container)
+      const firstHandle = canvasProbe(canvas).handle
+      expect(firstHandle).toBeDefined()
+      const firstIdentity = firstHandle!.getE2EIdentity()
+
+      locationSearch = ""
+      await renderPhase("resolution")
+      expect(findDomCanvas(container)).toBe(canvas)
+      expect(canvasProbe(canvas).handle).toBeUndefined()
+      expect(canvasProbe(canvas).descriptor).toBeUndefined()
+      expect(createApplication).toHaveBeenCalledTimes(1)
+      expect(createScene).toHaveBeenCalledTimes(1)
+      expect(destroy).not.toHaveBeenCalled()
+
+      locationSearch = "?gardenE2EProbe=1"
+      await renderPhase("world_transition")
+      const republished = canvasProbe(canvas).handle
+      expect(republished).toBeDefined()
+      expect(republished).not.toBe(firstHandle)
+      const republishedIdentity = republished!.getE2EIdentity()
+      expect(republishedIdentity.root).toBe(firstIdentity.root)
+      expect(republishedIdentity.actorPlants[0]).toBe(
+        firstIdentity.actorPlants[0],
+      )
+      expect(republishedIdentity.actorPlants[1]).toBe(
+        firstIdentity.actorPlants[1],
+      )
+      expect(createApplication).toHaveBeenCalledTimes(1)
+      expect(createScene).toHaveBeenCalledTimes(1)
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(destroy).toHaveBeenCalledTimes(1)
+      expect(procedural).toBeDefined()
+    })
+
+    it.each(["low", "medium"] as const)(
+      "clears before high → %s disposal and republishes only after delayed reattach",
+      async (nextQuality) => {
+        locationSearch = "?gardenE2EProbe=1"
+        const browser = createBrowserFake()
+        const firstApp = createAppFake()
+        const secondApp = createAppFake()
+        const firstAppWithStage = Object.assign(firstApp.app, {
+          stage: new Container(),
+        })
+        const secondAppWithStage = Object.assign(secondApp.app, {
+          stage: new Container(),
+        })
+        let resolveReattach:
+          ((app: GardenPixiApplicationHandle) => void) | undefined
+        const delayedReattach = new Promise<GardenPixiApplicationHandle>(
+          (resolve) => {
+            resolveReattach = resolve
+          },
+        )
+        const createApplication = vi
+          .fn<() => Promise<GardenPixiApplicationHandle>>()
+          .mockResolvedValueOnce(firstAppWithStage)
+          .mockReturnValueOnce(delayedReattach)
+        const canvasRef: { current: DomElement | null } = { current: null }
+        const scenes: ReturnType<typeof createGardenScene>[] = []
+        const sceneDestroySpies: ReturnType<typeof vi.fn>[] = []
+        const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+          const procedural = createGardenScene(handle, {
+            palette: TEST_PALETTE,
+          })
+          scenes.push(procedural)
+          sceneDestroySpies.push(
+            spyOnSceneDestroyAfterProbeClear(procedural, () => {
+              if (!canvasRef.current) throw new Error("canvas unavailable")
+              return canvasRef.current
+            }),
+          )
+          return procedural
+        })
+        const container = domDocument.createElement("div")
+        domDocument.body.appendChild(container)
+        const root = createRoot(container as unknown as HTMLElement)
+
+        const renderQuality = async (
+          quality: "high" | "low" | "medium",
+          phase: string,
+        ) => {
+          await flushAct(() => {
+            root.render(
+              createElement(GardenBattleCanvasHost, {
+                teams: TEAMS,
+                quality,
+                phase,
+                attachOptions: {
+                  createApplication,
+                  createScene,
+                  background: TEST_CANVAS_BACKGROUND,
+                },
+                environment: browser.environment,
+              }),
+            )
+          })
+        }
+
+        await renderQuality("high", "question")
+        const canvas = findDomCanvas(container)
+        canvasRef.current = canvas
+        const firstHandle = canvasProbe(canvas).handle
+        expect(firstHandle).toBeDefined()
+        firstApp.destroy.mockImplementation(() => {
+          expect(canvasProbe(canvas).descriptor).toBeUndefined()
+          expect(canvasProbe(canvas).handle).toBeUndefined()
+        })
+        secondApp.destroy.mockImplementation(() => {
+          expect(canvasProbe(canvas).descriptor).toBeUndefined()
+          expect(canvasProbe(canvas).handle).toBeUndefined()
+        })
+
+        await renderQuality(nextQuality, "resolution")
+        expect(findDomCanvas(container)).toBe(canvas)
+        expect(canvasProbe(canvas).handle).toBeUndefined()
+        expect(createApplication).toHaveBeenCalledTimes(2)
+        expect(createScene).toHaveBeenCalledTimes(1)
+        expect(sceneDestroySpies[0]).toHaveBeenCalledTimes(1)
+        expect(firstApp.destroy).toHaveBeenCalledTimes(1)
+        expect(secondApp.destroy).not.toHaveBeenCalled()
+
+        if (!resolveReattach) throw new Error("reattach resolver unavailable")
+        resolveReattach(secondAppWithStage)
+        await flushAct()
+
+        const secondHandle = canvasProbe(canvas).handle
+        expect(secondHandle).toBeDefined()
+        expect(secondHandle).not.toBe(firstHandle)
+        expect(createScene).toHaveBeenCalledTimes(2)
+        expect(scenes).toHaveLength(2)
+
+        await flushAct(() => {
+          root.unmount()
+        })
+        expect(sceneDestroySpies[0]).toHaveBeenCalledTimes(1)
+        expect(sceneDestroySpies[1]).toHaveBeenCalledTimes(1)
+        expect(firstApp.destroy).toHaveBeenCalledTimes(1)
+        expect(secondApp.destroy).toHaveBeenCalledTimes(1)
+      },
+    )
+
+    it("clears before high → static disposal and invokes real dispose once", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      const appFake = createAppFake()
+      const appWithStage = Object.assign(appFake.app, {
+        stage: new Container(),
+      })
+      const createApplication = vi.fn(async () => appWithStage)
+      const canvasRef: { current: DomElement | null } = { current: null }
+      let sceneDestroy: ReturnType<typeof vi.fn> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        const procedural = createGardenScene(handle, {
+          palette: TEST_PALETTE,
+        })
+        sceneDestroy = spyOnSceneDestroyAfterProbeClear(procedural, () => {
+          if (!canvasRef.current) throw new Error("canvas unavailable")
+          return canvasRef.current
+        })
+        return procedural
+      })
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+      const renderQuality = async (quality: "high" | "static") => {
+        await flushAct(() => {
+          root.render(
+            createElement(GardenBattleCanvasHost, {
+              teams: TEAMS,
+              quality,
+              phase: quality === "high" ? "question" : "resolution",
+              attachOptions: {
+                createApplication,
+                createScene,
+                background: TEST_CANVAS_BACKGROUND,
+              },
+              environment: browser.environment,
+              fallback: createElement("div", null, "static"),
+            }),
+          )
+        })
+      }
+
+      await renderQuality("high")
+      const canvas = findDomCanvas(container)
+      canvasRef.current = canvas
+      expect(canvasProbe(canvas).handle).toBeDefined()
+      appFake.destroy.mockImplementation(() => {
+        expect(canvasProbe(canvas).descriptor).toBeUndefined()
+        expect(canvasProbe(canvas).handle).toBeUndefined()
+      })
+
+      await renderQuality("static")
+      expect(canvasProbe(canvas).handle).toBeUndefined()
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+      expect(appFake.destroy).toHaveBeenCalledTimes(1)
+      expect(createApplication).toHaveBeenCalledTimes(1)
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+      expect(appFake.destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it("clears a stale probe before reporting an attach error", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      let rejectApplication: ((reason: unknown) => void) | undefined
+      const pendingApplication = new Promise<GardenPixiApplicationHandle>(
+        (_resolve, reject) => {
+          rejectApplication = reject
+        },
+      )
+      const createApplication = vi.fn(() => pendingApplication)
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+      const canvasRef: { current: DomElement | null } = { current: null }
+      let probeAtError: ReturnType<typeof canvasProbe>["handle"] | undefined
+      const onError = vi.fn(() => {
+        if (!canvasRef.current) throw new Error("canvas unavailable")
+        probeAtError = canvasProbe(canvasRef.current).handle
+      })
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            attachOptions: {
+              createApplication,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+            onError,
+            fallback: createElement("div", null, "static"),
+          }),
+        )
+      })
+      const canvas = findDomCanvas(container)
+      canvasRef.current = canvas
+      installProbeSentinel(canvas)
+      expect(canvasProbe(canvas).handle).toBeDefined()
+
+      if (!rejectApplication) throw new Error("reject resolver unavailable")
+      rejectApplication(new Error("expected attach failure"))
+      await flushAct()
+
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(probeAtError).toBeUndefined()
+      expect(canvasProbe(canvas).handle).toBeUndefined()
+      await flushAct(() => {
+        root.unmount()
+      })
+    })
+
+    it("clears cancelled-before-install probe and disposes the late result once", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      const appFake = createAppFake()
+      const appWithStage = Object.assign(appFake.app, {
+        stage: new Container(),
+      })
+      let resolveApplication:
+        ((app: GardenPixiApplicationHandle) => void) | undefined
+      const pendingApplication = new Promise<GardenPixiApplicationHandle>(
+        (resolve) => {
+          resolveApplication = resolve
+        },
+      )
+      const createApplication = vi.fn(() => pendingApplication)
+      const canvasRef: { current: DomElement | null } = { current: null }
+      let sceneDestroy: ReturnType<typeof vi.fn> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        const procedural = createGardenScene(handle, {
+          palette: TEST_PALETTE,
+        })
+        sceneDestroy = spyOnSceneDestroyAfterProbeClear(procedural, () => {
+          if (!canvasRef.current) throw new Error("canvas unavailable")
+          return canvasRef.current
+        })
+        return procedural
+      })
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            attachOptions: {
+              createApplication,
+              createScene,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+          }),
+        )
+      })
+      const canvas = findDomCanvas(container)
+      canvasRef.current = canvas
+      installProbeSentinel(canvas)
+      appFake.destroy.mockImplementation(() => {
+        expect(canvasProbe(canvas).descriptor).toBeUndefined()
+        expect(canvasProbe(canvas).handle).toBeUndefined()
+      })
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(canvasProbe(canvas).handle).toBeUndefined()
+
+      if (!resolveApplication) throw new Error("attach resolver unavailable")
+      resolveApplication(appWithStage)
+      await flushAct()
+
+      expect(sceneDestroy).toHaveBeenCalledTimes(1)
+      expect(appFake.destroy).toHaveBeenCalledTimes(1)
     })
 
     it("does not false-pass on static fallback or empty scene without getE2EIdentity", async () => {

@@ -309,6 +309,22 @@ describe("createGardenScene", () => {
       expect(shrunk.labels).toEqual(["actor-plant-0", "actor-plant-1"])
       expect(shrunk.root).toBe(two.root)
 
+      scene.updateSnapshot({
+        teams: [team("A", 6), team("B", 7), team("C", 8)],
+        phase: "question",
+      })
+      const regrown = scene.getE2EIdentity()
+      expect(regrown.actorPlants).toHaveLength(3)
+      expect(regrown.actorPlants[0]).toBe(two.actorPlants[0])
+      expect(regrown.actorPlants[1]).toBe(two.actorPlants[1])
+      expect(regrown.actorPlants[2]).not.toBe(three.actorPlants[2])
+      expect(regrown.labels).toEqual([
+        "actor-plant-0",
+        "actor-plant-1",
+        "actor-plant-2",
+      ])
+      expect(regrown.root).toBe(two.root)
+
       scene.destroy()
     })
   })

@@ -11,6 +11,7 @@
 import {
   Component,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -66,6 +67,19 @@ function clearGardenE2EProbe(canvas: HTMLCanvasElement | null): void {
       [GARDEN_E2E_PROBE_PROPERTY]?: GardenE2EProbeHandle
     }
   )[GARDEN_E2E_PROBE_PROPERTY]
+}
+
+function wrapGardenDisposeWithProbeClear(
+  canvas: HTMLCanvasElement,
+  dispose: () => void,
+): () => void {
+  let disposed = false
+  return () => {
+    if (disposed) return
+    disposed = true
+    clearGardenE2EProbe(canvas)
+    dispose()
+  }
 }
 
 function publishGardenE2EProbe(
@@ -276,6 +290,7 @@ export function GardenBattleCanvasHost({
     prefersReducedMotion,
   )
   const useStatic = effectiveQuality === "static" || error !== null
+  const e2eProbeEnabled = isGardenE2EProbeEnabled()
 
   // Stable callback / inject refs so parent re-renders never re-init Pixi
   // solely due to attachOptions/environment object identity (WP-PIX-05B).
@@ -288,10 +303,19 @@ export function GardenBattleCanvasHost({
   attachOptionsRef.current = attachOptions
   environmentRef.current = environment
 
+  const disposeCurrentGarden = useCallback(
+    (canvas: HTMLCanvasElement | null): void => {
+      const dispose = disposeRef.current
+      disposeRef.current = undefined
+      clearGardenE2EProbe(canvas)
+      dispose?.()
+    },
+    [],
+  )
+
   useEffect(() => {
     if (effectiveQuality === "static") {
-      disposeRef.current?.()
-      disposeRef.current = undefined
+      disposeCurrentGarden(canvasRef.current)
       setApp(null)
       setScene(null)
       setIsReady(false)
@@ -326,15 +350,18 @@ export function GardenBattleCanvasHost({
           environmentRef.current,
         )
 
+        const dispose = wrapGardenDisposeWithProbeClear(canvas, result.dispose)
         if (cancelled) {
-          result.dispose()
+          dispose()
           return
         }
-        disposeRef.current = result.dispose
+        disposeRef.current = dispose
       } catch (caught) {
-        if (cancelled) return
-        disposeRef.current?.()
-        disposeRef.current = undefined
+        if (cancelled) {
+          clearGardenE2EProbe(canvas)
+          return
+        }
+        disposeCurrentGarden(canvas)
         setApp(null)
         setScene(null)
         setIsReady(false)
@@ -349,12 +376,11 @@ export function GardenBattleCanvasHost({
 
     return () => {
       cancelled = true
-      disposeRef.current?.()
-      disposeRef.current = undefined
+      disposeCurrentGarden(canvas)
       // Avoid setState-after-unmount; next mount starts from idle defaults.
     }
     // attachOptions / environment read via refs — identity must not reattach.
-  }, [effectiveQuality])
+  }, [effectiveQuality, disposeCurrentGarden])
 
   // Push live roster + phase into the same scene instance (no remount).
   useEffect(() => {
@@ -371,7 +397,7 @@ export function GardenBattleCanvasHost({
   // Guarded canvas-local E2E identity probe (no window global).
   // Only when `?gardenE2EProbe=1` and a real scene exposes getE2EIdentity.
   useEffect(() => {
-    if (useStatic || !isReady || !isGardenE2EProbeEnabled()) {
+    if (useStatic || !isReady || !e2eProbeEnabled) {
       clearGardenE2EProbe(canvasRef.current)
       return
     }
@@ -385,7 +411,7 @@ export function GardenBattleCanvasHost({
     return () => {
       clearGardenE2EProbe(canvas)
     }
-  }, [scene, isReady, useStatic])
+  }, [scene, isReady, useStatic, e2eProbeEnabled])
 
   const contextValue = useMemo<GardenPixiHookValue>(
     () => ({ app, isReady, error, scene }),
@@ -407,8 +433,7 @@ export function GardenBattleCanvasHost({
     <GardenPixiContext.Provider value={contextValue}>
       <GardenCanvasErrorBoundary
         onError={(boundaryError) => {
-          disposeRef.current?.()
-          disposeRef.current = undefined
+          disposeCurrentGarden(canvasRef.current)
           setApp(null)
           setScene(null)
           setIsReady(false)
