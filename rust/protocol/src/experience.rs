@@ -5,6 +5,7 @@
 //! WP #930 — FlowerBattle sun-points meter (per-team accumulation)
 //! WP #931 — FlowerBattle power-up voting (previous_attacker_team_id)
 //! WP #932 — FlowerBattle power-up effect state fields (expires/remaining)
+//! WP #999 / WP-FLB-21A — S2C power-up event envelopes (Offered/Selected/Applied/Completed)
 //! Date: 2026-07-30
 //!
 //! Wire family: `game:experience` with envelope
@@ -316,6 +317,85 @@ pub struct TargetVotePayload {
     pub target_team_id: String,
     /// Server-minted per-player secret from `game:successJoin` / localStorage.
     pub player_token: String,
+}
+
+// ============================================================================
+// FlowerBattle power-up S2C envelopes (WP #999 / WP-FLB-21A)
+// ============================================================================
+// Event names stay in `constants::flower_battle` and TS EVENTS.FLOWER_BATTLE.
+// Wire shapes only here — no engine import (avoid crate cycle); applied result
+// is a stable protocol-local tagged union mirroring engine semantics.
+
+/// S2C `game:flowerBattle:powerupOffered`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerupOffered {
+    pub game_id: String,
+    pub team_id: String,
+    pub offer: PowerupOffer,
+}
+
+/// S2C `game:flowerBattle:powerupSelected`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerupSelected {
+    pub game_id: String,
+    pub team_id: String,
+    pub offer_id: String,
+    /// Index into the active offer option list.
+    pub option_index: usize,
+    pub option_id: String,
+    /// Server epoch ms — anchors client-side target-vote window.
+    pub selected_at_server_ms: i64,
+}
+
+/// Stable wire shape for the power-up application result.
+///
+/// Protocol-local (not engine `AppliedEffect`) so clients get a typed tagged
+/// union without pulling engine into the protocol crate.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PowerupAppliedResult {
+    /// Instant stage bump (no lasting status).
+    Fertilizer {
+        #[serde(rename = "growthStage")]
+        growth_stage: u8,
+    },
+    /// Status stored on the (possibly different) target team.
+    Status {
+        #[serde(rename = "teamId")]
+        team_id: String,
+        effect: FlowerBattleEffect,
+    },
+    /// Placeholder after snapshot restore (offer id known; payload not rehydrated).
+    RestoredIdempotent,
+}
+
+/// S2C `game:flowerBattle:powerupApplied`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct PowerupApplied {
+    pub game_id: String,
+    pub source_team_id: String,
+    pub option_id: String,
+    /// Absent for self-buffs (fertilizer / sunbeam / umbrella_shield).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub target_team_id: Option<String>,
+    pub applied: PowerupAppliedResult,
+}
+
+/// S2C `game:flowerBattle:gameCompleted`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct FlowerBattleCompleted {
+    pub game_id: String,
+    pub winner_team_ids: Vec<String>,
 }
 
 // ============================================================================
@@ -647,5 +727,167 @@ mod tests {
         assert_eq!(v["data"]["chase"]["level"], 1);
         assert_eq!(v["data"]["chase"]["levelCount"], 5);
         assert_eq!(v["data"]["chase"]["correctRatio"], 0.8);
+    }
+
+    // -------------------------------------------------------------------------
+    // WP-FLB-21A / #999 — S2C power-up event envelopes (golden serde)
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn powerup_offered_s2c_golden() {
+        let offered = PowerupOffered {
+            game_id: "g1".into(),
+            team_id: "blue".into(),
+            offer: PowerupOffer {
+                id: "offer-1".into(),
+                offer_type: "fertilizer,sunbeam,acid_rain".into(),
+                expires_at: 1_700_000_000_500,
+            },
+        };
+        let v = serde_json::to_value(&offered).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "teamId": "blue",
+                "offer": {
+                    "id": "offer-1",
+                    "offerType": "fertilizer,sunbeam,acid_rain",
+                    "expiresAt": 1_700_000_000_500_i64
+                }
+            })
+        );
+        // No Q&A / secret fields on this envelope.
+        for forbidden in ["question", "answers", "playerToken", "secret", "correct"] {
+            assert!(v.get(forbidden).is_none(), "forbidden key: {forbidden}");
+        }
+        let back: PowerupOffered = serde_json::from_value(v).unwrap();
+        assert_eq!(back, offered);
+    }
+
+    #[test]
+    fn powerup_selected_s2c_golden() {
+        let selected = PowerupSelected {
+            game_id: "g1".into(),
+            team_id: "blue".into(),
+            offer_id: "offer-1".into(),
+            option_index: 1,
+            option_id: "sunbeam".into(),
+            selected_at_server_ms: 1_700_000_001_000,
+        };
+        let v = serde_json::to_value(&selected).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "teamId": "blue",
+                "offerId": "offer-1",
+                "optionIndex": 1,
+                "optionId": "sunbeam",
+                "selectedAtServerMs": 1_700_000_001_000_i64
+            })
+        );
+        let back: PowerupSelected = serde_json::from_value(v).unwrap();
+        assert_eq!(back, selected);
+    }
+
+    #[test]
+    fn powerup_applied_s2c_golden_fertilizer_and_status() {
+        // Self-buff: no targetTeamId; applied = fertilizer instant growth.
+        let fert = PowerupApplied {
+            game_id: "g1".into(),
+            source_team_id: "blue".into(),
+            option_id: "fertilizer".into(),
+            target_team_id: None,
+            applied: PowerupAppliedResult::Fertilizer { growth_stage: 4 },
+        };
+        let v = serde_json::to_value(&fert).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "sourceTeamId": "blue",
+                "optionId": "fertilizer",
+                "applied": { "kind": "fertilizer", "growthStage": 4 }
+            })
+        );
+        assert!(v.get("targetTeamId").is_none());
+        let back: PowerupApplied = serde_json::from_value(v).unwrap();
+        assert_eq!(back, fert);
+
+        // Targeted status: acid_rain with targetTeamId + applied status arm.
+        let acid = PowerupApplied {
+            game_id: "g1".into(),
+            source_team_id: "blue".into(),
+            option_id: "acid_rain".into(),
+            target_team_id: Some("red".into()),
+            applied: PowerupAppliedResult::Status {
+                team_id: "red".into(),
+                effect: FlowerBattleEffect::acid_rain("blue", 0),
+            },
+        };
+        let v = serde_json::to_value(&acid).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "sourceTeamId": "blue",
+                "optionId": "acid_rain",
+                "targetTeamId": "red",
+                "applied": {
+                    "kind": "status",
+                    "teamId": "red",
+                    "effect": {
+                        "kind": "acid_rain",
+                        "sourceTeamId": "blue",
+                        "expiresAfterQuestionId": 0
+                    }
+                }
+            })
+        );
+        let back: PowerupApplied = serde_json::from_value(v).unwrap();
+        assert_eq!(back, acid);
+
+        // Restored idempotent placeholder (reconnect / snapshot path).
+        let restored = PowerupApplied {
+            game_id: "g1".into(),
+            source_team_id: "blue".into(),
+            option_id: "sunbeam".into(),
+            target_team_id: None,
+            applied: PowerupAppliedResult::RestoredIdempotent,
+        };
+        let v = serde_json::to_value(&restored).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "sourceTeamId": "blue",
+                "optionId": "sunbeam",
+                "applied": { "kind": "restored_idempotent" }
+            })
+        );
+        let back: PowerupApplied = serde_json::from_value(v).unwrap();
+        assert_eq!(back, restored);
+    }
+
+    #[test]
+    fn flower_battle_completed_s2c_golden() {
+        let completed = FlowerBattleCompleted {
+            game_id: "g1".into(),
+            winner_team_ids: vec!["blue".into(), "green".into()],
+        };
+        let v = serde_json::to_value(&completed).unwrap();
+        assert_eq!(
+            v,
+            json!({
+                "gameId": "g1",
+                "winnerTeamIds": ["blue", "green"]
+            })
+        );
+        for forbidden in ["question", "answers", "secret", "playerToken", "teams"] {
+            assert!(v.get(forbidden).is_none(), "forbidden key: {forbidden}");
+        }
+        let back: FlowerBattleCompleted = serde_json::from_value(v).unwrap();
+        assert_eq!(back, completed);
     }
 }
