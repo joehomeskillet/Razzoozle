@@ -78,9 +78,7 @@ describe("createGardenScene", () => {
       const scene = createGardenScene(app, { palette: TEST_PALETTE })
       scene.updateLayout(w, h)
 
-      const roster = Array.from({ length: teams }, (_, i) =>
-        team(`T${i}`, 0),
-      )
+      const roster = Array.from({ length: teams }, (_, i) => team(`T${i}`, 0))
       scene.updateSnapshot({ teams: roster, phase: "question" })
 
       const expected = computePlotAnchors(teams)
@@ -200,5 +198,118 @@ describe("createGardenScene", () => {
       expect(err).toBeInstanceOf(ThemeTokenColorError)
       expect((err as ThemeTokenColorError).code).toBe(THEME_TOKEN_COLOR_ERROR)
     }
+  })
+
+  describe("getE2EIdentity", () => {
+    it("returns real root and plant roots with actor-plant labels", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2), team("C", 3)],
+        phase: "question",
+      })
+
+      expect(typeof scene.getE2EIdentity).toBe("function")
+      const identity = scene.getE2EIdentity()
+      expect(identity.root).toBe(scene.root)
+      expect(identity.actorPlants).toHaveLength(3)
+      expect(identity.labels).toEqual([
+        "actor-plant-0",
+        "actor-plant-1",
+        "actor-plant-2",
+      ])
+      for (let i = 0; i < 3; i += 1) {
+        expect(identity.actorPlants[i]).toBe(scene.layers.actors.children[i])
+        expect(identity.actorPlants[i]).toBe(
+          scene.layers.actors.children[i] as Container,
+        )
+        expect((identity.actorPlants[i] as Container).label).toBe(
+          `actor-plant-${i}`,
+        )
+      }
+      scene.destroy()
+    })
+
+    it("keeps === root and each plant root across Q1 → Result → Q2 at stable team count", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2)],
+        phase: "question",
+      })
+      const q1 = scene.getE2EIdentity()
+      expect(q1.root).toBe(scene.root)
+      expect(q1.actorPlants[0]).toBe(scene.layers.actors.children[0])
+      expect(q1.actorPlants[1]).toBe(scene.layers.actors.children[1])
+
+      scene.updateSnapshot({
+        teams: [team("A", 7), team("B", 8)],
+        phase: "result",
+      })
+      const result = scene.getE2EIdentity()
+      expect(result.root).toBe(q1.root)
+      expect(result.actorPlants[0]).toBe(q1.actorPlants[0])
+      expect(result.actorPlants[1]).toBe(q1.actorPlants[1])
+      expect(result.labels).toEqual(q1.labels)
+
+      scene.updateSnapshot({
+        teams: [team("A", 3), team("B", 4)],
+        phase: "question",
+      })
+      const q2 = scene.getE2EIdentity()
+      expect(q2.root).toBe(q1.root)
+      expect(q2.actorPlants[0]).toBe(q1.actorPlants[0])
+      expect(q2.actorPlants[1]).toBe(q1.actorPlants[1])
+      expect(q2.labels).toEqual(["actor-plant-0", "actor-plant-1"])
+      // Not mere value equality — same object references.
+      expect(q2.actorPlants).not.toBe(q1.actorPlants)
+      expect(q2.actorPlants[0] === q1.actorPlants[0]).toBe(true)
+
+      scene.destroy()
+    })
+
+    it("follows existing index contract when team count changes", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2)],
+        phase: "question",
+      })
+      const two = scene.getE2EIdentity()
+      expect(two.actorPlants).toHaveLength(2)
+
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2), team("C", 3)],
+        phase: "question",
+      })
+      const three = scene.getE2EIdentity()
+      expect(three.actorPlants).toHaveLength(3)
+      // Index reuse: plants 0 and 1 stay the same instances.
+      expect(three.actorPlants[0]).toBe(two.actorPlants[0])
+      expect(three.actorPlants[1]).toBe(two.actorPlants[1])
+      expect(three.actorPlants[2]).not.toBe(two.actorPlants[0])
+      expect(three.actorPlants[2]).not.toBe(two.actorPlants[1])
+      expect(three.labels).toEqual([
+        "actor-plant-0",
+        "actor-plant-1",
+        "actor-plant-2",
+      ])
+      expect(three.root).toBe(two.root)
+
+      scene.updateSnapshot({
+        teams: [team("A", 4), team("B", 5)],
+        phase: "question",
+      })
+      const shrunk = scene.getE2EIdentity()
+      expect(shrunk.actorPlants).toHaveLength(2)
+      expect(shrunk.actorPlants[0]).toBe(two.actorPlants[0])
+      expect(shrunk.actorPlants[1]).toBe(two.actorPlants[1])
+      expect(shrunk.labels).toEqual(["actor-plant-0", "actor-plant-1"])
+      expect(shrunk.root).toBe(two.root)
+
+      scene.destroy()
+    })
   })
 })

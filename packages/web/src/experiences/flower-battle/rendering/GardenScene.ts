@@ -13,13 +13,11 @@
 import { Container } from "pixi.js"
 
 import type {
+  GardenE2EIdentity,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
-import {
-  defaultPlantColors,
-  DummyPlantView,
-} from "./DummyPlantView"
+import { defaultPlantColors, DummyPlantView } from "./DummyPlantView"
 import {
   resolveGardenPalette,
   resolveTeamPlotColors,
@@ -62,6 +60,7 @@ export interface ProceduralGardenScene extends GardenScene {
   readonly layers: Readonly<GardenLayerSet>
   readonly phase: string | null
   updateSnapshot(snapshot: GardenSceneSnapshot): void
+  getE2EIdentity(): GardenE2EIdentity
   getPlotAnchors(): readonly PlotAnchor[]
   getLogicalSize(): { width: number; height: number }
   getLetterbox(): ReturnType<typeof fitLogicalViewport> | null
@@ -192,6 +191,14 @@ export function createGardenScene(
 
     getLetterbox() {
       return letterbox
+    },
+
+    getE2EIdentity(): GardenE2EIdentity {
+      return {
+        root,
+        actorPlants: plants.map((plant) => plant.root),
+        labels: plants.map((_, index) => `actor-plant-${index}`),
+      }
     },
 
     updateLayout(width: number, height: number): void {

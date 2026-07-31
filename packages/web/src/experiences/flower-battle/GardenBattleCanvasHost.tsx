@@ -30,10 +30,68 @@ import {
 import { FlowerGardenScene } from "./FlowerGardenScene"
 import type {
   GardenBattleCanvasHostProps,
+  GardenE2EProbeHandle,
   GardenPixiHookValue,
   GardenRenderQuality,
   GardenScene,
 } from "./garden-pixi.types"
+
+/** URLSearchParams flag that enables the canvas-local E2E identity probe. */
+const GARDEN_E2E_PROBE_PARAM = "gardenE2EProbe"
+
+/** Non-enumerable property name attached to the host canvas only. */
+const GARDEN_E2E_PROBE_PROPERTY = "__razzoozleGardenE2E"
+
+function isGardenE2EProbeEnabled(): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    return (
+      new URLSearchParams(window.location.search).get(
+        GARDEN_E2E_PROBE_PARAM,
+      ) === "1"
+    )
+  } catch {
+    return false
+  }
+}
+
+function clearGardenE2EProbe(canvas: HTMLCanvasElement | null): void {
+  if (!canvas) return
+  if (!Object.hasOwn(canvas, GARDEN_E2E_PROBE_PROPERTY)) {
+    return
+  }
+  // configurable:true allows synchronous delete on dispose/unmount.
+  delete (
+    canvas as HTMLCanvasElement & {
+      [GARDEN_E2E_PROBE_PROPERTY]?: GardenE2EProbeHandle
+    }
+  )[GARDEN_E2E_PROBE_PROPERTY]
+}
+
+function publishGardenE2EProbe(
+  canvas: HTMLCanvasElement,
+  scene: GardenScene,
+): void {
+  if (typeof scene.getE2EIdentity !== "function") return
+
+  const sceneRef: { current: GardenScene } = { current: scene }
+  const handle: GardenE2EProbeHandle = {
+    getE2EIdentity: () => {
+      const current = sceneRef.current
+      if (typeof current.getE2EIdentity !== "function") {
+        throw new Error("Garden E2E probe scene unavailable")
+      }
+      return current.getE2EIdentity()
+    },
+  }
+
+  Object.defineProperty(canvas, GARDEN_E2E_PROBE_PROPERTY, {
+    configurable: true,
+    enumerable: false,
+    writable: false,
+    value: handle,
+  })
+}
 
 const GardenPixiContext = createContext<GardenPixiHookValue>({
   app: null,
@@ -309,6 +367,25 @@ export function GardenBattleCanvasHost({
       phase,
     })
   }, [scene, teams, phase])
+
+  // Guarded canvas-local E2E identity probe (no window global).
+  // Only when `?gardenE2EProbe=1` and a real scene exposes getE2EIdentity.
+  useEffect(() => {
+    if (useStatic || !isReady || !isGardenE2EProbeEnabled()) {
+      clearGardenE2EProbe(canvasRef.current)
+      return
+    }
+    const canvas = canvasRef.current
+    if (!canvas || !scene || typeof scene.getE2EIdentity !== "function") {
+      clearGardenE2EProbe(canvas)
+      return
+    }
+
+    publishGardenE2EProbe(canvas, scene)
+    return () => {
+      clearGardenE2EProbe(canvas)
+    }
+  }, [scene, isReady, useStatic])
 
   const contextValue = useMemo<GardenPixiHookValue>(
     () => ({ app, isReady, error, scene }),

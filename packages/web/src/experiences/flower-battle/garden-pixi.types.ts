@@ -24,6 +24,21 @@ export interface GardenSceneLiveSnapshot {
 }
 
 /**
+ * Optional internal E2E identity contract for scene-graph stability probes.
+ * Real object references only — no copies or proxies.
+ */
+export interface GardenE2EIdentity {
+  root: object
+  actorPlants: readonly object[]
+  labels: readonly string[]
+}
+
+/** Read-only canvas handle published when `gardenE2EProbe=1` is present. */
+export interface GardenE2EProbeHandle {
+  getE2EIdentity(): GardenE2EIdentity
+}
+
+/**
  * Minimal scene contract the host resizes/destroys and optionally snapshots.
  * Production `createGardenScene` implements updateSnapshot; empty fakes omit it.
  */
@@ -31,6 +46,8 @@ export interface GardenScene {
   updateLayout(width: number, height: number): void
   destroy(): void
   updateSnapshot?(snapshot: GardenSceneLiveSnapshot): void
+  /** Optional internal E2E probe — production procedural scene implements it. */
+  getE2EIdentity?(): GardenE2EIdentity
 }
 
 /**

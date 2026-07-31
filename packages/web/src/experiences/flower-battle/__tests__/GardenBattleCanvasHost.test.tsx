@@ -1113,4 +1113,267 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
     expect(html).toContain('data-recipe-version="1"')
     expect(html).toContain('data-testid="garden-battle-canvas-host"')
   })
+
+  describe("guarded __razzoozleGardenE2E scene identity probe", () => {
+    const PROBE_KEY = "__razzoozleGardenE2E" as const
+    let domDocument: DomDocument
+    let locationSearch = ""
+
+    function findDomCanvas(root: DomElement): DomElement {
+      if (root.tagName === "CANVAS") return root
+      for (const child of root.children) {
+        if (child && typeof child === "object" && "tagName" in child) {
+          const found = findDomCanvas(child as DomElement)
+          if (found) return found
+        }
+      }
+      throw new Error("canvas element not found in DOM shim")
+    }
+
+    function canvasProbe(canvas: DomElement): {
+      handle:
+        | {
+            getE2EIdentity: () => ReturnType<
+              NonNullable<GardenScene["getE2EIdentity"]>
+            >
+          }
+        | undefined
+      descriptor: PropertyDescriptor | undefined
+    } {
+      const target = canvas as unknown as Record<string, unknown>
+      return {
+        handle: target[PROBE_KEY] as
+          | {
+              getE2EIdentity: () => ReturnType<
+                NonNullable<GardenScene["getE2EIdentity"]>
+              >
+            }
+          | undefined,
+        descriptor: Object.getOwnPropertyDescriptor(target, PROBE_KEY),
+      }
+    }
+
+    beforeEach(() => {
+      const browser = createBrowserFake()
+      domDocument = createDomDocument()
+      locationSearch = ""
+      vi.stubGlobal("document", domDocument)
+      vi.stubGlobal("window", {
+        ...domDocument.defaultView,
+        matchMedia: browser.environment.matchMedia,
+        devicePixelRatio: browser.environment.devicePixelRatio,
+        location: {
+          get search() {
+            return locationSearch
+          },
+        },
+      })
+      vi.stubGlobal(
+        "HTMLElement",
+        class HTMLElement {
+          readonly tagName = "HTMLElement"
+        },
+      )
+      vi.stubGlobal(
+        "HTMLDivElement",
+        class HTMLDivElement {
+          readonly tagName = "DIV"
+        },
+      )
+      vi.stubGlobal(
+        "HTMLCanvasElement",
+        class HTMLCanvasElement {
+          readonly tagName = "CANVAS"
+        },
+      )
+      vi.stubGlobal(
+        "Node",
+        class Node {
+          readonly nodeType = 1
+        },
+      )
+      vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it("does not publish the probe when gardenE2EProbe query is absent", async () => {
+      locationSearch = ""
+      const browser = createBrowserFake()
+      let procedural: ReturnType<typeof createGardenScene> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        procedural = createGardenScene(handle, { palette: TEST_PALETTE })
+        return procedural
+      })
+      const createApplication = vi.fn(async () => {
+        const { app } = createAppFake()
+        return Object.assign(app, { stage: new Container() })
+      })
+
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            attachOptions: {
+              createApplication,
+              createScene,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+          }),
+        )
+      })
+
+      const canvas = findDomCanvas(container)
+      const { handle, descriptor } = canvasProbe(canvas)
+      expect(descriptor).toBeUndefined()
+      expect(handle).toBeUndefined()
+      expect(PROBE_KEY in (canvas as object)).toBe(false)
+      // No window-global probe either.
+      expect(PROBE_KEY in (globalThis as Record<string, unknown>)).toBe(false)
+      expect(PROBE_KEY in (window as unknown as Record<string, unknown>)).toBe(
+        false,
+      )
+
+      await flushAct(() => {
+        root.unmount()
+      })
+      expect(procedural).toBeDefined()
+    })
+
+    it("publishes non-enumerable non-writable configurable handle with real scene identity when guarded", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+      let procedural: ReturnType<typeof createGardenScene> | undefined
+      const createScene = vi.fn((handle: GardenPixiApplicationHandle) => {
+        procedural = createGardenScene(handle, { palette: TEST_PALETTE })
+        return procedural
+      })
+      const createApplication = vi.fn(async () => {
+        const { app } = createAppFake()
+        return Object.assign(app, { stage: new Container() })
+      })
+
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            phase: "question",
+            attachOptions: {
+              createApplication,
+              createScene,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+          }),
+        )
+      })
+
+      expect(procedural).toBeDefined()
+      const canvas = findDomCanvas(container)
+      const { handle, descriptor } = canvasProbe(canvas)
+      expect(descriptor).toBeDefined()
+      expect(descriptor?.enumerable).toBe(false)
+      expect(descriptor?.writable).toBe(false)
+      expect(descriptor?.configurable).toBe(true)
+      expect(handle).toBeDefined()
+      expect(typeof handle?.getE2EIdentity).toBe("function")
+
+      const fromProbe = handle!.getE2EIdentity()
+      const fromScene = procedural!.getE2EIdentity()
+      // Real object identity — not label/value equality alone.
+      expect(fromProbe.root).toBe(fromScene.root)
+      expect(fromProbe.root).toBe(procedural!.root)
+      expect(fromProbe.actorPlants).toHaveLength(2)
+      expect(fromProbe.actorPlants[0]).toBe(fromScene.actorPlants[0])
+      expect(fromProbe.actorPlants[1]).toBe(fromScene.actorPlants[1])
+      expect(fromProbe.actorPlants[0]).toBe(
+        procedural!.layers.actors.children[0],
+      )
+      expect(fromProbe.labels).toEqual(["actor-plant-0", "actor-plant-1"])
+
+      // Descriptor stays non-writable: reassignment must not replace handle.
+      const canvasObj = canvas as unknown as Record<string, unknown>
+      const impostor = { getE2EIdentity: () => fromProbe }
+      try {
+        canvasObj[PROBE_KEY] = impostor
+      } catch {
+        // Strict mode TypeError is expected for non-writable data properties.
+      }
+      expect(canvasObj[PROBE_KEY]).toBe(handle)
+      expect(canvasObj[PROBE_KEY]).not.toBe(impostor)
+
+      await flushAct(() => {
+        root.unmount()
+      })
+
+      // Sync cleanup on unmount — property gone immediately after unmount.
+      const after = canvasProbe(canvas)
+      expect(after.descriptor).toBeUndefined()
+      expect(after.handle).toBeUndefined()
+    })
+
+    it("does not false-pass on static fallback or empty scene without getE2EIdentity", async () => {
+      locationSearch = "?gardenE2EProbe=1"
+      const browser = createBrowserFake()
+
+      // Static path: no canvas, no probe.
+      const staticHtml = renderToStaticMarkup(
+        createElement(GardenBattleCanvasHost, {
+          teams: TEAMS,
+          quality: "static",
+        }),
+      )
+      expect(staticHtml).toContain('data-testid="garden-static-fallback"')
+      expect(staticHtml).not.toContain("garden-pixi-canvas")
+
+      // Lifecycle-only empty scene: no getE2EIdentity → no probe hook.
+      const createScene = vi.fn(() => createEmptyGardenScene())
+      const createApplication = vi.fn(async () => {
+        const { app } = createAppFake()
+        return Object.assign(app, { stage: new Container() })
+      })
+
+      const container = domDocument.createElement("div")
+      domDocument.body.appendChild(container)
+      const root = createRoot(container as unknown as HTMLElement)
+
+      await flushAct(() => {
+        root.render(
+          createElement(GardenBattleCanvasHost, {
+            teams: TEAMS,
+            quality: "high",
+            attachOptions: {
+              createApplication,
+              createScene,
+              background: TEST_CANVAS_BACKGROUND,
+            },
+            environment: browser.environment,
+          }),
+        )
+      })
+
+      const canvas = findDomCanvas(container)
+      const { handle, descriptor } = canvasProbe(canvas)
+      expect(descriptor).toBeUndefined()
+      expect(handle).toBeUndefined()
+      expect(createScene).toHaveBeenCalled()
+
+      await flushAct(() => {
+        root.unmount()
+      })
+    })
+  })
 })
