@@ -4,8 +4,4 @@ import type { PowerupAppliedResult } from "./PowerupAppliedResult";
 /**
  * S2C `game:flowerBattle:powerupApplied`.
  */
-export type PowerupApplied = { gameId: string, sourceTeamId: string, optionId: string,
-/**
- * Absent for self-buffs (fertilizer / sunbeam / umbrella_shield).
- */
-targetTeamId?: string, applied: PowerupAppliedResult, };
+export type PowerupApplied = { gameId: string, sourceTeamId: string, optionId: string, targetTeamId?: string, applied: PowerupAppliedResult, };

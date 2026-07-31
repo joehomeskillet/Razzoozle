@@ -344,10 +344,10 @@ pub struct PowerupSelected {
     pub game_id: String,
     pub team_id: String,
     pub offer_id: String,
-    /// Index into the active offer option list.
+    // Index into the active offer option list. (line-comment avoids ts-rs 10.x trailing-whitespace bug)
     pub option_index: usize,
     pub option_id: String,
-    /// Server epoch ms — anchors client-side target-vote window.
+    // Server epoch ms — anchors client-side target-vote window. (line-comment avoids ts-rs 10.x trailing-whitespace bug)
     #[ts(type = "number")]
     pub selected_at_server_ms: i64,
 }
@@ -383,7 +383,7 @@ pub struct PowerupApplied {
     pub game_id: String,
     pub source_team_id: String,
     pub option_id: String,
-    /// Absent for self-buffs (fertilizer / sunbeam / umbrella_shield).
+    // Absent for self-buffs (fertilizer / sunbeam / umbrella_shield). (line-comment avoids ts-rs 10.x trailing-whitespace bug)
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub target_team_id: Option<String>,

@@ -4,7 +4,10 @@
 use crate::state::Game;
 use razzoozle_engine::flower_battle::AppliedEffect;
 use razzoozle_protocol::constants;
-use razzoozle_protocol::experience::{FlowerBattlePlayerStatus, PowerupOffer};
+use razzoozle_protocol::experience::{
+    FlowerBattlePlayerStatus, PowerupApplied, PowerupAppliedResult, PowerupOffer, PowerupOffered,
+    PowerupSelected,
+};
 use razzoozle_protocol::game::ExperienceMode;
 use razzoozle_protocol::player::Player;
 use socketioxide::SocketIo;
@@ -170,11 +173,11 @@ pub fn emit_round_resolved(io: &SocketIo, game_id: &str, game: &Game) {
 }
 
 pub fn emit_powerup_offered(io: &SocketIo, game_id: &str, team_id: &str, offer: &PowerupOffer) {
-    let payload = serde_json::json!({
-        "gameId": game_id,
-        "teamId": team_id,
-        "offer": offer,
-    });
+    let payload = PowerupOffered {
+        game_id: game_id.to_string(),
+        team_id: team_id.to_string(),
+        offer: offer.clone(),
+    };
     io.to(game_id.to_string())
         .emit(constants::flower_battle::POWERUP_OFFERED, &payload)
         .ok();
@@ -184,15 +187,19 @@ pub fn emit_powerup_selected(
     io: &SocketIo,
     game_id: &str,
     team_id: &str,
+    offer_id: &str,
     option_index: usize,
     option_id: &str,
+    selected_at_server_ms: i64,
 ) {
-    let payload = serde_json::json!({
-        "gameId": game_id,
-        "teamId": team_id,
-        "optionIndex": option_index,
-        "optionId": option_id,
-    });
+    let payload = PowerupSelected {
+        game_id: game_id.to_string(),
+        team_id: team_id.to_string(),
+        offer_id: offer_id.to_string(),
+        option_index,
+        option_id: option_id.to_string(),
+        selected_at_server_ms,
+    };
     io.to(game_id.to_string())
         .emit(constants::flower_battle::POWERUP_SELECTED, &payload)
         .ok();
@@ -205,12 +212,29 @@ pub fn emit_powerup_applied(
     option_id: &str,
     applied: &AppliedEffect,
 ) {
-    let payload = serde_json::json!({
-        "gameId": game_id,
-        "teamId": team_id,
-        "optionId": option_id,
-        "applied": format!("{:?}", applied),
-    });
+    let (target_team_id, applied) = match applied {
+        AppliedEffect::Fertilizer { growth_stage } => (
+            None,
+            PowerupAppliedResult::Fertilizer {
+                growth_stage: *growth_stage,
+            },
+        ),
+        AppliedEffect::Status { team_id, effect } => (
+            Some(team_id.clone()),
+            PowerupAppliedResult::Status {
+                team_id: team_id.clone(),
+                effect: effect.clone(),
+            },
+        ),
+        AppliedEffect::RestoredIdempotent => (None, PowerupAppliedResult::RestoredIdempotent),
+    };
+    let payload = PowerupApplied {
+        game_id: game_id.to_string(),
+        source_team_id: team_id.to_string(),
+        option_id: option_id.to_string(),
+        target_team_id,
+        applied,
+    };
     io.to(game_id.to_string())
         .emit(constants::flower_battle::POWERUP_APPLIED, &payload)
         .ok();

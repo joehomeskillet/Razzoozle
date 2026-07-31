@@ -3,12 +3,4 @@
 /**
  * S2C `game:flowerBattle:powerupSelected`.
  */
-export type PowerupSelected = { gameId: string, teamId: string, offerId: string,
-/**
- * Index into the active offer option list.
- */
-optionIndex: number, optionId: string,
-/**
- * Server epoch ms — anchors client-side target-vote window.
- */
-selectedAtServerMs: number, };
+export type PowerupSelected = { gameId: string, teamId: string, offerId: string, optionIndex: number, optionId: string, selectedAtServerMs: number, };

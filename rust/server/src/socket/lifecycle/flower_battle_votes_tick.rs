@@ -63,7 +63,16 @@ fn evaluate_all_votes(
                 option_index,
                 option_id,
             } => {
-                emit_powerup_selected(io, game_id, &team_id, option_index, &option_id);
+                let offer_id = active_offer_id(game_id, game, &team_id);
+                emit_powerup_selected(
+                    io,
+                    game_id,
+                    &team_id,
+                    &offer_id,
+                    option_index,
+                    &option_id,
+                    force_ms,
+                );
                 if powerup_requires_target(&option_id) {
                     if allow_open_target {
                         let candidates = other_team_ids(game, &team_id);
@@ -85,7 +94,15 @@ fn evaluate_all_votes(
                             .insert(team_id.clone(), target_vote);
                         opened_target = true;
                     } else {
-                        emit_powerup_selected(io, game_id, &team_id, option_index, &option_id);
+                        emit_powerup_selected(
+                            io,
+                            game_id,
+                            &team_id,
+                            &offer_id,
+                            option_index,
+                            &option_id,
+                            force_ms,
+                        );
                     }
                 } else if let Some(offered) = option_to_offered(&option_id, None) {
                     apply_and_emit(io, game, game_id, &team_id, offered, &option_id);
@@ -103,7 +120,16 @@ fn evaluate_all_votes(
                 }
             }
             VotingResult::AcidRainSkippedNoTarget => {
-                emit_powerup_selected(io, game_id, &team_id, 0, OPTION_ACID_RAIN);
+                let offer_id = active_offer_id(game_id, game, &team_id);
+                emit_powerup_selected(
+                    io,
+                    game_id,
+                    &team_id,
+                    &offer_id,
+                    0,
+                    OPTION_ACID_RAIN,
+                    force_ms,
+                );
                 info!(
                     "FLB acid_rain skipped (no target): gameId={} team={}",
                     game_id, team_id
@@ -137,6 +163,20 @@ fn option_to_offered(option_id: &str, target: Option<&str>) -> Option<OfferedEff
         }),
         _ => None,
     }
+}
+
+fn active_offer_id(game_id: &str, game: &Game, team_id: &str) -> String {
+    game.flower_battle_offers
+        .iter()
+        .filter(|((gid, tid, _), _)| gid == game_id && tid == team_id)
+        .max_by_key(|((_, _, q), _)| *q)
+        .map(|(_, o)| o.id.clone())
+        .unwrap_or_else(|| {
+            format!(
+                "vote_result_{game_id}_{team_id}_{}",
+                game.engine.current_question_index
+            )
+        })
 }
 
 fn apply_and_emit(

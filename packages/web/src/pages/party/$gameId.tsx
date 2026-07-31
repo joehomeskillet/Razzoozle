@@ -2,6 +2,13 @@ import { EVENTS } from "@razzoozle/common/constants"
 import { STATUS } from "@razzoozle/common/types/game/status"
 import type { FlowerBattlePlayerStatus as FlowerBattlePlayerStatusData } from "@razzoozle/common/types/game/socket"
 import { FlowerBattlePlayerStatus } from "@razzoozle/web/experiences/flower-battle/FlowerBattlePlayerStatus"
+import FlowerPowerupVote from "@razzoozle/web/features/game/components/player/FlowerPowerupVote"
+import TargetTeamVote from "@razzoozle/web/features/game/components/player/TargetTeamVote"
+import {
+  isPowerupType,
+  type FlowerTeamView,
+  type TargetVoteSelection,
+} from "@razzoozle/web/features/game/components/player/flower-battle.types"
 import Ended from "@razzoozle/web/features/game/components/states/Ended"
 import GameWrapper from "@razzoozle/web/features/game/components/GameWrapper"
 import PluginRenderSlot from "@razzoozle/web/features/game/components/PluginRenderSlot"
@@ -19,12 +26,21 @@ import {
   GAME_STATE_COMPONENTS,
   isKeyOf,
 } from "@razzoozle/web/features/game/utils/constants"
+import { monoNow } from "@razzoozle/web/features/game/utils/monoNow"
 import { isReconnectForActiveRoute } from "@razzoozle/web/features/game/utils/reconnectRouteGuard"
 import Result from "@razzoozle/web/features/game/components/states/Result"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
+
+const FLOWER_TEAM_VIEWS: FlowerTeamView[] = ["red", "blue", "green", "yellow"].map(
+  (name) => ({
+    name,
+    effects: [],
+    previousAttackerTeamId: undefined,
+  }),
+)
 
 /**
  * Positive whitelist of Flower Battle gameplay phases. Only these statuses
@@ -66,6 +82,11 @@ export const PlayerGamePage = () => {
     flowerBattlePlayerStatus,
     hydrateFlowerBattlePlayerStatus,
     receiveFlowerBattlePlayerStatus,
+    clearFlowerBattlePlayerStatus,
+    flowerBattlePowerup,
+    receiveFlowerBattlePowerupOffered,
+    receiveFlowerBattlePowerupSelected,
+    receiveFlowerBattlePowerupApplied,
   } = usePlayerStore()
   const { setQuestionStates, setDisplayOrder } = useQuestionStore()
   const setLowLatencyActive = useLowLatencyStore((s) => s.setActive)
@@ -91,6 +112,7 @@ export const PlayerGamePage = () => {
   // screen rather than a silent redirect. Holds the forwarded i18n key so
   // Ended can adapt its copy; null => game still live.
   const [endedMessage, setEndedMessage] = useState<string | null>(null)
+  const [flowerBattleTeams, setFlowerBattleTeams] = useState(FLOWER_TEAM_VIEWS)
 
   useEvent("connect", () => {
     if (gameIdParam) {
@@ -166,6 +188,58 @@ export const PlayerGamePage = () => {
       return
     }
     receiveFlowerBattlePlayerStatus(payload, gameIdParam)
+  })
+
+  // FlowerBattle power-up vote bridge (WP-946-C4). All gameId + own-team
+  // gating lives in the store actions (fail-closed); the route only forwards
+  // the authoritative route gameId and, for SELECTED, derives fallback
+  // anchors.
+  useEvent(EVENTS.FLOWER_BATTLE.POWERUP_OFFERED, (payload) => {
+    if (!gameIdParam) {
+      return
+    }
+    receiveFlowerBattlePowerupOffered(payload, gameIdParam)
+  })
+
+  useEvent(EVENTS.FLOWER_BATTLE.POWERUP_SELECTED, (payload) => {
+    if (!gameIdParam) {
+      return
+    }
+    receiveFlowerBattlePowerupSelected(payload, gameIdParam, {
+      fallbackOfferId: usePlayerStore.getState().flowerBattlePowerup.offer?.id ?? null,
+      localSelectedAtServerMs:
+        monoNow() + useLowLatencyStore.getState().offsetMs,
+    })
+  })
+
+  useEvent(EVENTS.FLOWER_BATTLE.POWERUP_APPLIED, (payload) => {
+    if (!gameIdParam) {
+      return
+    }
+    receiveFlowerBattlePowerupApplied(payload, gameIdParam)
+  })
+
+  useEvent(EVENTS.FLOWER_BATTLE.SNAPSHOT, (payload) => {
+    if (!payload?.teams?.length) {
+      return
+    }
+    setFlowerBattleTeams(
+      payload.teams.map((team) => ({
+        name: team.name,
+        effects: team.effects.map((effect) => effect.kind),
+        previousAttackerTeamId: team.previousAttackerTeamId,
+      })),
+    )
+  })
+
+  // Victory ends every vote window server-side without a further APPLIED —
+  // drop lingering offer/selection so a locked modal cannot cover the result.
+  useEvent(EVENTS.FLOWER_BATTLE.GAME_COMPLETED, (_payload) => {
+    if (!gameIdParam) {
+      return
+    }
+    clearFlowerBattlePlayerStatus()
+    receiveFlowerBattlePowerupApplied({ gameId: gameIdParam }, gameIdParam)
   })
 
   useEvent(EVENTS.GAME.STATUS, ({ name, data }) => {
@@ -277,6 +351,12 @@ export const PlayerGamePage = () => {
       </div>
     ) : undefined
 
+  const powerupSelection = flowerBattlePowerup?.selection
+  const targetVoteSelection: TargetVoteSelection | null =
+    powerupSelection && isPowerupType(powerupSelection.optionId)
+      ? { ...powerupSelection, optionId: powerupSelection.optionId }
+      : null
+
   return (
     <GameWrapper
       statusName={status.name}
@@ -294,6 +374,20 @@ export const PlayerGamePage = () => {
       )}
       {CurrentComponent && (
         <PluginRenderSlot status={status.name} data={status.data} />
+      )}
+      {flowerBattlePlayerStatus && (
+        <>
+          <FlowerPowerupVote
+            mode="flowerBattle"
+            offer={flowerBattlePowerup?.offer}
+          />
+          <TargetTeamVote
+            mode="flowerBattle"
+            selection={targetVoteSelection}
+            teams={flowerBattleTeams}
+            ownTeamName={flowerBattlePlayerStatus.teamId ?? ""}
+          />
+        </>
       )}
     </GameWrapper>
   )

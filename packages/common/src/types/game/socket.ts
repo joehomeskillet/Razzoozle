@@ -317,6 +317,44 @@ export interface PowerupOffer {
   expiresAt: number
 }
 
+/** S2C `game:flowerBattle:powerupOffered` — mirrors rust/protocol PowerupOffered. */
+export interface PowerupOffered {
+  gameId: string
+  teamId: string
+  offer: PowerupOffer
+}
+
+/** S2C `game:flowerBattle:powerupSelected` — mirrors rust/protocol PowerupSelected. */
+export interface PowerupSelected {
+  gameId: string
+  teamId: string
+  offerId: string
+  /** Index into the active offer option list. */
+  optionIndex: number
+  optionId: string
+  /** Server epoch ms — anchors the derived target-vote window client-side. */
+  selectedAtServerMs: number
+}
+
+/**
+ * Stable wire shape for the power-up application result — mirrors
+ * rust/protocol PowerupAppliedResult (internally tagged `kind`).
+ */
+export type PowerupAppliedResult =
+  | { kind: "fertilizer"; growthStage: number }
+  | { kind: "status"; teamId: string; effect: FlowerBattleEffect }
+  | { kind: "restored_idempotent" }
+
+/** S2C `game:flowerBattle:powerupApplied` — mirrors rust/protocol PowerupApplied. */
+export interface PowerupApplied {
+  gameId: string
+  sourceTeamId: string
+  optionId: string
+  /** Absent for self-buffs (fertilizer / sunbeam / umbrella_shield). */
+  targetTeamId?: string
+  applied: PowerupAppliedResult
+}
+
 export interface FlowerBattleState {
   phase: FlowerBattlePhase
   teams: FlowerBattleTeamState[]
@@ -339,6 +377,21 @@ export interface FlowerBattlePlayerStatus {
   winnerTeamIds: string[]
   isWinner: boolean
 }
+
+/** Legacy server payload from earlier FlowerBattle completions. */
+export interface FlowerBattleGameCompletedLegacy {
+  teams: FlowerBattleTeamState[]
+}
+
+/** Canonical server payload for completed games in #999 contract. */
+export interface FlowerBattleGameCompleted {
+  gameId: string
+  winnerTeamIds: string[]
+}
+
+export type FlowerBattleGameCompletedEvent =
+  | FlowerBattleGameCompletedLegacy
+  | FlowerBattleGameCompleted
 
 /** C2S `player:flowerBattle:submitPowerupVote` — mirrors PowerupVotePayload. */
 export interface FlowerBattlePowerupVote {
@@ -382,31 +435,17 @@ export interface ServerToClientEvents {
   // — content-free phase/progress only, broadcast to the display room.
   [EVENTS.EXPERIENCE.TRANSITION]: (_data: ExperienceTransition) => void
 
-  // FlowerBattle mode events (WP #927). SNAPSHOT/POWERUP_OFFERED mirror the
-  // protocol bindings directly; the rest are composed from the mirrored types
-  // above — no server emitter exists yet to pin them further.
+  // FlowerBattle mode events (WP #927 / #999). POWERUP_* envelopes mirror
+  // rust/protocol/bindings (PowerupOffered / PowerupSelected / PowerupApplied).
   [EVENTS.FLOWER_BATTLE.SNAPSHOT]: (_data: FlowerBattleState) => void
   [EVENTS.FLOWER_BATTLE.ROUND_RESOLVED]: (_data: {
     round: number
     teams: FlowerBattleTeamState[]
   }) => void
-  [EVENTS.FLOWER_BATTLE.POWERUP_OFFERED]: (_data: PowerupOffer) => void
-  [EVENTS.FLOWER_BATTLE.POWERUP_SELECTED]: (_data: {
-    offerId: string
-    optionIndex: number
-    optionId: string
-    /** Server epoch ms — anchors the derived target-vote window client-side. */
-    selectedAtServerMs: number
-  }) => void
-  [EVENTS.FLOWER_BATTLE.POWERUP_APPLIED]: (_data: {
-    optionId: string
-    sourceTeamId: string
-    /** Absent for self-buffs (fertilizer/sunbeam/umbrella_shield). */
-    targetTeamId?: string
-  }) => void
-  [EVENTS.FLOWER_BATTLE.GAME_COMPLETED]: (_data: {
-    teams: FlowerBattleTeamState[]
-  }) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_OFFERED]: (_data: PowerupOffered) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_SELECTED]: (_data: PowerupSelected) => void
+  [EVENTS.FLOWER_BATTLE.POWERUP_APPLIED]: (_data: PowerupApplied) => void
+  [EVENTS.FLOWER_BATTLE.GAME_COMPLETED]: (_data: FlowerBattleGameCompletedEvent) => void
   [EVENTS.FLOWER_BATTLE.PLAYER_STATUS]: (_data: FlowerBattlePlayerStatus) => void
 
   // Player events

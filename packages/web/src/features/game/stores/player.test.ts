@@ -227,10 +227,25 @@ describe("usePlayerStore flowerBattlePlayerStatus (WP-946-C1)", () => {
     const store = usePlayerStore.getState()
     store.setGameId(GAME_A)
     store.setFlowerBattlePlayerStatus(makeStatus({ questionIndex: 4 }))
+    store.receiveFlowerBattlePowerupOffered(
+      {
+        gameId: GAME_A,
+        teamId: "blue",
+        offer: {
+          id: "offer-1",
+          offerType: "fertilizer,umbrella_shield,acid_rain,sunbeam",
+          expiresAt: 123,
+        },
+      },
+      GAME_A,
+    )
     expect(usePlayerStore.getState().flowerBattlePlayerStatus).not.toBeNull()
+    expect(usePlayerStore.getState().flowerBattlePowerup.offer).not.toBeNull()
 
     store.hydrateFlowerBattlePlayerStatus(undefined, GAME_A)
     expect(usePlayerStore.getState().flowerBattlePlayerStatus).toBeNull()
+    expect(usePlayerStore.getState().flowerBattlePowerup.offer).toBeNull()
+    expect(usePlayerStore.getState().flowerBattlePowerup.selection).toBeNull()
   })
 
   it("hydrate clears on gameId mismatch (payload vs expected or store)", () => {

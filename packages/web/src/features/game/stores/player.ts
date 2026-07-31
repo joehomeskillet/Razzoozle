@@ -1,5 +1,9 @@
 import type { StatusDataMap } from "@razzoozle/common/types/game/status"
 import type {
+  PowerupApplied,
+  PowerupOffer,
+  PowerupOffered,
+  PowerupSelected,
   FlowerBattlePlayerStatus,
   RosterEntry,
 } from "@razzoozle/common/types/game/socket"
@@ -21,6 +25,38 @@ export interface PendingRoom {
   klassen: boolean
   roster: RosterEntry[]
   requireIdentifier: boolean
+}
+
+/**
+ * Majority-locked power-up selection for this player's own team (WP #942
+ * target vote). `optionId` stays the raw wire string — the route narrows it
+ * via `isPowerupType` before building the UI's `TargetVoteSelection`.
+ */
+export interface FlowerBattlePowerupSelection {
+  offerId: string
+  optionId: string
+  selectedAtServerMs: number
+}
+
+/**
+ * Open power-up offer + locked selection for this player's own team
+ * (WP-946-C4). Fed only by POWERUP_* S2C envelopes whose `teamId` matches the
+ * personalized `flowerBattlePlayerStatus.teamId`; cleared on applied /
+ * game-completed / join / reset.
+ */
+export interface FlowerBattlePowerupState {
+  offer: PowerupOffer | null
+  selection: FlowerBattlePowerupSelection | null
+}
+
+/**
+ * Client-derived anchors for `receiveFlowerBattlePowerupSelected`.
+ * The live rust emitter today sends all fields, but anchors keep compatibility
+ * should emit gaps reappear.
+ */
+export interface FlowerBattlePowerupSelectedAnchors {
+  fallbackOfferId: string | null
+  localSelectedAtServerMs: number
 }
 
 interface PlayerStore<T> {
@@ -52,6 +88,9 @@ interface PlayerStore<T> {
 
   setStatus: <K extends keyof T>(_name: K, _data: T[K]) => void
 
+  /** Own-team power-up vote state (WP-946-C4). */
+  flowerBattlePowerup: FlowerBattlePowerupState
+
   /** Unconditional write. Guarded paths prefer hydrate/receive. */
   setFlowerBattlePlayerStatus: (_status: FlowerBattlePlayerStatus) => void
   /** Drop Flower status so Classic/next game cannot retain it. */
@@ -75,8 +114,38 @@ interface PlayerStore<T> {
     _status: FlowerBattlePlayerStatus,
     _routeGameId: string,
   ) => void
+  /**
+   * Live `game:flowerBattle:powerupOffered` path. Stores the offer only when
+   * the payload's gameId/teamId match the active route, store gameId, and the
+   * current player's team.
+   */
+  receiveFlowerBattlePowerupOffered: (
+    _payload: PowerupOffered,
+    _routeGameId: string,
+  ) => void
+  /**
+   * Live `game:flowerBattle:powerupSelected` path. Closes option vote and stores
+   * target-selection data. Anchors support backfill if the emitter temporarily
+   * omits fields.
+   */
+  receiveFlowerBattlePowerupSelected: (
+    _payload: PowerupSelected,
+    _routeGameId: string,
+    _anchors: FlowerBattlePowerupSelectedAnchors,
+  ) => void
+  /** Shared clear for `game:flowerBattle:powerupApplied` / `gameCompleted`. */
+  receiveFlowerBattlePowerupApplied: (
+    _payload: Pick<PowerupApplied, "gameId">,
+    _routeGameId: string,
+  ) => void
 
   reset: () => void
+}
+
+/** Shared empty vote state — never mutated, safe to reuse by reference. */
+const NO_FLOWER_POWERUP: FlowerBattlePowerupState = {
+  offer: null,
+  selection: null,
 }
 
 const initialState = {
@@ -85,6 +154,7 @@ const initialState = {
   status: null as Status<StatusDataMap> | null,
   pendingRoom: null as PendingRoom | null,
   flowerBattlePlayerStatus: null as FlowerBattlePlayerStatus | null,
+  flowerBattlePowerup: NO_FLOWER_POWERUP,
 }
 
 const CANONICAL_REVISION = /^(0|[1-9]\d*)$/
@@ -115,6 +185,26 @@ function shouldIgnoreRevision(
   return currentRevision !== null && incomingRevision <= currentRevision
 }
 
+/**
+ * Fail-closed gate for team-scoped POWERUP_* envelopes:
+ * payload must match route + store and the player's own team.
+ */
+function isOwnFlowerBattleEnvelope(
+  state: {
+    gameId: string | null
+    flowerBattlePlayerStatus: FlowerBattlePlayerStatus | null
+  },
+  routeGameId: string,
+  payloadGameId: string,
+  payloadTeamId: string,
+): boolean {
+  if (payloadGameId !== routeGameId || payloadGameId !== state.gameId) {
+    return false
+  }
+  const ownTeam = state.flowerBattlePlayerStatus?.teamId
+  return ownTeam != null && ownTeam === payloadTeamId
+}
+
 export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
   ...initialState,
 
@@ -123,7 +213,11 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
       // A different game must not inherit Flower status from the prior one.
       state.gameId === gameId
         ? { gameId }
-        : { gameId, flowerBattlePlayerStatus: null },
+        : {
+            gameId,
+            flowerBattlePlayerStatus: null,
+            flowerBattlePowerup: NO_FLOWER_POWERUP,
+          },
     ),
 
   setPlayer: (player: PlayerState) => set({ player }),
@@ -147,6 +241,7 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
       pendingRoom,
       // New game must not inherit Flower status from a prior session.
       flowerBattlePlayerStatus: null,
+      flowerBattlePowerup: NO_FLOWER_POWERUP,
     }))
   },
 
@@ -168,7 +263,10 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
     set({ flowerBattlePlayerStatus: status }),
 
   clearFlowerBattlePlayerStatus: () =>
-    set({ flowerBattlePlayerStatus: null }),
+    set({
+      flowerBattlePlayerStatus: null,
+      flowerBattlePowerup: NO_FLOWER_POWERUP,
+    }),
 
   hydrateFlowerBattlePlayerStatus: (status, expectedGameId) =>
     set((state) => {
@@ -179,7 +277,10 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
         status.gameId !== expectedGameId ||
         status.gameId !== state.gameId
       ) {
-        return { flowerBattlePlayerStatus: null }
+        return {
+          flowerBattlePlayerStatus: null,
+          flowerBattlePowerup: NO_FLOWER_POWERUP,
+        }
       }
 
       if (shouldIgnoreRevision(state.flowerBattlePlayerStatus, status)) {
@@ -187,6 +288,66 @@ export const usePlayerStore = create<PlayerStore<StatusDataMap>>((set) => ({
       }
 
       return { flowerBattlePlayerStatus: status }
+    }),
+
+  receiveFlowerBattlePowerupOffered: (payload, routeGameId) =>
+    set((state) => {
+      if (
+        !isOwnFlowerBattleEnvelope(
+          state,
+          routeGameId,
+          payload.gameId,
+          payload.teamId,
+        )
+      ) {
+        return state
+      }
+
+      return {
+        flowerBattlePowerup: { offer: payload.offer, selection: null },
+      }
+    }),
+
+  receiveFlowerBattlePowerupSelected: (payload, routeGameId, anchors) =>
+    set((state) => {
+      if (
+        !isOwnFlowerBattleEnvelope(
+          state,
+          routeGameId,
+          payload.gameId,
+          payload.teamId,
+        )
+      ) {
+        return state
+      }
+
+      return {
+        flowerBattlePowerup: {
+          offer: null,
+          selection: {
+            offerId:
+              payload.offerId ??
+              anchors.fallbackOfferId ??
+              `selected-${Math.round(
+                payload.selectedAtServerMs ?? anchors.localSelectedAtServerMs,
+              )}`,
+            optionId: payload.optionId,
+            selectedAtServerMs:
+              payload.selectedAtServerMs ?? anchors.localSelectedAtServerMs,
+          },
+        },
+      }
+    }),
+
+  receiveFlowerBattlePowerupApplied: (payload, routeGameId) =>
+    set((state) => {
+      if (routeGameId !== state.gameId || payload.gameId !== state.gameId) {
+        return state
+      }
+      if (!state.flowerBattlePowerup.offer && !state.flowerBattlePowerup.selection) {
+        return state
+      }
+      return { flowerBattlePowerup: NO_FLOWER_POWERUP }
     }),
 
   receiveFlowerBattlePlayerStatus: (status, routeGameId) =>
