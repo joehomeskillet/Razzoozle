@@ -154,9 +154,10 @@ function withFullBleedSprite(
 }
 
 /**
- * Bottom-anchored band sprite. Always paints a solid colour band first so
- * there is no transparent gap to the canvas clear colour. Sprite uses
- * **uniform** width-fit scale so silhouettes keep their authored proportions.
+ * Bottom-anchored band sprite. Optionally paints a solid colour band first so
+ * there is no transparent gap. Sprite uses **uniform** width-fit scale.
+ * Set `paintUnderlay=false` for transparent props (fence pickets) so a cream
+ * slab does not read as a white road.
  */
 function withBottomSprite(
   layer: Container,
@@ -165,21 +166,31 @@ function withBottomSprite(
   bottomY: number,
   fallbackColor: number,
   fallbackTopRatio = 0.78,
+  paintUnderlay = true,
 ): void {
   const bandTop = GARDEN_LOGICAL_HEIGHT * fallbackTopRatio
   const bandHeight = Math.max(1, bottomY - bandTop)
 
-  const underlay = new Graphics()
-  underlay.label = `${childLabel}-underlay`
-  fillRect(underlay, 0, bandTop, GARDEN_LOGICAL_WIDTH, bandHeight, fallbackColor)
-  layer.addChild(underlay)
+  if (paintUnderlay) {
+    const underlay = new Graphics()
+    underlay.label = `${childLabel}-underlay`
+    fillRect(
+      underlay,
+      0,
+      bandTop,
+      GARDEN_LOGICAL_WIDTH,
+      bandHeight,
+      fallbackColor,
+    )
+    layer.addChild(underlay)
+  }
 
   if (texture && texture.width > 0 && texture.height > 0) {
     const sprite = new Sprite(texture)
     sprite.label = childLabel
     sprite.anchor.set(0.5, 1.0)
     sprite.position.set(GARDEN_LOGICAL_WIDTH / 2, bottomY)
-    // Uniform width-fit — never non-uniform stretch (that caused "scattered"/warped look).
+    // Uniform width-fit — never non-uniform stretch.
     const scale = GARDEN_LOGICAL_WIDTH / texture.width
     sprite.scale.set(scale)
     layer.addChild(sprite)
@@ -201,23 +212,41 @@ export function buildSkyLayer(
   const sunX = GARDEN_LOGICAL_WIDTH * 0.82
   const sunY = GARDEN_LOGICAL_HEIGHT * 0.14
 
+  // Always paint a warm glow (token colour) so Kenney's pale disc reads golden.
+  {
+    const glow = new Graphics()
+    glow.label = "sun-glow"
+    glow.circle(sunX, sunY, 90)
+    glow.fill({ color: palette.sun, alpha: 0.14 })
+    glow.circle(sunX, sunY, 58)
+    glow.fill({ color: palette.sun, alpha: 0.28 })
+    // Soft rays
+    for (let i = 0; i < 12; i += 1) {
+      const a = (i / 12) * Math.PI * 2
+      const x0 = sunX + Math.cos(a) * 48
+      const y0 = sunY + Math.sin(a) * 48
+      const x1 = sunX + Math.cos(a) * 110
+      const y1 = sunY + Math.sin(a) * 110
+      glow.moveTo(x0, y0)
+      glow.lineTo(x1, y1)
+      glow.stroke({ color: palette.sun, width: 4, alpha: 0.35 })
+    }
+    layer.addChild(glow)
+  }
   if (assets?.sun && assets.sun.width > 0) {
     const sun = new Sprite(assets.sun)
     sun.label = "sun-sprite"
     sun.anchor.set(0.5, 0.5)
     sun.position.set(sunX, sunY)
-    const target = 220
+    const target = 160
     const s = target / Math.max(assets.sun.width, assets.sun.height)
     sun.scale.set(s)
+    sun.tint = palette.sun
     layer.addChild(sun)
-  } else if (!assets?.sky) {
+  } else {
     const g = new Graphics()
-    g.label = "sun-fallback"
-    g.circle(sunX, sunY, 56)
-    g.fill({ color: palette.sun, alpha: 0.18 })
-    g.circle(sunX, sunY, 38)
-    g.fill({ color: palette.sun, alpha: 0.8 })
-    g.circle(sunX, sunY, 28)
+    g.label = "sun-disc"
+    g.circle(sunX, sunY, 34)
     g.fill({ color: palette.sun })
     layer.addChild(g)
   }
@@ -303,48 +332,40 @@ export function buildDistantHillsLayer(
   const layer = new Container()
   layer.label = "layer-distant-hills"
 
-  // Sit just above the lawn line so the ridge reads as far horizon.
-  withBottomSprite(
-    layer,
-    "distant-hills-sprite",
-    assets?.distantHills,
-    GARDEN_LOGICAL_HEIGHT * 0.72,
-    palette.hillBack,
-    0.42,
-  )
+  // Always draw two-tone ridge silhouettes for readable depth (sprite is optional
+  // texture overlay). Hills must contrast against both sky and lawn.
+  const ridge = new Graphics()
+  ridge.label = "distant-hills-ridges"
+  const H = GARDEN_LOGICAL_HEIGHT
+  const W = GARDEN_LOGICAL_WIDTH
+  // Far ridge (lighter / higher)
+  ridge.moveTo(0, H * 0.58)
+  ridge.bezierCurveTo(W * 0.18, H * 0.4, W * 0.4, H * 0.55, W * 0.62, H * 0.42)
+  ridge.bezierCurveTo(W * 0.78, H * 0.34, W * 0.9, H * 0.48, W, H * 0.44)
+  ridge.lineTo(W, H * 0.72)
+  ridge.lineTo(0, H * 0.72)
+  ridge.closePath()
+  ridge.fill({ color: palette.hillBack, alpha: 0.95 })
+  // Near ridge (darker / lower)
+  ridge.moveTo(0, H * 0.64)
+  ridge.bezierCurveTo(W * 0.22, H * 0.52, W * 0.45, H * 0.66, W * 0.7, H * 0.54)
+  ridge.bezierCurveTo(W * 0.85, H * 0.48, W * 0.95, H * 0.6, W, H * 0.58)
+  ridge.lineTo(W, H * 0.74)
+  ridge.lineTo(0, H * 0.74)
+  ridge.closePath()
+  ridge.fill({ color: palette.hillMid, alpha: 0.92 })
+  layer.addChild(ridge)
 
-  if (!assets?.distantHills) {
-    const g = layer.children[0] as Graphics
-    // Far hill (lightest)
-    g.moveTo(0, GARDEN_LOGICAL_HEIGHT * 0.5)
-    g.bezierCurveTo(
-      GARDEN_LOGICAL_WIDTH * 0.2,
-      GARDEN_LOGICAL_HEIGHT * 0.32,
-      GARDEN_LOGICAL_WIDTH * 0.45,
-      GARDEN_LOGICAL_HEIGHT * 0.55,
-      GARDEN_LOGICAL_WIDTH * 0.7,
-      GARDEN_LOGICAL_HEIGHT * 0.4,
-    )
-    g.lineTo(GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT * 0.5)
-    g.lineTo(GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT * 0.62)
-    g.lineTo(0, GARDEN_LOGICAL_HEIGHT * 0.62)
-    g.closePath()
-    g.fill({ color: palette.hillBack })
-
-    // Mid-back hill (slightly darker)
-    g.moveTo(0, GARDEN_LOGICAL_HEIGHT * 0.58)
-    g.bezierCurveTo(
-      GARDEN_LOGICAL_WIDTH * 0.25,
-      GARDEN_LOGICAL_HEIGHT * 0.45,
-      GARDEN_LOGICAL_WIDTH * 0.55,
-      GARDEN_LOGICAL_HEIGHT * 0.62,
-      GARDEN_LOGICAL_WIDTH,
-      GARDEN_LOGICAL_HEIGHT * 0.52,
-    )
-    g.lineTo(GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT * 0.68)
-    g.lineTo(0, GARDEN_LOGICAL_HEIGHT * 0.68)
-    g.closePath()
-    g.fill({ color: palette.hillMid })
+  if (assets?.distantHills && assets.distantHills.width > 0) {
+    const sprite = new Sprite(assets.distantHills)
+    sprite.label = "distant-hills-sprite"
+    sprite.anchor.set(0.5, 1)
+    sprite.position.set(W / 2, H * 0.74)
+    const scale = W / assets.distantHills.width
+    sprite.scale.set(scale)
+    sprite.alpha = 0.55
+    sprite.tint = palette.hillMid
+    layer.addChild(sprite)
   }
 
   return layer
@@ -467,21 +488,24 @@ export function buildFenceLayer(
   const layer = new Container()
   layer.label = "layer-fence"
 
+  // No cream underlay — pickets only, grass shows through gaps.
   withBottomSprite(
     layer,
     "fence-sprite",
     assets?.fence,
-    GARDEN_LOGICAL_HEIGHT * 0.76,
+    GARDEN_LOGICAL_HEIGHT * 0.8,
     palette.fence,
-    0.68,
+    0.72,
+    false,
   )
 
   if (!assets?.fence) {
-    const g = layer.children[0] as Graphics
-    const fenceY = GARDEN_LOGICAL_HEIGHT * 0.7
+    const g = new Graphics()
+    g.label = "fence-fallback"
+    const fenceY = GARDEN_LOGICAL_HEIGHT * 0.72
     const picketCount = 28
     const picketW = 14
-    const picketH = 60
+    const picketH = 70
     const gap =
       (GARDEN_LOGICAL_WIDTH - picketW * picketCount) / (picketCount - 1)
     for (let i = 0; i < picketCount; i += 1) {
@@ -489,11 +513,11 @@ export function buildFenceLayer(
       g.roundRect(x, fenceY, picketW, picketH, 3)
       g.fill({ color: palette.fence, alpha: 0.95 })
     }
-    // Top rail
     g.rect(0, fenceY - 6, GARDEN_LOGICAL_WIDTH, 6)
     g.fill({ color: palette.fence, alpha: 0.9 })
     g.rect(0, fenceY + picketH - 4, GARDEN_LOGICAL_WIDTH, 4)
     g.fill({ color: palette.fence, alpha: 0.7 })
+    layer.addChild(g)
   }
 
   return layer
@@ -509,15 +533,15 @@ export function buildGrassLayer(
   const layer = new Container()
   layer.label = "layer-grass"
 
-  // Lawn starts just below the fence line. Underlay must NOT start as high as
-  // the horizon — that buried trees/fence under a solid green slab.
+  // Lawn starts just below the hill line. Keep underlay below hills so ridges
+  // stay visible; fence sits on top of the lawn later in z-order.
   withBottomSprite(
     layer,
     "grass-sprite",
     assets?.grass,
     GARDEN_LOGICAL_HEIGHT,
     palette.grass,
-    0.72,
+    0.7,
   )
 
   const tuftTextures = (

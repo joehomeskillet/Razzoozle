@@ -14,10 +14,10 @@ import { Container, Graphics, Sprite, Texture } from "pixi.js"
 import type { GardenPalette } from "./gardenPalette"
 
 const MAX_GROWTH = 10
-const STEM_BASE = 48
-const STEM_PER_STAGE = 22
-const HEAD_BASE = 36
-const HEAD_PER_STAGE = 6
+const STEM_BASE = 56
+const STEM_PER_STAGE = 26
+const HEAD_BASE = 42
+const HEAD_PER_STAGE = 7
 
 export interface DummyPlantColors {
   stem: number
