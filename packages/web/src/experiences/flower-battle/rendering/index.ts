@@ -44,3 +44,53 @@ export {
 } from "./resolveThemeColor"
 
 export { DummyPlantView } from "./DummyPlantView"
+
+export {
+  buildEventBannerController,
+  EventBannerQueue,
+  EVENT_BANNER_TOKENS,
+  FADE_IN_MS as EVENT_BANNER_FADE_IN_MS,
+  HOLD_MS as EVENT_BANNER_HOLD_MS,
+  FADE_OUT_MS as EVENT_BANNER_FADE_OUT_MS,
+  getEventBannerTokenCssVar,
+  resolveEventBannerPalette,
+  type EventBannerController,
+  type EventBannerInput,
+  type EventBannerKind,
+  type EventBannerPalette,
+} from "./eventBanner"
+
+export {
+  buildPowerupLegend,
+  getPowerupLegendTokenCssVar,
+  POWERUP_KINDS,
+  POWERUP_LEGEND_TOKENS,
+  resolvePowerupLegendPalette,
+  type PowerupKind,
+  type PowerupLegendLabels,
+  type PowerupLegendPalette,
+} from "./powerupLegend"
+
+export {
+  buildSegmentedGrowthMeter,
+  buildStatusChip,
+  buildTeamHud,
+  buildTeamLabel,
+  getTeamHudTokenCssVar,
+  resolveTeamHudPalette,
+  TEAM_HUD_TOKENS,
+  type SegmentedGrowthMeterOptions,
+  type StatusChipOptions,
+  type TeamColorTokens,
+  type TeamHudOptions,
+  type TeamHudPalette,
+  type TeamLabelOptions,
+} from "./teamHud"
+
+export {
+  createGardenHud,
+  teamColorTokenFor,
+  type GardenHudController,
+  type GardenHudOptions,
+  type TeamHudEntry,
+} from "./gardenHud"
