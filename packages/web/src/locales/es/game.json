@@ -450,6 +450,52 @@
       "disabledReason": {
         "recentlyAttacked": "Atacado recientemente — elige otro equipo"
       }
+    },
+    "header": {
+      "teamLabel": "Equipo {{name}}",
+      "flower": "Flor {{current}}/{{max}}",
+      "sun": "Sol {{current}}/{{max}}"
+    },
+    "reveal": {
+      "correct": {
+        "title": "Correcto",
+        "subline": "¡Tu flor crece!"
+      },
+      "incorrect": {
+        "title": "Lástima"
+      },
+      "timeout": {
+        "title": "Tiempo agotado"
+      },
+      "noAnswer": {
+        "title": "Sin respuesta"
+      },
+      "partial": {
+        "title": "Parcialmente correcto"
+      },
+      "multipleCorrect": {
+        "title": "Varias correctas"
+      },
+      "serverCorrected": {
+        "title": "Corregido"
+      },
+      "reconnect": {
+        "title": "Continuado"
+      },
+      "correctAnswer": "Respuesta correcta"
+    },
+    "teams": {
+      "red": "Rojo",
+      "blue": "Azul",
+      "green": "Verde",
+      "yellow": "Amarillo",
+      "violet": "Violeta",
+      "orange": "Naranja"
+    },
+    "winner": {
+      "singular": "Ganador: {{team}}",
+      "plural": "Ganadores: {{teams}} ({{count}} equipos)",
+      "tie": "Empate: {{teams}}"
     }
   },
   "flowerPowerupEffects": {

@@ -450,6 +450,52 @@
       "disabledReason": {
         "recentlyAttacked": "Gerade angegriffen — wähle ein anderes Team"
       }
+    },
+    "header": {
+      "teamLabel": "Team {{name}}",
+      "flower": "Blüte {{current}}/{{max}}",
+      "sun": "Sonne {{current}}/{{max}}"
+    },
+    "reveal": {
+      "correct": {
+        "title": "Richtig",
+        "subline": "Deine Blüte wächst!"
+      },
+      "incorrect": {
+        "title": "Schade"
+      },
+      "timeout": {
+        "title": "Zeit um"
+      },
+      "noAnswer": {
+        "title": "Keine Antwort"
+      },
+      "partial": {
+        "title": "Teilweise richtig"
+      },
+      "multipleCorrect": {
+        "title": "Mehrere richtig"
+      },
+      "serverCorrected": {
+        "title": "Korrigiert"
+      },
+      "reconnect": {
+        "title": "Weitergespielt"
+      },
+      "correctAnswer": "Richtige Antwort"
+    },
+    "teams": {
+      "red": "Rot",
+      "blue": "Blau",
+      "green": "Grün",
+      "yellow": "Gelb",
+      "violet": "Violett",
+      "orange": "Orange"
+    },
+    "winner": {
+      "singular": "Sieger: {{team}}",
+      "plural": "Sieger: {{teams}} ({{count}} Teams)",
+      "tie": "Gleichstand: {{teams}}"
     }
   },
   "flowerPowerupEffects": {
