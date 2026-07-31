@@ -8,6 +8,11 @@
  * - Idempotent destroy
  *
  * Does not edit host lifecycle types; implements GardenScene + updateSnapshot.
+ *
+ * SDD §30 (probe-v3): tracks a monotonic `revision` counter alongside the
+ * per-plant team roster so the E2E identity exposes BOTH the normalized
+ * state vector AND the stable Pixi object references — a probe can cross-
+ * check them in a single call rather than relying on canvas existence.
  */
 
 import { Container } from "pixi.js"
@@ -59,6 +64,12 @@ export interface ProceduralGardenScene extends GardenScene {
   readonly root: Container
   readonly layers: Readonly<GardenLayerSet>
   readonly phase: string | null
+  /**
+   * SDD §30 probe-v3: normalized-state revision. Increments on every
+   * successful `updateSnapshot`. Same value across two probes means no
+   * further normalization happened in between.
+   */
+  readonly revision: number
   updateSnapshot(snapshot: GardenSceneSnapshot): void
   getE2EIdentity(): GardenE2EIdentity
   getPlotAnchors(): readonly PlotAnchor[]
@@ -108,7 +119,10 @@ export function createGardenScene(
   let anchors: PlotAnchor[] = []
   let phase: string | null = null
   let lastTeamCount = 0
+  // SDD §30 probe-v3: monotonic normalized-state revision counter.
+  let revision = 0
   const plants: DummyPlantView[] = []
+  const teamNames: string[] = []
   let teamTints: number[] = []
 
   function ensureTeamTints(count: number): void {
@@ -149,6 +163,9 @@ export function createGardenScene(
       const removed = plants.pop()
       removed?.destroy()
     }
+    while (teamNames.length > teamCount) {
+      teamNames.pop()
+    }
     while (plants.length < teamCount) {
       const index = plants.length
       const tint = teamTints[index] ?? palette.plantPetal
@@ -160,6 +177,9 @@ export function createGardenScene(
         `actor-plant-${index}`,
       )
       plants.push(plant)
+      // SDD §30 probe-v3: per-plant team name parallel to the actorPlants
+      // array; defaults to "" until the next updateSnapshot applies a name.
+      teamNames.push("")
       layers.actors.addChild(plant.root)
     }
 
@@ -180,6 +200,9 @@ export function createGardenScene(
     get phase() {
       return phase
     },
+    get revision() {
+      return revision
+    },
 
     getPlotAnchors() {
       return anchors
@@ -194,10 +217,24 @@ export function createGardenScene(
     },
 
     getE2EIdentity(): GardenE2EIdentity {
+      // SDD §30 probe-v3: every per-plant parallel array is sliced to the
+      // teamNames length (= the snapshot team count, NOT the layout-padded
+      // plant count) so identity.* stays length-aligned with the wire
+      // roster. Layout-padded plants carry no team identity and would
+      // otherwise leak placeholder values (empty name, growth 0) into
+      // the probe.
+      const count = teamNames.length
       return {
         root,
-        actorPlants: plants.map((plant) => plant.root),
-        labels: plants.map((_, index) => `actor-plant-${index}`),
+        actorPlants: plants.slice(0, count).map((plant) => plant.root),
+        labels: plants
+          .slice(0, count)
+          .map((_, index) => `actor-plant-${index}`),
+        revision,
+        teamNames: teamNames.slice(),
+        growthStages: plants
+          .slice(0, count)
+          .map((plant) => plant.getGrowthStage()),
       }
     },
 
@@ -226,12 +263,28 @@ export function createGardenScene(
         const team = teams[i]
         const plant = plants[i]!
         plant.setGrowthStage(team?.growthStage ?? 0)
+        // SDD §30 probe-v3: record the team name bound to this plant slot
+        // so the E2E identity carries the normalized team identity, not
+        // just a positional index. teamNames follows the snapshot team
+        // count (not the layout-padded count) so probes can rely on
+        // length parity with the wire roster.
+        teamNames[i] = team?.name ?? ""
         // Keep plant on its ground anchor (defensive against accidental moves).
         const anchor = anchors[i]
         if (anchor) {
           plant.root.position.set(anchor.x, anchor.y)
         }
       }
+      // SDD §30 probe-v3: drop padded slots beyond the snapshot team
+      // count so teamNames.length === teams.length even when layout pads
+      // to a minimum of 2 anchors for visual stability.
+      while (teamNames.length > teams.length) {
+        teamNames.pop()
+      }
+      // SDD §30 probe-v3: bump revision exactly once per applied snapshot,
+      // even when the team count stays stable — the cross-check between
+      // identity.revision and identity.teamNames depends on it.
+      revision += 1
     },
 
     destroy(): void {
@@ -241,6 +294,7 @@ export function createGardenScene(
         plant.destroy()
       }
       plants.length = 0
+      teamNames.length = 0
       anchors = []
       lastTeamCount = 0
       if (root.parent) {

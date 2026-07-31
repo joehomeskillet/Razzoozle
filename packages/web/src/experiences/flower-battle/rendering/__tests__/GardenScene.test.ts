@@ -329,3 +329,53 @@ describe("createGardenScene", () => {
     })
   })
 })
+
+describe("SDD §30 probe-v3 contract on procedural scene", () => {
+  it("updateSnapshot exposes revision, teamNames, growthStages parallel to actorPlants", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    scene.updateSnapshot({
+      teams: [team("Violet", 1), team("Orange", 2)],
+      phase: "question",
+    })
+    const identity = scene.getE2EIdentity()
+    expect(identity.revision).toBe(1)
+    expect(identity.teamNames).toEqual(["Violet", "Orange"])
+    expect(identity.growthStages).toEqual([1, 2])
+    expect(identity.teamNames.length).toBe(identity.actorPlants.length)
+    expect(identity.growthStages.length).toBe(identity.actorPlants.length)
+    scene.destroy()
+  })
+
+  it("revision increments on every updateSnapshot, even when team count stays stable", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    scene.updateSnapshot({ teams: [team("A", 0), team("B", 0)] })
+    expect(scene.revision).toBe(1)
+    scene.updateSnapshot({ teams: [team("A", 3), team("B", 4)] })
+    expect(scene.revision).toBe(2)
+    scene.updateSnapshot({ teams: [team("A", 5), team("B", 6)] })
+    expect(scene.revision).toBe(3)
+    expect(scene.getE2EIdentity().revision).toBe(3)
+    expect(scene.getE2EIdentity().growthStages).toEqual([5, 6])
+    scene.destroy()
+  })
+
+  it("teamNames follow slot index after shrink (slot 0 retains its plant instance)", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    scene.updateSnapshot({
+      teams: [team("Violet", 1), team("Orange", 2)],
+    })
+    const wide = scene.getE2EIdentity()
+    const violetPlant = wide.actorPlants[0]
+    scene.updateSnapshot({
+      teams: [team("Cobalt", 9)],
+    })
+    const shrunk = scene.getE2EIdentity()
+    expect(shrunk.teamNames).toEqual(["Cobalt"])
+    expect(shrunk.growthStages).toEqual([9])
+    expect(shrunk.actorPlants[0]).toBe(violetPlant)
+    scene.destroy()
+  })
+})

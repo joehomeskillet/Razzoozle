@@ -26,11 +26,27 @@ export interface GardenSceneLiveSnapshot {
 /**
  * Optional internal E2E identity contract for scene-graph stability probes.
  * Real object references only — no copies or proxies.
+ *
+ * SDD §30 (probe-v3): a probe only PASSes if it verifies at least two
+ * independent signals. `revision`, `teamNames`, and `growthStages` expose the
+ * normalized scene state alongside the stable Pixi object references, so
+ * probes can cross-check the state vector against the rendered plant
+ * instances instead of relying on canvas existence alone.
  */
 export interface GardenE2EIdentity {
   root: object
   actorPlants: readonly object[]
   labels: readonly string[]
+  /**
+   * Monotonic counter incremented on every successful `updateSnapshot` call.
+   * A stable value proves no further normalization occurred between samples;
+   * a different value proves a new normalized state was applied.
+   */
+  revision: number
+  /** Per-plant team names parallel to `actorPlants` (same length, same order). */
+  teamNames: readonly string[]
+  /** Per-plant growth stages parallel to `actorPlants` (same length, same order). */
+  growthStages: readonly number[]
 }
 
 /** Read-only canvas handle published when `gardenE2EProbe=1` is present. */
