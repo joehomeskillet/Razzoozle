@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest"
 
 import {
   bakeSvgForPixi,
+  ensureSvgIntrinsicSize,
   hexToCssColor,
   normalizeSvgViewBox,
+  parseSvgViewBox,
+  targetRasterSize,
 } from "../loadGardenSceneAssets"
 import {
   GARDEN_SCENE_ASSET_URLS,
@@ -51,6 +54,56 @@ describe("normalizeSvgViewBox", () => {
     expect(out).toContain('viewBox="0 0 80 80"')
     expect(out).toContain('translate(40 40)')
     expect(out).toContain("</g></svg>")
+  })
+})
+
+describe("ensureSvgIntrinsicSize", () => {
+  it("injects explicit width/height so browsers do not default to 300×150", () => {
+    const raw = '<svg viewBox="0 0 1920 400" xmlns="http://www.w3.org/2000/svg"></svg>'
+    const out = ensureSvgIntrinsicSize(raw, 1920, 400)
+    expect(out).toContain('width="1920"')
+    expect(out).toContain('height="400"')
+    expect(out).toContain('viewBox="0 0 1920 400"')
+  })
+})
+
+describe("targetRasterSize", () => {
+  it("keeps full-width stage strips at design resolution", () => {
+    const size = targetRasterSize("bg_sky_day", {
+      minX: 0,
+      minY: 0,
+      width: 1920,
+      height: 1080,
+    })
+    expect(size).toEqual({ width: 1920, height: 1080 })
+  })
+
+  it("2× supersamples small props", () => {
+    const size = targetRasterSize("bg_cloud_01", {
+      minX: 0,
+      minY: 0,
+      width: 320,
+      height: 120,
+    })
+    expect(size).toEqual({ width: 640, height: 240 })
+  })
+
+  it("squares plant heads at 256", () => {
+    const size = targetRasterSize("plant_head_round", {
+      minX: 0,
+      minY: 0,
+      width: 80,
+      height: 80,
+    })
+    expect(size).toEqual({ width: 256, height: 256 })
+  })
+})
+
+describe("parseSvgViewBox", () => {
+  it("reads width/height from viewBox", () => {
+    expect(
+      parseSvgViewBox('<svg viewBox="0 0 1920 350"></svg>'),
+    ).toEqual({ minX: 0, minY: 0, width: 1920, height: 350 })
   })
 })
 
