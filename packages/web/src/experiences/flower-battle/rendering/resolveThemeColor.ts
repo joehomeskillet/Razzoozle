@@ -3,6 +3,11 @@
  * Palette colors MUST flow through getThemeTokenCssVar + getComputedStyle.
  * Missing or invalid tokens raise a controlled error so the host can fall
  * back to the static DOM garden scene.
+ *
+ * SDD #992: color-mix() theme resolution must never force the Pixi garden
+ * into its DOM fallback. When the browser lacks CSS-Color-4 `color-mix()`
+ * support, we extract the base `var(--token)` reference and resolve it
+ * recursively so the host stays on the procedural Pixi path.
  */
 
 import {
@@ -40,6 +45,93 @@ function clampByte(n: number): number {
 }
 
 const CSS_NUMBER_PATTERN = /^[+-]?(?:[0-9]*\.[0-9]+|[0-9]+)(?:e[+-]?[0-9]+)?$/i
+
+/**
+ * Recursion depth guard for the color-mix → base-token fallback. Two is enough
+ * to flatten `color-mix(in srgb, var(--a), color-mix(in srgb, var(--b), ...))`
+ * without risking infinite cycles on deliberately malformed input.
+ */
+const COLOR_MIX_FALLBACK_DEPTH = 2
+
+let cachedColorMixSupport: boolean | null = null
+
+/**
+ * Feature-detect CSS Color 4 `color-mix()` support. Returns false in SSR /
+ * jsdom / older browsers where `CSS.supports` is unavailable or the function
+ * itself is unimplemented. Cached because `CSS.supports` is cheap but called
+ * per token resolution.
+ */
+export function detectColorMixSupport(): boolean {
+  if (cachedColorMixSupport !== null) return cachedColorMixSupport
+  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
+    cachedColorMixSupport = false
+    return false
+  }
+  try {
+    cachedColorMixSupport = CSS.supports(
+      "color",
+      "color-mix(in srgb, white, black)",
+    )
+  } catch {
+    cachedColorMixSupport = false
+  }
+  return cachedColorMixSupport
+}
+
+/** Test helper: reset the cached feature-detect result between specs. */
+export function _resetColorMixSupportCache(): void {
+  cachedColorMixSupport = null
+}
+
+/**
+ * Try to extract the first argument of a `color-mix(in <space>, A, B, …)`
+ * expression. Returns null on malformed input; caller decides whether the
+ * fragment is usable (e.g. `var(--token)`).
+ */
+function parseColorMixFirstArg(value: string): string | null {
+  const head = /^color-mix\s*\(\s*in\s+[a-z0-9-]+\s*,/i.exec(value.trim())
+  if (!head) return null
+  const rest = value.slice(head[0].length)
+  // Walk the rest, depth-tracking, until we hit the first comma at depth 1.
+  let depth = 1
+  for (let i = 0; i < rest.length; i += 1) {
+    const ch = rest[i]
+    if (ch === "(") depth += 1
+    else if (ch === ")") depth -= 1
+    else if (ch === "," && depth === 1) {
+      return rest.slice(0, i).trim()
+    }
+  }
+  return null
+}
+
+/**
+ * Map the first argument of a `color-mix(...)` expression to a CSS custom
+ * property name when it is a `var(--token)` reference. Returns null when the
+ * first arg is a literal color (hex, rgb, named) — those cannot be resolved
+ * by re-entering the resolver, so the caller throws the controlled error.
+ */
+function extractColorMixBaseToken(value: string): string | null {
+  const first = parseColorMixFirstArg(value)
+  if (!first) return null
+  const varMatch = /^var\(\s*(--[a-zA-Z0-9_-]+)\s*\)$/.exec(first)
+  return varMatch ? varMatch[1]! : null
+}
+
+/**
+ * Cheap shape check: does the trimmed value look like a CSS color literal
+ * that should have parsed? Used to decide whether to log a warning before
+ * throwing the controlled error.
+ */
+function looksLikeColorLiteral(value: string): boolean {
+  const v = value.trim()
+  return (
+    v.startsWith("#") ||
+    /^rgba?\(/i.test(v) ||
+    /^color\(/i.test(v) ||
+    /^color-mix\(/i.test(v)
+  )
+}
 
 /**
  * CSS Color 4 `color(srgb …)` channel: unitless number in 0–1, or percentage.
@@ -168,12 +260,14 @@ export function cssColorToPixiNumber(raw: string): number | null {
 }
 
 /**
- * Resolve one design token to a Pixi-compatible 0xRRGGBB integer.
- * Never invents a production fallback color.
+ * Internal entry point that lets the color-mix → base-token fallback recurse
+ * with a bounded depth. Public callers go through `resolveThemeTokenColor`
+ * (depth = 0).
  */
-export function resolveThemeTokenColor(
+function resolveThemeTokenColorInternal(
   token: CssTokenName,
-  options: ResolveThemeColorOptions = {},
+  options: ResolveThemeColorOptions,
+  depth: number,
 ): number {
   // Touch the type-safe accessor so tokens stay on the project theme surface.
   const cssVarExpr = getThemeTokenCssVar(token)
@@ -207,6 +301,23 @@ export function resolveThemeTokenColor(
 
   let pixi = cssColorToPixiNumber(raw)
   if (pixi === null) {
+    // SDD #992: when the browser doesn't understand color-mix(), the computed
+    // value leaks through as raw `color-mix(in srgb, var(--base), …)` text.
+    // Recurse on the base var(--token) instead of forcing the DOM fallback.
+    if (
+      raw.includes("color-mix(") &&
+      !detectColorMixSupport() &&
+      depth < COLOR_MIX_FALLBACK_DEPTH
+    ) {
+      const baseToken = extractColorMixBaseToken(raw)
+      if (baseToken) {
+        return resolveThemeTokenColorInternal(
+          baseToken as CssTokenName,
+          options,
+          depth + 1,
+        )
+      }
+    }
     // Validate the computed token text directly before accepting its used value.
     // Reconstructing var(--token) can turn invalid token text into inherited black.
     const normalised = normalizeCssColorViaBrowser(raw, element, getStyle)
@@ -215,7 +326,26 @@ export function resolveThemeTokenColor(
     }
   }
   if (pixi === null) {
+    if (looksLikeColorLiteral(raw)) {
+      // SDD #992: malformed colour literal — log once so the theme author sees
+      // the rejected value rather than chasing the silent controlled error.
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[resolveThemeTokenColor] rejected malformed value for ${token}: ${raw}`,
+      )
+    }
     throw new ThemeTokenColorError(token, `invalid color "${raw}"`)
   }
   return pixi
+}
+
+/**
+ * Resolve one design token to a Pixi-compatible 0xRRGGBB integer.
+ * Never invents a production fallback color.
+ */
+export function resolveThemeTokenColor(
+  token: CssTokenName,
+  options: ResolveThemeColorOptions = {},
+): number {
+  return resolveThemeTokenColorInternal(token, options, 0)
 }
