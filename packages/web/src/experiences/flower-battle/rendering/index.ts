@@ -44,3 +44,34 @@ export {
 } from "./resolveThemeColor"
 
 export { DummyPlantView } from "./DummyPlantView"
+
+export {
+  createTeamFlower,
+  updateTeamFlower,
+  TEAM_COLOR_TOKENS,
+  TEAM_FLOWER_TEAM_IDS,
+  TEAM_FLOWER_GROWTH_STAGES,
+  type ActivePlantEffect,
+  type CreateTeamFlowerOptions,
+  type GrowthStage,
+  type PlantFace,
+  type TeamColorToken,
+  type TeamFlowerInstance,
+  type TeamFlowerViewport,
+  type TeamId,
+} from "./teamFlowerFactory"
+
+export {
+  FLOWER_HEAD_BASE_DIAMETER_PX,
+  STAGE_HEAD_RATIO,
+  STAGE_HEIGHT_FACTOR,
+  STAGE_LEAF_COUNT,
+} from "./flowerHeads"
+
+export {
+  TeamPlantPlot,
+  useTeamPlantPlot,
+  type TeamPlantPlotHandle,
+  type TeamPlantPlotProps,
+  type TeamPlantSlotSpec,
+} from "./TeamPlantPlot"
