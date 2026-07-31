@@ -502,6 +502,20 @@ describe("resolveGardenPalette with productive token values", () => {
     "--status-online-bg": "#dcfce7",
     "--color-accent": "#f59e0b",
     "--color-field-ink": "#1f2937",
+    // Flower-battle scene tokens (packages/web/src/index.css)
+    "--flower-battle-sky": "#c9eaef",
+    "--flower-battle-sun": "#f9b20b",
+    "--flower-battle-cloud": "#fefbf2",
+    "--flower-battle-hill-back": "#d5d962",
+    "--flower-battle-hill-mid": "#80a72d",
+    "--flower-battle-bush": "#59832c",
+    "--flower-battle-fence": "#fefbf2",
+    "--flower-battle-grass": "#d5d962",
+    "--flower-battle-soil": "#7e4f2c",
+    "--flower-battle-foreground": "#59832c",
+    "--flower-battle-cream": "#fefbf2",
+    "--flower-battle-ink": "#242236",
+    "--flower-battle-primary": "#803eb4",
   }
 
   it("resolves full garden palette including color-mix ring tokens", () => {
@@ -514,10 +528,10 @@ describe("resolveGardenPalette with productive token values", () => {
       }),
     )
 
-    expect(palette.sky).toBe(cssColorToPixiNumber("#f9fafb"))
-    expect(palette.hillsFar).toBe(cssColorToPixiNumber("#22c55e"))
-    expect(palette.midground).toBe(TEAM_GREEN_RING_PIXI)
-    expect(palette.plantLeaf).toBe(TEAM_GREEN_RING_PIXI)
+    expect(palette.sky).toBe(cssColorToPixiNumber("#c9eaef"))
+    expect(palette.hillsFar).toBe(cssColorToPixiNumber("#d5d962"))
+    expect(palette.midground).toBe(cssColorToPixiNumber("#59832c"))
+    expect(palette.plantLeaf).toBe(cssColorToPixiNumber("#59832c"))
     // Every token key from the production map is present and finite.
     for (const key of Object.keys(GARDEN_PALETTE_TOKENS) as Array<
       keyof typeof palette

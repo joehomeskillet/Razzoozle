@@ -1,6 +1,10 @@
 /**
- * Fixed logical garden viewport + fit/letterbox transform (WP-PIX-05A).
+ * Fixed logical garden viewport + cover-fit transform (WP-PIX-05A / WP-19).
  * Design basis: 16:9 presenter canvas (Flower Pixi SDD §9.1).
+ *
+ * Uses CSS-style `object-fit: cover` (Math.max) so the logical garden always
+ * fills the canvas — no white pillarbox/letterbox side bars. Slight crop on
+ * non-16:9 hosts is preferred over empty bars for a casual mobile look.
  */
 
 export const GARDEN_LOGICAL_WIDTH = 1920
@@ -14,17 +18,23 @@ export interface Size2D {
 export interface LetterboxTransform {
   /** Uniform scale from logical → screen pixels. */
   scale: number
-  /** Horizontal letterbox offset in screen pixels. */
+  /**
+   * Horizontal offset in screen pixels. Negative when cover-cropping
+   * ultrawide (content wider than screen).
+   */
   offsetX: number
-  /** Vertical letterbox (pillarbox) offset in screen pixels. */
+  /**
+   * Vertical offset in screen pixels. Negative when cover-cropping tall
+   * aspect ratios (content taller than screen).
+   */
   offsetY: number
   screen: Size2D
   logical: Size2D
 }
 
 /**
- * Compute cover-fit scale with letterboxing so the full logical frame stays
- * visible and centered inside an arbitrary screen size.
+ * Compute cover-fit scale so the logical frame fully covers the screen
+ * (no empty bars). Content may crop on non-matching aspect ratios.
  */
 export function fitLogicalViewport(
   screenWidth: number,
@@ -34,7 +44,8 @@ export function fitLogicalViewport(
 ): LetterboxTransform {
   const width = Math.max(1, screenWidth)
   const height = Math.max(1, screenHeight)
-  const scale = Math.min(width / logicalWidth, height / logicalHeight)
+  // Cover (object-fit: cover) — fill canvas, crop edges if needed.
+  const scale = Math.max(width / logicalWidth, height / logicalHeight)
   const contentW = logicalWidth * scale
   const contentH = logicalHeight * scale
   return {

@@ -15,11 +15,16 @@
 
 export const GARDEN_LAYER_ASSET_ALIASES = {
   sky: "bg_sky_day",
+  sun: "bg_sun_glow",
+  cloud01: "bg_cloud_01",
+  cloud02: "bg_cloud_02",
+  cloud03: "bg_cloud_03",
   distantHills: "bg_hill_back_01",
   distantBushes: "bg_bush_back_01",
   midTrees: "bg_tree_mid_01",
   fence: "env_fence_white",
   grass: "env_grass_base",
+  grassDetail: "env_grass_detail_01",
   soilPlots: "env_soil_plot_01",
   foregroundLeafLeft: "env_foreground_leaf_left",
   foregroundLeafRight: "env_foreground_leaf_right",

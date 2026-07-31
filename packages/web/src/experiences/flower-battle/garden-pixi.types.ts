@@ -137,11 +137,13 @@ export interface GardenBattleCanvasHostProps {
 }
 
 /**
- * Semantic canvas clear color (warm paper / field surface).
+ * Semantic canvas clear color — sky token so any uncovered pixel matches the
+ * garden sky (avoids cream/white flash between layers or on cover-crop edges).
  * Resolved to a Pixi 0xRRGGBB via resolveThemeTokenColor before Application init.
  * Explicit numeric `options.background` bypasses this lookup.
  */
-export const GARDEN_CANVAS_BACKGROUND = "--surface-2" satisfies CssTokenName
+export const GARDEN_CANVAS_BACKGROUND =
+  "--flower-battle-sky" satisfies CssTokenName
 
 /** Creates a no-op scene graph placeholder until WP-05. */
 export function createEmptyGardenScene(): GardenScene {

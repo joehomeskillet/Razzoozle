@@ -109,12 +109,12 @@ function createAppFake() {
 }
 
 describe("Flower Battle host memory-leak guard", () => {
-  const browser = createBrowserFake()
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
   it("disposes the Application with recursive texture cleanup on every cycle", async () => {
+    const browser = createBrowserFake()
     const { app, destroy } = createAppFake()
     const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
     const createScene = vi.fn(() => createEmptyGardenScene())
@@ -148,6 +148,7 @@ describe("Flower Battle host memory-leak guard", () => {
   })
 
   it("never leaves a ResizeObserver or visibility listener alive after dispose", async () => {
+    const browser = createBrowserFake()
     const sceneDestroy = vi.fn()
     const scene: GardenScene = {
       updateLayout: vi.fn(),
@@ -178,6 +179,7 @@ describe("Flower Battle host memory-leak guard", () => {
   })
 
   it("treats dispose as idempotent — repeated calls do not re-trigger destroy", async () => {
+    const browser = createBrowserFake()
     const { app, destroy } = createAppFake()
     const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
     const createScene = vi.fn(() => createEmptyGardenScene())
@@ -202,6 +204,7 @@ describe("Flower Battle host memory-leak guard", () => {
   })
 
   it("does not retain canvas references after unmount", async () => {
+    const browser = createBrowserFake()
     const { app } = createAppFake()
     const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
     const createScene = vi.fn(() => createEmptyGardenScene())
