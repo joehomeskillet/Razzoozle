@@ -19,7 +19,10 @@ vi.mock("motion/react", () => ({
       },
     }
   },
-  animate: vi.fn(() => ({ stop: vi.fn(), then: (fn: () => void) => Promise.resolve().then(fn) })),
+  animate: vi.fn(() => ({
+    stop: vi.fn(),
+    then: (fn: () => void) => Promise.resolve().then(fn),
+  })),
   motion: {
     g: ({
       children,
@@ -131,9 +134,8 @@ describe("FlowerGardenScene", () => {
 
   it("caps the lone slot's width in a sparse (0–1 team) layout so one plant never dwarfs the scene (WP-958D)", () => {
     const html = renderScene(1)
-    const slotMatch = html.match(
-      /data-testid="garden-team-slot-0"[^>]*class="([^"]*)"/,
-    )
+    const slotMatch =
+      /data-testid="garden-team-slot-0"[^>]*class="([^"]*)"/.exec(html)
     expect(slotMatch).not.toBeNull()
     // Container-relative (cqw) so the cap scales with the scene, not px.
     expect(slotMatch![1]).toMatch(/max-w-\[\d+cqw\]/)
@@ -143,9 +145,9 @@ describe("FlowerGardenScene", () => {
     for (const teamCount of [2, 3, 4]) {
       const html = renderScene(teamCount)
       for (let index = 0; index < teamCount; index += 1) {
-        const slotMatch = html.match(
-          new RegExp(`data-testid="garden-team-slot-${index}"[^>]*class="([^"]*)"`),
-        )
+        const slotMatch = new RegExp(
+          `data-testid="garden-team-slot-${index}"[^>]*class="([^"]*)"`,
+        ).exec(html)
         expect(slotMatch).not.toBeNull()
         expect(slotMatch![1]).not.toMatch(/max-w-/)
         expect(slotMatch![1]).toMatch(/flex-1/)
@@ -155,9 +157,8 @@ describe("FlowerGardenScene", () => {
 
   it("renders a single opaque full-scene backdrop behind hud/background/actors so app icons never show through (WP-958D)", () => {
     const html = renderScene(1)
-    const backdropMatch = html.match(
-      /data-testid="garden-scene-backdrop"[^>]*class="([^"]*)"/,
-    )
+    const backdropMatch =
+      /data-testid="garden-scene-backdrop"[^>]*class="([^"]*)"/.exec(html)
     expect(backdropMatch).not.toBeNull()
     expect(backdropMatch![1]).toMatch(/\binset-0\b/)
     expect(backdropMatch![1]).not.toMatch(/bg-\S+\/\d+/)

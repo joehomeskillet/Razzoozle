@@ -432,6 +432,8 @@ describe("attachGardenPixiApplication", () => {
 
     for (let i = 0; i < 20; i++) {
       const { app, destroy } = createAppFake()
+      let iterationDestroyCount = 0
+      const iterationTextureDestroyFlags: typeof textureDestroyFlags = []
       destroy.mockImplementation(
         (
           _renderer?: boolean | { removeView?: boolean },
@@ -441,8 +443,8 @@ describe("attachGardenPixiApplication", () => {
             textureSource?: boolean
           },
         ) => {
-          destroyCount += 1
-          if (options) textureDestroyFlags.push(options)
+          iterationDestroyCount += 1
+          if (options) iterationTextureDestroyFlags.push(options)
         },
       )
       const createApplication: CreateGardenPixiApplication = vi.fn(
@@ -464,6 +466,8 @@ describe("attachGardenPixiApplication", () => {
       )
       dispose()
       dispose() // idempotent
+      destroyCount += iterationDestroyCount
+      textureDestroyFlags.push(...iterationTextureDestroyFlags)
     }
 
     expect(destroyCount).toBe(20)

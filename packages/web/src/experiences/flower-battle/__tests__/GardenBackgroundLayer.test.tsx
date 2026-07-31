@@ -29,7 +29,10 @@ const ALL_CATALOG_IDS = [
   ...GARDEN_DISTANT_FEATURES,
 ]
 
-const SEEDS_100 = Array.from({ length: 100 }, (_, index) => `garden-bg-seed-${index}`)
+const SEEDS_100 = Array.from(
+  { length: 100 },
+  (_, index) => `garden-bg-seed-${index}`,
+)
 
 describe("GardenBackgroundLayer", () => {
   it("renders the composed background container with recipe metadata", () => {
@@ -66,13 +69,18 @@ describe("GardenBackgroundLayer", () => {
   })
 
   it("renders the sky layer fully opaque (no translucent bg-*/NN utility) so the app-wide icon backdrop never shows through", () => {
-    for (const seed of ["opacity-check-a", "opacity-check-b", "opacity-check-c"]) {
+    for (const seed of [
+      "opacity-check-a",
+      "opacity-check-b",
+      "opacity-check-c",
+    ]) {
       const html = renderToStaticMarkup(
         <GardenBackgroundLayer seed={seed} recipeVersion={1} />,
       )
-      const skyMatch = html.match(
-        /data-testid="garden-catalog-[a-z-]+"[^>]*data-layer="sky"[^>]*class="([^"]*)"/,
-      )
+      const skyMatch =
+        /data-testid="garden-catalog-[a-z-]+"[^>]*data-layer="sky"[^>]*class="([^"]*)"/.exec(
+          html,
+        )
       expect(skyMatch).not.toBeNull()
       expect(skyMatch![1]).not.toMatch(/bg-\S+\/\d+/)
       expect(skyMatch![1]).toMatch(/\bbg-\S+/)

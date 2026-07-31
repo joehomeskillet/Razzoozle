@@ -19,7 +19,10 @@ vi.mock("motion/react", () => ({
       },
     }
   },
-  animate: vi.fn(() => ({ stop: vi.fn(), then: (fn: () => void) => Promise.resolve().then(fn) })),
+  animate: vi.fn(() => ({
+    stop: vi.fn(),
+    then: (fn: () => void) => Promise.resolve().then(fn),
+  })),
   motion: {
     g: ({
       children,
@@ -123,7 +126,9 @@ describe("FlowerBattleDisplay", () => {
 
   it("threads answered/total into the presenter HUD answer counter", () => {
     const html = renderToStaticMarkup(
-      <FlowerBattleDisplay data={flowerBattleEnvelope({ answered: 4, total: 8 })} />,
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ answered: 4, total: 8 })}
+      />,
     )
 
     expect(html).toContain('data-testid="hud-answer-counter"')
@@ -183,7 +188,8 @@ describe("FlowerBattleDisplay", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
-    const rootMatch = html.match(/data-testid="flower-battle-display"[^>]*class="([^"]*)"/)
+    const rootMatch =
+      /data-testid="flower-battle-display"[^>]*class="([^"]*)"/.exec(html)
     expect(rootMatch).not.toBeNull()
     expect(rootMatch![1]).toContain("overflow-hidden")
   })
@@ -204,7 +210,8 @@ describe("FlowerBattleDisplay", () => {
     // instead of the HUD floating on an absolute inset-0 overlay whose
     // height depended on an ancestor chain that .display-stage doesn't
     // always get (root-caused live on /party/manager, WP-958C).
-    const rootMatch = html.match(/data-testid="flower-battle-display"[^>]*class="([^"]*)"/)
+    const rootMatch =
+      /data-testid="flower-battle-display"[^>]*class="([^"]*)"/.exec(html)
     expect(rootMatch).not.toBeNull()
     expect(rootMatch![1]).toContain("flex")
     expect(rootMatch![1]).toContain("flex-col")
@@ -212,9 +219,8 @@ describe("FlowerBattleDisplay", () => {
 
     // canvas host grows to fill whatever space the HUD's natural height
     // leaves behind, and may shrink below its own content size (min-h-0).
-    const hostMatch = html.match(
-      /data-testid="garden-battle-canvas-host"[^>]*class="([^"]*)"/,
-    )
+    const hostMatch =
+      /data-testid="garden-battle-canvas-host"[^>]*class="([^"]*)"/.exec(html)
     expect(hostMatch).not.toBeNull()
     expect(hostMatch![1]).toContain("flex-1")
     expect(hostMatch![1]).toContain("min-h-0")
@@ -222,7 +228,8 @@ describe("FlowerBattleDisplay", () => {
     // the HUD (and the team-meter row inside it) is a normal flow child,
     // not an absolute overlay — that absolute positioning is exactly what
     // let it escape the visible box when the ancestor height chain broke.
-    const hudMatch = html.match(/data-testid="flower-battle-display-hud"[^>]*class="([^"]*)"/)
+    const hudMatch =
+      /data-testid="flower-battle-display-hud"[^>]*class="([^"]*)"/.exec(html)
     expect(hudMatch).not.toBeNull()
     expect(hudMatch![1]).not.toContain("absolute")
     expect(hudMatch![1]).not.toContain("inset-0")
