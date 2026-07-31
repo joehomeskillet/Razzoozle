@@ -92,10 +92,6 @@ export const useManagerGameSession = (
       setStatus(reconnectStatus.name, reconnectStatus.data)
       setPlayers(players)
       setQuestionStates(currentQuestion)
-      // Drop any pre-reconnect envelope; WP #939B/#959 server resends the
-      // current game:experience to THIS socket right after SUCCESS_RECONNECT
-      // (single-socket, no revision bump). Live transitions keep the room.
-      setExperienceTransition(null)
     },
   )
 
