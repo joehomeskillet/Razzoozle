@@ -1,0 +1,82 @@
+<!--
+  fence-white-01.svg  - cartoon white picket fence (frontal view).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 1920x200. Repeated picket posts with two horizontal rails.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g id="fence-white">
+    <!-- horizontal rails (behind pickets) -->
+    <rect x="0" y="100" width="1920" height="14" fill="currentColor" opacity="0.92" />
+    <rect x="0" y="148" width="1920" height="12" fill="currentColor" opacity="0.92" />
+    <!-- picket posts (32 pickets across 1920 = 60px spacing) -->
+    <g fill="currentColor" opacity="0.98">
+      <path d="M 8 70 L 36 70 L 36 200 L 8 200 Z" />
+      <path d="M 68 70 L 96 70 L 96 200 L 68 200 Z" />
+      <path d="M 128 70 L 156 70 L 156 200 L 128 200 Z" />
+      <path d="M 188 70 L 216 70 L 216 200 L 188 200 Z" />
+      <path d="M 248 70 L 276 70 L 276 200 L 248 200 Z" />
+      <path d="M 308 70 L 336 70 L 336 200 L 308 200 Z" />
+      <path d="M 368 70 L 396 70 L 396 200 L 368 200 Z" />
+      <path d="M 428 70 L 456 70 L 456 200 L 428 200 Z" />
+      <path d="M 488 70 L 516 70 L 516 200 L 488 200 Z" />
+      <path d="M 548 70 L 576 70 L 576 200 L 548 200 Z" />
+      <path d="M 608 70 L 636 70 L 636 200 L 608 200 Z" />
+      <path d="M 668 70 L 696 70 L 696 200 L 668 200 Z" />
+      <path d="M 728 70 L 756 70 L 756 200 L 728 200 Z" />
+      <path d="M 788 70 L 816 70 L 816 200 L 788 200 Z" />
+      <path d="M 848 70 L 876 70 L 876 200 L 848 200 Z" />
+      <path d="M 908 70 L 936 70 L 936 200 L 908 200 Z" />
+      <path d="M 968 70 L 996 70 L 996 200 L 968 200 Z" />
+      <path d="M 1028 70 L 1056 70 L 1056 200 L 1028 200 Z" />
+      <path d="M 1088 70 L 1116 70 L 1116 200 L 1088 200 Z" />
+      <path d="M 1148 70 L 1176 70 L 1176 200 L 1148 200 Z" />
+      <path d="M 1208 70 L 1236 70 L 1236 200 L 1208 200 Z" />
+      <path d="M 1268 70 L 1296 70 L 1296 200 L 1268 200 Z" />
+      <path d="M 1328 70 L 1356 70 L 1356 200 L 1328 200 Z" />
+      <path d="M 1388 70 L 1416 70 L 1416 200 L 1388 200 Z" />
+      <path d="M 1448 70 L 1476 70 L 1476 200 L 1448 200 Z" />
+      <path d="M 1508 70 L 1536 70 L 1536 200 L 1508 200 Z" />
+      <path d="M 1568 70 L 1596 70 L 1596 200 L 1568 200 Z" />
+      <path d="M 1628 70 L 1656 70 L 1656 200 L 1628 200 Z" />
+      <path d="M 1688 70 L 1716 70 L 1716 200 L 1688 200 Z" />
+      <path d="M 1748 70 L 1776 70 L 1776 200 L 1748 200 Z" />
+      <path d="M 1808 70 L 1836 70 L 1836 200 L 1808 200 Z" />
+      <path d="M 1868 70 L 1896 70 L 1896 200 L 1868 200 Z" />
+    </g>
+    <!-- picket tops: rounded tips overlay (cartoon) -->
+    <g fill="currentColor" opacity="1">
+      <circle cx="22" cy="68" r="14" />
+      <circle cx="82" cy="68" r="14" />
+      <circle cx="142" cy="68" r="14" />
+      <circle cx="202" cy="68" r="14" />
+      <circle cx="262" cy="68" r="14" />
+      <circle cx="322" cy="68" r="14" />
+      <circle cx="382" cy="68" r="14" />
+      <circle cx="442" cy="68" r="14" />
+      <circle cx="502" cy="68" r="14" />
+      <circle cx="562" cy="68" r="14" />
+      <circle cx="622" cy="68" r="14" />
+      <circle cx="682" cy="68" r="14" />
+      <circle cx="742" cy="68" r="14" />
+      <circle cx="802" cy="68" r="14" />
+      <circle cx="862" cy="68" r="14" />
+      <circle cx="922" cy="68" r="14" />
+      <circle cx="982" cy="68" r="14" />
+      <circle cx="1042" cy="68" r="14" />
+      <circle cx="1102" cy="68" r="14" />
+      <circle cx="1162" cy="68" r="14" />
+      <circle cx="1222" cy="68" r="14" />
+      <circle cx="1282" cy="68" r="14" />
+      <circle cx="1342" cy="68" r="14" />
+      <circle cx="1402" cy="68" r="14" />
+      <circle cx="1462" cy="68" r="14" />
+      <circle cx="1522" cy="68" r="14" />
+      <circle cx="1582" cy="68" r="14" />
+      <circle cx="1642" cy="68" r="14" />
+      <circle cx="1702" cy="68" r="14" />
+      <circle cx="1762" cy="68" r="14" />
+      <circle cx="1822" cy="68" r="14" />
+      <circle cx="1882" cy="68" r="14" />
+    </g>
+  </g>
+</svg>

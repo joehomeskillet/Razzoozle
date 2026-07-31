@@ -1,0 +1,43 @@
+<!--
+  mid-trees-01.svg  - row of cartoon tree crowns (mid layer, in front of bushes).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 1920x350. Tree trunks visible behind/below the crowns.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 350" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g id="mid-trees">
+    <!-- ground line base -->
+    <rect x="0" y="320" width="1920" height="30" fill="currentColor" opacity="0.5" />
+    <!-- trunks -->
+    <g fill="currentColor" opacity="0.55">
+      <rect x="180" y="260" width="20" height="80" rx="3" />
+      <rect x="540" y="240" width="22" height="100" rx="3" />
+      <rect x="900" y="220" width="24" height="120" rx="3" />
+      <rect x="1280" y="240" width="22" height="100" rx="3" />
+      <rect x="1640" y="260" width="20" height="80" rx="3" />
+    </g>
+    <!-- crowns (rounded composite clouds) -->
+    <g fill="currentColor" opacity="0.92">
+      <!-- tree 1 -->
+      <ellipse cx="190" cy="240" rx="80" ry="70" />
+      <ellipse cx="160" cy="220" rx="44" ry="38" />
+      <ellipse cx="220" cy="218" rx="48" ry="42" />
+      <!-- tree 2 (taller) -->
+      <ellipse cx="551" cy="216" rx="100" ry="86" />
+      <ellipse cx="510" cy="190" rx="58" ry="48" />
+      <ellipse cx="592" cy="194" rx="62" ry="52" />
+      <!-- tree 3 (largest) -->
+      <ellipse cx="912" cy="188" rx="120" ry="100" />
+      <ellipse cx="860" cy="158" rx="64" ry="56" />
+      <ellipse cx="962" cy="160" rx="70" ry="60" />
+      <ellipse cx="912" cy="138" rx="50" ry="40" />
+      <!-- tree 4 -->
+      <ellipse cx="1291" cy="216" rx="100" ry="86" />
+      <ellipse cx="1252" cy="194" rx="56" ry="48" />
+      <ellipse cx="1332" cy="194" rx="60" ry="52" />
+      <!-- tree 5 -->
+      <ellipse cx="1650" cy="240" rx="86" ry="74" />
+      <ellipse cx="1620" cy="220" rx="46" ry="40" />
+      <ellipse cx="1680" cy="218" rx="50" ry="44" />
+    </g>
+  </g>
+</svg>

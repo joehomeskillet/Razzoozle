@@ -1,0 +1,38 @@
+<!--
+  sun-glow.svg  - warm cartoon sun with 12 rays + central glow.
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 256x256. Rays radiate from center (128,128).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+  <defs>
+    <radialGradient id="sun-glow-halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.5" />
+      <stop offset="60%" stop-color="currentColor" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <g id="sun-glow">
+    <!-- soft halo -->
+    <circle cx="128" cy="128" r="120" fill="url(#sun-glow-halo)" />
+    <!-- 12 rays (alternating long/short for variety) -->
+    <g id="sun-rays" fill="currentColor" opacity="0.85">
+      <path d="M 128 16 L 122 50 L 134 50 Z" />
+      <path d="M 128 240 L 122 206 L 134 206 Z" />
+      <path d="M 16 128 L 50 122 L 50 134 Z" />
+      <path d="M 240 128 L 206 122 L 206 134 Z" />
+      <path d="M 50 50 L 70 60 L 60 70 Z" />
+      <path d="M 206 50 L 186 60 L 196 70 Z" />
+      <path d="M 50 206 L 70 196 L 60 186 Z" />
+      <path d="M 206 206 L 186 196 L 196 186 Z" />
+      <!-- diagonal rays (shorter) -->
+      <path d="M 96 24 L 100 56 L 110 52 Z" opacity="0.7" />
+      <path d="M 160 24 L 156 56 L 146 52 Z" opacity="0.7" />
+      <path d="M 96 232 L 100 200 L 110 204 Z" opacity="0.7" />
+      <path d="M 160 232 L 156 200 L 146 204 Z" opacity="0.7" />
+    </g>
+    <!-- sun body -->
+    <circle cx="128" cy="128" r="56" fill="currentColor" opacity="0.98" />
+    <!-- inner highlight -->
+    <circle cx="112" cy="112" r="18" fill="currentColor" opacity="0.45" />
+  </g>
+</svg>

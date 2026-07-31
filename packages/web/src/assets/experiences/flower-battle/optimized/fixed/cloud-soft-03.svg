@@ -1,0 +1,17 @@
+<!--
+  cloud-soft-03.svg  - wide soft cartoon cloud (6 overlapping circles + flat base).
+  Self-generated, Razzoozle-internal CC0.
+  Dimensions: 360x140.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" aria-hidden="true">
+  <g id="cloud-soft-03">
+    <circle cx="60" cy="70" r="40" fill="currentColor" opacity="0.95" />
+    <circle cx="120" cy="50" r="48" fill="currentColor" opacity="0.95" />
+    <circle cx="186" cy="42" r="44" fill="currentColor" opacity="0.95" />
+    <circle cx="246" cy="56" r="38" fill="currentColor" opacity="0.95" />
+    <circle cx="296" cy="72" r="32" fill="currentColor" opacity="0.95" />
+    <circle cx="330" cy="84" r="22" fill="currentColor" opacity="0.95" />
+    <!-- soft underside -->
+    <ellipse cx="190" cy="108" rx="150" ry="14" fill="currentColor" opacity="0.65" />
+  </g>
+</svg>
