@@ -34,6 +34,28 @@ export interface ResolveThemeColorOptions {
   }
 }
 
+/** Clamp a 0–255 channel after rounding. */
+function clampByte(n: number): number {
+  return Math.round(Math.min(255, Math.max(0, n)))
+}
+
+/**
+ * CSS Color 4 `color(srgb …)` channel: unitless number in 0–1, or percentage.
+ * Out-of-range values are clamped (browser-serialised mixes can slightly overflow).
+ */
+function parseSrgbChannel(raw: string): number | null {
+  const token = raw.trim()
+  if (!token) return null
+  if (token.endsWith("%")) {
+    const pct = Number.parseFloat(token.slice(0, -1))
+    if (!Number.isFinite(pct)) return null
+    return clampByte((pct / 100) * 255)
+  }
+  const n = Number.parseFloat(token)
+  if (!Number.isFinite(n)) return null
+  return clampByte(n * 255)
+}
+
 function parseCssColorToRgb(
   raw: string,
 ): { r: number; g: number; b: number } | null {
@@ -66,13 +88,73 @@ function parseCssColorToRgb(
     const b = Number(rgbMatch[3])
     if (![r, g, b].every((n) => Number.isFinite(n))) return null
     return {
-      r: Math.round(Math.min(255, Math.max(0, r))),
-      g: Math.round(Math.min(255, Math.max(0, g))),
-      b: Math.round(Math.min(255, Math.max(0, b))),
+      r: clampByte(r),
+      g: clampByte(g),
+      b: clampByte(b),
     }
   }
 
+  // Chromium serialises resolved color-mix() as color(srgb R G B [/ A]).
+  // Only srgb is accepted — other color spaces stay invalid (no silent convert).
+  const srgbMatch =
+    /^color\(\s*srgb\s+([^\s/]+)\s+([^\s/]+)\s+([^\s/]+)(?:\s*\/\s*[^)]+)?\s*\)$/.exec(
+      value,
+    )
+  if (srgbMatch) {
+    const r = parseSrgbChannel(srgbMatch[1]!)
+    const g = parseSrgbChannel(srgbMatch[2]!)
+    const b = parseSrgbChannel(srgbMatch[3]!)
+    if (r === null || g === null || b === null) return null
+    return { r, g, b }
+  }
+
   return null
+}
+
+/**
+ * Force used-value resolution for var()/color-mix() custom properties.
+ * Mounts a temporary probe under documentElement, reads computed `color`,
+ * and always removes the probe (no DOM leak).
+ */
+function normalizeCssColorViaBrowser(
+  cssValue: string,
+  element: Element,
+  getStyle: (elt: Element) => { getPropertyValue: (prop: string) => string },
+): string | null {
+  const doc =
+    element.ownerDocument ?? (typeof document !== "undefined" ? document : null)
+  if (!doc || typeof doc.createElement !== "function") return null
+
+  const probe = doc.createElement("span")
+  const styled = probe as HTMLElement
+  if (!styled.style || typeof styled.style.setProperty !== "function") {
+    return null
+  }
+  styled.style.setProperty("color", cssValue)
+  if (typeof probe.setAttribute === "function") {
+    probe.setAttribute("data-theme-color-probe", "")
+  }
+
+  const mount =
+    doc.documentElement ??
+    (typeof document !== "undefined" ? document.documentElement : null)
+  if (mount && typeof mount.appendChild === "function") {
+    mount.appendChild(probe)
+  }
+
+  try {
+    const used = getStyle(probe).getPropertyValue("color").trim()
+    return used || null
+  } finally {
+    if (typeof probe.remove === "function") {
+      probe.remove()
+    } else if (
+      probe.parentNode &&
+      typeof probe.parentNode.removeChild === "function"
+    ) {
+      probe.parentNode.removeChild(probe)
+    }
+  }
 }
 
 export function cssColorToPixiNumber(raw: string): number | null {
@@ -119,7 +201,17 @@ export function resolveThemeTokenColor(
     throw new ThemeTokenColorError(token, "empty computed value")
   }
 
-  const pixi = cssColorToPixiNumber(raw)
+  let pixi = cssColorToPixiNumber(raw)
+  if (pixi === null) {
+    // Custom props often keep specified color-mix()/var(); let the browser
+    // serialise the used value (typically color(srgb …) or rgb(…)).
+    const normalised =
+      normalizeCssColorViaBrowser(cssVarExpr, element, getStyle) ??
+      normalizeCssColorViaBrowser(raw, element, getStyle)
+    if (normalised) {
+      pixi = cssColorToPixiNumber(normalised)
+    }
+  }
   if (pixi === null) {
     throw new ThemeTokenColorError(token, `invalid color "${raw}"`)
   }

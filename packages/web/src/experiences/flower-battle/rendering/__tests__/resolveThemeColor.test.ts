@@ -1,13 +1,19 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import type { CssTokenName } from "@razzoozle/common/theme-tokens"
 
+import { GARDEN_PALETTE_TOKENS, resolveGardenPalette } from "../gardenPalette"
 import {
   cssColorToPixiNumber,
   resolveThemeTokenColor,
   ThemeTokenColorError,
   THEME_TOKEN_COLOR_ERROR,
 } from "../resolveThemeColor"
+
+/** Chromium getComputedStyle serialisation of --team-green-ring color-mix. */
+const CHROMIUM_TEAM_GREEN_RING_SRGB = "color(srgb 0.0906667 0.525333 0.250667)"
+/** Deterministic 0xRRGGBB for the Chromium sample above (round channels). */
+const TEAM_GREEN_RING_PIXI = 0x178640
 
 describe("cssColorToPixiNumber", () => {
   it("parses hex and rgb", () => {
@@ -16,14 +22,40 @@ describe("cssColorToPixiNumber", () => {
     expect(cssColorToPixiNumber("rgb(255, 0, 170)")).toBe(0xff00aa)
   })
 
+  it("parses Chromium color(srgb ...) from color-mix resolution", () => {
+    // Real Chrome headless: color-mix(in srgb, #22c55e, black 32%) → this form.
+    expect(cssColorToPixiNumber(CHROMIUM_TEAM_GREEN_RING_SRGB)).toBe(
+      TEAM_GREEN_RING_PIXI,
+    )
+  })
+
+  it("parses color(srgb) channel bounds and rounding", () => {
+    expect(cssColorToPixiNumber("color(srgb 0 0 0)")).toBe(0x000000)
+    expect(cssColorToPixiNumber("color(srgb 1 1 1)")).toBe(0xffffff)
+    // 0.5 * 255 = 127.5 → 128 (Math.round)
+    expect(cssColorToPixiNumber("color(srgb 0.5 0.5 0.5)")).toBe(0x808080)
+    // clamp out-of-range channels
+    expect(cssColorToPixiNumber("color(srgb -0.2 1.5 0.25)")).toBe(0x00ff40)
+    // alpha ignored for Pixi RGB
+    expect(cssColorToPixiNumber("color(srgb 1 0 0 / 0.4)")).toBe(0xff0000)
+    // percentage form
+    expect(cssColorToPixiNumber("color(srgb 100% 0% 50%)")).toBe(0xff0080)
+  })
+
   it("rejects invalid input", () => {
     expect(cssColorToPixiNumber("")).toBeNull()
     expect(cssColorToPixiNumber("not-a-color")).toBeNull()
+    expect(
+      cssColorToPixiNumber("color-mix(in srgb, #22c55e, black 32%)"),
+    ).toBeNull()
+    expect(cssColorToPixiNumber("color(display-p3 0.1 0.2 0.3)")).toBeNull()
+    expect(cssColorToPixiNumber("color(srgb 0.1 0.2)")).toBeNull()
   })
 })
 
 describe("resolveThemeTokenColor", () => {
   const token = "--surface-2" as CssTokenName
+  const ringToken = "--team-green-ring" as CssTokenName
 
   it("resolves via getThemeTokenCssVar + getComputedStyle", () => {
     const element = {} as Element
@@ -37,6 +69,19 @@ describe("resolveThemeTokenColor", () => {
       }),
     })
     expect(color).toBe(0xaabbcc)
+  })
+
+  it("resolves color(srgb ...) from DI computed style (browser-normalised form)", () => {
+    const color = resolveThemeTokenColor(ringToken, {
+      element: {} as Element,
+      getComputedStyleFn: () => ({
+        getPropertyValue: (prop: string) => {
+          expect(prop).toBe("--team-green-ring")
+          return CHROMIUM_TEAM_GREEN_RING_SRGB
+        },
+      }),
+    })
+    expect(color).toBe(TEAM_GREEN_RING_PIXI)
   })
 
   it("throws controlled error on empty token value", () => {
@@ -72,5 +117,165 @@ describe("resolveThemeTokenColor", () => {
         }),
       }),
     ).toThrow(/invalid color/)
+  })
+
+  it("keeps ThemeTokenColorError for unresolved color-mix without browser probe", () => {
+    // SSR / node: getPropertyValue may still return color-mix(...); without a
+    // document probe the value must not invent a production fallback colour.
+    expect(() =>
+      resolveThemeTokenColor(ringToken, {
+        element: {} as Element,
+        getComputedStyleFn: () => ({
+          getPropertyValue: () => "color-mix(in srgb, #22c55e, black 32%)",
+        }),
+      }),
+    ).toThrow(ThemeTokenColorError)
+  })
+})
+
+describe("browser probe normalisation (DI document)", () => {
+  type FakeNode = {
+    style: { setProperty: (k: string, v: string) => void; color?: string }
+    remove: () => void
+    setAttribute: (k: string, v: string) => void
+    parent: FakeNode | null
+  }
+
+  let liveProbes: FakeNode[]
+
+  afterEach(() => {
+    // Ensure no prior test left a global document stub.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (globalThis as any).document
+  })
+
+  function installProbeDocument(resolvedUsedColor: string) {
+    liveProbes = []
+    const documentElement: FakeNode & {
+      appendChild: (n: FakeNode) => FakeNode
+      querySelectorAll: (sel: string) => FakeNode[]
+    } = {
+      style: { setProperty: () => undefined },
+      remove: () => undefined,
+      setAttribute: () => undefined,
+      parent: null,
+      appendChild(node: FakeNode) {
+        node.parent = documentElement
+        liveProbes.push(node)
+        return node
+      },
+      querySelectorAll(sel: string) {
+        if (sel.includes("data-theme-color-probe")) return [...liveProbes]
+        return []
+      },
+    }
+
+    const doc = {
+      documentElement,
+      createElement(_tag: string): FakeNode {
+        const node: FakeNode = {
+          style: {
+            color: "",
+            setProperty(k: string, v: string) {
+              if (k === "color") this.color = v
+            },
+          },
+          parent: null,
+          setAttribute() {
+            /* marker for leak checks */
+          },
+          remove() {
+            liveProbes = liveProbes.filter((p) => p !== node)
+            node.parent = null
+          },
+        }
+        return node
+      },
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(globalThis as any).document = doc
+
+    const getComputedStyleFn = (elt: Element) => ({
+      getPropertyValue: (prop: string) => {
+        if (prop === "--team-green-ring") {
+          // Specified custom property form (Chromium).
+          return "color-mix(in srgb, #22c55e, black 32%)"
+        }
+        if (prop === "color") {
+          // Used value after browser resolves var()/color-mix on the probe.
+          const fake = elt as unknown as FakeNode
+          if (
+            fake.style?.color?.includes("team-green-ring") ||
+            fake.style?.color?.includes("color-mix")
+          ) {
+            return resolvedUsedColor
+          }
+          return resolvedUsedColor
+        }
+        return ""
+      },
+    })
+
+    return {
+      element: documentElement as unknown as Element,
+      getComputedStyleFn,
+      liveCount: () => liveProbes.length,
+    }
+  }
+
+  it("normalises color-mix custom props via probe to color(srgb) and cleans up", () => {
+    const { element, getComputedStyleFn, liveCount } = installProbeDocument(
+      CHROMIUM_TEAM_GREEN_RING_SRGB,
+    )
+    const color = resolveThemeTokenColor("--team-green-ring" as CssTokenName, {
+      element,
+      getComputedStyleFn,
+    })
+    expect(color).toBe(TEAM_GREEN_RING_PIXI)
+    expect(liveCount()).toBe(0)
+  })
+})
+
+describe("resolveGardenPalette with productive token values", () => {
+  /**
+   * Productive defaults from packages/web/src/index.css (:root / @theme).
+   * Ring tokens use the Chromium-resolved color(srgb) form of color-mix.
+   */
+  const PRODUCTIVE: Record<string, string> = {
+    "--surface-2": "#f9fafb",
+    "--team-green": "#22c55e",
+    "--state-correct": "#22c55e",
+    "--surface": "#FFFFFF",
+    "--team-green-ring": CHROMIUM_TEAM_GREEN_RING_SRGB,
+    "--color-field-cream": "#F4F1EA",
+    "--surface-muted": "#374151",
+    "--surface-3": "#f3f4f6",
+    "--status-online-text": "#166534",
+    "--status-online-bg": "#dcfce7",
+  }
+
+  it("resolves full garden palette including color-mix ring tokens", () => {
+    const palette = resolveGardenPalette((token) =>
+      resolveThemeTokenColor(token, {
+        element: {} as Element,
+        getComputedStyleFn: () => ({
+          getPropertyValue: (prop: string) => PRODUCTIVE[prop] ?? "",
+        }),
+      }),
+    )
+
+    expect(palette.sky).toBe(cssColorToPixiNumber("#f9fafb"))
+    expect(palette.hillsFar).toBe(cssColorToPixiNumber("#22c55e"))
+    expect(palette.midground).toBe(TEAM_GREEN_RING_PIXI)
+    expect(palette.plantLeaf).toBe(TEAM_GREEN_RING_PIXI)
+    // Every token key from the production map is present and finite.
+    for (const key of Object.keys(GARDEN_PALETTE_TOKENS) as Array<
+      keyof typeof palette
+    >) {
+      expect(Number.isFinite(palette[key])).toBe(true)
+      expect(palette[key]).toBeGreaterThanOrEqual(0)
+      expect(palette[key]).toBeLessThanOrEqual(0xffffff)
+    }
   })
 })
