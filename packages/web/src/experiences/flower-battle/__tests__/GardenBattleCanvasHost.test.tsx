@@ -79,9 +79,19 @@ import type {
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
-import { createEmptyGardenScene } from "../garden-pixi.types"
+import {
+  createEmptyGardenScene,
+  GARDEN_CANVAS_BACKGROUND,
+} from "../garden-pixi.types"
 import { createGardenScene } from "../rendering/GardenScene"
 import type { GardenPalette } from "../rendering/gardenPalette"
+import {
+  ThemeTokenColorError,
+  THEME_TOKEN_COLOR_ERROR,
+} from "../rendering/resolveThemeColor"
+
+/** Lifecycle-only numeric clear color — not a production hex fallback. */
+const TEST_CANVAS_BACKGROUND = 0x112233
 
 type StoredListener = EventListenerOrEventListenerObject
 
@@ -445,7 +455,11 @@ describe("attachGardenPixiApplication", () => {
 
       const { dispose } = await attachGardenPixiApplication(
         createCanvasFake(),
-        { createApplication, createScene },
+        {
+          createApplication,
+          createScene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
         browser.environment,
       )
       dispose()
@@ -477,6 +491,7 @@ describe("attachGardenPixiApplication", () => {
       {
         createApplication: async () => app,
         createScene: () => scene,
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
@@ -503,6 +518,7 @@ describe("attachGardenPixiApplication", () => {
       {
         createApplication: async () => app,
         createScene: () => createEmptyGardenScene(),
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
@@ -535,6 +551,7 @@ describe("attachGardenPixiApplication", () => {
       {
         createApplication: async () => app,
         createScene: () => createEmptyGardenScene(),
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
@@ -553,6 +570,7 @@ describe("attachGardenPixiApplication", () => {
         createApplication,
         // Lifecycle-only fake — avoid token-resolved production scene in node.
         createScene: () => createEmptyGardenScene(),
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
@@ -576,6 +594,7 @@ describe("attachGardenPixiApplication", () => {
       {
         createApplication,
         createScene: () => createEmptyGardenScene(),
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
@@ -595,6 +614,7 @@ describe("attachGardenPixiApplication", () => {
           createApplication: async () => {
             throw new Error("WebGL context lost")
           },
+          background: TEST_CANVAS_BACKGROUND,
         },
         browser.environment,
       ),
@@ -620,6 +640,7 @@ describe("attachGardenPixiApplication", () => {
           createScene: () => {
             throw sceneError
           },
+          background: TEST_CANVAS_BACKGROUND,
         },
         browser.environment,
       ),
@@ -642,12 +663,134 @@ describe("attachGardenPixiApplication", () => {
         createApplication: async () => app,
         createScene: () => scene,
         onReady,
+        background: TEST_CANVAS_BACKGROUND,
       },
       browser.environment,
     )
 
     expect(onReady).toHaveBeenCalledWith(app, scene)
     dispose()
+  })
+})
+
+describe("garden canvas background token", () => {
+  it("defaults to GARDEN_CANVAS_BACKGROUND token resolved before Pixi init", async () => {
+    expect(GARDEN_CANVAS_BACKGROUND).toBe("--surface-2")
+
+    const browser = createBrowserFake()
+    const createApplication = vi.fn(async () => createAppFake().app)
+    const prevGcs = globalThis.getComputedStyle
+    const prevDocument = globalThis.document
+
+    vi.stubGlobal(
+      "getComputedStyle",
+      () =>
+        ({
+          getPropertyValue: (prop: string) => {
+            expect(prop).toBe("--surface-2")
+            return "#f4f1ea"
+          },
+        }) as unknown as CSSStyleDeclaration,
+    )
+    vi.stubGlobal("document", {
+      documentElement: {},
+      visibilityState: "visible",
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })
+
+    try {
+      const { dispose } = await attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication,
+          createScene: () => createEmptyGardenScene(),
+        },
+        browser.environment,
+      )
+
+      expect(createApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ background: 0xf4f1ea }),
+      )
+      dispose()
+    } finally {
+      if (prevGcs) vi.stubGlobal("getComputedStyle", prevGcs)
+      if (prevDocument) vi.stubGlobal("document", prevDocument)
+      else vi.unstubAllGlobals()
+    }
+  })
+
+  it("explicit numeric options.background bypasses token lookup", async () => {
+    const browser = createBrowserFake()
+    const createApplication = vi.fn(async () => createAppFake().app)
+    const getPropertyValue = vi.fn(() => "#f4f1ea")
+
+    vi.stubGlobal(
+      "getComputedStyle",
+      () =>
+        ({
+          getPropertyValue,
+        }) as unknown as CSSStyleDeclaration,
+    )
+    vi.stubGlobal("document", {
+      documentElement: {},
+      visibilityState: "visible",
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })
+
+    try {
+      const override = 0xdeadbe
+      const { dispose } = await attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication,
+          createScene: () => createEmptyGardenScene(),
+          background: override,
+        },
+        browser.environment,
+      )
+
+      expect(createApplication).toHaveBeenCalledWith(
+        expect.objectContaining({ background: override }),
+      )
+      expect(getPropertyValue).not.toHaveBeenCalled()
+      dispose()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("unresolved token throws ThemeTokenColorError with no numeric fallback", async () => {
+    const browser = createBrowserFake()
+    const createApplication = vi.fn(async () => createAppFake().app)
+
+    // No getComputedStyle / document → controlled theme error before init.
+    vi.stubGlobal("getComputedStyle", undefined)
+    vi.stubGlobal("document", undefined)
+
+    try {
+      await expect(
+        attachGardenPixiApplication(
+          createCanvasFake(),
+          {
+            createApplication,
+            createScene: () => createEmptyGardenScene(),
+          },
+          browser.environment,
+        ),
+      ).rejects.toSatisfy((err: unknown) => {
+        expect(err).toBeInstanceOf(ThemeTokenColorError)
+        const e = err as ThemeTokenColorError
+        expect(e.code).toBe(THEME_TOKEN_COLOR_ERROR)
+        expect(e.token).toBe(GARDEN_CANVAS_BACKGROUND)
+        expect(e.message).toMatch(/unresolved|unavailable|no element/i)
+        return true
+      })
+      expect(createApplication).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
@@ -757,7 +900,11 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
       dispose,
     } = await attachGardenPixiApplication(
       createCanvasFake(),
-      { createApplication, createScene },
+      {
+        createApplication,
+        createScene,
+        background: TEST_CANVAS_BACKGROUND,
+      },
       browser.environment,
     )
 
@@ -874,7 +1021,11 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         teams: TEAMS.map((team) => ({ ...team })),
         quality: "high",
         phase: "question",
-        attachOptions: { createApplication, createScene },
+        attachOptions: {
+          createApplication,
+          createScene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
         environment: { ...browser.environment },
       }
 
@@ -906,7 +1057,11 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         ],
         quality: "high",
         phase: "reveal",
-        attachOptions: { createApplication, createScene },
+        attachOptions: {
+          createApplication,
+          createScene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
         environment: { ...browser.environment },
       }
 

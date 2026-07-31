@@ -4,6 +4,7 @@
  * Empty placeholder remains for tests that inject lifecycle-only fakes.
  */
 
+import type { CssTokenName } from "@razzoozle/common/theme-tokens"
 import type { ReactNode } from "react"
 import type { Application } from "pixi.js"
 
@@ -103,10 +104,11 @@ export interface GardenBattleCanvasHostProps {
 }
 
 /**
- * Temporary canvas clear color (warm paper). OK as numeric canvas fill;
- * CSS token mapping via getThemeTokenCssVar lands with theme wiring later.
+ * Semantic canvas clear color (warm paper / field surface).
+ * Resolved to a Pixi 0xRRGGBB via resolveThemeTokenColor before Application init.
+ * Explicit numeric `options.background` bypasses this lookup.
  */
-export const GARDEN_CANVAS_BACKGROUND = 0xf4f1ea
+export const GARDEN_CANVAS_BACKGROUND = "--surface-2" satisfies CssTokenName
 
 /** Creates a no-op scene graph placeholder until WP-05. */
 export function createEmptyGardenScene(): GardenScene {

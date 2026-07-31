@@ -16,6 +16,7 @@ import {
   type GardenScene,
 } from "./garden-pixi.types"
 import { createGardenScene } from "./rendering/GardenScene"
+import { resolveThemeTokenColor } from "./rendering/resolveThemeColor"
 
 /**
  * Production default scene factory (WP-PIX-05B).
@@ -116,7 +117,13 @@ export async function attachGardenPixiApplication(
   const createApplication =
     options.createApplication ?? createDefaultApplication
   const createScene = options.createScene ?? createDefaultGardenScene
-  const background = options.background ?? GARDEN_CANVAS_BACKGROUND
+  // Explicit numeric override bypasses theme lookup (tests / special hosts).
+  // Default path resolves --surface-2; unresolved tokens throw ThemeTokenColorError
+  // so the host can fall back to the static DOM garden (no hard-coded hex).
+  const background =
+    typeof options.background === "number"
+      ? options.background
+      : resolveThemeTokenColor(GARDEN_CANVAS_BACKGROUND)
   const antialias = options.antialias ?? true
 
   const prefersReducedMotion = environment.matchMedia(
