@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import type { ExperienceTransition } from "@razzoozle/common/types/game/experience"
 
 import { CURRENT_GARDEN_RECIPE_VERSION } from "./background"
@@ -14,23 +15,14 @@ export interface FlowerBattleDisplayProps {
  * the beamer/kiosk display route (WP-939C / WP-PIX-05B). Content-free: reads
  * only teams/background/progress/phase from the payload, never question text.
  *
- * Default path mounts the procedural Pixi garden via GardenBattleCanvasHost
- * (createGardenScene + updateSnapshot). quality="static" / init errors fall
- * back to deterministic FlowerGardenScene inside the host. HUD stays a
- * separate flow child.
+ * Immersive stage: full-bleed Pixi canvas at z=0; React HUD as absolute
+ * overlays (pointer-events only on interactive chips). Parent
+ * GameWrapper `presenterLayout="experience-immersive"` removes flow chrome
+ * so the body cream field never shows beside/under the game.
  *
  * Purely presentational — no local state. Every render reflects exactly the
  * latest envelope prop, so a reconnect that hands in a fresh envelope never
  * shows a stale mid-animation snapshot.
- *
- * WP-958C: scene and HUD stack as flex-column flow children (scene flex-1
- * min-h-0, HUD shrink-0) instead of an absolute-inset overlay. The overlay
- * relied on `.display-stage` resolving a definite height from its ancestor
- * chain; on routes where that chain is indefinite (e.g. /party/manager),
- * the absolutely positioned HUD fell back to its static position and
- * rendered its natural content height *below* the scene, pushing the
- * team-meter row past the viewport fold. Flow children can never escape
- * their flex container's box regardless of that chain.
  */
 export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
   const state =
@@ -48,17 +40,42 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
       data-phase={data.phase}
       data-flower-battle-phase={state?.phase}
       data-phase-duration-ms={data.phaseDurationMs}
-      className="display-stage flex h-full w-full flex-col overflow-hidden"
+      data-presenter-layout="experience-immersive"
+      className="display-stage relative h-full w-full overflow-hidden"
+      style={
+        {
+          // Defaults when parent shell has not set the experience safe-area
+          // contract (e.g. satellite without immersive presenterLayout).
+          "--experience-safe-top": "4.75rem",
+          "--experience-safe-bottom": "7.5rem",
+          "--experience-safe-left": "0.75rem",
+          "--experience-safe-right": "0.75rem",
+        } as CSSProperties
+      }
     >
+      {/* z=0 full-bleed game background — never a flow sibling under HUD */}
       <GardenBattleCanvasHost
         teams={teams}
         seed={seed}
         recipeVersion={recipeVersion}
         phase={data.phase}
-        className="min-h-0 flex-1"
+        className="absolute inset-0 z-0 h-full w-full"
       />
-      <div data-testid="flower-battle-display-hud" className="shrink-0">
+
+      {/* Decorative atmospheric padding — no pointer capture */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[5]"
+        data-testid="flower-battle-atmosphere-overlay"
+      />
+
+      {/* z=20 React HUD overlays — interactive chips re-enable pointer-events */}
+      <div
+        data-testid="flower-battle-display-hud"
+        className="pointer-events-none absolute inset-0 z-20"
+      >
         <FlowerBattlePresenterHud
+          variant="overlay"
           teams={teams}
           sunPoints={{}}
           answerCounter={{ answered, total }}

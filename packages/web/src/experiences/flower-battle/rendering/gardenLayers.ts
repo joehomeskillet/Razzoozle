@@ -209,8 +209,9 @@ export function buildSkyLayer(
 
   withFullBleedSprite(layer, "sky-sprite", assets?.sky, palette.sky)
 
-  const sunX = GARDEN_LOGICAL_WIDTH * 0.82
-  const sunY = GARDEN_LOGICAL_HEIGHT * 0.14
+  // Keep sun fully inside the top safe band (below floating presenter chips).
+  const sunX = GARDEN_LOGICAL_WIDTH * 0.86
+  const sunY = GARDEN_LOGICAL_HEIGHT * 0.2
 
   // Always paint a warm glow (token colour) so Kenney's pale disc reads golden.
   {
@@ -259,6 +260,7 @@ export function buildSkyLayer(
   ].filter((t): t is Texture => t != null && t.width > 0)
   if (cloudTextures.length > 0) {
     // Far (smaller, higher) + near (larger, lower) depth bands.
+    // Clouds sit fully under the top control safe zone (y ≥ ~120 logical).
     const placements: Array<{
       x: number
       y: number
@@ -267,14 +269,14 @@ export function buildSkyLayer(
       tex: number
       depth: "far" | "near"
     }> = [
-      { x: 220, y: 100, scale: 0.85, alpha: 0.75, tex: 0, depth: "far" },
-      { x: 620, y: 150, scale: 0.7, alpha: 0.7, tex: 1, depth: "far" },
-      { x: 1100, y: 90, scale: 0.9, alpha: 0.72, tex: 2, depth: "far" },
-      { x: 1500, y: 130, scale: 0.65, alpha: 0.68, tex: 3, depth: "far" },
-      { x: 380, y: 210, scale: 1.25, alpha: 0.95, tex: 0, depth: "near" },
-      { x: 900, y: 250, scale: 1.1, alpha: 0.9, tex: 1, depth: "near" },
-      { x: 1400, y: 200, scale: 1.35, alpha: 0.92, tex: 2, depth: "near" },
-      { x: 1700, y: 280, scale: 0.95, alpha: 0.85, tex: 3, depth: "near" },
+      { x: 220, y: 140, scale: 0.85, alpha: 0.75, tex: 0, depth: "far" },
+      { x: 620, y: 180, scale: 0.7, alpha: 0.7, tex: 1, depth: "far" },
+      { x: 1100, y: 130, scale: 0.9, alpha: 0.72, tex: 2, depth: "far" },
+      { x: 1500, y: 165, scale: 0.65, alpha: 0.68, tex: 3, depth: "far" },
+      { x: 380, y: 250, scale: 1.25, alpha: 0.95, tex: 0, depth: "near" },
+      { x: 900, y: 290, scale: 1.1, alpha: 0.9, tex: 1, depth: "near" },
+      { x: 1400, y: 240, scale: 1.35, alpha: 0.92, tex: 2, depth: "near" },
+      { x: 1700, y: 310, scale: 0.95, alpha: 0.85, tex: 3, depth: "near" },
     ]
     for (let i = 0; i < placements.length; i += 1) {
       const p = placements[i]!
@@ -333,25 +335,26 @@ export function buildDistantHillsLayer(
   layer.label = "layer-distant-hills"
 
   // Always draw two-tone ridge silhouettes for readable depth (sprite is optional
-  // texture overlay). Hills must contrast against both sky and lawn.
+  // texture overlay). Hills must contrast against both sky and lawn — raise the
+  // horizon so the mid-band is not a flat empty plate.
   const ridge = new Graphics()
   ridge.label = "distant-hills-ridges"
   const H = GARDEN_LOGICAL_HEIGHT
   const W = GARDEN_LOGICAL_WIDTH
-  // Far ridge (lighter / higher)
-  ridge.moveTo(0, H * 0.58)
-  ridge.bezierCurveTo(W * 0.18, H * 0.4, W * 0.4, H * 0.55, W * 0.62, H * 0.42)
-  ridge.bezierCurveTo(W * 0.78, H * 0.34, W * 0.9, H * 0.48, W, H * 0.44)
-  ridge.lineTo(W, H * 0.72)
-  ridge.lineTo(0, H * 0.72)
+  // Far ridge (lighter / higher) — soft horizon, not a hard line
+  ridge.moveTo(0, H * 0.48)
+  ridge.bezierCurveTo(W * 0.15, H * 0.32, W * 0.38, H * 0.5, W * 0.55, H * 0.34)
+  ridge.bezierCurveTo(W * 0.72, H * 0.22, W * 0.88, H * 0.4, W, H * 0.36)
+  ridge.lineTo(W, H * 0.68)
+  ridge.lineTo(0, H * 0.68)
   ridge.closePath()
   ridge.fill({ color: palette.hillBack, alpha: 0.95 })
   // Near ridge (darker / lower)
-  ridge.moveTo(0, H * 0.64)
-  ridge.bezierCurveTo(W * 0.22, H * 0.52, W * 0.45, H * 0.66, W * 0.7, H * 0.54)
-  ridge.bezierCurveTo(W * 0.85, H * 0.48, W * 0.95, H * 0.6, W, H * 0.58)
-  ridge.lineTo(W, H * 0.74)
-  ridge.lineTo(0, H * 0.74)
+  ridge.moveTo(0, H * 0.55)
+  ridge.bezierCurveTo(W * 0.2, H * 0.42, W * 0.42, H * 0.58, W * 0.68, H * 0.45)
+  ridge.bezierCurveTo(W * 0.84, H * 0.38, W * 0.94, H * 0.52, W, H * 0.5)
+  ridge.lineTo(W, H * 0.7)
+  ridge.lineTo(0, H * 0.7)
   ridge.closePath()
   ridge.fill({ color: palette.hillMid, alpha: 0.92 })
   layer.addChild(ridge)
@@ -360,10 +363,10 @@ export function buildDistantHillsLayer(
     const sprite = new Sprite(assets.distantHills)
     sprite.label = "distant-hills-sprite"
     sprite.anchor.set(0.5, 1)
-    sprite.position.set(W / 2, H * 0.74)
+    sprite.position.set(W / 2, H * 0.7)
     const scale = W / assets.distantHills.width
     sprite.scale.set(scale)
-    sprite.alpha = 0.55
+    sprite.alpha = 0.7
     sprite.tint = palette.hillMid
     layer.addChild(sprite)
   }
@@ -385,26 +388,26 @@ export function buildDistantBushesLayer(
     layer,
     "distant-bushes-sprite",
     assets?.distantBushes,
-    GARDEN_LOGICAL_HEIGHT * 0.74,
+    GARDEN_LOGICAL_HEIGHT * 0.68,
     palette.bushBack,
-    0.55,
+    0.48,
   )
 
   if (!assets?.distantBushes) {
     const g = layer.children[0] as Graphics
-    const groundY = GARDEN_LOGICAL_HEIGHT * 0.66
+    const groundY = GARDEN_LOGICAL_HEIGHT * 0.58
     for (const [x, w, h] of [
-      [120, 110, 38],
-      [320, 80, 30],
-      [480, 130, 42],
-      [780, 90, 32],
-      [1050, 140, 44],
-      [1320, 100, 34],
-      [1550, 120, 40],
-      [1820, 90, 30],
+      [120, 110, 42],
+      [320, 80, 34],
+      [480, 130, 48],
+      [780, 90, 36],
+      [1050, 140, 50],
+      [1320, 100, 38],
+      [1550, 120, 44],
+      [1820, 90, 34],
     ] as const) {
       g.ellipse(x, groundY, w, h)
-      g.fill({ color: palette.bushBack, alpha: 0.85 })
+      g.fill({ color: palette.bushBack, alpha: 0.9 })
     }
   }
 
@@ -428,6 +431,7 @@ export function buildMidTreesLayer(
   if (trees.length > 0) {
     // Varied sizes / mirrors / depths — never a single copy-paste row.
     // Feet sit just behind the fence line; crowns rise into the sky band.
+    // Larger heights so mid-ground trees read clearly on the presenter.
     const placements: Array<{
       x: number
       y: number
@@ -437,13 +441,13 @@ export function buildMidTreesLayer(
       tint: number
       tree: number
     }> = [
-      { x: 140, y: 0.78, height: 280, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
-      { x: 320, y: 0.77, height: 340, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
-      { x: 560, y: 0.79, height: 240, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
-      { x: 980, y: 0.76, height: 380, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
-      { x: 1280, y: 0.78, height: 270, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
-      { x: 1560, y: 0.77, height: 330, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
-      { x: 1780, y: 0.79, height: 250, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
+      { x: 140, y: 0.7, height: 360, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
+      { x: 320, y: 0.69, height: 420, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
+      { x: 560, y: 0.71, height: 300, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
+      { x: 980, y: 0.68, height: 460, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
+      { x: 1280, y: 0.7, height: 340, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
+      { x: 1560, y: 0.69, height: 400, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
+      { x: 1780, y: 0.71, height: 320, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
     ]
     for (let i = 0; i < placements.length; i += 1) {
       const p = placements[i]!
@@ -480,7 +484,11 @@ export function buildMidTreesLayer(
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Fence — white vertical picket fence along the mid horizon
+ * Target height ≈ 8–15 % of scene so it never reads as a solid white slab.
  * ────────────────────────────────────────────────────────────────────── */
+/** Max fence band height as a fraction of logical scene height. */
+export const FENCE_MAX_HEIGHT_RATIO = 0.12
+
 export function buildFenceLayer(
   palette: GardenPalette,
   assets?: LayerAssets,
@@ -488,24 +496,30 @@ export function buildFenceLayer(
   const layer = new Container()
   layer.label = "layer-fence"
 
-  // No cream underlay — pickets only, grass shows through gaps.
-  withBottomSprite(
-    layer,
-    "fence-sprite",
-    assets?.fence,
-    GARDEN_LOGICAL_HEIGHT * 0.8,
-    palette.fence,
-    0.72,
-    false,
-  )
+  // Sit fence just behind plant feet (PLOT_GROUND_Y_RATIO ≈ 0.72).
+  const fenceBottomY = GARDEN_LOGICAL_HEIGHT * 0.7
+  const maxFenceH = GARDEN_LOGICAL_HEIGHT * FENCE_MAX_HEIGHT_RATIO
 
-  if (!assets?.fence) {
+  // No cream underlay — pickets only, grass shows through gaps.
+  if (assets?.fence && assets.fence.width > 0 && assets.fence.height > 0) {
+    const sprite = new Sprite(assets.fence)
+    sprite.label = "fence-sprite"
+    sprite.anchor.set(0.5, 1.0)
+    sprite.position.set(GARDEN_LOGICAL_WIDTH / 2, fenceBottomY)
+    // Width-fit first, then clamp height so oversized assets never dominate.
+    let scale = GARDEN_LOGICAL_WIDTH / assets.fence.width
+    if (assets.fence.height * scale > maxFenceH) {
+      scale = maxFenceH / assets.fence.height
+    }
+    sprite.scale.set(scale)
+    layer.addChild(sprite)
+  } else {
     const g = new Graphics()
     g.label = "fence-fallback"
-    const fenceY = GARDEN_LOGICAL_HEIGHT * 0.72
+    const picketH = Math.min(70, maxFenceH * 0.85)
+    const fenceY = fenceBottomY - picketH
     const picketCount = 28
     const picketW = 14
-    const picketH = 70
     const gap =
       (GARDEN_LOGICAL_WIDTH - picketW * picketCount) / (picketCount - 1)
     for (let i = 0; i < picketCount; i += 1) {
@@ -533,15 +547,15 @@ export function buildGrassLayer(
   const layer = new Container()
   layer.label = "layer-grass"
 
-  // Lawn starts just below the hill line. Keep underlay below hills so ridges
-  // stay visible; fence sits on top of the lawn later in z-order.
+  // Lawn full-bleed to bottom edge; start below hill ridges so depth stays
+  // readable. Fence/plants sit on top later in z-order.
   withBottomSprite(
     layer,
     "grass-sprite",
     assets?.grass,
     GARDEN_LOGICAL_HEIGHT,
     palette.grass,
-    0.7,
+    0.62,
   )
 
   const tuftTextures = (

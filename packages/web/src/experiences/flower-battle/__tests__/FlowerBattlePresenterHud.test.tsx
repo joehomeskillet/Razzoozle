@@ -40,7 +40,7 @@ const baseTeams: FlowerBattleTeamState[] = [
 ]
 
 describe("FlowerBattlePresenterHud", () => {
-  it("renders presenter HUD root and team meter grid", () => {
+  it("renders presenter HUD root and team meter grid (overlay default)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -49,22 +49,25 @@ describe("FlowerBattlePresenterHud", () => {
     )
 
     expect(html).toContain('data-testid="flower-battle-presenter-hud"')
-    expect(html).toContain('data-testid="experience-hud"')
+    expect(html).toContain('data-hud-variant="overlay"')
+    // Overlay composes primitives directly — no ExperienceHud shell.
+    expect(html).not.toContain('data-testid="experience-hud"')
     expect(html).toContain('data-testid="flower-battle-team-meters"')
     expect(html).toContain('data-testid="flower-battle-team-hud-0"')
     expect(html).toContain('data-testid="flower-battle-team-hud-1"')
   })
 
-  // WP-994: PresenterHud must size to content inside Display's overflow-hidden
-  // flex column. Root h-full + shared ExperienceHud h-full stretched the HUD
-  // past the viewport at 1366x768 (team-meter top ~780 under display bottom 768).
-  it("sizes to natural height (no root h-full) so team meters stay inside the display viewport (WP-994)", () => {
+  it("flow variant keeps ExperienceHud shell and natural height (WP-994)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
+        variant="flow"
         teams={baseTeams}
         sunPoints={{ red: 2, blue: 1 }}
       />,
     )
+
+    expect(html).toContain('data-hud-variant="flow"')
+    expect(html).toContain('data-testid="experience-hud"')
 
     const rootMatch =
       /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
@@ -75,6 +78,24 @@ describe("FlowerBattlePresenterHud", () => {
     expect(rootClass).toContain("w-full")
     // Natural content height — do not claim 100% of the display stage.
     expect(rootClass.split(/\s+/)).not.toContain("h-full")
+  })
+
+  it("overlay variant fills the stage and places team meters absolutely", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattlePresenterHud
+        teams={baseTeams}
+        sunPoints={{ red: 2, blue: 1 }}
+        answerCounter={{ answered: 3, total: 10 }}
+      />,
+    )
+
+    const rootMatch =
+      /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
+    expect(rootMatch).not.toBeNull()
+    expect(rootMatch![1]).toContain("relative")
+    expect(rootMatch![1]).toContain("h-full")
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("3/10")
   })
 
   it("shows sun-point meters via RoundProgress primitives", () => {
