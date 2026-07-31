@@ -37,7 +37,10 @@ use uuid::Uuid;
 use super::cooldown::{run_cooldown, run_cooldown_with_deadline};
 use super::reveal_helpers::perform_reveal_and_broadcast;
 use super::status_emit::emit_plugin_lifecycle;
-use super::status_emit::{broadcast_status, emit_post_reveal_resolution, send_status_to_manager};
+use super::status_emit::{
+    begin_result_resolution_window, broadcast_status, emit_post_reveal_resolution,
+    send_status_to_manager,
+};
 
 pub(crate) mod flower_battle_emit;
 pub(crate) mod flower_battle_tick;
@@ -387,6 +390,10 @@ async fn run_lifecycle_from(
         // Reveal now — safe to call regardless of WHY the wait ended (timeout,
         // skip, revealAnswer, all-answered): engine.reveal() is phase-guarded,
         // so a reveal already performed by a racing path is a silent no-op.
+        // Reconnects that join from here through `after_reveal_tick` receive
+        // answers_locked first and wait for the authoritative post-tick room
+        // resolution instead of projecting the pre-growth ShowResult state.
+        let result_resolution_window = begin_result_resolution_window(&game_id);
         info!("Question cooldown resolved: gameId={}, revealing", game_id);
         perform_reveal_and_broadcast(game_ref.clone(), game_id.clone(), io.clone(), true).await;
 
@@ -403,9 +410,11 @@ async fn run_lifecycle_from(
         // then resolution from post-tick state. If tick finishes, game_complete is
         // final (finish path) — do not emit resolution after.
         if flower_battle_tick::after_reveal_tick(&io, &game_ref, &game_id, &db_pool).await {
+            result_resolution_window.complete();
             return;
         }
         emit_post_reveal_resolution(&io, &game_ref, &game_id);
+        result_resolution_window.complete();
 
         // RESULT dwell: host betrachtet die Result-Screens (SHOW_RESULT/SHOW_RESPONSES)
         // before the leaderboard. The abort Notify was armed BEFORE the reveal

@@ -206,11 +206,11 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     )
                 };
 
-                // socketioxide does NOT auto-join rooms — both rooms are required:
-                // game room for lobby/player counts; display room for game:experience
-                // (status_emit::broadcast_experience_to_display targets display:{id}).
+                // socketioxide does NOT auto-join rooms. Join the game room now;
+                // status_emit atomically joins display:{id} with its reconnect
+                // replay below so no live experience transition can slip between
+                // display-room membership and snapshot delivery.
                 socket.join(game_id.clone());
-                socket.join(format!("display:{}", game_id));
 
                 let (status_name, status_data) = reconnect_status;
 
@@ -236,7 +236,9 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                 // with no game:experience snapshot (transitions only fire on
                 // status changes). Resend current FlowerBattle envelope to THIS
                 // socket only; revision is not bumped (idempotent).
-                status_emit::resend_experience_on_display_reconnect(&socket, &game_ref);
+                status_emit::join_display_and_resend_experience_on_reconnect(
+                    &socket, &game_ref,
+                );
             });
         }
     });

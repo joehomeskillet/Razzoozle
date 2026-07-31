@@ -39,6 +39,105 @@ use std::sync::{Arc, Mutex};
 // Game field + snapshot roundtrip support for no behavioural gain today.
 static EXPERIENCE_REVISION: AtomicI32 = AtomicI32::new(0);
 
+#[cfg(test)]
+type ReconnectJoinHook = Arc<dyn Fn() + Send + Sync>;
+
+#[cfg(test)]
+static RECONNECT_JOIN_HOOKS: std::sync::OnceLock<
+    Mutex<std::collections::HashMap<String, ReconnectJoinHook>>,
+> = std::sync::OnceLock::new();
+
+#[cfg(test)]
+fn set_reconnect_join_hook(game_id: &str, hook: ReconnectJoinHook) {
+    RECONNECT_JOIN_HOOKS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap()
+        .insert(game_id.to_string(), hook);
+}
+
+#[cfg(test)]
+fn run_reconnect_join_hook(game_id: &str) {
+    let hook = RECONNECT_JOIN_HOOKS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap()
+        .get(game_id)
+        .cloned();
+    if let Some(hook) = hook {
+        hook();
+    }
+}
+
+#[cfg(test)]
+fn clear_reconnect_join_hook(game_id: &str) {
+    RECONNECT_JOIN_HOOKS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap()
+        .remove(game_id);
+}
+
+static RESULT_RESOLUTION_WINDOWS: std::sync::OnceLock<
+    Mutex<std::collections::HashMap<String, usize>>,
+> = std::sync::OnceLock::new();
+
+pub(crate) struct ResultResolutionWindow {
+    game_id: String,
+    active: bool,
+}
+
+impl ResultResolutionWindow {
+    pub(crate) fn complete(mut self) {
+        clear_result_resolution_window(&self.game_id);
+        self.active = false;
+    }
+}
+
+impl Drop for ResultResolutionWindow {
+    fn drop(&mut self) {
+        if self.active {
+            clear_result_resolution_window(&self.game_id);
+        }
+    }
+}
+
+pub(crate) fn begin_result_resolution_window(game_id: &str) -> ResultResolutionWindow {
+    let mut windows = RESULT_RESOLUTION_WINDOWS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap();
+    *windows.entry(game_id.to_string()).or_insert(0) += 1;
+    ResultResolutionWindow {
+        game_id: game_id.to_string(),
+        active: true,
+    }
+}
+
+fn result_resolution_pending(game_id: &str) -> bool {
+    RESULT_RESOLUTION_WINDOWS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap()
+        .get(game_id)
+        .is_some_and(|count| *count > 0)
+}
+
+fn clear_result_resolution_window(game_id: &str) {
+    let mut windows = RESULT_RESOLUTION_WINDOWS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap();
+    let Some(count) = windows.get_mut(game_id) else {
+        return;
+    };
+    if *count <= 1 {
+        windows.remove(game_id);
+    } else {
+        *count -= 1;
+    }
+}
+
 /// Active non-Classic experience mode (Classic rides game:status only).
 fn active_experience_mode(game: &Game) -> Option<ExperienceMode> {
     game.selected_modes
@@ -138,35 +237,21 @@ fn emit_experience_to_display_room(
         .ok();
 }
 
-/// Build + emit one experience transition for the active mode (no-op if Classic/None).
-fn emit_experience_phase(
-    io: &SocketIo,
-    game_ref: &Arc<Mutex<Game>>,
-    game_id: &str,
-    phase: ExperiencePhase,
-    bump_revision: bool,
-) {
-    let transition = {
-        let game = game_ref.lock().unwrap();
-        let Some(mode) = active_experience_mode(&game) else {
-            return;
-        };
-        build_experience_transition(&game, mode, phase, bump_revision)
-    };
-    emit_experience_to_display_room(io, game_id, &transition);
-}
-
 /// After `after_reveal_tick`: emit personalized-display `resolution` from post-tick state.
 /// No-op when Classic/None or when the tick already finished the game.
 pub fn emit_post_reveal_resolution(io: &SocketIo, game_ref: &Arc<Mutex<Game>>, game_id: &str) {
-    let allowed = {
-        let game = game_ref.lock().unwrap();
-        post_reveal_resolution_allowed(&game)
-    };
-    if !allowed {
+    let game = game_ref.lock().unwrap();
+    if !post_reveal_resolution_allowed(&game) {
         return;
     }
-    emit_experience_phase(io, game_ref, game_id, ExperiencePhase::Resolution, true);
+    let Some(mode) = active_experience_mode(&game) else {
+        return;
+    };
+    let transition = build_experience_transition(&game, mode, ExperiencePhase::Resolution, true);
+    clear_result_resolution_window(game_id);
+    // Keep snapshot build + sync socketioxide send under one Game guard.
+    // Reconnect cannot capture old state and send it after this live revision.
+    emit_experience_to_display_room(io, game_id, &transition);
 }
 
 /// Resume/reconnect phases for a live SHOW_RESULT window.
@@ -185,7 +270,11 @@ fn result_window_experience_phases(game: &Game) -> Vec<ExperiencePhase> {
         return vec![ExperiencePhase::GameComplete];
     }
     if matches!(game.engine.phase, GamePhase::ShowResult) {
-        return vec![ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution];
+        let mut phases = vec![ExperiencePhase::AnswersLocked];
+        if !result_resolution_pending(&game.game_id) {
+            phases.push(ExperiencePhase::Resolution);
+        }
+        return phases;
     }
     Vec::new()
 }
@@ -285,21 +374,16 @@ pub fn broadcast_status(
     game_id: &str,
     status: &GameStatus,
 ) {
-    let (experience_mode, manager_socket_id, transition) = {
-        let mut game = game_ref.lock().unwrap();
-        game.record_last_manager_status(status);
-        let experience_mode = game.selected_modes.experience_mode;
-        let manager_socket_id = game.manager_socket_id.clone();
-        let transition = match (
-            active_experience_mode(&game),
-            status_to_experience_phase(status),
-        ) {
-            (Some(mode), Some(phase)) => {
-                Some(build_experience_transition(&game, mode, phase, true))
-            }
-            _ => None,
-        };
-        (experience_mode, manager_socket_id, transition)
+    let mut game = game_ref.lock().unwrap();
+    game.record_last_manager_status(status);
+    let experience_mode = game.selected_modes.experience_mode;
+    let manager_socket_id = game.manager_socket_id.clone();
+    let transition = match (
+        active_experience_mode(&game),
+        status_to_experience_phase(status),
+    ) {
+        (Some(mode), Some(phase)) => Some(build_experience_transition(&game, mode, phase, true)),
+        _ => None,
     };
 
     if status_must_exclude_display_room(experience_mode) {
@@ -352,59 +436,65 @@ fn recorded_status_to_experience_phase(
     }
 }
 
-/// WP #939B / WP-958F-R — resend FlowerBattle `game:experience` to the single
-/// reconnecting socket (host/satellite after hard-reload).
-///
-/// - Target: this socket only (not a room broadcast; room exclusion stays intact).
-/// - Revision: `EXPERIENCE_REVISION.load` **without** bump — multi-reconnect is
-///   idempotent; clients can guard on unchanged revision; seed/recipeVersion
-///   come from live `Game` (WP #939A) so the payload is stable.
-/// - Modes: FlowerBattle only; Classic/None/other modes = no-op.
-/// - Blackout phases (lobby / wait / paused): no-op (same as transitions).
-/// - SHOW_RESULT window: replay `answers_locked` then post-state `resolution`
-///   (or sole `game_complete` when the tick already finished the game).
-pub fn resend_experience_on_display_reconnect(socket: &SocketRef, game_ref: &Arc<Mutex<Game>>) {
-    let transitions = {
-        let game = game_ref.lock().unwrap();
-        let mode = match game.selected_modes.experience_mode {
-            Some(ExperienceMode::FlowerBattle) => ExperienceMode::FlowerBattle,
-            _ => return,
-        };
-
-        // Result-window dual envelope takes precedence over last_manager_status
-        // (manager STATUS is SHOW_RESPONSES while engine phase is ShowResult).
-        let phases = {
-            let result_phases = result_window_experience_phases(&game);
-            if !result_phases.is_empty() {
-                result_phases
-            } else {
-                let phase = game
-                    .last_manager_status
-                    .as_ref()
-                    .and_then(|(s, _)| recorded_status_to_experience_phase(*s))
-                    .or_else(|| match game.engine.phase {
-                        GamePhase::ShowRoom => None,
-                        GamePhase::ShowStart => Some(ExperiencePhase::Intro),
-                        GamePhase::ShowQuestion | GamePhase::SelectAnswer => {
-                            Some(ExperiencePhase::Question)
-                        }
-                        GamePhase::ShowResult => Some(ExperiencePhase::Resolution),
-                        GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard => {
-                            Some(ExperiencePhase::WorldTransition)
-                        }
-                        GamePhase::Finished => Some(ExperiencePhase::GameComplete),
-                    });
-                phase.into_iter().collect()
-            }
-        };
-
-        phases
-            .into_iter()
-            .map(|phase| build_experience_transition(&game, mode, phase, false))
-            .collect::<Vec<_>>()
+fn reconnect_experience_transitions(game: &Game) -> Vec<ExperienceTransition> {
+    let mode = match game.selected_modes.experience_mode {
+        Some(ExperienceMode::FlowerBattle) => ExperienceMode::FlowerBattle,
+        _ => return Vec::new(),
     };
 
-    for transition in transitions {
+    // Result-window dual envelope takes precedence over last_manager_status
+    // (manager STATUS is SHOW_RESPONSES while engine phase is ShowResult).
+    let phases = {
+        let result_phases = result_window_experience_phases(game);
+        if !result_phases.is_empty() {
+            result_phases
+        } else {
+            let phase = game
+                .last_manager_status
+                .as_ref()
+                .and_then(|(s, _)| recorded_status_to_experience_phase(*s))
+                .or(match game.engine.phase {
+                    GamePhase::ShowRoom => None,
+                    GamePhase::ShowStart => Some(ExperiencePhase::Intro),
+                    GamePhase::ShowQuestion | GamePhase::SelectAnswer => {
+                        Some(ExperiencePhase::Question)
+                    }
+                    GamePhase::ShowResult => Some(ExperiencePhase::Resolution),
+                    GamePhase::ShowRoundRecap | GamePhase::ShowLeaderboard => {
+                        Some(ExperiencePhase::WorldTransition)
+                    }
+                    GamePhase::Finished => Some(ExperiencePhase::GameComplete),
+                });
+            phase.into_iter().collect()
+        }
+    };
+    phases
+        .into_iter()
+        .map(|phase| build_experience_transition(game, mode, phase, false))
+        .collect()
+}
+
+/// Join display room and replay current FlowerBattle experience state.
+///
+/// Join, snapshot build, and direct replay share one Game guard with every live
+/// experience emission. Therefore exactly one ordering wins:
+/// - live emit first, then reconnect joins and replays that current state; or
+/// - reconnect joins/replays first, then receives the newer live room event.
+///
+/// During the reveal-to-tick window, reconnect replays only `answers_locked`.
+/// The post-tick live `resolution` then supplies the first authoritative state.
+pub fn join_display_and_resend_experience_on_reconnect(
+    socket: &SocketRef,
+    game_ref: &Arc<Mutex<Game>>,
+) {
+    let game = game_ref.lock().unwrap();
+    let game_id = game.game_id.clone();
+    socket.join(format!("display:{game_id}")).ok();
+
+    #[cfg(test)]
+    run_reconnect_join_hook(&game_id);
+
+    for transition in reconnect_experience_transitions(&game) {
         socket
             .emit(constants::experience::TRANSITION, &transition)
             .ok();
@@ -423,20 +513,15 @@ pub fn send_status_to_manager(
     game_id: &str,
     status: &GameStatus,
 ) {
-    let (manager_socket_id, transition) = {
-        let mut game = game_ref.lock().unwrap();
-        game.record_last_manager_status(status);
-        let manager_socket_id = game.manager_socket_id.clone();
-        let transition = match (
-            active_experience_mode(&game),
-            manager_status_experience_phase(status),
-        ) {
-            (Some(mode), Some(phase)) => {
-                Some(build_experience_transition(&game, mode, phase, true))
-            }
-            _ => None,
-        };
-        (manager_socket_id, transition)
+    let mut game = game_ref.lock().unwrap();
+    game.record_last_manager_status(status);
+    let manager_socket_id = game.manager_socket_id.clone();
+    let transition = match (
+        active_experience_mode(&game),
+        manager_status_experience_phase(status),
+    ) {
+        (Some(mode), Some(phase)) => Some(build_experience_transition(&game, mode, phase, true)),
+        _ => None,
     };
 
     if let Ok(sid) = manager_socket_id.parse() {
@@ -490,11 +575,120 @@ pub fn emit_plugin_lifecycle(io: &SocketIo, game_id: &str, hook_name: &str, stat
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::Router;
+    use razzoozle_protocol::experience::PowerupOffer;
     use razzoozle_protocol::status::{
         FinishedData, PausedData, SelectAnswerData, ShowLeaderboardData, ShowPreparedData,
         ShowQuestionData, ShowResponsesData, ShowResultData, ShowRoomData, ShowRoundRecapData,
         ShowStartData, WaitData,
     };
+    use std::time::Duration;
+
+    struct PollingSocketClient {
+        http: reqwest::Client,
+        endpoint: String,
+        sid: String,
+    }
+
+    impl PollingSocketClient {
+        async fn connect() -> (Self, SocketIo, SocketRef, tokio::task::JoinHandle<()>) {
+            let (layer, io) = SocketIo::builder().build_layer();
+            let (socket_tx, socket_rx) = tokio::sync::oneshot::channel();
+            let socket_tx = Arc::new(Mutex::new(Some(socket_tx)));
+            io.ns("/", move |socket: SocketRef| {
+                if let Some(tx) = socket_tx.lock().unwrap().take() {
+                    tx.send(socket).ok();
+                }
+            });
+
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let server = tokio::spawn(async move {
+                axum::serve(listener, Router::new().layer(layer))
+                    .await
+                    .unwrap();
+            });
+            let endpoint = format!("http://{address}/socket.io/?EIO=4&transport=polling");
+            let http = reqwest::Client::new();
+            let open = http
+                .get(&endpoint)
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+            let open: serde_json::Value =
+                serde_json::from_str(open.strip_prefix('0').expect("engine.io open packet"))
+                    .unwrap();
+            let sid = open["sid"].as_str().unwrap().to_string();
+            let session_endpoint = format!("{endpoint}&sid={sid}");
+            let post = http
+                .post(&session_endpoint)
+                .header("content-type", "text/plain;charset=UTF-8")
+                .body("40")
+                .send()
+                .await
+                .unwrap();
+            assert!(post.status().is_success());
+
+            let socket = tokio::time::timeout(Duration::from_secs(2), socket_rx)
+                .await
+                .expect("socket.io namespace connect")
+                .unwrap();
+            let connected = http
+                .get(&session_endpoint)
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+            assert!(
+                connected
+                    .split('\u{1e}')
+                    .any(|packet| packet.starts_with("40")),
+                "socket.io connect ack missing: {connected}"
+            );
+
+            (
+                Self {
+                    http,
+                    endpoint,
+                    sid,
+                },
+                io,
+                socket,
+                server,
+            )
+        }
+
+        async fn poll_experience(&self) -> Vec<serde_json::Value> {
+            let response = tokio::time::timeout(
+                Duration::from_secs(2),
+                self.http
+                    .get(format!("{}&sid={}", self.endpoint, self.sid))
+                    .send(),
+            )
+            .await
+            .expect("wire poll timed out")
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+            response
+                .split('\u{1e}')
+                .filter_map(|packet| packet.strip_prefix("42"))
+                .filter_map(|packet| serde_json::from_str::<serde_json::Value>(packet).ok())
+                .filter_map(|packet| {
+                    let values = packet.as_array()?;
+                    (values.first()?.as_str()? == constants::experience::TRANSITION)
+                        .then(|| values.get(1).cloned())
+                        .flatten()
+                })
+                .collect()
+        }
+    }
 
     // WP #877 follow-up (wire-level leak fix) — this is THE room-targeting
     // decision that guards question/answer content from ever reaching the
@@ -1075,5 +1269,184 @@ mod tests {
                 vec![ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution]
             );
         }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn reconnect_during_tick_gets_answers_locked_then_post_state_resolution_on_wire() {
+        let game_id = "g-958f-wire";
+        let (client, io, socket, server) = PollingSocketClient::connect().await;
+        let resolution_window = begin_result_resolution_window(game_id);
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.game_id = game_id.into();
+        game.add_player(
+            "player-wire".into(),
+            "client-wire".into(),
+            "Alice".into(),
+            None,
+        )
+        .unwrap();
+        game.players[0].team_id = Some("red".into());
+        game.engine.players[0].team_id = Some("red".into());
+        game.flower_battle_effects.set_stage("red", 1);
+        game.flower_battle_sun_points.insert("red".into(), 2);
+        let game_ref = Arc::new(Mutex::new(game));
+
+        let (captured_tx, captured_rx) = std::sync::mpsc::channel();
+        let (release_tx, release_rx) = std::sync::mpsc::channel();
+        let release_rx = Arc::new(Mutex::new(release_rx));
+        set_reconnect_join_hook(
+            game_id,
+            Arc::new(move || {
+                captured_tx.send(()).unwrap();
+                release_rx
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(2))
+                    .unwrap();
+            }),
+        );
+
+        let reconnect_game = game_ref.clone();
+        let reconnect = tokio::task::spawn_blocking(move || {
+            join_display_and_resend_experience_on_reconnect(&socket, &reconnect_game);
+        });
+        tokio::task::spawn_blocking(move || {
+            captured_rx
+                .recv_timeout(Duration::from_secs(2))
+                .expect("reconnect snapshot barrier");
+        })
+        .await
+        .unwrap();
+
+        let live_game = game_ref.clone();
+        let (live_done_tx, mut live_done_rx) = tokio::sync::oneshot::channel();
+        let live = tokio::task::spawn_blocking(move || {
+            {
+                let mut game = live_game.lock().unwrap();
+                game.flower_battle_effects.set_stage("red", 7);
+                game.flower_battle_sun_points.insert("red".into(), 11);
+                game.flower_battle_offers.insert(
+                    (game_id.to_string(), "red".into(), 0),
+                    PowerupOffer {
+                        id: "offer-post".into(),
+                        offer_type: "sunbeam".into(),
+                        expires_at: 123_456,
+                    },
+                );
+            }
+            emit_post_reveal_resolution(&io, &live_game, game_id);
+            live_done_tx.send(()).ok();
+        });
+
+        let completed_before_release =
+            tokio::time::timeout(Duration::from_millis(250), &mut live_done_rx)
+                .await
+                .is_ok();
+        release_tx.send(()).unwrap();
+        if !completed_before_release {
+            tokio::time::timeout(Duration::from_secs(2), &mut live_done_rx)
+                .await
+                .expect("live resolution remained blocked")
+                .unwrap();
+        }
+        reconnect.await.unwrap();
+        live.await.unwrap();
+        resolution_window.complete();
+        clear_reconnect_join_hook(game_id);
+
+        let events = client.poll_experience().await;
+        let phases: Vec<_> = events
+            .iter()
+            .filter_map(|event| event["phase"].as_str())
+            .collect();
+        assert_eq!(phases, ["answers_locked", "resolution"], "{events:?}");
+        let final_resolution = events
+            .iter()
+            .rev()
+            .find(|event| event["phase"] == "resolution")
+            .expect("resolution envelope");
+        let red = final_resolution["payload"]["data"]["state"]["teams"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|team| team["name"] == "red")
+            .unwrap();
+        assert_eq!(red["members"], serde_json::json!(["player-wire"]));
+        assert_eq!(red["growthStage"], 7);
+        assert_eq!(red["sunPoints"], 11);
+        assert_eq!(
+            final_resolution["payload"]["data"]["state"]["powerups"][0]["id"],
+            "offer-post"
+        );
+
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn terminal_reconnect_emits_game_complete_without_trailing_resolution_on_wire() {
+        let game_id = "g-958f-terminal-wire";
+        let (client, io, socket, server) = PollingSocketClient::connect().await;
+        let mut game = flower_game(GamePhase::Finished);
+        game.game_id = game_id.into();
+        game.add_player(
+            "winner-wire".into(),
+            "winner-client".into(),
+            "Winner".into(),
+            None,
+        )
+        .unwrap();
+        game.players[0].team_id = Some("gold".into());
+        game.engine.players[0].team_id = Some("gold".into());
+        game.flower_battle_effects.set_stage("gold", 10);
+        game.flower_battle_sun_points.insert("gold".into(), 17);
+        game.flower_battle_effects.victory_resolved = true;
+        game.flower_battle_winner_team_ids = Some(vec!["gold".into()]);
+        game.finish_broadcast_done = true;
+        let game_ref = Arc::new(Mutex::new(game));
+
+        join_display_and_resend_experience_on_reconnect(&socket, &game_ref);
+        emit_post_reveal_resolution(&io, &game_ref, game_id);
+
+        let events = client.poll_experience().await;
+        assert_eq!(events.len(), 1, "{events:?}");
+        assert_eq!(events[0]["phase"], "game_complete");
+        assert_eq!(
+            events[0]["payload"]["data"]["state"]["phase"],
+            serde_json::json!("end")
+        );
+        let gold = &events[0]["payload"]["data"]["state"]["teams"][0];
+        assert_eq!(gold["name"], "gold");
+        assert_eq!(gold["members"], serde_json::json!(["winner-wire"]));
+        assert_eq!(gold["growthStage"], 10);
+        assert_eq!(gold["sunPoints"], 17);
+
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn offline_manager_still_emits_answers_locked_then_resolution_on_wire() {
+        let game_id = "g-958f-offline-manager-wire";
+        let (client, io, socket, server) = PollingSocketClient::connect().await;
+        let mut game = flower_game(GamePhase::ShowQuestion);
+        game.game_id = game_id.into();
+        game.manager_socket_id = "offline-manager".into();
+        let game_ref = Arc::new(Mutex::new(game));
+
+        join_display_and_resend_experience_on_reconnect(&socket, &game_ref);
+        let initial = client.poll_experience().await;
+        assert_eq!(initial[0]["phase"], "question");
+
+        game_ref.lock().unwrap().engine.phase = GamePhase::ShowResult;
+        send_status_to_manager(&io, &game_ref, game_id, &sample_show_responses());
+        emit_post_reveal_resolution(&io, &game_ref, game_id);
+
+        let events = client.poll_experience().await;
+        let phases: Vec<_> = events
+            .iter()
+            .filter_map(|event| event["phase"].as_str())
+            .collect();
+        assert_eq!(phases, ["answers_locked", "resolution"], "{events:?}");
+
+        server.abort();
     }
 }
