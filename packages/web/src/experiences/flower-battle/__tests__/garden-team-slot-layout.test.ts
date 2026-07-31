@@ -19,6 +19,18 @@ describe("getTeamSlotLayout (WP-D-1, SDD §20.3)", () => {
     expect(getTeamSlotLayout(0, VIEWPORT)).toEqual([])
   })
 
+  it("returns 1 centred single slot for 1 team (User-P0 §20.3)", () => {
+    const slots = getTeamSlotLayout(1, VIEWPORT)
+    expect(slots).toHaveLength(1)
+    // Slot ist zentriert: linke Kante = (100 - 40) / 2 = 30%, Breite = 40%
+    expect(slots[0].xPercent).toBe(30)
+    expect(slots[0].widthPercent).toBe(40)
+    // Vertikal zentriert: obere Kante = (100 - 70) / 2 = 15%, Höhe = 70%
+    expect(slots[0].yPercent).toBe(15)
+    expect(slots[0].heightPercent).toBe(70)
+    expect(slots[0].index).toBe(0)
+  })
+
   it("returns an empty layout for invalid viewports", () => {
     expect(getTeamSlotLayout(2, { width: 0, height: 768 })).toEqual([])
     expect(getTeamSlotLayout(2, { width: 1024, height: 0 })).toEqual([])
