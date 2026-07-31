@@ -367,13 +367,18 @@ mod tests {
             "only max-score stage-10 team wins"
         );
 
-        let blue =
-            build_player_status(&game_id, &game, &mk_player("s-blue", "c-blue", "blue", 120));
-        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 40));
+        let blue = build_player_status(
+            &game_id,
+            &game,
+            &mk_player("s-blue", "c-blue", "blue", 120),
+            0,
+        );
+        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 40), 0);
         let green = build_player_status(
             &game_id,
             &game,
             &mk_player("s-green", "c-green", "green", 999),
+            0,
         );
         assert!(blue.is_winner, "blue is sole winner");
         assert!(!red.is_winner, "red at stage 10 but lower score");
@@ -417,12 +422,18 @@ mod tests {
             "equal top scores among stage-10 teams share the win"
         );
 
-        let blue = build_player_status(&game_id, &game, &mk_player("s-blue", "c-blue", "blue", 80));
-        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 80));
+        let blue = build_player_status(
+            &game_id,
+            &game,
+            &mk_player("s-blue", "c-blue", "blue", 80),
+            0,
+        );
+        let red = build_player_status(&game_id, &game, &mk_player("s-red", "c-red", "red", 80), 0);
         let green = build_player_status(
             &game_id,
             &game,
             &mk_player("s-green", "c-green", "green", 500),
+            0,
         );
         assert!(blue.is_winner);
         assert!(red.is_winner);
