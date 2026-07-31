@@ -191,54 +191,10 @@ fn register_reconnect(socket: &SocketRef, ctx: HandlerCtx) {
                     );
                 }
 
-                let (game_id, players, current_question_index, total_questions, reconnect_status) = {
-                    let mut game = game_ref.lock().unwrap();
-                    if claim_manager {
-                        game.manager_socket_id = new_socket_id;
-                    }
-                    let reconnect_status = game.manager_reconnect_status();
-                    (
-                        game.game_id.clone(),
-                        game.players.clone(),
-                        game.engine.current_question_index,
-                        game.engine.quiz.questions.len(),
-                        reconnect_status,
-                    )
-                };
-
-                // socketioxide does NOT auto-join rooms. Join the game room now;
-                // status_emit atomically joins display:{id} with its reconnect
-                // replay below so no live experience transition can slip between
-                // display-room membership and snapshot delivery.
-                socket.join(game_id.clone());
-
-                let (status_name, status_data) = reconnect_status;
-
-                socket
-                    .emit(
-                        constants::manager::SUCCESS_RECONNECT,
-                        &serde_json::json!({
-                            "gameId": game_id,
-                            "currentQuestion": {
-                                "current": current_question_index + 1,
-                                "total": total_questions,
-                            },
-                            "status": { "name": status_name, "data": status_data },
-                            "players": players,
-                        }),
-                    )
-                    .ok();
-                socket
-                    .emit(constants::game::TOTAL_PLAYERS, &(players.len() as i32))
-                    .ok();
-
-                // WP #939B / #959 — hard-reload / satellite join left the socket
-                // with no game:experience snapshot (transitions only fire on
-                // status changes). Resend current FlowerBattle envelope to THIS
-                // socket only; revision is not bumped (idempotent).
-                status_emit::join_display_and_resend_experience_on_reconnect(
-                    &socket, &game_ref,
-                );
+                // No await below: manager slot update, room membership,
+                // SUCCESS_RECONNECT/player count, and current experience replay
+                // serialize with live experience emits under one Game guard.
+                status_emit::complete_manager_reconnect(&socket, &game_ref, claim_manager);
             });
         }
     });

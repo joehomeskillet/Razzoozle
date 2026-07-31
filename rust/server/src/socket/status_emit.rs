@@ -436,7 +436,10 @@ fn recorded_status_to_experience_phase(
     }
 }
 
-fn reconnect_experience_transitions(game: &Game) -> Vec<ExperienceTransition> {
+fn reconnect_experience_transitions(
+    game: &Game,
+    was_display_member: bool,
+) -> Vec<ExperienceTransition> {
     let mode = match game.selected_modes.experience_mode {
         Some(ExperienceMode::FlowerBattle) => ExperienceMode::FlowerBattle,
         _ => return Vec::new(),
@@ -445,7 +448,15 @@ fn reconnect_experience_transitions(game: &Game) -> Vec<ExperienceTransition> {
     // Result-window dual envelope takes precedence over last_manager_status
     // (manager STATUS is SHOW_RESPONSES while engine phase is ShowResult).
     let phases = {
-        let result_phases = result_window_experience_phases(game);
+        let mut result_phases = result_window_experience_phases(game);
+        // An existing display-room member already received the live resolution
+        // that cleared the result window. Replay its current resolution only;
+        // answers_locked here would move the wire backwards after resolution.
+        if was_display_member
+            && result_phases == [ExperiencePhase::AnswersLocked, ExperiencePhase::Resolution]
+        {
+            result_phases.remove(0);
+        }
         if !result_phases.is_empty() {
             result_phases
         } else {
@@ -474,30 +485,93 @@ fn reconnect_experience_transitions(game: &Game) -> Vec<ExperienceTransition> {
         .collect()
 }
 
-/// Join display room and replay current FlowerBattle experience state.
+fn socket_was_in_display_room(socket: &SocketRef, display_room: &str) -> bool {
+    match socket.rooms() {
+        Ok(rooms) => rooms.iter().any(|room| room.as_ref() == display_room),
+        Err(error) => {
+            tracing::warn!(
+                "manager:reconnect failed to inspect display membership socketId={} room={} error={:?}",
+                socket.id,
+                display_room,
+                error
+            );
+            false
+        }
+    }
+}
+
+fn join_room(socket: &SocketRef, room: String) {
+    if let Err(error) = socket.join(room.clone()) {
+        tracing::warn!(
+            "manager:reconnect failed to join room socketId={} room={} error={:?}",
+            socket.id,
+            room,
+            error
+        );
+    }
+}
+
+fn emit_reconnect_event<T: serde::Serialize>(socket: &SocketRef, event: &str, payload: &T) {
+    if let Err(error) = socket.emit(event, payload) {
+        tracing::warn!(
+            "manager:reconnect failed to emit event socketId={} event={} error={}",
+            socket.id,
+            event,
+            error
+        );
+    }
+}
+
+/// Complete an authorized manager/display reconnect under one Game guard.
 ///
-/// Join, snapshot build, and direct replay share one Game guard with every live
-/// experience emission. Therefore exactly one ordering wins:
-/// - live emit first, then reconnect joins and replays that current state; or
-/// - reconnect joins/replays first, then receives the newer live room event.
+/// Manager slot update, room membership, SUCCESS_RECONNECT, player count, and
+/// current experience replay share one critical section with every live
+/// experience emission. Therefore live resolution cannot land between the
+/// reconnect acknowledgement and its replay.
 ///
 /// During the reveal-to-tick window, reconnect replays only `answers_locked`.
 /// The post-tick live `resolution` then supplies the first authoritative state.
-pub fn join_display_and_resend_experience_on_reconnect(
+pub fn complete_manager_reconnect(
     socket: &SocketRef,
     game_ref: &Arc<Mutex<Game>>,
+    claim_manager: bool,
 ) {
-    let game = game_ref.lock().unwrap();
+    let mut game = game_ref.lock().unwrap();
     let game_id = game.game_id.clone();
-    socket.join(format!("display:{game_id}")).ok();
+    if claim_manager {
+        game.manager_socket_id = socket.id.to_string();
+    }
+
+    let display_room = format!("display:{game_id}");
+    let was_display_member = socket_was_in_display_room(socket, &display_room);
+    join_room(socket, game_id.clone());
+    join_room(socket, display_room);
+
+    let (status_name, status_data) = game.manager_reconnect_status();
+    emit_reconnect_event(
+        socket,
+        constants::manager::SUCCESS_RECONNECT,
+        &serde_json::json!({
+            "gameId": game_id,
+            "currentQuestion": {
+                "current": game.engine.current_question_index + 1,
+                "total": game.engine.quiz.questions.len(),
+            },
+            "status": { "name": status_name, "data": status_data },
+            "players": game.players,
+        }),
+    );
+    emit_reconnect_event(
+        socket,
+        constants::game::TOTAL_PLAYERS,
+        &(game.players.len() as i32),
+    );
 
     #[cfg(test)]
     run_reconnect_join_hook(&game_id);
 
-    for transition in reconnect_experience_transitions(&game) {
-        socket
-            .emit(constants::experience::TRANSITION, &transition)
-            .ok();
+    for transition in reconnect_experience_transitions(&game, was_display_member) {
+        emit_reconnect_event(socket, constants::experience::TRANSITION, &transition);
     }
 }
 
@@ -1308,7 +1382,7 @@ mod tests {
 
         let reconnect_game = game_ref.clone();
         let reconnect = tokio::task::spawn_blocking(move || {
-            join_display_and_resend_experience_on_reconnect(&socket, &reconnect_game);
+            complete_manager_reconnect(&socket, &reconnect_game, false);
         });
         tokio::task::spawn_blocking(move || {
             captured_rx
@@ -1383,6 +1457,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn prejoined_display_never_receives_answers_locked_after_live_resolution_on_wire() {
+        let game_id = "g-958f-prejoined-wire";
+        let (client, io, socket, server) = PollingSocketClient::connect().await;
+        let resolution_window = begin_result_resolution_window(game_id);
+        let mut game = flower_game(GamePhase::ShowResult);
+        game.game_id = game_id.into();
+        game.add_player(
+            "prejoined-player".into(),
+            "prejoined-client".into(),
+            "Prejoined".into(),
+            None,
+        )
+        .unwrap();
+        game.players[0].team_id = Some("red".into());
+        game.engine.players[0].team_id = Some("red".into());
+        game.flower_battle_effects.set_stage("red", 1);
+        let game_ref = Arc::new(Mutex::new(game));
+
+        // Manager/display sockets can already be room members when their
+        // reconnect event arrives. Let the live tick win before the complete
+        // reconnect transaction starts.
+        socket.join(format!("display:{game_id}")).unwrap();
+
+        game_ref
+            .lock()
+            .unwrap()
+            .flower_battle_effects
+            .set_stage("red", 7);
+        emit_post_reveal_resolution(&io, &game_ref, game_id);
+        complete_manager_reconnect(&socket, &game_ref, false);
+        resolution_window.complete();
+
+        let events = client.poll_experience().await;
+        let phases: Vec<_> = events
+            .iter()
+            .filter_map(|event| event["phase"].as_str())
+            .collect();
+        assert_eq!(phases, ["resolution", "resolution"], "{events:?}");
+        assert!(
+            events
+                .iter()
+                .all(|event| event["payload"]["data"]["state"]["teams"][0]["growthStage"] == 7),
+            "{events:?}"
+        );
+
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn terminal_reconnect_emits_game_complete_without_trailing_resolution_on_wire() {
         let game_id = "g-958f-terminal-wire";
         let (client, io, socket, server) = PollingSocketClient::connect().await;
@@ -1404,7 +1527,7 @@ mod tests {
         game.finish_broadcast_done = true;
         let game_ref = Arc::new(Mutex::new(game));
 
-        join_display_and_resend_experience_on_reconnect(&socket, &game_ref);
+        complete_manager_reconnect(&socket, &game_ref, false);
         emit_post_reveal_resolution(&io, &game_ref, game_id);
 
         let events = client.poll_experience().await;
@@ -1432,7 +1555,7 @@ mod tests {
         game.manager_socket_id = "offline-manager".into();
         let game_ref = Arc::new(Mutex::new(game));
 
-        join_display_and_resend_experience_on_reconnect(&socket, &game_ref);
+        complete_manager_reconnect(&socket, &game_ref, false);
         let initial = client.poll_experience().await;
         assert_eq!(initial[0]["phase"], "question");
 
