@@ -76,7 +76,7 @@ describe("ActionFooterCompact a11y & integration", () => {
     )
     expect(html).toMatch(/<div[^>]*role="toolbar"/)
     expect(html).not.toMatch(/<footer[^>]*role="toolbar"/)
-    expect(html).toContain('aria-label="aria.actionFooterCompact"')
+    expect(html).toContain('aria-label="Page actions"')
     expect(html).toContain('data-testid="action-footer-compact"')
   })
 
