@@ -93,8 +93,8 @@ describe("ConfigUsers compact footer", () => {
 
   it("uses the action dock without a nested footer landmark", () => {
     const html = render(<ConfigUsers />)
-    expect(html).toContain('role="toolbar"')
-    expect(html).toContain('role="group"')
+    expect(html).not.toContain('role="toolbar"')
+    expect(html).toContain('role="group" aria-label="aria.actionFooter"')
     expect(html).not.toContain("<footer")
     expect(html.match(/<button/g)).toHaveLength(1)
   })
