@@ -166,11 +166,16 @@ export function ActionFooterHostProvider({
   const [registrationCount, setRegistrationCount] = useState(0)
   // Keep a ref so the context API object stays stable across count updates
   // (ActionFooter only depends on register/target — not registrationCount).
-  // Subscribe before paint so HostSlot sees count before first paint after register.
+  // Subscribe in layout phase. IMPORTANT: child ActionFooter may register in
+  // its useLayoutEffect *before* this parent effect runs (child-first order).
+  // Re-read count after subscribe so we never stay stuck at 0 with a live
+  // registration (that left the host at h-0 and clipped portaled actions).
   useLayoutEffect(() => {
-    return registry.subscribe(() => {
+    const unsub = registry.subscribe(() => {
       setRegistrationCount(registry.count)
     })
+    setRegistrationCount(registry.count)
+    return unsub
   }, [registry])
 
   // After tab change / registration updates, re-check policy (AF-16).
@@ -220,13 +225,15 @@ export function ActionFooterHostProvider({
  * Visible shell footer band. Mount as last child of `.console-shell`
  * (sibling of BodyGrid — NOT inside the tabpanel). AF-02 / AF-03.
  *
- * Hidden with no height when `registrationCount === 0` (AF-14).
+ * Visibility is driven by CSS `:empty` (portal injects element children).
+ * Do not gate only on React `registrationCount` — child layout effects can
+ * register before the parent subscription, leaving count at 0 while content
+ * is already portaled (clipped by h-0). AF-14: no decorative empty bar.
  * No sticky / fixed / negative margins (AF-17).
  */
 export function ActionFooterHostSlot({ className }: { className?: string }) {
   const host = useActionFooterHost()
   const { t } = useTranslation("manager")
-  const visible = host.registrationCount > 0
 
   return (
     <footer
@@ -236,14 +243,13 @@ export function ActionFooterHostSlot({ className }: { className?: string }) {
       aria-label={t("aria.actionFooter", {
         defaultValue: "Page actions",
       })}
-      // Do NOT use the HTML `hidden` attribute: createPortal targets that are
-      // `display:none` can leave actions invisible even after unhide in some
-      // layout paths. Collapse empty host with height/overflow instead (AF-14).
       className={clsx(
         "shrink-0 bg-[var(--surface)]",
-        visible
-          ? "border-t border-[var(--line)] shadow-[var(--shadow-flat)] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6"
-          : "h-0 overflow-hidden border-0 p-0 shadow-none",
+        // Default = visible chrome when portal has children
+        "border-t border-[var(--line)] shadow-[var(--shadow-flat)]",
+        "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
+        // Collapse only when truly empty (no portaled nodes)
+        "empty:h-0 empty:overflow-hidden empty:border-0 empty:p-0 empty:shadow-none",
         className,
       )}
     />
