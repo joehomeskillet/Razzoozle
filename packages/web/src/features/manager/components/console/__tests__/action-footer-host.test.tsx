@@ -93,7 +93,7 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
       </ActionFooterHostProvider>,
     )
     expect(html).toContain('data-testid="console-action-footer-host"')
-    expect(html).toContain("hidden")
+    expect(html).toContain("h-0")  // collapsed empty host (no HTML hidden attr)
     expect(html).toContain('data-registered="0"')
   })
 

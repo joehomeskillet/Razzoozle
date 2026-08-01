@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -161,10 +162,12 @@ export function ActionFooterHostProvider({
   }
   const registry = registryRef.current
 
-  const [target, setTarget] = useState<HTMLElement | null>(null)
+  const [target, setTargetState] = useState<HTMLElement | null>(null)
   const [registrationCount, setRegistrationCount] = useState(0)
-
-  useEffect(() => {
+  // Keep a ref so the context API object stays stable across count updates
+  // (ActionFooter only depends on register/target — not registrationCount).
+  // Subscribe before paint so HostSlot sees count before first paint after register.
+  useLayoutEffect(() => {
     return registry.subscribe(() => {
       setRegistrationCount(registry.count)
     })
@@ -189,6 +192,13 @@ export function ActionFooterHostProvider({
     [registry],
   )
 
+  // Stable setTarget — ignore identical node to avoid extra renders.
+  const setTarget = useCallback((node: HTMLElement | null) => {
+    setTargetState((prev) => (prev === node ? prev : node))
+  }, [])
+
+  // registrationCount is still exposed for HostSlot, but listed so HostSlot
+  // re-renders; ActionFooter must not put `host` in effect deps as a whole.
   const value = useMemo<ConsoleActionFooterHost>(
     () => ({
       target,
@@ -196,7 +206,7 @@ export function ActionFooterHostProvider({
       registrationCount,
       setTarget,
     }),
-    [target, register, registrationCount],
+    [target, register, registrationCount, setTarget],
   )
 
   return (
@@ -226,12 +236,14 @@ export function ActionFooterHostSlot({ className }: { className?: string }) {
       aria-label={t("aria.actionFooter", {
         defaultValue: "Page actions",
       })}
-      hidden={!visible}
+      // Do NOT use the HTML `hidden` attribute: createPortal targets that are
+      // `display:none` can leave actions invisible even after unhide in some
+      // layout paths. Collapse empty host with height/overflow instead (AF-14).
       className={clsx(
-        "shrink-0 border-t border-[var(--line)] bg-[var(--surface)]",
-        "shadow-[var(--shadow-flat)]",
-        "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-        !visible && "border-0 p-0 shadow-none",
+        "shrink-0 bg-[var(--surface)]",
+        visible
+          ? "border-t border-[var(--line)] shadow-[var(--shadow-flat)] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6"
+          : "h-0 overflow-hidden border-0 p-0 shadow-none",
         className,
       )}
     />
