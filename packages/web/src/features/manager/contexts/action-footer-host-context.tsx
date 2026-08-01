@@ -278,7 +278,7 @@ export function ActionFooterHostSlot({ className }: { className?: string }) {
         defaultValue: "Page actions",
       })}
       className={clsx(
-        "shrink-0 bg-[var(--surface)]",
+        "shrink-0 bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]",
         // Default = visible chrome when portal has children
         "border-t border-[var(--line)] shadow-[var(--shadow-flat)]",
         "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",

@@ -7,6 +7,25 @@ import type { ReactNode } from "react"
  */
 export type ActionFooterVariant = "default" | "compact"
 
+export type CompactActionIntent = "primary" | "secondary" | "danger" | "ghost"
+
+export type CompactIconName =
+  | "Play"
+  | "Pause"
+  | "SkipForward"
+  | "Eye"
+  | "Minus"
+  | "Plus"
+  | "Copy"
+  | "Create"
+  | "Save"
+  | "Upload"
+  | "Reset"
+  | "Import"
+  | "Template"
+  | "Delete"
+  | "Overflow"
+
 /**
  * Single icon-only action rendered by `CompactIconBar`. 44×44 touch target,
  * token-only coloring, aria-label required for i18n parity.
@@ -14,11 +33,14 @@ export type ActionFooterVariant = "default" | "compact"
 export interface CompactIconBarAction {
   /** Stable identity — also used for `data-action-key` and aria-controls. */
   key: string
-  /** Lucide icon name. The bar resolves this to a component; we keep it as a literal
-   *  here to keep this type module React-free. */
-  iconName: "Play" | "Pause" | "SkipForward" | "Eye" | "Minus" | "Plus"
+  /** Lucide icon name, resolved by the bar without a React type dependency. */
+  iconName: CompactIconName
   /** Pre-translated label rendered into `aria-label` (i18n parity). */
   label: string
+  /** Visual hierarchy. Omitted keeps the legacy Users icon-button styling. */
+  intent?: CompactActionIntent
+  /** Optional stable selector for focused integration tests. */
+  testId?: string
   /** When true, `active` reflects the toggled-on state and the bar styles it as pressed. */
   toggle?: boolean
   /** Pressed-state hint (only meaningful when `toggle` is true). */
@@ -27,6 +49,8 @@ export interface CompactIconBarAction {
   onClick: () => void
   /** Disabled state — bar keeps the slot visible but non-interactive. */
   disabled?: boolean
+  /** Accessible explanation announced when the action is disabled. */
+  disabledReason?: string
 }
 
 /**

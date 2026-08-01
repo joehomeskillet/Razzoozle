@@ -42,7 +42,9 @@ describe("createActionFooterRegistry", () => {
     const reg = createActionFooterRegistry({ strict: false, onError })
     reg.register("a")
     reg.register("b")
-    expect(onError).toHaveBeenCalledWith(expect.stringMatching(/only one footer/))
+    expect(onError).toHaveBeenCalledWith(
+      expect.stringMatching(/only one footer/),
+    )
   })
 
   it("assertPolicy none + registered throws when strict", () => {
@@ -86,15 +88,39 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
   it("renders host footer with data-testid inside provider", () => {
     // registrationCount starts at 0 → hidden attribute present
     const html = renderToStaticMarkup(
-      <ActionFooterHostProvider activeKey="play" footerPolicy="optional" strict={false}>
+      <ActionFooterHostProvider
+        activeKey="play"
+        footerPolicy="optional"
+        strict={false}
+      >
         <div className="console-shell">
           <ActionFooterHostSlot />
         </div>
       </ActionFooterHostProvider>,
     )
     expect(html).toContain('data-testid="console-action-footer-host"')
-    expect(html).toContain("empty:h-0")  // collapse when no portal children
+    expect(html).toContain("empty:h-0") // collapse when no portal children
     expect(html).toContain('data-registered="0"')
+  })
+
+  it("uses the exact header gradient while preserving shell chrome", () => {
+    const html = renderToStaticMarkup(
+      <ActionFooterHostProvider activeKey="play" strict={false}>
+        <ActionFooterHostSlot />
+      </ActionFooterHostProvider>,
+    )
+
+    expect(html).toContain("bg-gradient-to-r")
+    expect(html).toContain("from-[var(--accent-tint)]")
+    expect(html).toContain("to-[var(--surface)]")
+    expect(html).toContain("border-t")
+    expect(html).toContain("border-[var(--line)]")
+    expect(html).toContain("shadow-[var(--shadow-flat)]")
+    expect(html).toContain("env(safe-area-inset-bottom)")
+    expect(html).toContain("empty:h-0")
+    expect(html).toContain("empty:border-0")
+    expect(html).toContain("empty:p-0")
+    expect(html).toContain("empty:shadow-none")
   })
 
   it("host is a footer landmark with accessible name", () => {
