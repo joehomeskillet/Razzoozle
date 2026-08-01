@@ -162,6 +162,15 @@ export interface ActionFooterHostProviderProps {
   footerPolicy?: ActionFooterPolicyMode
   /** Override strictness (tests). Default: DEV or vitest. */
   strict?: boolean
+  /**
+   * AF-compact WP-2.1: which footer render-mode the host should use.
+   * "default" = full-width text-action footer (legacy).
+   * "compact" = icon-only `CompactIconBar` (44x44 touch-targets).
+   * Defaults to "default" so existing callers stay byte-identical.
+   * Sourced from `TabDef.actionFooterVariant` (ConsoleShell computes the
+   * active tab's variant and forwards here).
+   */
+  variant?: ActionFooterVariant
 }
 
 /**
@@ -174,6 +183,7 @@ export function ActionFooterHostProvider({
   activeKey,
   footerPolicy,
   strict,
+  variant: variantProp,
 }: ActionFooterHostProviderProps) {
   const registryRef = useRef<ActionFooterRegistry | null>(null)
   if (!registryRef.current) {
@@ -183,10 +193,10 @@ export function ActionFooterHostProvider({
 
   const [target, setTargetState] = useState<HTMLElement | null>(null)
   const [registrationCount, setRegistrationCount] = useState(0)
-  // AF-compact WP-0.2: hardcoded `"default"` for Wave-0 contract-freeze.
-  // ConsoleShell (WP-2.1) will introduce a `variant` Provider prop and lift
-  // this to `useState<ActionFooterVariant>` so opt-in tabs render `CompactIconBar`.
-  const variant: ActionFooterVariant = "default"
+  // AF-compact WP-2.1: ConsoleShell forwards the active tab's
+  // `TabDef.actionFooterVariant` here; absent/undefined keeps the legacy
+  // default footer (no breaking change for existing tabs).
+  const variant: ActionFooterVariant = variantProp ?? "default"
   // Keep a ref so the context API object stays stable across count updates
   // (ActionFooter only depends on register/target — not registrationCount).
   // Subscribe in layout phase. IMPORTANT: child ActionFooter may register in
