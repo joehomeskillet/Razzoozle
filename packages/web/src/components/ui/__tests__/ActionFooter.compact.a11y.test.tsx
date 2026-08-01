@@ -74,16 +74,17 @@ describe("ActionFooterCompact a11y & integration", () => {
     const html = render(
       <ActionFooterCompact actions={[baseAction]} instanceId="tab-1" />,
     )
-    expect(html).toMatch(/<footer[^>]*role="toolbar"/)
+    expect(html).toMatch(/<div[^>]*role="toolbar"/)
+    expect(html).not.toMatch(/<footer[^>]*role="toolbar"/)
     expect(html).toContain('aria-label="aria.actionFooterCompact"')
     expect(html).toContain('data-testid="action-footer-compact"')
   })
 
-  it("includes iOS safe-area-inset-bottom padding on the footer", () => {
+  it("does not add duplicate safe-area chrome inside the compact bar", () => {
     const html = render(
       <ActionFooterCompact actions={[baseAction]} instanceId="tab-2" />,
     )
-    expect(html).toContain("env(safe-area-inset-bottom)")
+    expect(html).not.toContain("safe-area-inset-bottom")
   })
 
   it("renders one button per action in DOM order", () => {

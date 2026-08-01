@@ -41,25 +41,20 @@ export function ActionFooterCompact({
   if (!portalTarget) return null
 
   return createPortal(
-    <footer
+    <div
       role="toolbar"
       aria-label={t("aria.actionFooterCompact")}
       data-testid="action-footer-compact"
-      className={clsx(
-        "flex items-center gap-2 border-t px-4 py-2",
-        "border-[var(--line)] bg-[var(--surface-2)]",
-        "pb-[calc(0.5rem+env(safe-area-inset-bottom))]",
-        className,
-      )}
+      className={clsx("flex items-center justify-end gap-2", className)}
     >
       {leading != null && (
         <div className="flex min-w-0 items-center gap-2">{leading}</div>
       )}
-      <IconBarDock actions={actions} />
+      {actions.length > 0 && <IconBarDock actions={actions} />}
       {trailing != null && (
         <div className="ml-auto flex items-center gap-2">{trailing}</div>
       )}
-    </footer>,
+    </div>,
     portalTarget,
   )
 }
