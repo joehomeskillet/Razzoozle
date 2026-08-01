@@ -8,8 +8,12 @@ import Input from "@razzoozle/web/components/Input"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import { RadioGroup, type RadioGroupOption } from "@razzoozle/web/components/Radio"
 import Select from "@razzoozle/web/components/Select"
-import ToggleField from "@razzoozle/web/components/ui/ToggleField"
-import { ActionFooter, LabelRow } from "@razzoozle/web/components/ui"
+import {
+  ActionFooter,
+  ActionFooterControls,
+  ActionFooterField,
+  ActionFooterSummary,
+} from "@razzoozle/web/components/ui"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -172,82 +176,6 @@ export const ExperienceModeSection = ({
             {t("manager:selectQuizz.experienceMode.previewPlaceholder")}
           </span>
         </div>
-      </div>
-    </fieldset>
-  )
-}
-
-/**
- * Team-assignment radio cards — the shared self/auto pattern, extracted so
- * both the team-mode section and the pyramid experience mode (E-13, which
- * implies team play) render the identical control without markup drift.
- */
-const TeamAssignmentFieldset = ({
-  name,
-  testIdPrefix = "",
-  value,
-  onChange,
-}: {
-  name: string
-  testIdPrefix?: string
-  value: "self" | "auto"
-  onChange: (next: "self" | "auto") => void
-}) => {
-  const { t } = useTranslation()
-  return (
-    <fieldset className="space-y-2">
-      <legend className="text-sm font-medium text-[var(--ink)]">
-        {t("manager:selectQuizz.teamAssignment.label")}
-      </legend>
-      <div
-        role="radiogroup"
-        aria-label={t("manager:selectQuizz.teamAssignment.label")}
-        className="flex flex-col gap-2 sm:flex-row sm:gap-4"
-      >
-        {(
-          [
-            {
-              value: "self" as const,
-              labelKey: "manager:selectQuizz.teamAssignment.self",
-              hintKey: "manager:selectQuizz.teamAssignment.selfHint",
-            },
-            {
-              value: "auto" as const,
-              labelKey: "manager:selectQuizz.teamAssignment.auto",
-              hintKey: "manager:selectQuizz.teamAssignment.autoHint",
-            },
-          ] as const
-        ).map((opt) => {
-          const selected = value === opt.value
-          return (
-            <label
-              key={opt.value}
-              className={`flex cursor-pointer items-start gap-2 rounded-[var(--radius-theme)] border px-3 py-2 ${
-                selected
-                  ? "border-[var(--color-primary)] bg-[var(--surface-3)]"
-                  : "border-[var(--border-hairline)] bg-[var(--surface)]"
-              }`}
-            >
-              <input
-                type="radio"
-                name={name}
-                value={opt.value}
-                checked={selected}
-                onChange={() => onChange(opt.value)}
-                className="mt-1"
-                data-testid={`${testIdPrefix}team-assignment-${opt.value}`}
-              />
-              <span className="flex flex-col">
-                <span className="text-sm font-medium text-[var(--ink)]">
-                  {t(opt.labelKey)}
-                </span>
-                <span className="text-xs text-[var(--ink-muted)]">
-                  {t(opt.hintKey)}
-                </span>
-              </span>
-            </label>
-          )
-        })}
       </div>
     </fieldset>
   )
@@ -493,9 +421,45 @@ const ConfigSelectQuizz = () => {
     )
   }
 
+  const selectedQuiz = useMemo(
+    () => quizzes.find((q) => q.id === selected) ?? null,
+    [quizzes, selected],
+  )
+
+  // Count non-default start options for mobile disclosure badge (AF-10).
+  const mobileChangedCount = useMemo(() => {
+    let n = 0
+    if (config.scoringMode !== undefined && scoringMode !== "speed") n += 1
+    if (experienceModesActive && experienceMode !== "classic") n += 1
+    if (config.teamMode === true && teamMode) n += 1
+    if (config.klassenEnabled === true && klassenMode) n += 1
+    if (participantCap != null) n += 1
+    if (
+      endScreenModesList.length > 1 &&
+      endScreen !== (endScreenModesList[0] ?? "full")
+    ) {
+      n += 1
+    }
+    return n
+  }, [
+    config.scoringMode,
+    config.teamMode,
+    config.klassenEnabled,
+    scoringMode,
+    experienceModesActive,
+    experienceMode,
+    teamMode,
+    klassenMode,
+    participantCap,
+    endScreen,
+    endScreenModesList,
+  ])
+
+  const footerControlsDisabled = !selected
+
   return (
     <>
-      {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
+      {/* Content: title, search, quiz list only (AF06 — options live in footer). */}
       <div className="flex flex-1 flex-col">
         <div className="mb-4 flex shrink-0 flex-col gap-3">
           <PageHeader
@@ -517,7 +481,7 @@ const ConfigSelectQuizz = () => {
         <motion.div
           role="radiogroup"
           aria-label={t("manager:quizz.startGame")}
-          className="min-h-0 flex-1 space-y-3 p-0.5 pb-20"
+          className="min-h-0 flex-1 space-y-3 p-0.5"
           {...listContainerMotion(reducedMotion)}
         >
           {filteredList.map((quizz, index) => (
@@ -530,7 +494,9 @@ const ConfigSelectQuizz = () => {
                 title={quizz.subject}
                 meta={
                   quizz.questionCount != null
-                    ? t("manager:selectQuizz.meta.questions", { count: quizz.questionCount })
+                    ? t("manager:selectQuizz.meta.questions", {
+                        count: quizz.questionCount,
+                      })
                     : undefined
                 }
                 selected={selected === quizz.id}
@@ -539,96 +505,166 @@ const ConfigSelectQuizz = () => {
             </motion.div>
           ))}
         </motion.div>
+      </div>
 
-        {selected && (
-          <motion.div
-            initial={reducedMotion ? false : { opacity: 0, y: -8 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={
-              reducedMotion ? undefined : { duration: 0.2, ease: "easeOut" }
+      <ActionFooter
+        mobileOptionsLabel={t("manager:selectQuizz.optionsTitle", {
+          defaultValue: "Startoptionen",
+        })}
+        mobileChangedCount={mobileChangedCount}
+        context={
+          <ActionFooterSummary
+            title={
+              selectedQuiz
+                ? selectedQuiz.subject
+                : t("manager:selectQuizz.noQuizSelected", {
+                    defaultValue: "Kein Quiz gewählt",
+                  })
             }
-            className="shrink-0 space-y-2 rounded-lg bg-[var(--surface-2)] p-3"
-          >
-            <h3 className="text-sm font-semibold text-[var(--ink)]">
-              {t("manager:selectQuizz.optionsTitle")}
-            </h3>
-
+            meta={
+              selectedQuiz?.questionCount != null
+                ? t("manager:selectQuizz.meta.questions", {
+                    count: selectedQuiz.questionCount,
+                  })
+                : t("manager:quizz.pleaseSelect")
+            }
+          />
+        }
+        controls={
+          <ActionFooterControls className="play-footer-controls">
             {config.scoringMode !== undefined && (
-              <ToggleField
+              <ActionFooterField
                 label={t("manager:gameMode.speedMode")}
-                description={t("manager:selectQuizz.modeSelector.scoringModeHint")}
-                checked={scoringMode === "speed"}
-                onChange={(isSpeed) =>
-                  setScoringMode(isSpeed ? "speed" : "accuracy")
-                }
-              />
+                htmlFor="play-scoring-mode"
+              >
+                <Select
+                  id="play-scoring-mode"
+                  value={scoringMode}
+                  disabled={footerControlsDisabled}
+                  onChange={(e) =>
+                    setScoringMode(
+                      e.target.value === "accuracy" ? "accuracy" : "speed",
+                    )
+                  }
+                  data-testid="play-scoring-mode"
+                  className="min-h-11 min-w-[9rem]"
+                >
+                  <option value="speed">
+                    {t("manager:gameMode.speedMode")}
+                  </option>
+                  <option value="accuracy">
+                    {t("manager:gameMode.accuracyMode", {
+                      defaultValue: "Genauigkeit",
+                    })}
+                  </option>
+                </Select>
+              </ActionFooterField>
             )}
 
-            <ExperienceModeSection
-              unlockedExperienceModes={unlockedExperienceModes}
-              experienceMode={experienceMode}
-              onExperienceModeChange={setExperienceMode}
-            />
-
-            {selectedRequiresTeams && config.teamMode === true && (
-              <>
-                <p className="text-xs text-[var(--ink-muted)]">
-                  {t("manager:selectQuizz.experienceMode.teamsRequiredHint")}
-                </p>
-                <TeamAssignmentFieldset
-                  name="team-assignment-experience"
-                  testIdPrefix="experience-"
-                  value={teamAssignment}
-                  onChange={setTeamAssignment}
-                />
-              </>
+            {experienceModesActive && (
+              <ActionFooterField
+                label={t("manager:selectQuizz.experienceMode.label")}
+                htmlFor="play-experience-mode"
+              >
+                <Select
+                  id="play-experience-mode"
+                  value={experienceMode}
+                  disabled={footerControlsDisabled}
+                  onChange={(e) =>
+                    setExperienceMode(e.target.value as ExperienceModeKey)
+                  }
+                  data-testid="experience-mode-select"
+                  className="min-h-11 min-w-[10rem]"
+                >
+                  {EXPERIENCE_MODE_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.key}
+                      value={opt.key}
+                      disabled={!unlockedExperienceModes.has(opt.csvToken)}
+                    >
+                      {t(
+                        `manager:selectQuizz.experienceMode.options.${opt.key}.name`,
+                      )}
+                    </option>
+                  ))}
+                </Select>
+              </ActionFooterField>
             )}
 
             {config.teamMode === true && (
-              <>
-                <ToggleField
-                  label={t("manager:gameMode.teamMode")}
-                  description={t("manager:selectQuizz.modeSelector.teamModeHint")}
-                  checked={teamMode}
-                  onChange={setTeamMode}
-                />
-                {teamMode && (
-                  <TeamAssignmentFieldset
-                    name="team-assignment"
-                    value={teamAssignment}
-                    onChange={setTeamAssignment}
-                  />
-                )}
-              </>
+              <ActionFooterField
+                label={t("manager:gameMode.teamMode")}
+                htmlFor="play-team-mode"
+              >
+                <Select
+                  id="play-team-mode"
+                  value={
+                    teamMode || selectedRequiresTeams
+                      ? teamAssignment
+                      : "off"
+                  }
+                  disabled={footerControlsDisabled || selectedRequiresTeams}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === "off") {
+                      setTeamMode(false)
+                    } else {
+                      setTeamMode(true)
+                      setTeamAssignment(v as "self" | "auto")
+                    }
+                  }}
+                  data-testid="play-team-mode"
+                  className="min-h-11 min-w-[9rem]"
+                >
+                  {!selectedRequiresTeams && (
+                    <option value="off">
+                      {t("common:off", { defaultValue: "Aus" })}
+                    </option>
+                  )}
+                  <option value="self">
+                    {t("manager:selectQuizz.teamAssignment.self")}
+                  </option>
+                  <option value="auto">
+                    {t("manager:selectQuizz.teamAssignment.auto")}
+                  </option>
+                </Select>
+              </ActionFooterField>
             )}
 
             {config.klassenEnabled === true && (
               <>
-                <ToggleField
+                <ActionFooterField
                   label={t("manager:gameMode.klassenMode")}
-                  description={t("manager:selectQuizz.modeSelector.klassenModeHint")}
-                  checked={klassenMode}
-                  onChange={setKlassenMode}
-                />
-
+                  htmlFor="play-klassen-mode"
+                >
+                  <Select
+                    id="play-klassen-mode"
+                    value={klassenMode ? "on" : "off"}
+                    disabled={footerControlsDisabled}
+                    onChange={(e) => setKlassenMode(e.target.value === "on")}
+                    data-testid="play-klassen-mode"
+                    className="min-h-11 min-w-[8rem]"
+                  >
+                    <option value="off">
+                      {t("common:off", { defaultValue: "Aus" })}
+                    </option>
+                    <option value="on">
+                      {t("common:on", { defaultValue: "An" })}
+                    </option>
+                  </Select>
+                </ActionFooterField>
                 {klassenMode && (
-                  <LabelRow
+                  <ActionFooterField
                     label={t("manager:selectQuizz.selectClass")}
                     htmlFor="class-select"
-                    statusMessage={
-                      !classId
-                        ? {
-                            text: t("manager:selectQuizz.klassenModeNeedsClass"),
-                            tone: "error",
-                          }
-                        : undefined
-                    }
                   >
                     <Select
                       id="class-select"
                       value={classId}
                       onChange={(e) => setClassId(e.target.value)}
                       data-testid="class-select"
+                      disabled={footerControlsDisabled}
+                      className="min-h-11 min-w-[10rem]"
                     >
                       <option value="">
                         {t("manager:selectQuizz.chooseClass")}
@@ -644,21 +680,22 @@ const ConfigSelectQuizz = () => {
                           </option>
                         ))}
                     </Select>
-                  </LabelRow>
+                  </ActionFooterField>
                 )}
               </>
             )}
 
-            {endScreenModesList.length > 1 ? (
-              <LabelRow
+            {endScreenModesList.length > 1 && (
+              <ActionFooterField
                 label={t("manager:gameMode.endScreenSelectTitle")}
                 htmlFor="endscreen-select"
               >
                 <Select
                   id="endscreen-select"
                   value={endScreen}
+                  disabled={footerControlsDisabled}
                   onChange={(e) => setEndScreen(e.target.value)}
-                  className="w-full sm:w-72"
+                  className="min-h-11 min-w-[9rem]"
                 >
                   {endScreenModesList.map((mode) => (
                     <option key={mode} value={mode}>
@@ -666,63 +703,55 @@ const ConfigSelectQuizz = () => {
                     </option>
                   ))}
                 </Select>
-              </LabelRow>
-            ) : (
-              <LabelRow label={t("manager:gameMode.endScreenSelectTitle")}>
-                <div className="text-sm font-medium text-[var(--ink)]">
-                  {t(
-                    `manager:gameMode.endScreenMode.${endScreenModesList[0] ?? "full"}`,
-                  )}
-                </div>
-              </LabelRow>
+              </ActionFooterField>
             )}
 
-            {/* Participant cap setting for per-game player limit */}
             <ParticipantCapSetting
+              variant="compact"
               value={participantCap}
               onChange={setParticipantCap}
+              disabled={footerControlsDisabled}
               testIdPrefix="select-quizz-"
             />
-          </motion.div>
-        )}
-      </div>
-
-      <ActionFooter>
-        <Button
-          data-testid="quizz-start-btn"
-          variant="primary"
-          size="lg"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={handleSubmit}
-          disabled={!selected || (klassenMode && !classId)}
-          title={
-            !selected
-              ? t("manager:quizz.pleaseSelect")
-              : klassenMode && !classId
-                ? t("manager:selectQuizz.klassenModeNeedsClass")
-                : undefined
-          }
-        >
-          <Play className="size-5" aria-hidden strokeWidth={2.5} />
-          <span>{t("manager:quizz.startGame")}</span>
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          type="button"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => {
-            void handleCopySoloLink()
-          }}
-          disabled={!selected}
-          title={selected ? undefined : t("manager:quizz.pleaseSelect")}
-        >
-          <Copy className="size-5" aria-hidden />
-          <span>
-            {t("manager:selectQuizz.copySoloLink")}
-          </span>
-        </Button>
-      </ActionFooter>
+          </ActionFooterControls>
+        }
+        secondaryActions={
+          <Button
+            variant="secondary"
+            size="lg"
+            type="button"
+            className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+            onClick={() => {
+              void handleCopySoloLink()
+            }}
+            disabled={!selected}
+            title={selected ? undefined : t("manager:quizz.pleaseSelect")}
+          >
+            <Copy className="size-5" aria-hidden />
+            <span>{t("manager:selectQuizz.copySoloLink")}</span>
+          </Button>
+        }
+        primaryAction={
+          <Button
+            data-testid="quizz-start-btn"
+            variant="primary"
+            size="lg"
+            className="w-full rounded-[var(--radius-theme)] sm:w-auto"
+            onClick={handleSubmit}
+            disabled={!selected || (klassenMode && !classId)}
+            title={
+              !selected
+                ? t("manager:quizz.pleaseSelect")
+                : klassenMode && !classId
+                  ? t("manager:selectQuizz.klassenModeNeedsClass")
+                  : undefined
+            }
+          >
+            <Play className="size-5" aria-hidden strokeWidth={2.5} />
+            <span>{t("manager:quizz.startGame")}</span>
+          </Button>
+        }
+      />
     </>
   )
 }

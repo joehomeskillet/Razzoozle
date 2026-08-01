@@ -60,4 +60,19 @@ describe("ParticipantCapSetting Component (Issue #477 / SDD #477)", () => {
   it("exports ParticipantCapSetting function component", () => {
     expect(typeof ParticipantCapSetting).toBe("function")
   })
+
+  it("compact variant renders select presets (AF06 footer)", () => {
+    const html = renderToStaticMarkup(
+      <ParticipantCapSetting
+        variant="compact"
+        value={50}
+        onChange={vi.fn()}
+        testIdPrefix="select-quizz-"
+      />,
+    )
+    expect(html).toContain('data-variant="compact"')
+    expect(html).toContain('data-testid="select-quizz-participant-cap-select"')
+    expect(html).toContain("25")
+    expect(html).toContain("200")
+  })
 })
