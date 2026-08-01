@@ -4,6 +4,7 @@ import {
   bakeSvgForPixi,
   ensureSvgIntrinsicSize,
   hexToCssColor,
+  isRasterUrl,
   normalizeSvgViewBox,
   parseSvgViewBox,
   targetRasterSize,
@@ -104,6 +105,26 @@ describe("parseSvgViewBox", () => {
     expect(
       parseSvgViewBox('<svg viewBox="0 0 1920 350"></svg>'),
     ).toEqual({ minX: 0, minY: 0, width: 1920, height: 350 })
+  })
+})
+
+describe("isRasterUrl", () => {
+  it("detects file paths and query-hashed PNGs", () => {
+    expect(isRasterUrl("/assets/kenney-sun-01.png")).toBe(true)
+    expect(isRasterUrl("/assets/foo.png?v=1")).toBe(true)
+    expect(isRasterUrl("/assets/photo.jpg")).toBe(true)
+  })
+
+  it("detects Vite-inlined data:image/png|jpeg URLs (production bug)", () => {
+    expect(isRasterUrl("data:image/png;base64,iVBORw0KGgo=")).toBe(true)
+    expect(isRasterUrl("data:image/jpeg;base64,/9j/4AAQ=")).toBe(true)
+    expect(isRasterUrl("data:image/jpg;base64,xx")).toBe(true)
+  })
+
+  it("does not treat SVG data URIs or plain SVG paths as raster", () => {
+    expect(isRasterUrl("data:image/svg+xml,%3Csvg")).toBe(false)
+    expect(isRasterUrl("/assets/sky-day.svg")).toBe(false)
+    expect(isRasterUrl("data:image/svg+xml;charset=utf-8,x")).toBe(false)
   })
 })
 

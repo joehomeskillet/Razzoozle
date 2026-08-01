@@ -267,7 +267,14 @@ async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
   return img
 }
 
-function isRasterUrl(url: string): boolean {
+/**
+ * True for PNG/JPEG sources — including Vite-inlined `data:image/png;base64,…`
+ * URLs. The old `\.png($|?)` check missed data-URIs, so production builds
+ * (which inline small Kenney props) treated rasters as SVG text, bake failed,
+ * and sun/clouds/trees were reported missing while SVGs still loaded.
+ */
+export function isRasterUrl(url: string): boolean {
+  if (/^data:image\/(png|jpe?g)\b/i.test(url)) return true
   return /\.png(\?|#|$)/i.test(url) || /\.jpe?g(\?|#|$)/i.test(url)
 }
 
