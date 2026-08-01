@@ -406,6 +406,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
       nav={nav}
       activeKey={active.key}
       onSelect={onSelect}
+      footerPolicy={active.actionFooter}
       headerActions={
         <>
           <LanguageSwitcher />

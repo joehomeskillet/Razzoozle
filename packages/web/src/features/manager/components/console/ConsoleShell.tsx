@@ -18,6 +18,11 @@ import Button from "@razzoozle/web/components/Button"
 import NavItem from "@razzoozle/web/features/manager/components/console/NavItem"
 import SubGroup from "@razzoozle/web/features/manager/components/console/SubGroup"
 import "@razzoozle/web/features/manager/components/console/tokens.css"
+import {
+  ActionFooterHostProvider,
+  ActionFooterHostSlot,
+  type ActionFooterPolicyMode,
+} from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
 
 export interface ConsoleNavItem {
   /** Stable key used for active comparison + React keys. */
@@ -45,6 +50,11 @@ export interface ConsoleShellProps {
   /** The active section's content. */
   children: ReactNode
   className?: string
+  /**
+   * AF-15 footer policy for the active tab (AF03 #1009).
+   * Used for dev/test contract checks on the shell host registry.
+   */
+  footerPolicy?: ActionFooterPolicyMode
 }
 
 // The desktop-rail breakpoint (design.md Mobile-First scale: 920/600/375).
@@ -155,6 +165,7 @@ const ConsoleShell = ({
   onSelect,
   children,
   className,
+  footerPolicy,
 }: ConsoleShellProps) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -287,6 +298,10 @@ const ConsoleShell = ({
 
   return (
     <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <ActionFooterHostProvider
+        activeKey={activeKey}
+        footerPolicy={footerPolicy}
+      >
       <motion.section
         initial={reducedMotion ? false : { opacity: 0, y: 16 }}
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -304,6 +319,7 @@ const ConsoleShell = ({
           "console-shell z-10 m-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-theme)] bg-[var(--surface-2)] shadow-lg sm:m-3",
           className,
         )}
+        style={{ ["--console-nav-width" as string]: "14rem" }}
       >
         {/* ── Branded header band (spec §2 differentiation move) ───────────── */}
         <header
@@ -356,7 +372,7 @@ const ConsoleShell = ({
           {showRail && (
             <nav
               aria-label={title}
-              className="w-56 shrink-0 overflow-y-auto nav-scroll border-r border-[var(--line)] bg-[var(--surface-2)] p-2"
+              className="w-[var(--console-nav-width)] shrink-0 overflow-y-auto nav-scroll border-r border-[var(--line)] bg-[var(--surface-2)] p-2"
             >
               {renderNavSections(onSelect)}
             </nav>
@@ -389,7 +405,12 @@ const ConsoleShell = ({
             {children}
           </div>
         </div>
+
+        {/* AF03: shell-owned ActionFooter host — full width, outside tabpanel.
+            Portal target for ActionFooter (AF04). Hidden when no registration. */}
+        <ActionFooterHostSlot />
       </motion.section>
+      </ActionFooterHostProvider>
 
       {/* ── Mobile nav Drawer (D12 + D10 dialog standard) ─────────────────── */}
       <Dialog.Portal>
