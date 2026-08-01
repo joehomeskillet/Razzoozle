@@ -8,11 +8,7 @@ import {
   Plus,
   SkipForward,
 } from "lucide-react"
-import {
-  Children,
-  type ReactNode,
-  useId,
-} from "react"
+import { Children, type ReactNode, useId } from "react"
 import { useTranslation } from "react-i18next"
 import type { CompactIconBarAction } from "./ActionFooter.compact.types"
 
@@ -40,11 +36,9 @@ export function ActionFooterSummary({
       data-testid="action-footer-summary"
       className={clsx("min-w-0 flex-1 sm:mr-auto", className)}
     >
-      <div className="truncate text-sm font-semibold text-ink">
-        {title}
-      </div>
+      <div className="text-ink truncate text-sm font-semibold">{title}</div>
       {meta != null && meta !== false && (
-        <div className="truncate text-xs text-ink-muted">{meta}</div>
+        <div className="text-ink-muted truncate text-xs">{meta}</div>
       )}
     </div>
   )
@@ -55,6 +49,14 @@ export interface ActionFooterFieldProps {
   label: ReactNode
   /** Optional id linkage for the control. */
   htmlFor?: string
+  /**
+   * Field density.
+   * `stacked` (default) — label above the control; current AF05 layout.
+   * `inline` — label and control on one 44px-aligned row, visibly labelled
+   *   (AF-11), `for`/`id` link preserved. Stable htmlFor/id association.
+   *   Min-width safety + no horizontal scroll from the primitive itself.
+   */
+  density?: "stacked" | "inline"
   children: ReactNode
   className?: string
 }
@@ -63,28 +65,29 @@ export interface ActionFooterFieldProps {
 export function ActionFooterField({
   label,
   htmlFor,
+  density = "stacked",
   children,
   className,
 }: ActionFooterFieldProps) {
   const autoId = useId()
   const labelId = `${autoId}-label`
+  const isInline = density === "inline"
   return (
     <div
       data-testid="action-footer-field"
-      className={clsx("flex min-w-0 flex-col gap-1", className)}
+      data-density={density}
+      className={clsx(
+        "flex min-w-0",
+        isInline ? "min-h-11 items-center gap-2" : "flex-col gap-1",
+        className,
+      )}
     >
       {htmlFor ? (
-        <label
-          htmlFor={htmlFor}
-          className="text-xs font-medium text-ink-muted"
-        >
+        <label htmlFor={htmlFor} className="text-ink-muted text-xs font-medium">
           {label}
         </label>
       ) : (
-        <span
-          id={labelId}
-          className="text-xs font-medium text-ink-muted"
-        >
+        <span id={labelId} className="text-ink-muted text-xs font-medium">
           {label}
         </span>
       )}
@@ -112,10 +115,7 @@ export function ActionFooterControls({
   return (
     <div
       data-testid="action-footer-controls"
-      className={clsx(
-        "flex min-w-0 flex-wrap items-end gap-3",
-        className,
-      )}
+      className={clsx("flex min-w-0 flex-wrap items-end gap-3", className)}
     >
       {children}
     </div>
@@ -204,8 +204,7 @@ export function ActionFooterOptionsDisclosure({
 }: ActionFooterOptionsDisclosureProps) {
   const { t } = useTranslation("manager")
   const resolvedLabel =
-    label ??
-    t("actionFooter.options", { defaultValue: "Options" })
+    label ?? t("actionFooter.options", { defaultValue: "Options" })
 
   return (
     <details
@@ -228,7 +227,7 @@ export function ActionFooterOptionsDisclosure({
           {changedCount != null && changedCount > 0 && (
             <span
               data-testid="action-footer-options-changed"
-              className="rounded-full bg-accent-tint px-2 py-0.5 text-xs font-semibold text-accent-contrast"
+              className="bg-accent-tint text-accent-contrast rounded-full px-2 py-0.5 text-xs font-semibold"
             >
               {changedCount}
             </span>
@@ -243,7 +242,6 @@ export function ActionFooterOptionsDisclosure({
     </details>
   )
 }
-
 
 /**
  * AF07 — CompactIconBar atom + dock. 44×44 icon button + row container
@@ -279,12 +277,12 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
       className={clsx(
         "inline-flex h-11 w-11 items-center justify-center rounded-md",
         "transition-colors motion-reduce:transition-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]",
+        "focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)] focus-visible:outline-none",
         action.disabled
-          ? "text-[var(--ink-muted)] opacity-50 cursor-not-allowed"
+          ? "cursor-not-allowed text-[var(--ink-muted)] opacity-50"
           : action.active
             ? "bg-[var(--accent-contrast)] text-[var(--accent-contrast-text)]"
-            : "text-[var(--ink)] hover:bg-accent-tint focus-visible:bg-accent-tint",
+            : "hover:bg-accent-tint focus-visible:bg-accent-tint text-[var(--ink)]",
         className,
       )}
     >
