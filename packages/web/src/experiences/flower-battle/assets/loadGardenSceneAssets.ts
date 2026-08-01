@@ -514,6 +514,7 @@ export async function loadGardenSceneAssets(
     plant_head_bell: plantHeads.bell,
     plant_head_sun: plantHeads.sun,
     plant_head_tulip: plantHeads.tulip,
+    face_emote_happy: plantHeads.faceHappy,
   })
     .filter(([, tex]) => tex != null)
     .map(([alias]) => alias)
