@@ -422,8 +422,8 @@ const ConfigSelectQuizz = () => {
   }
 
   const selectedQuiz = useMemo(
-    () => quizzes.find((q) => q.id === selected) ?? null,
-    [quizzes, selected],
+    () => quizzList.find((q) => q.id === selected) ?? null,
+    [quizzList, selected],
   )
 
   // Count non-default start options for mobile disclosure badge (AF-10).
