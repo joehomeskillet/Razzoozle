@@ -367,8 +367,13 @@ const ConsoleShell = ({
           </h1>
         </header>
 
+        {/* AF03/AF04: host mounts early (DOM before tabpanel) so the portal
+            target ref is ready when ActionFooter registers; `order-last` keeps
+            it visually at the shell bottom under header + body. */}
+        <ActionFooterHostSlot className="order-last" />
+
         {/* ── Body: rail (≥920px) ↔ Drawer trigger (mobile) + content ──────── */}
-        <div className="flex min-h-0 flex-1 flex-col min-[920px]:flex-row">
+        <div className="order-2 flex min-h-0 flex-1 flex-col min-[920px]:flex-row">
           {showRail && (
             <nav
               aria-label={title}
@@ -385,19 +390,9 @@ const ConsoleShell = ({
             aria-labelledby={tabsMounted ? activeTabId : undefined}
             aria-label={tabsMounted ? undefined : activeTabLabel}
             tabIndex={0}
-            // scroll-padding only — never layout padding-bottom for ActionFooter
-            // clearance. Sticky pins to the scrollport; extra pb on this box makes
-            // the sticky element park early when you scroll into the padding zone
-            // (W2-G / #234). Content pages use pb-20 above ActionFooter instead.
-            // scrollPaddingBottom still keeps focus/scroll-into-view above the bar.
-            // Content siblings of ActionFooter must NOT use min-h-0 (W2-G2) — that
-            // breaks position:sticky so the bar scrolls mid-panel.
-            style={{
-              scrollPaddingBottom: "calc(3.5rem + env(safe-area-inset-bottom))",
-            }}
+            // AF04: footer is a shell sibling (not sticky in this panel) — no
+            // scrollPaddingBottom / pb-20 clearance for ActionFooter overlay.
             className={clsx(
-              // p-4 sm:p-6 must stay symmetric — ActionFooter bleed is
-              // sticky -bottom-4 -mb-4 sm:-bottom-6 sm:-mb-6 to cancel these.
               "console-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6",
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-primary)]",
             )}
@@ -405,10 +400,6 @@ const ConsoleShell = ({
             {children}
           </div>
         </div>
-
-        {/* AF03: shell-owned ActionFooter host — full width, outside tabpanel.
-            Portal target for ActionFooter (AF04). Hidden when no registration. */}
-        <ActionFooterHostSlot />
       </motion.section>
       </ActionFooterHostProvider>
 

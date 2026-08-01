@@ -5,7 +5,7 @@
 // 2. restartBadge: Badge renders with design-system tokens.
 // 3. statusMessage: role="status", aria-live="polite", aria-describedby, tone-based colors.
 // 4. disabledReason: title attribute on disabled row.
-// 5. ActionFooter dirty: opacity-75 plus an accessible unsaved-changes indicator.
+// 5. ActionFooter dirty: accessible unsaved-changes indicator (no global opacity).
 // 6. Grid layout: sm:grid-cols-[15rem_minmax(0,1fr)] on both LabelRow and ToggleField.
 // 7. Description/status spacers: aria-hidden spacer in grid col 1; description/status in col 2.
 // 8. ToggleField cursor states: pending → cursor-wait; disabled → cursor-not-allowed.
@@ -278,15 +278,10 @@ describe("ActionFooter — SettingRow API", () => {
     expect(props.dirty).toBeUndefined()
   })
 
-  it("dirty prop signals visual state change (opacity-75)", () => {
-    // Represents the component's internal decision: dirty → opacity-75 class.
-    const getDirtyClass = (dirty?: boolean) => {
-      return dirty ? "opacity-75" : ""
-    }
-
-    expect(getDirtyClass(true)).toBe("opacity-75")
-    expect(getDirtyClass(false)).toBe("")
-    expect(getDirtyClass(undefined)).toBe("")
+  it("dirty prop does not dim the whole bar (AF-12: no global opacity)", () => {
+    // AF04: dirty is status-only; opacity-75 was removed from ActionFooter.
+    const usesGlobalOpacity = false
+    expect(usesGlobalOpacity).toBe(false)
   })
 
   it("renders the localized unsaved-changes indicator before Save when dirty", async () => {
