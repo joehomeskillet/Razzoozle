@@ -1,6 +1,8 @@
 import * as Select from "@radix-ui/react-select"
 import AlertDialog from "@razzoozle/web/components/AlertDialog"
-import Badge, { assignTriggerClass } from "@razzoozle/web/components/manager/Badge"
+import Badge, {
+  assignTriggerClass,
+} from "@razzoozle/web/components/manager/Badge"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import FilterGroup from "@razzoozle/web/components/manager/FilterGroup"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
@@ -11,7 +13,6 @@ import {
   popoverContentClass,
   popoverItemClass,
 } from "@razzoozle/web/components/manager/popover"
-import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
@@ -21,16 +22,13 @@ import {
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
 import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
-import {
-  Library,
-  Pencil,
-  Plus,
-  SearchX,
-  Trash2,
-} from "lucide-react"
+import { Library, Pencil, Plus, SearchX, Trash2 } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
-import { listContainerMotion, listItemMotion } from "@razzoozle/web/features/manager/components/console/listMotion"
+import {
+  listContainerMotion,
+  listItemMotion,
+} from "@razzoozle/web/features/manager/components/console/listMotion"
 import { TYPE_LABEL_KEY } from "./constants"
 import { useCatalogManager } from "./useCatalogManager"
 import { formatDate } from "./utils"
@@ -125,18 +123,7 @@ const ConfigCatalog = () => {
             label={t("manager:catalog.bulkSelected", { count: selectionCount })}
             onClear={selection.clear}
           >
-            <Button
-              size="sm"
-              variant="danger"
-              className="rounded-lg"
-              onClick={() => setBulkDeleteOpen(true)}
-              classNameContent="min-w-0 gap-1"
-            >
-              <Trash2 className="size-4 shrink-0" aria-hidden />
-              <span className="min-w-0 truncate">
-                {t("manager:catalog.bulkDelete")}
-              </span>
-            </Button>
+            {null}
           </BulkActionToolbar>
         )}
 
@@ -146,10 +133,6 @@ const ConfigCatalog = () => {
               icon={Library}
               headline={t("manager:catalog.emptyHeadline")}
               hint={t("manager:catalog.empty")}
-              action={{
-                label: t("manager:catalog.addManual"),
-                onClick: openAddModal,
-              }}
             />
           </div>
         ) : filteredEntries.length === 0 ? (
@@ -226,9 +209,7 @@ const ConfigCatalog = () => {
                           <Badge className="bg-[var(--surface-3)] text-[var(--ink-medium)]">
                             {t(`manager:catalog.source.${source}`)}
                           </Badge>
-                          <span>
-                            {formatDate(entry.addedAt)}
-                          </span>
+                          <span>{formatDate(entry.addedAt)}</span>
                         </span>
                       }
                       footer={
@@ -267,7 +248,9 @@ const ConfigCatalog = () => {
                                 >
                                   <Plus className="size-3" />
                                   <Select.Value
-                                    placeholder={t("manager:labels.assignTitle")}
+                                    placeholder={t(
+                                      "manager:labels.assignTitle",
+                                    )}
                                   />
                                 </Select.Trigger>
                                 <Select.Portal>
@@ -358,7 +341,9 @@ const ConfigCatalog = () => {
           open={bulkDeleteOpen}
           onOpenChange={setBulkDeleteOpen}
           title={t("manager:catalog.bulkDeleteTitle")}
-          description={t("manager:catalog.bulkDeleteConfirm", { count: selectionCount })}
+          description={t("manager:catalog.bulkDeleteConfirm", {
+            count: selectionCount,
+          })}
           confirmLabel={t("common:delete")}
           onConfirm={handleBulkDelete}
         />
@@ -366,16 +351,29 @@ const ConfigCatalog = () => {
 
       <ActionFooterCompact
         instanceId="catalog"
-        actions={[
-          {
-            key: "catalog-create",
-            iconName: "Create",
-            intent: "primary",
-            label: t("manager:catalog.addManual"),
-            onClick: openAddModal,
-            testId: "catalog-create-btn",
-          },
-        ]}
+        actions={
+          selectionActive
+            ? [
+                {
+                  key: "delete",
+                  iconName: "Delete",
+                  intent: "danger",
+                  label: t("manager:catalog.bulkDelete"),
+                  onClick: () => setBulkDeleteOpen(true),
+                  testId: "catalog-bulk-delete-btn",
+                },
+              ]
+            : [
+                {
+                  key: "create",
+                  iconName: "Create",
+                  intent: "primary",
+                  label: t("manager:catalog.addManual"),
+                  onClick: openAddModal,
+                  testId: "catalog-create-btn",
+                },
+              ]
+        }
       />
     </>
   )

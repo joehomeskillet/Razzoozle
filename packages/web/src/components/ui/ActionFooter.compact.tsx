@@ -40,12 +40,15 @@ export function ActionFooterCompact({
 
   return createPortal(
     <div
-      role="toolbar"
-      aria-label={t("aria.actionFooter", { defaultValue: "Page actions" })}
       data-testid="action-footer-compact"
       className={clsx("flex items-center justify-end gap-2", className)}
     >
-      {actions.length > 0 && <IconBarDock actions={actions} />}
+      {actions.length > 0 && (
+        <IconBarDock
+          actions={actions}
+          ariaLabel={t("aria.actionFooter", { defaultValue: "Page actions" })}
+        />
+      )}
     </div>,
     portalTarget,
   )

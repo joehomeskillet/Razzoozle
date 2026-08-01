@@ -318,7 +318,7 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
       data-action-key={action.key}
       data-testid={action.testId ?? `icon-bar-button-${action.key}`}
       className={clsx(
-        "inline-flex h-11 w-11 items-center justify-center rounded-md",
+        "inline-flex h-11 w-11 items-center justify-center rounded-lg",
         "transition-colors motion-reduce:transition-none",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
         action.disabled
@@ -341,11 +341,16 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
 
 export interface IconBarDockProps {
   actions: readonly CompactIconBarAction[]
+  ariaLabel?: string
   className?: string
 }
 
 /** Row of IconBarButtons — `role="group"` for landmark semantics. */
-export function IconBarDock({ actions, className }: IconBarDockProps) {
+export function IconBarDock({
+  actions,
+  ariaLabel,
+  className,
+}: IconBarDockProps) {
   const primaryCount = actions.filter(
     (action) => action.intent === "primary",
   ).length
@@ -355,7 +360,11 @@ export function IconBarDock({ actions, className }: IconBarDockProps) {
   }
 
   return (
-    <div role="group" className={clsx("flex items-center gap-1", className)}>
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className={clsx("flex items-center gap-1", className)}
+    >
       {actions.map((a) => (
         <IconBarButton key={a.key} action={a} />
       ))}

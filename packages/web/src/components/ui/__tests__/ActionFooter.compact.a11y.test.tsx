@@ -67,13 +67,12 @@ describe("ActionFooterCompact a11y & integration", () => {
     expect(html).toBe("")
   })
 
-  it("renders a role=toolbar footer with the compact a11y label", () => {
+  it("leaves toolbar semantics to the labelled icon group", () => {
     const html = render(
       <ActionFooterCompact actions={[baseAction]} instanceId="tab-1" />,
     )
-    expect(html).toMatch(/<div[^>]*role="toolbar"/)
-    expect(html).not.toMatch(/<footer[^>]*role="toolbar"/)
-    expect(html).toContain('aria-label="Page actions"')
+    expect(html).not.toContain('role="toolbar"')
+    expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-label="Page actions"/)
     expect(html).toContain('data-testid="action-footer-compact"')
   })
 

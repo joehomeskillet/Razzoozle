@@ -226,6 +226,15 @@ describe("IconBarDock", () => {
     expect(html).toContain('data-testid="icon-bar-button-b"')
   })
 
+  it("accepts an accessible label without adding toolbar semantics", () => {
+    const html = render(
+      <IconBarDock actions={[baseAction]} ariaLabel="Page actions" />,
+    )
+
+    expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-label="Page actions"/)
+    expect(html).not.toContain('role="toolbar"')
+  })
+
   it("rejects more than one primary action", () => {
     expect(() =>
       render(

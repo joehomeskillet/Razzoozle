@@ -1,9 +1,7 @@
 // AF-compact catalog callsite — WP-044ccbe01f23.
 //
-// Goal: ConfigCatalog exposes a single primary ActionFooterCompact action
-// (`catalog-create`, icon `Create`, opens the add modal) and stops rendering
-// the legacy full-width ActionFooter zones. Catalog search/filters/selection,
-// bulk-delete, edit/delete, modal and EmptyState behaviour stay untouched.
+// Goal: ConfigCatalog exposes one state-specific ActionFooterCompact action:
+// Create normally, Delete during selection. Body toolbar keeps count + clear.
 
 import type { ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
@@ -11,7 +9,12 @@ import { describe, expect, it, vi } from "vitest"
 
 import ConfigCatalog from "../ConfigCatalog"
 
-const openAddModal = vi.fn()
+const mocks = vi.hoisted(() => ({
+  openAddModal: vi.fn(),
+  setBulkDeleteOpen: vi.fn(),
+  selectionActive: false,
+  selectionCount: 0,
+}))
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -51,12 +54,12 @@ vi.mock("../catalog/useCatalogManager", () => ({
     pendingDelete: null,
     setPendingDelete: vi.fn(),
     bulkDeleteOpen: false,
-    setBulkDeleteOpen: vi.fn(),
-    selectionCount: 0,
-    selectionActive: false,
+    setBulkDeleteOpen: mocks.setBulkDeleteOpen,
+    selectionCount: mocks.selectionCount,
+    selectionActive: mocks.selectionActive,
     entries: [],
     filteredEntries: [],
-    openAddModal,
+    openAddModal: mocks.openAddModal,
     openEditModal: vi.fn(),
     closeModal: vi.fn(),
     handleDelete: vi.fn(),
@@ -102,7 +105,14 @@ vi.mock("@razzoozle/web/components/manager/PageHeader", () => ({
 }))
 
 vi.mock("@razzoozle/web/components/manager/BulkActionToolbar", () => ({
-  default: () => null,
+  default: ({ count, children }: { count: number; children: ReactNode }) => (
+    <div data-testid="catalog-bulk-toolbar" data-count={count}>
+      {children}
+      <button type="button" data-testid="catalog-clear-selection">
+        Clear
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock("@razzoozle/web/components/manager/SelectAllControl", () => ({
@@ -138,7 +148,11 @@ vi.mock("@razzoozle/web/components/Input", () => ({
 }))
 
 vi.mock("@razzoozle/web/components/Button", () => ({
-  default: () => null,
+  default: ({ children }: { children: ReactNode }) => (
+    <button type="button" data-testid="catalog-body-action">
+      {children}
+    </button>
+  ),
 }))
 
 vi.mock("@razzoozle/web/components/manager/Badge", () => ({
@@ -152,7 +166,16 @@ vi.mock("@razzoozle/web/components/manager/popover", () => ({
 }))
 
 vi.mock("@razzoozle/web/features/manager/components/console", () => ({
-  EmptyState: () => null,
+  EmptyState: ({
+    action,
+  }: {
+    action?: { label: string; onClick: () => void }
+  }) =>
+    action ? (
+      <button type="button" data-testid="catalog-empty-action">
+        {action.label}
+      </button>
+    ) : null,
   ListRow: () => null,
 }))
 
@@ -174,27 +197,54 @@ vi.mock(
 const render = (node: ReactNode) => renderToStaticMarkup(node)
 
 describe("ConfigCatalog compact footer", () => {
-  it("renders one 44x44 primary create action with the legacy selector", () => {
+  it("renders one rounded 44x44 primary Create action in normal state", () => {
+    mocks.selectionActive = false
+    mocks.selectionCount = 0
     const html = render(<ConfigCatalog />)
     expect(html.match(/data-testid="catalog-create-btn"/g)).toHaveLength(1)
-    expect(html).toContain('data-action-key="catalog-create"')
+    expect(html).toContain('data-action-key="create"')
     expect(html).toContain('aria-label="manager:catalog.addManual"')
     expect(html).toContain('title="manager:catalog.addManual"')
     expect(html).toContain("h-11")
     expect(html).toContain("w-11")
+    expect(html).toContain("rounded-lg")
     expect(html).toContain("bg-[var(--color-primary)]")
+    expect(html).not.toContain("catalog-bulk-delete-btn")
   })
 
-  it("uses the action dock without legacy footer zones", () => {
+  it("does not duplicate Create in the empty state", () => {
+    mocks.selectionActive = false
     const html = render(<ConfigCatalog />)
-    expect(html).toContain('role="toolbar"')
+    expect(html).not.toContain('data-testid="catalog-empty-action"')
+    expect(html.match(/data-testid="catalog-create-btn"/g)).toHaveLength(1)
+  })
+
+  it("shows only danger Delete in footer while body toolbar keeps count and clear", () => {
+    mocks.selectionActive = true
+    mocks.selectionCount = 2
+    const html = render(<ConfigCatalog />)
+
+    expect(html).toContain('data-testid="catalog-bulk-toolbar"')
+    expect(html).toContain('data-count="2"')
+    expect(html).toContain('data-testid="catalog-clear-selection"')
+    expect(html).not.toContain('data-testid="catalog-body-action"')
+    expect(html).toContain('data-testid="catalog-bulk-delete-btn"')
+    expect(html).toContain('data-action-key="delete"')
+    expect(html).toContain("text-[var(--state-wrong)]")
+    expect(html).not.toContain('data-testid="catalog-create-btn"')
+  })
+
+  it("uses labelled group semantics without legacy footer zones", () => {
+    mocks.selectionActive = false
+    const html = render(<ConfigCatalog />)
+    expect(html).not.toContain('role="toolbar"')
     expect(html).toContain('role="group"')
     expect(html).not.toContain("<footer")
     expect(html).not.toContain('data-testid="action-footer-primary"')
     expect(html).not.toContain('data-testid="action-footer-secondary"')
     expect(html).not.toContain('data-testid="action-footer-controls"')
     expect(html).not.toContain('data-testid="action-footer-summary"')
-    // Exactly one icon button rendered by the compact bar.
+    expect(html).not.toContain("pb-20")
     expect(html.match(/<button/g)).toHaveLength(1)
   })
 })
