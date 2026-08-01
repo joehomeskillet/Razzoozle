@@ -1,7 +1,7 @@
 import clsx from "clsx"
 import {
-  useEffect,
   useId,
+  useLayoutEffect,
   type ReactNode,
 } from "react"
 import { createPortal } from "react-dom"
@@ -77,11 +77,17 @@ const ActionFooter = ({
   const { t } = useTranslation("manager")
   const host = useActionFooterHostOptional()
   const instanceId = useId()
+  // Depend on stable register/target only — NOT the whole host object.
+  // registrationCount changes used to recreate `host` and re-fire this effect
+  // (unregister→register), which could leave the shell host empty for a frame
+  // or stuck hidden if batching went wrong.
+  const register = host?.register
+  const portalTarget = host?.target
 
-  useEffect(() => {
-    if (!host) return
-    return host.register(instanceId)
-  }, [host, instanceId])
+  useLayoutEffect(() => {
+    if (!register) return
+    return register(instanceId)
+  }, [register, instanceId])
 
   const dirtyStatus =
     dirty && status == null ? (
@@ -105,10 +111,11 @@ const ActionFooter = ({
     overflowActions != null ||
     primaryAction != null
 
+  const willPortal = Boolean(portalTarget)
   const body = hasZones ? (
     <div
       data-testid="action-footer"
-      data-portaled={host ? "true" : "false"}
+      data-portaled={willPortal ? "true" : "false"}
       data-layout="zones"
       className={clsx(
         "flex w-full min-w-0 flex-col gap-3",
@@ -179,7 +186,7 @@ const ActionFooter = ({
     // Legacy-only path (pre-zone call sites).
     <div
       data-testid="action-footer"
-      data-portaled={host ? "true" : "false"}
+      data-portaled={willPortal ? "true" : "false"}
       data-layout="legacy-children"
       className={clsx(
         "flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
@@ -193,12 +200,13 @@ const ActionFooter = ({
     </div>
   )
 
-  if (host) {
-    if (!host.target) return null
-    return createPortal(body, host.target)
+  // Portal when the shell host node is ready. NEVER return null — if the host
+  // is still mounting, fall back to in-flow chrome so primary actions remain
+  // visible (Play Start / Create / Save must not vanish).
+  if (portalTarget) {
+    return createPortal(body, portalTarget)
   }
 
-  // Fallback chrome outside shell (tests).
   return (
     <div
       data-testid="action-footer-fallback"
