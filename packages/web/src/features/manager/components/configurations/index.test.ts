@@ -3,6 +3,8 @@ import {
   oldToNewTabKeyMap,
   resolveDefaultManagerTab,
   BUILTIN_TABS,
+  type ActionFooterPolicy,
+  type TabDef,
 } from "./index"
 
 describe("Manager Configuration Tabs", () => {
@@ -205,6 +207,61 @@ describe("Manager Configuration Tabs", () => {
       expect(keys).not.toContain("schueler")
       expect(keys).not.toContain("quizz")
       expect(keys).not.toContain("ki")
+    })
+  })
+
+  describe("ActionFooter policy (AF-15 / #1008)", () => {
+    it("every BUILTIN_TABS entry has an actionFooter policy", () => {
+      for (const tab of BUILTIN_TABS) {
+        expect(tab.actionFooter).toMatch(/^(required|optional|none)$/)
+      }
+    })
+
+    it("optional/none entries provide a non-empty actionFooterReason", () => {
+      for (const tab of BUILTIN_TABS) {
+        if (tab.actionFooter === "optional" || tab.actionFooter === "none") {
+          expect(tab.actionFooterReason.trim().length).toBeGreaterThan(0)
+        }
+      }
+    })
+
+    it("required entries do not carry an actionFooterReason field", () => {
+      for (const tab of BUILTIN_TABS) {
+        if (tab.actionFooter === "required") {
+          expect("actionFooterReason" in tab).toBe(false)
+        }
+      }
+    })
+
+    it("matches AF00 matrix for core tabs", () => {
+      const byKey = Object.fromEntries(BUILTIN_TABS.map((t) => [t.key, t.actionFooter]))
+      expect(byKey.play).toBe("required")
+      expect(byKey.quiz).toBe("required")
+      expect(byKey.gamemode).toBe("none")
+      expect(byKey.results).toBe("none")
+      expect(byKey.labels).toBe("required")
+      expect(byKey.media).toBe("required")
+    })
+
+    it("ActionFooterPolicy union is assignable for all three variants", () => {
+      const required: ActionFooterPolicy = { actionFooter: "required" }
+      const optional: ActionFooterPolicy = {
+        actionFooter: "optional",
+        actionFooterReason: "may register later",
+      }
+      const none: ActionFooterPolicy = {
+        actionFooter: "none",
+        actionFooterReason: "read-only",
+      }
+      expect(required.actionFooter).toBe("required")
+      expect(optional.actionFooterReason).toContain("later")
+      expect(none.actionFooter).toBe("none")
+    })
+
+    it("TabDef requires actionFooter (type-level smoke via satisfies)", () => {
+      // Runtime stand-in: every tab is a TabDef with policy
+      const sample: TabDef = BUILTIN_TABS[0]
+      expect(sample.actionFooter).toBeDefined()
     })
   })
 })
