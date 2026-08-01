@@ -418,6 +418,7 @@ const ConsoleBody = ({ activeKey, onSelect }: ConsoleBodyProps) => {
       nav={nav}
       activeKey={active.key}
       onSelect={onSelect}
+      variant={active.actionFooterVariant}
       footerPolicy={active.actionFooter}
       headerActions={
         <>

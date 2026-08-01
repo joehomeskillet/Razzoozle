@@ -270,7 +270,15 @@
   "aria": {
     "openNav": "Apri navigazione",
     "navTitle": "Navigazione",
-    "exportQuestionsCsv": "Esporta risposte per domanda come CSV"
+    "actionFooterCompact": "Controlli di gioco compatti",
+    "exportQuestionsCsv": "Esporta risposte per domanda come CSV",
+    "actions": {
+      "autoToggle": "Attiva o disattiva l’avanzamento automatico",
+      "skipQuestion": "Salta domanda",
+      "revealAnswer": "Mostra risposta",
+      "subtractTime": "Sottrai 10 secondi",
+      "addTime": "Aggiungi 10 secondi"
+    }
   },
   "theme": {
     "sounds": {

@@ -13,7 +13,15 @@
   "aria": {
     "openNav": "Ouvrir la navigation",
     "navTitle": "Navigation",
-    "exportQuestionsCsv": "Exporter les réponses par question en CSV"
+    "actionFooterCompact": "Commandes de jeu compactes",
+    "exportQuestionsCsv": "Exporter les réponses par question en CSV",
+    "actions": {
+      "autoToggle": "Activer ou désactiver l’avancement automatique",
+      "skipQuestion": "Passer la question",
+      "revealAnswer": "Afficher la réponse",
+      "subtractTime": "Retirer 10 secondes",
+      "addTime": "Ajouter 10 secondes"
+    }
   },
   "configurationsTitle": "Configurations",
   "kickPlayer": {
