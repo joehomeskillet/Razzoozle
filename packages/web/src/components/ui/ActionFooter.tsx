@@ -1,64 +1,92 @@
 import clsx from "clsx"
-import type { ReactNode } from "react"
+import {
+  useEffect,
+  useId,
+  type ReactNode,
+} from "react"
+import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
+import { useActionFooterHostOptional } from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
 
 export interface ActionFooterProps {
-  /** Action buttons (e.g. Save / Reset). */
+  /** Action buttons (e.g. Save / Reset). Free `children` deprecated after AF05 zones. */
   children: ReactNode
   className?: string
-  /** Optional dirty state indicator. When true, shows "Ungespeicherte Änderungen" label. */
+  /**
+   * Dirty-state indicator. When true, shows "Ungespeicherte Änderungen"
+   * (role="status", aria-live="polite"). Does **not** dim the whole bar
+   * (AF-12 — no global opacity).
+   */
   dirty?: boolean
 }
 
 /**
- * Sticky bottom bar pinned to the bottom of a scrollable console panel.
+ * Manager page actions — AF04 portals into the ConsoleShell ActionFooterHost.
  *
- * The ConsoleShell tabpanel uses `p-4 sm:p-6`. The negative-margin bleed
- * `-mx-4 -mb-4 sm:-mx-6 sm:-mb-6` cancels those paddings exactly so the bar
- * spans the full panel width without any visible gap. The `pt-3 pb-3` plus
- * `pb-[calc(0.75rem+env(safe-area-inset-bottom))]` keeps buttons comfortable
- * on iOS notch devices.
+ * **Shell contract (AF03/AF04 / #983):**
+ * - When rendered under `ActionFooterHostProvider`, content is portaled into
+ *   the shell host (`<footer>` sibling of BodyGrid, full shell width).
+ * - Registers via `host.register(instanceId)` and cleans up on unmount.
+ * - No `position: sticky` / `fixed`, no negative margin bleed, no `pb-20`
+ *   clearance (AF-17). Host owns chrome (border, surface, padding, safe-area).
  *
- * **Layout contract (W2-G2 / #234):** This footer must be a *direct flex child*
- * of the ConsoleShell tabpanel (via fragment siblings is fine). Its content
- * sibling may use `flex-1` to push the bar down on short pages, but must NOT
- * use `min-h-0` — that lets the sibling shrink below content size, spills
- * overflow into the tabpanel scroller, and breaks `position: sticky` so the
- * bar scrolls away mid-panel. Working pattern: `className="flex flex-1 flex-col pb-20"`.
- * Broken pattern: `className="flex min-h-0 flex-1 flex-col pb-20"`.
+ * **Fallback:** Outside the shell provider (tests, rare non-console mounts),
+ * renders an in-flow bar with the same chrome — still no sticky/neg margins.
  *
- * **Dirty state:** When `dirty=true`, renders a status label "Ungespeicherte Änderungen"
- * (role="status", aria-live="polite") before the buttons, plus applies subtle
- * opacity reduction to the whole bar. Parent component manages the dirty flag
- * and button states; ActionFooter is purely presentational.
- *
- * Presentational — children provide the button row.
+ * Presentational — children provide the button row until AF05 zone slots.
  */
 const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => {
   const { t } = useTranslation("manager")
+  const host = useActionFooterHostOptional()
+  const instanceId = useId()
 
+  useEffect(() => {
+    if (!host) return
+    return host.register(instanceId)
+  }, [host, instanceId])
+
+  const inner = (
+    <div
+      data-testid="action-footer"
+      data-portaled={host ? "true" : "false"}
+      className={clsx(
+        // Button row: right-aligned on ≥sm, stacked full-width below sm
+        "flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
+        className,
+      )}
+    >
+      {dirty && (
+        <span
+          role="status"
+          aria-live="polite"
+          className="text-sm font-medium text-[var(--ink-muted)] sm:mr-auto sm:order-first"
+        >
+          {t("editor.unsavedChanges")}
+        </span>
+      )}
+      {children}
+    </div>
+  )
+
+  // Shell path: portal into host (chrome lives on ActionFooterHostSlot).
+  if (host) {
+    if (!host.target) {
+      // Host mounted but ref not yet committed — register already ran;
+      // render nothing at the tabpanel call site (no sticky ghost).
+      return null
+    }
+    return createPortal(inner, host.target)
+  }
+
+  // Fallback: in-flow chrome, no sticky / negative margins (AF-17).
   return (
     <div
+      data-testid="action-footer-fallback"
       className={clsx(
-        // Bleed to the tabpanel edges (ConsoleShell tabpanel: p-4 sm:p-6) so the
-        // bar sits flush at the very bottom. `sticky bottom` pins the BORDER edge
-        // to the container's PADDING edge, so a negative bottom (= -padding) is
-        // needed to reach the panel's border bottom — `bottom-0` alone leaves a
-        // padding-sized gap. The card's `overflow-hidden rounded-2xl` clips the
-        // bottom-RIGHT corner to the card radius; the bottom-LEFT stays square
-        // (it abuts the nav rail).
-        "sticky -bottom-4 z-10 -mx-4 -mb-4 sm:-mx-6 sm:-bottom-6 sm:-mb-6",
-        // Surface — fully opaque so scrolled content never bleeds through.
-        // Token-only: use CSS variables for theme flexibility
-        "border-t border-[var(--line)] bg-[var(--surface)]",
-        // Shadow lifting the bar off scrolled content.
+        "shrink-0 border-t border-[var(--line)] bg-[var(--surface)]",
         "shadow-[var(--shadow-flat)]",
-        // Inner padding — horizontal matches bleed compensation, vertical 12px + safe-area
         "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-        // Button row: right-aligned on ≥sm, stacked full-width below sm
         "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
-        // Dirty state indicator: subtle opacity reduction
-        dirty && "opacity-75",
         className,
       )}
     >
