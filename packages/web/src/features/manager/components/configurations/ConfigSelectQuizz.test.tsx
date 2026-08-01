@@ -235,6 +235,15 @@ const renderPlay = (config: ManagerConfig = fullConfig) => {
 }
 
 describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", () => {
+  it("keeps start options single-column until the viewport can fit both label rows", () => {
+    const html = renderPlay()
+
+    expect(html).toContain(
+      'class="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:gap-4"',
+    )
+    expect(html).not.toContain("sm:grid-cols-2")
+  })
+
   it("renders all six start-option control families in page content, not the old footer zones", () => {
     const html = renderPlay()
 

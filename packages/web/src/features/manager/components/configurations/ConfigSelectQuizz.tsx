@@ -484,7 +484,7 @@ const ConfigSelectQuizz = () => {
           })}
           className="mb-4 shrink-0"
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:gap-4">
             {config.scoringMode !== undefined && (
               <LabelRow
                 label={t("manager:gameMode.speedMode")}
@@ -606,7 +606,7 @@ const ConfigSelectQuizz = () => {
             )}
 
             {config.klassenEnabled === true && klassenMode && (
-              <div className="sm:col-span-2">
+              <div className="xl:col-span-2">
                 <LabelRow
                   label={t("manager:selectQuizz.selectClass")}
                   htmlFor="class-select"
