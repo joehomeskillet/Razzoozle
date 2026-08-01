@@ -67,8 +67,29 @@ export interface PlantStageTextures {
   fullBloom: Texture
 }
 
-/** One complete set of stage textures per species. */
-export type PlantVariantTextures = Record<TeamPlantKey, PlantStageTextures>
+/** Complete stage textures for every species whose bundle loaded intact. */
+export type PlantVariantTextures = Partial<
+  Record<TeamPlantKey, PlantStageTextures>
+>
+
+/**
+ * Runtime alias lookup for textures created by this loader. Weak keys keep the
+ * diagnostics registry from extending texture lifetime beyond scene teardown.
+ */
+const GARDEN_TEXTURE_ALIASES = new WeakMap<Texture, GardenSceneAssetAlias>()
+
+export function registerGardenTextureAlias(
+  alias: GardenSceneAssetAlias,
+  texture: Texture,
+): void {
+  GARDEN_TEXTURE_ALIASES.set(texture, alias)
+}
+
+export function gardenAssetAliasForTexture(
+  texture: Texture,
+): GardenSceneAssetAlias | undefined {
+  return GARDEN_TEXTURE_ALIASES.get(texture)
+}
 
 /**
  * Deterministic team-slot → species mapping.
@@ -97,7 +118,8 @@ export interface GardenSceneLoadedAssets {
   plantBody: PlantBodyTextures
   /**
    * Full-color Fluent production plant stage textures per species.
-   * `null` when the new plant bundle failed to load completely (fallback).
+   * `null` when no species has a complete bundle. Missing species are omitted
+   * so only their slots use the procedural fallback.
    */
   plantVariants: PlantVariantTextures | null
   texturesByAlias: Record<string, Texture>
@@ -410,10 +432,11 @@ function isFluentPlantAlias(alias: GardenSceneAssetAlias): boolean {
 
 /**
  * Build the typed per-species stage map from the flat alias texture map.
- * Returns `null` when any required stage texture is missing, so the caller
- * can fall back to the legacy DummyPlantView path.
+ * Shared seedling/sprout are mandatory for every species. Once present, each
+ * complete species is retained independently; an incomplete species is simply
+ * omitted so only that slot falls back to DummyPlantView.
  */
-function buildPlantVariants(
+export function buildPlantVariants(
   texturesByAlias: Record<string, Texture>,
 ): PlantVariantTextures | null {
   const seedling = texturesByAlias.plant_shared_seedling
@@ -429,28 +452,16 @@ function buildPlantVariants(
     return { seedling, sprout, bud, halfBloom: half, fullBloom: full }
   }
 
-  const violet = stages(
-    texturesByAlias.plant_violet_bud,
-    texturesByAlias.plant_violet_half,
-    texturesByAlias.plant_violet_full,
-  )
-  const blue = stages(
-    texturesByAlias.plant_blue_bud,
-    texturesByAlias.plant_blue_half,
-    texturesByAlias.plant_blue_full,
-  )
-  const orange = stages(
-    texturesByAlias.plant_orange_bud,
-    texturesByAlias.plant_orange_half,
-    texturesByAlias.plant_orange_full,
-  )
-  const green = stages(
-    texturesByAlias.plant_green_bud,
-    texturesByAlias.plant_green_half,
-    texturesByAlias.plant_green_full,
-  )
-  if (!violet || !blue || !orange || !green) return null
-  return { violet, blue, orange, green }
+  const variants: PlantVariantTextures = {}
+  for (const key of TEAM_PLANT_KEYS) {
+    const variant = stages(
+      texturesByAlias[`plant_${key}_bud`],
+      texturesByAlias[`plant_${key}_half`],
+      texturesByAlias[`plant_${key}_full`],
+    )
+    if (variant) variants[key] = variant
+  }
+  return Object.keys(variants).length > 0 ? variants : null
 }
 
 function paletteFillForAlias(
@@ -594,6 +605,7 @@ export async function loadGardenSceneAssets(
         continue
       }
       texturesByAlias[alias] = texture
+      registerGardenTextureAlias(alias, texture)
       loadedAliases.push(alias)
     } catch {
       missingAliases.push(alias)
@@ -652,49 +664,6 @@ export async function loadGardenSceneAssets(
     pot: texturesByAlias.plant_pot_01,
   }
 
-  const usedSpriteAliases = Object.entries({
-    bg_sky_day: layers.sky,
-    bg_sun_glow: layers.sun,
-    bg_cloud_01: layers.cloud01,
-    bg_cloud_02: layers.cloud02,
-    bg_cloud_03: layers.cloud03,
-    bg_cloud_04: layers.cloud04,
-    bg_hill_back_01: layers.distantHills,
-    bg_bush_back_01: layers.distantBushes,
-    bg_tree_mid_01: layers.midTrees,
-    bg_tree_02: texturesByAlias.bg_tree_02,
-    bg_tree_03: texturesByAlias.bg_tree_03,
-    env_fence_white: layers.fence,
-    env_grass_base: layers.grass,
-    env_soil_plot_01: layers.soilPlots,
-    env_foreground_leaf_left: layers.foregroundLeafLeft,
-    env_foreground_leaf_right: layers.foregroundLeafRight,
-    plant_head_round: plantHeads.round,
-    plant_head_bell: plantHeads.bell,
-    plant_head_sun: plantHeads.sun,
-    plant_head_tulip: plantHeads.tulip,
-    face_emote_happy: plantHeads.faceHappy,
-    plant_stem_01: plantBody.stem,
-    plant_leaf_01: plantBody.leaf,
-    plant_pot_01: plantBody.pot,
-    plant_shared_seedling: texturesByAlias.plant_shared_seedling,
-    plant_shared_sprout: texturesByAlias.plant_shared_sprout,
-    plant_violet_bud: texturesByAlias.plant_violet_bud,
-    plant_violet_half: texturesByAlias.plant_violet_half,
-    plant_violet_full: texturesByAlias.plant_violet_full,
-    plant_blue_bud: texturesByAlias.plant_blue_bud,
-    plant_blue_half: texturesByAlias.plant_blue_half,
-    plant_blue_full: texturesByAlias.plant_blue_full,
-    plant_orange_bud: texturesByAlias.plant_orange_bud,
-    plant_orange_half: texturesByAlias.plant_orange_half,
-    plant_orange_full: texturesByAlias.plant_orange_full,
-    plant_green_bud: texturesByAlias.plant_green_bud,
-    plant_green_half: texturesByAlias.plant_green_half,
-    plant_green_full: texturesByAlias.plant_green_full,
-  })
-    .filter(([, tex]) => tex != null)
-    .map(([alias]) => alias)
-
   const requiredMissing = GARDEN_SCENE_REQUIRED_ALIASES.filter(
     (a) => !loadedAliases.includes(a),
   )
@@ -706,7 +675,10 @@ export async function loadGardenSceneAssets(
       requiredMissing.length > 0 ? requiredMissing : missingAliases,
     failedUrls,
     fallbackAliases,
-    usedSpriteAliases,
+    // Scene construction records only textures that are actually selected by
+    // visible Sprites. Loaded/available assets stay separately observable via
+    // loadedAliases.
+    usedSpriteAliases: [],
   }
 
   return {

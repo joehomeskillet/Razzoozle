@@ -42,16 +42,27 @@ function teamSnapshots(count: number, stage: number | null) {
   }))
 }
 
-function waitFrames(n: number): Promise<void> {
+function nextFrame(): Promise<void> {
   return new Promise((resolve) => {
-    let left = Math.max(1, n)
-    const step = () => {
-      left -= 1
-      if (left <= 0) resolve()
-      else requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
+    requestAnimationFrame(() => resolve())
   })
+}
+
+/**
+ * All five macro stages must be selected to prove all 14 Fluent aliases.
+ * Stage 2 is required: stages 2–4 are the only users of shared sprout.
+ */
+export const PREVIEW_PLANT_DIAGNOSTIC_STAGES = [1, 2, 5, 8, 10] as const
+
+async function waitForPlantTransitions(
+  procedural: ProceduralGardenScene,
+  maxFrames = 120,
+): Promise<void> {
+  for (let frame = 0; frame < maxFrames; frame += 1) {
+    if (procedural.arePlantTransitionsSettled()) return
+    await nextFrame()
+  }
+  throw new Error(`plant transition did not settle within ${maxFrames} frames`)
 }
 
 function countSceneTeamHuds(procedural: ProceduralGardenScene): number {
@@ -91,16 +102,6 @@ async function main(): Promise<void> {
     })
   }
 
-  const teams = teamSnapshots(teamCount, stageOverride)
-  if (typeof procedural.updateSnapshot === "function") {
-    procedural.updateSnapshot({
-      teams,
-      phase: "preview",
-    })
-  }
-
-  // Let layout + first paint settle (ResizeObserver, cover-fit, asset glyphs).
-  await waitFrames(4)
   // Force a full-size layout pass so anchors match the canvas client size.
   if (typeof procedural.updateLayout === "function") {
     procedural.updateLayout(
@@ -108,7 +109,22 @@ async function main(): Promise<void> {
       Math.max(1, canvas.clientHeight || 1080),
     )
   }
-  await waitFrames(3)
+
+  // Exercise every macro texture through the real production view. Diagnostics
+  // accumulate only aliases selected by visible Sprites; final snapshot below
+  // restores the requested visual fixture before declaring screenshot-ready.
+  for (const stage of PREVIEW_PLANT_DIAGNOSTIC_STAGES) {
+    procedural.updateSnapshot({
+      teams: teamSnapshots(teamCount, stage),
+      phase: "preview-diagnostics",
+    })
+    await waitForPlantTransitions(procedural)
+  }
+
+  const teams = teamSnapshots(teamCount, stageOverride)
+  procedural.updateSnapshot({ teams, phase: "preview" })
+  await waitForPlantTransitions(procedural)
+  await nextFrame()
 
   const hudMounted = countSceneTeamHuds(procedural)
 
@@ -142,6 +158,8 @@ async function main(): Promise<void> {
     hudMounted,
     anchorsInside: layout.allAnchorsInsideVisibleRect,
     plantsInside: layout.allPlantsInsideVisibleRect,
+    diagnosticStages: [...PREVIEW_PLANT_DIAGNOSTIC_STAGES],
+    usedSpriteAliases: [...used],
   }
 
   if (status) {

@@ -15,7 +15,7 @@
  * check them in a single call rather than relying on canvas existence.
  */
 
-import { Container, Texture } from "pixi.js"
+import { Container, Sprite, Texture } from "pixi.js"
 
 import type {
   GardenAssetDiagnostics,
@@ -28,7 +28,10 @@ import type {
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
-import { TEAM_PLANT_KEYS } from "../assets/loadGardenSceneAssets"
+import {
+  gardenAssetAliasForTexture,
+  TEAM_PLANT_KEYS,
+} from "../assets/loadGardenSceneAssets"
 import { AssetPlantView } from "./AssetPlantView"
 import {
   defaultPlantColors,
@@ -118,6 +121,8 @@ export interface ProceduralGardenScene extends GardenScene {
   /** Visible logical band after cover-crop (null before first layout). */
   getVisibleRect(): LogicalRect | null
   getLayoutDiagnostics(): GardenLayoutDiagnostics
+  /** True when every visible asset plant has completed its stage transition. */
+  arePlantTransitionsSettled(): boolean
 }
 
 export interface CreateGardenSceneOptions {
@@ -138,7 +143,8 @@ export interface CreateGardenSceneOptions {
   plantBody?: PlantBodyTextures
   /**
    * Full-color Fluent production plant stage textures per species. When
-   * present, high-quality `AssetPlantView` is used instead of DummyPlantView.
+   * present for a species, high-quality `AssetPlantView` is used for that
+   * species. Missing species fall back independently to DummyPlantView.
    */
   plantVariants?: PlantVariantTextures | null
   /**
@@ -170,6 +176,33 @@ export function createGardenScene(
   const plantVariants = options.plantVariants ?? null
   const prefersReducedMotion = options.prefersReducedMotion ?? false
   const assetDiagnostics = options.assetDiagnostics ?? null
+  const usedAliasSet = new Set<string>()
+  if (assetDiagnostics) {
+    // Loading says what is available; scene traversal below is the sole source
+    // of truth for what production actually selected into a visible Sprite.
+    assetDiagnostics.usedSpriteAliases.length = 0
+  }
+
+  function recordUsedSpriteAliases(
+    container: Container,
+    ancestorsVisible = true,
+  ): void {
+    if (!assetDiagnostics || !ancestorsVisible) return
+    for (const child of container.children) {
+      const visible = ancestorsVisible && child.visible
+      if (!visible) continue
+      if (child instanceof Sprite) {
+        const alias = gardenAssetAliasForTexture(child.texture)
+        if (alias && !usedAliasSet.has(alias)) {
+          usedAliasSet.add(alias)
+          assetDiagnostics.usedSpriteAliases.push(alias)
+        }
+      }
+      if (child instanceof Container && child.children.length > 0) {
+        recordUsedSpriteAliases(child, visible)
+      }
+    }
+  }
 
   const root = new Container()
   root.label = "garden-root"
@@ -178,6 +211,7 @@ export function createGardenScene(
   for (const layer of layers.ordered) {
     root.addChild(layer)
   }
+  recordUsedSpriteAliases(root)
 
   const attach = options.attachToStage !== false
   const stageHost = app as StageHost
@@ -228,6 +262,17 @@ export function createGardenScene(
   /** Per-plot team HUD containers on `layers.presenterHud` (parallel to real teams). */
   const teamHuds: Container[] = []
   let teamTints: number[] = []
+
+  function arePlantTransitionsSettled(): boolean {
+    for (const plant of plants) {
+      if (!(plant instanceof AssetPlantView)) continue
+      const sprite = plant.root.getChildByLabel("plant-sprite")
+      if (sprite instanceof Sprite && sprite.visible && sprite.alpha < 1) {
+        return false
+      }
+    }
+    return true
+  }
 
   /**
    * Team-HUD palette: theme resolver when available; otherwise derive from the
@@ -527,6 +572,8 @@ export function createGardenScene(
       }
     },
 
+    arePlantTransitionsSettled,
+
     getE2EIdentity(): GardenE2EIdentity {
       // SDD §30 probe-v3: every per-plant parallel array is sliced to the
       // teamNames length (= the snapshot team count, NOT the layout-padded
@@ -596,6 +643,7 @@ export function createGardenScene(
           plant.root.position.set(anchor.x, anchor.y)
         }
       }
+      recordUsedSpriteAliases(layers.actors)
       // SDD §30 probe-v3: drop padded slots beyond the snapshot team
       // count so teamNames.length === teams.length even when layout pads
       // to a minimum of 2 anchors for visual stability.

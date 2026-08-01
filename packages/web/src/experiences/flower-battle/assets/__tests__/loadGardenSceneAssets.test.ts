@@ -1,7 +1,9 @@
+import { Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import {
   bakeSvgForPixi,
+  buildPlantVariants,
   ensureSvgIntrinsicSize,
   hexToCssColor,
   isRasterUrl,
@@ -98,6 +100,47 @@ describe("targetRasterSize", () => {
       height: 80,
     })
     expect(size).toEqual({ width: 256, height: 256 })
+  })
+})
+
+describe("buildPlantVariants", () => {
+  const texture = (label: string) =>
+    new Texture({ source: Texture.WHITE.source, label })
+
+  it("retains complete species while omitting only incomplete species", () => {
+    const textures = {
+      plant_shared_seedling: texture("seedling"),
+      plant_shared_sprout: texture("sprout"),
+      plant_violet_bud: texture("violet-bud"),
+      plant_violet_half: texture("violet-half"),
+      plant_violet_full: texture("violet-full"),
+      plant_blue_bud: texture("blue-bud"),
+      plant_blue_half: texture("blue-half"),
+      // Blue full and every orange/green species texture are absent.
+    }
+
+    const variants = buildPlantVariants(textures)
+    expect(variants?.violet).toEqual({
+      seedling: textures.plant_shared_seedling,
+      sprout: textures.plant_shared_sprout,
+      bud: textures.plant_violet_bud,
+      halfBloom: textures.plant_violet_half,
+      fullBloom: textures.plant_violet_full,
+    })
+    expect(variants?.blue).toBeUndefined()
+    expect(variants?.orange).toBeUndefined()
+    expect(variants?.green).toBeUndefined()
+  })
+
+  it("returns null when shared seedling or sprout is unavailable", () => {
+    expect(
+      buildPlantVariants({
+        plant_shared_seedling: texture("seedling"),
+        plant_violet_bud: texture("violet-bud"),
+        plant_violet_half: texture("violet-half"),
+        plant_violet_full: texture("violet-full"),
+      }),
+    ).toBeNull()
   })
 })
 
