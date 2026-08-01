@@ -3,6 +3,7 @@ import Input from "@razzoozle/web/components/Input"
 import Select from "@razzoozle/web/components/Select"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { UserPlus } from "lucide-react"
+import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import type { SyntheticEvent } from "react"
 
@@ -34,9 +35,26 @@ export default function CreateUserDialog({
   onSubmit,
 }: CreateUserDialogProps) {
   const { t } = useTranslation()
+  const previousFocusRef = useRef<HTMLElement | null>(null)
   const title = copySourceId
     ? t("manager:users.copyDialogTitle")
     : t("manager:users.createTitle")
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+
+    return () => {
+      const previousFocus = previousFocusRef.current
+      previousFocusRef.current = null
+
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [isOpen])
 
   return (
     <DialogPanel
