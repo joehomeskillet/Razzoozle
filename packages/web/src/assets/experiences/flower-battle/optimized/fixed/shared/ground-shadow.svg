@@ -1,0 +1,10 @@
+<!--
+  ground-shadow.svg — soft drop-shadow under the pot.
+  Self-generated Razzoozle-internal CC0. viewBox 0 0 36 36.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" aria-hidden="true">
+  <g id="ground-shadow">
+    <ellipse cx="18" cy="32" rx="14" ry="3" fill="#000000" opacity="0.18" />
+    <ellipse cx="18" cy="32" rx="9" ry="1.6" fill="#000000" opacity="0.18" />
+  </g>
+</svg>
