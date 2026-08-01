@@ -59,7 +59,17 @@ import {
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "@tanstack/react-router"
 
-interface TabDef {
+/**
+ * AF-15 / #1008 — every manager tab must declare footer policy.
+ * `optional`/`none` require a human-readable reason (compile-time via
+ * discriminated union). A tab entry without `actionFooter` fails typecheck.
+ */
+export type ActionFooterPolicy =
+  | { actionFooter: "required" }
+  | { actionFooter: "optional"; actionFooterReason: string }
+  | { actionFooter: "none"; actionFooterReason: string }
+
+export type TabDef = {
   key: string
   nameKey: string
   icon: LucideIcon
@@ -77,7 +87,7 @@ interface TabDef {
    *  - "klassenEnabled" → only when klassenEnabled is true
    */
   gated?: "devMode" | "klassenEnabled"
-}
+} & ActionFooterPolicy
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
 // the matching component renders in the console panel.
@@ -88,18 +98,21 @@ export const BUILTIN_TABS: TabDef[] = [
     nameKey: "manager:tabs.play",
     icon: Play,
     component: ConfigSelectQuizz,
+    actionFooter: "required",
   },
   {
     key: "quiz",
     nameKey: "manager:tabs.quizz",
     icon: ListChecks,
     component: ConfigManageQuizz,
+    actionFooter: "required",
   },
   {
     key: "catalog",
     nameKey: "manager:tabs.catalog",
     icon: Library,
     component: ConfigCatalog,
+    actionFooter: "required",
   },
   {
     key: "classes",
@@ -107,6 +120,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: GraduationCap,
     component: ConfigKlassen,
     gated: "klassenEnabled",
+    actionFooter: "required",
   },
   {
     key: "students",
@@ -114,30 +128,38 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Users,
     component: ConfigSchueler,
     gated: "klassenEnabled",
+    actionFooter: "required",
   },
   {
     key: "media",
     nameKey: "manager:tabs.media",
     icon: Images,
     component: ConfigMedia,
+    actionFooter: "required",
   },
   {
     key: "results",
     nameKey: "manager:tabs.results",
     icon: Trophy,
     component: ConfigResults,
+    actionFooter: "none",
+    actionFooterReason: "Read-only results list; open/detail/row actions stay local (AF-08).",
   },
   {
     key: "submissions",
     nameKey: "manager:tabs.submissions",
     icon: ClipboardList,
     component: ConfigSubmissions,
+    actionFooter: "optional",
+    actionFooterReason: "Bulk moderation may register a footer; row approve/reject stay on rows.",
   },
   {
     key: "profile",
     nameKey: "manager:tabs.profile",
     icon: User,
     component: ConfigProfile,
+    actionFooter: "optional",
+    actionFooterReason: "Per-provider key save is optimistic in content; page-level Save bar only if added later.",
   },
   {
     key: "gamemode",
@@ -145,6 +167,8 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Users,
     component: ConfigGameMode,
     roleGate: "admin",
+    actionFooter: "none",
+    actionFooterReason: "Optimistic per-field save; no collective dirty footer (existing product decision).",
   },
   {
     key: "ai",
@@ -152,6 +176,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Sparkles,
     component: ConfigAI,
     roleGate: "admin",
+    actionFooter: "required",
   },
   {
     key: "achievements",
@@ -159,6 +184,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Award,
     component: ConfigAchievements,
     roleGate: "admin",
+    actionFooter: "required",
   },
   {
     key: "running",
@@ -166,6 +192,8 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Radio,
     component: RunningGamesSection,
     roleGate: "admin",
+    actionFooter: "none",
+    actionFooterReason: "Running-games list is operational read-mostly; stop/end actions stay on rows if present.",
   },
   {
     key: "users",
@@ -173,6 +201,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: UserCog,
     component: ConfigUsers,
     roleGate: "admin",
+    actionFooter: "required",
   },
   {
     key: "design",
@@ -180,6 +209,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Palette,
     component: ConfigTheme,
     roleGate: "admin",
+    actionFooter: "required",
   },
   {
     key: "labels",
@@ -188,6 +218,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigLabels,
     roleGate: "admin",
     gated: "klassenEnabled",
+    actionFooter: "required",
   },
   {
     key: "dev",
@@ -196,6 +227,8 @@ export const BUILTIN_TABS: TabDef[] = [
     gated: "devMode",
     roleGate: "admin",
     component: ConfigDev,
+    actionFooter: "optional",
+    actionFooterReason: "Dev tools may expose page actions later; none reserved until then.",
   },
 ]
 
