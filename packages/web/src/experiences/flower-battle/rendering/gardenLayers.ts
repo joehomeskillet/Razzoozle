@@ -408,33 +408,39 @@ export function buildDistantHillsLayer(
   const H = GARDEN_LOGICAL_HEIGHT
   const W = GARDEN_LOGICAL_WIDTH
   // Far ridge (lighter / higher) — soft horizon, not a hard line
-  ridge.moveTo(0, H * 0.48)
-  ridge.bezierCurveTo(W * 0.15, H * 0.32, W * 0.38, H * 0.5, W * 0.55, H * 0.34)
-  ridge.bezierCurveTo(W * 0.72, H * 0.22, W * 0.88, H * 0.4, W, H * 0.36)
-  ridge.lineTo(W, H * 0.68)
-  ridge.lineTo(0, H * 0.68)
+  ridge.moveTo(0, H * 0.42)
+  ridge.bezierCurveTo(W * 0.12, H * 0.28, W * 0.32, H * 0.46, W * 0.5, H * 0.3)
+  ridge.bezierCurveTo(W * 0.68, H * 0.18, W * 0.86, H * 0.36, W, H * 0.32)
+  ridge.lineTo(W, H * 0.72)
+  ridge.lineTo(0, H * 0.72)
   ridge.closePath()
-  ridge.fill({ color: palette.hillBack, alpha: 0.95 })
-  // Near ridge (darker / lower)
-  ridge.moveTo(0, H * 0.55)
-  ridge.bezierCurveTo(W * 0.2, H * 0.42, W * 0.42, H * 0.58, W * 0.68, H * 0.45)
-  ridge.bezierCurveTo(W * 0.84, H * 0.38, W * 0.94, H * 0.52, W, H * 0.5)
-  ridge.lineTo(W, H * 0.7)
-  ridge.lineTo(0, H * 0.7)
+  ridge.fill({ color: palette.hillBack, alpha: 0.96 })
+  // Near ridge (darker / lower) — fills more of the mid plate
+  ridge.moveTo(0, H * 0.5)
+  ridge.bezierCurveTo(W * 0.18, H * 0.38, W * 0.4, H * 0.54, W * 0.62, H * 0.4)
+  ridge.bezierCurveTo(W * 0.8, H * 0.32, W * 0.92, H * 0.48, W, H * 0.46)
+  ridge.lineTo(W, H * 0.74)
+  ridge.lineTo(0, H * 0.74)
   ridge.closePath()
-  ridge.fill({ color: palette.hillMid, alpha: 0.92 })
+  ridge.fill({ color: palette.hillMid, alpha: 0.94 })
   layer.addChild(ridge)
 
   if (assets?.distantHills && assets.distantHills.width > 0) {
-    const sprite = new Sprite(assets.distantHills)
-    sprite.label = "distant-hills-sprite"
-    sprite.anchor.set(0.5, 1)
-    sprite.position.set(W / 2, H * 0.7)
-    const scale = W / assets.distantHills.width
-    sprite.scale.set(scale)
-    sprite.alpha = 0.7
-    sprite.tint = palette.hillMid
-    layer.addChild(sprite)
+    // Dual-stamp hills so texture covers the full mid horizon, not one thin strip.
+    for (const [label, yFrac, alpha, scaleMul] of [
+      ["distant-hills-sprite-far", 0.68, 0.55, 1.05],
+      ["distant-hills-sprite", 0.74, 0.78, 1.0],
+    ] as const) {
+      const sprite = new Sprite(assets.distantHills)
+      sprite.label = label
+      sprite.anchor.set(0.5, 1)
+      sprite.position.set(W / 2, H * yFrac)
+      const scale = (W / assets.distantHills.width) * scaleMul
+      sprite.scale.set(scale)
+      sprite.alpha = alpha
+      sprite.tint = palette.hillMid
+      layer.addChild(sprite)
+    }
   }
 
   return layer
@@ -450,27 +456,59 @@ export function buildDistantBushesLayer(
   const layer = new Container()
   layer.label = "layer-distant-bushes"
 
-  withBottomSprite(
-    layer,
-    "distant-bushes-sprite",
-    assets?.distantBushes,
-    GARDEN_LOGICAL_HEIGHT * 0.68,
-    palette.bushBack,
-    0.48,
-  )
+  // Dual full-width bush bands (far + near) so the horizon never collapses
+  // into a flat meadow plate between hills and fence.
+  if (assets?.distantBushes && assets.distantBushes.width > 0) {
+    const underlay = new Graphics()
+    underlay.label = "distant-bushes-sprite-underlay"
+    fillRect(
+      underlay,
+      0,
+      GARDEN_LOGICAL_HEIGHT * 0.48,
+      GARDEN_LOGICAL_WIDTH,
+      GARDEN_LOGICAL_HEIGHT * 0.22,
+      palette.bushBack,
+    )
+    layer.addChild(underlay)
 
-  if (!assets?.distantBushes) {
+    for (const [label, bottomY, alpha, scaleMul] of [
+      ["distant-bushes-sprite-far", 0.62, 0.7, 1.0],
+      ["distant-bushes-sprite", 0.7, 0.95, 1.05],
+    ] as const) {
+      const spr = new Sprite(assets.distantBushes)
+      spr.label = label
+      spr.anchor.set(0.5, 1)
+      spr.position.set(GARDEN_LOGICAL_WIDTH / 2, GARDEN_LOGICAL_HEIGHT * bottomY)
+      const scale = (GARDEN_LOGICAL_WIDTH / assets.distantBushes.width) * scaleMul
+      spr.scale.set(scale)
+      spr.alpha = alpha
+      spr.tint = palette.bushMid
+      layer.addChild(spr)
+    }
+  } else {
+    withBottomSprite(
+      layer,
+      "distant-bushes-sprite",
+      undefined,
+      GARDEN_LOGICAL_HEIGHT * 0.68,
+      palette.bushBack,
+      0.48,
+    )
     const g = layer.children[0] as Graphics
     const groundY = GARDEN_LOGICAL_HEIGHT * 0.58
     for (const [x, w, h] of [
-      [120, 110, 42],
-      [320, 80, 34],
-      [480, 130, 48],
-      [780, 90, 36],
+      [80, 100, 40],
+      [200, 120, 46],
+      [360, 90, 34],
+      [500, 140, 50],
+      [680, 100, 38],
+      [860, 120, 44],
       [1050, 140, 50],
-      [1320, 100, 38],
-      [1550, 120, 44],
-      [1820, 90, 34],
+      [1220, 90, 36],
+      [1400, 130, 48],
+      [1580, 100, 40],
+      [1740, 110, 42],
+      [1880, 80, 32],
     ] as const) {
       g.ellipse(x, groundY, w, h)
       g.fill({ color: palette.bushBack, alpha: 0.9 })
@@ -507,9 +545,9 @@ export function buildMidTreesLayer(
   const orderedTrees = mixed.length > 0 ? mixed : trees
 
   if (orderedTrees.length > 0) {
-    // Varied sizes / mirrors / depths — never a single copy-paste row.
+    // Dense, varied grove — never a single copy-paste row or sparse silhouette.
+    // Far/smaller trees first (depth), then mid, then larger near-fence trees.
     // Feet sit just behind the fence line; crowns rise into the sky band.
-    // Larger heights so mid-ground trees read clearly on the presenter.
     const placements: Array<{
       x: number
       y: number
@@ -519,13 +557,27 @@ export function buildMidTreesLayer(
       tint: number
       tree: number
     }> = [
+      // Far band (smaller, slightly higher on the hill)
+      { x: 70, y: 0.7, height: 220, flip: false, alpha: 0.78, tint: 0xffffff, tree: 2 },
+      { x: 240, y: 0.69, height: 260, flip: true, alpha: 0.82, tint: 0xffffff, tree: 4 },
+      { x: 450, y: 0.71, height: 200, flip: false, alpha: 0.75, tint: 0xffffff, tree: 1 },
+      { x: 700, y: 0.68, height: 280, flip: true, alpha: 0.8, tint: 0xffffff, tree: 3 },
+      { x: 920, y: 0.7, height: 240, flip: false, alpha: 0.78, tint: 0xffffff, tree: 5 },
+      { x: 1150, y: 0.69, height: 250, flip: true, alpha: 0.8, tint: 0xffffff, tree: 0 },
+      { x: 1380, y: 0.71, height: 210, flip: false, alpha: 0.76, tint: 0xffffff, tree: 2 },
+      { x: 1620, y: 0.7, height: 230, flip: true, alpha: 0.78, tint: 0xffffff, tree: 4 },
+      { x: 1850, y: 0.69, height: 200, flip: false, alpha: 0.74, tint: 0xffffff, tree: 1 },
+      // Near-fence band (taller, denser)
       { x: 140, y: 0.74, height: 380, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
       { x: 320, y: 0.73, height: 440, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
-      { x: 560, y: 0.75, height: 320, flip: false, alpha: 0.92, tint: 0xffffff, tree: 2 },
-      { x: 980, y: 0.72, height: 480, flip: false, alpha: 1, tint: 0xffffff, tree: 3 },
-      { x: 1280, y: 0.74, height: 360, flip: true, alpha: 0.94, tint: 0xffffff, tree: 4 },
-      { x: 1560, y: 0.73, height: 420, flip: false, alpha: 0.97, tint: 0xffffff, tree: 5 },
-      { x: 1780, y: 0.75, height: 340, flip: true, alpha: 0.9, tint: 0xffffff, tree: 0 },
+      { x: 500, y: 0.75, height: 340, flip: false, alpha: 0.93, tint: 0xffffff, tree: 2 },
+      { x: 680, y: 0.74, height: 300, flip: true, alpha: 0.9, tint: 0xffffff, tree: 5 },
+      { x: 860, y: 0.73, height: 400, flip: false, alpha: 0.96, tint: 0xffffff, tree: 3 },
+      { x: 1060, y: 0.75, height: 320, flip: true, alpha: 0.92, tint: 0xffffff, tree: 4 },
+      { x: 1240, y: 0.74, height: 360, flip: false, alpha: 0.94, tint: 0xffffff, tree: 0 },
+      { x: 1440, y: 0.73, height: 420, flip: true, alpha: 0.97, tint: 0xffffff, tree: 1 },
+      { x: 1620, y: 0.75, height: 340, flip: false, alpha: 0.91, tint: 0xffffff, tree: 2 },
+      { x: 1780, y: 0.74, height: 380, flip: true, alpha: 0.94, tint: 0xffffff, tree: 5 },
     ]
     const treesArr = orderedTrees
     for (let i = 0; i < placements.length; i += 1) {
@@ -544,10 +596,10 @@ export function buildMidTreesLayer(
     return layer
   }
 
-  // Procedural fallback row
+  // Procedural fallback row — denser silhouette when no textures
   const g = new Graphics()
   g.label = "mid-trees-fallback"
-  for (const x of [180, 560, 1380, 1720]) {
+  for (const x of [120, 300, 480, 700, 920, 1140, 1360, 1580, 1760]) {
     g.roundRect(x - 8, GARDEN_LOGICAL_HEIGHT * 0.52, 16, 110, 4)
     g.fill({ color: palette.foreground, alpha: 0.85 })
     g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.5, 56, 46)
@@ -647,15 +699,33 @@ export function buildGrassLayer(
         : []
   ).filter((t): t is Texture => t != null && t.width > 0)
   if (tuftTextures.length > 0) {
+    // Dense lawn detail — two bands (mid lawn + near camera) so the meadow
+    // never reads as a flat green plate under the plants.
     const spots = [
-      [160, 0.88, 1.2, 0],
-      [360, 0.91, 1.0, 1],
-      [580, 0.87, 1.3, 2],
-      [820, 0.93, 0.95, 0],
-      [1080, 0.89, 1.15, 1],
-      [1320, 0.92, 1.05, 2],
-      [1540, 0.88, 1.25, 0],
-      [1760, 0.94, 1.0, 1],
+      [80, 0.84, 1.1, 0],
+      [200, 0.88, 1.2, 1],
+      [320, 0.86, 0.95, 2],
+      [440, 0.91, 1.15, 0],
+      [560, 0.87, 1.3, 1],
+      [680, 0.9, 1.0, 2],
+      [800, 0.85, 1.2, 0],
+      [920, 0.93, 0.95, 1],
+      [1040, 0.88, 1.25, 2],
+      [1160, 0.91, 1.05, 0],
+      [1280, 0.86, 1.15, 1],
+      [1400, 0.92, 1.0, 2],
+      [1520, 0.89, 1.2, 0],
+      [1640, 0.94, 1.1, 1],
+      [1760, 0.87, 1.05, 2],
+      [1860, 0.91, 0.95, 0],
+      // Near-camera band
+      [140, 0.97, 1.35, 1],
+      [380, 0.96, 1.2, 2],
+      [620, 0.98, 1.4, 0],
+      [900, 0.95, 1.15, 1],
+      [1180, 0.97, 1.3, 2],
+      [1460, 0.96, 1.25, 0],
+      [1720, 0.98, 1.2, 1],
     ] as const
     for (const [x, yPct, sc, ti] of spots) {
       const tex = tuftTextures[ti % tuftTextures.length]!
@@ -663,9 +733,9 @@ export function buildGrassLayer(
       tuft.label = `grass-detail-${x}`
       tuft.anchor.set(0.5, 1)
       tuft.position.set(x, GARDEN_LOGICAL_HEIGHT * yPct)
-      const h = 48 * sc
+      const h = 52 * sc
       tuft.scale.set(h / tex.height)
-      tuft.alpha = 0.9
+      tuft.alpha = 0.92
       tuft.tint = palette.foreground
       layer.addChild(tuft)
     }
@@ -677,6 +747,7 @@ export function buildGrassLayer(
       [920, 0.87], [1100, 0.83], [1280, 0.85], [1460, 0.82], [1640, 0.86],
       [1820, 0.84], [120, 0.92], [420, 0.94], [820, 0.93], [1220, 0.92],
       [1620, 0.95], [60, 0.97], [340, 0.96], [1020, 0.97], [1700, 0.96],
+      [250, 0.89], [700, 0.9], [1350, 0.88], [1550, 0.93],
     ] as const
     for (const [x, yPct] of tufts) {
       g.ellipse(x, GARDEN_LOGICAL_HEIGHT * yPct, 18, 6)
@@ -786,15 +857,42 @@ export function buildForegroundFrame(
 
   const leftTexture = assets?.foregroundLeafLeft
   const rightTexture = assets?.foregroundLeafRight
+  const bushTexture = assets?.foregroundBush
 
-  if (leftTexture || rightTexture) {
+  if (leftTexture || rightTexture || bushTexture) {
+    // Soft bushes along the bottom edge for cinematic depth (behind leaves).
+    if (bushTexture && bushTexture.width > 0) {
+      const bushPlacements: Array<{
+        x: number
+        scale: number
+        flip: boolean
+        alpha: number
+      }> = [
+        { x: 220, scale: 0.55, flip: false, alpha: 0.85 },
+        { x: 520, scale: 0.45, flip: true, alpha: 0.75 },
+        { x: 1400, scale: 0.5, flip: false, alpha: 0.8 },
+        { x: 1700, scale: 0.55, flip: true, alpha: 0.85 },
+      ]
+      for (let i = 0; i < bushPlacements.length; i += 1) {
+        const p = bushPlacements[i]!
+        const bush = new Sprite(bushTexture)
+        bush.label = `foreground-bush-${i}`
+        bush.anchor.set(0.5, 1)
+        bush.position.set(p.x, GARDEN_LOGICAL_HEIGHT)
+        const s = (220 * p.scale) / bushTexture.height
+        bush.scale.set(p.flip ? -s : s, s)
+        bush.alpha = p.alpha
+        bush.tint = palette.foreground
+        layer.addChild(bush)
+      }
+    }
     if (leftTexture) {
       const left = new Sprite(leftTexture)
       left.label = "foreground-leaf-left-sprite"
       left.anchor.set(0, 1)
       left.position.set(0, GARDEN_LOGICAL_HEIGHT)
-      // Uniform scale to ~380px tall frame leaves.
-      left.scale.set(380 / leftTexture.height)
+      // Uniform scale to ~420px tall frame leaves (stronger vignette).
+      left.scale.set(420 / leftTexture.height)
       layer.addChild(left)
     }
     if (rightTexture) {
@@ -802,7 +900,7 @@ export function buildForegroundFrame(
       right.label = "foreground-leaf-right-sprite"
       right.anchor.set(1, 1)
       right.position.set(GARDEN_LOGICAL_WIDTH, GARDEN_LOGICAL_HEIGHT)
-      right.scale.set(380 / rightTexture.height)
+      right.scale.set(420 / rightTexture.height)
       layer.addChild(right)
     }
     return layer

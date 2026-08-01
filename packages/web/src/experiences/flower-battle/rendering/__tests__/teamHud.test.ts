@@ -16,6 +16,7 @@ import {
   buildStatusChip,
   buildTeamHud,
   buildTeamLabel,
+  TEAM_HUD_BELOW_ANCHOR_Y,
   TEAM_HUD_TOKENS,
   type TeamHudPalette,
 } from "../teamHud"
@@ -61,9 +62,11 @@ describe("buildSegmentedGrowthMeter", () => {
       teamColor: TEAM_COLORS[1]!,
     })
     expect(meter.label).toBe("team-hud-meter")
-    expect(meter.children).toHaveLength(2)
-    expect(meter.children[0]!.label).toBe("team-hud-meter-growth")
-    expect(meter.children[1]!.label).toBe("team-hud-meter-sun")
+    // plate + growth row + sun row
+    expect(meter.children).toHaveLength(3)
+    expect(meter.children[0]!.label).toBe("team-hud-meter-plate")
+    expect(meter.children[1]!.label).toBe("team-hud-meter-growth")
+    expect(meter.children[2]!.label).toBe("team-hud-meter-sun")
   })
 
   it("clamps growth / sun values to non-negative integers", () => {
@@ -75,7 +78,7 @@ describe("buildSegmentedGrowthMeter", () => {
       palette: TEST_PALETTE,
       teamColor: TEAM_COLORS[2]!,
     })
-    expect(meter.children).toHaveLength(2)
+    expect(meter.children).toHaveLength(3)
   })
 
   it("uses injected palette colors, never hardcoded hex", () => {
@@ -128,11 +131,14 @@ describe("buildTeamHud — 2 / 3 / 4 team layout", () => {
       expect(hud.label).toBe("team-hud")
       expect(hud.children.length).toBeGreaterThanOrEqual(2)
       // HUD stays inside the logical frame horizontally
-      const halfWidth = 84
+      const halfWidth = 88
       expect(anchor.x - halfWidth).toBeGreaterThanOrEqual(0)
       expect(anchor.x + halfWidth).toBeLessThanOrEqual(GARDEN_LOGICAL_WIDTH)
-      // HUD stays inside the frame vertically (anchor + 56 px label baseline)
-      expect(anchor.y + 56).toBeLessThanOrEqual(GARDEN_LOGICAL_HEIGHT)
+      // HUD root sits under soil (not over flower head); label baseline on frame
+      expect(TEAM_HUD_BELOW_ANCHOR_Y).toBeGreaterThanOrEqual(56)
+      expect(anchor.y + TEAM_HUD_BELOW_ANCHOR_Y).toBeLessThanOrEqual(
+        GARDEN_LOGICAL_HEIGHT,
+      )
     }
   })
 
