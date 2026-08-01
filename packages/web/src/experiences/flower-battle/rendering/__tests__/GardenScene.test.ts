@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest"
 
 import type { GardenPixiApplicationHandle } from "../../garden-pixi.types"
 import { createGardenScene, LAYER_LABELS } from "../GardenScene"
+import { TEAM_HUD_BELOW_ANCHOR_Y } from "../teamHud"
 import type { GardenPalette } from "../gardenPalette"
 import {
   computeVisibleLogicalRect,
@@ -234,9 +235,9 @@ describe("createGardenScene", () => {
       // HUD sits under the plant anchor (buildTeamHud offsets y by +56).
       const anchors = scene.getPlotAnchors()
       expect(huds[0]!.position.x).toBe(anchors[0]!.x)
-      expect(huds[0]!.position.y).toBe(anchors[0]!.y + 56)
+      expect(huds[0]!.position.y).toBe(anchors[0]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
       expect(huds[1]!.position.x).toBe(anchors[1]!.x)
-      expect(huds[1]!.position.y).toBe(anchors[1]!.y + 56)
+      expect(huds[1]!.position.y).toBe(anchors[1]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
 
       scene.destroy()
     })
@@ -322,7 +323,7 @@ describe("createGardenScene", () => {
       )!
       const anchors = scene.getPlotAnchors()
       expect(hud4.position.x).toBe(anchors[0]!.x)
-      expect(hud4.position.y).toBe(anchors[0]!.y + 56)
+      expect(hud4.position.y).toBe(anchors[0]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
       // On 4:3 the visible band crops left/right so anchors (and HUDs) move.
       expect(hud4.position.x).not.toBe(x16)
 

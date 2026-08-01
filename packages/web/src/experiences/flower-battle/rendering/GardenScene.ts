@@ -223,6 +223,10 @@ export function createGardenScene(
     return plantHeads[key]
   }
 
+  function faceTextureForPlants(): Texture | undefined {
+    return plantHeads?.faceHappy
+  }
+
   function ensureTeamTints(count: number): void {
     if (teamTints.length >= count) return
     if (options.resolveColor) {
@@ -346,6 +350,7 @@ export function createGardenScene(
         },
         label: `actor-plant-${index}`,
         headTexture: headTextureForIndex(index),
+        faceTexture: faceTextureForPlants(),
       })
       plants.push(plant)
       // SDD §30 probe-v3: per-plant team name parallel to the actorPlants
