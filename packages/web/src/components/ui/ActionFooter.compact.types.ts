@@ -1,11 +1,28 @@
-import type { ReactNode } from "react"
-
 /**
  * AF-compact (WP-0 contract). Canonical name lives here and on
  * `TabDef.actionFooterVariant` in `features/manager/components/configurations/index.tsx`.
  * Keep both definitions byte-identical — downstream WPs import from either side.
  */
 export type ActionFooterVariant = "default" | "compact"
+
+export type CompactActionIntent = "primary" | "secondary" | "danger" | "ghost"
+
+export type CompactIconName =
+  | "Play"
+  | "Pause"
+  | "SkipForward"
+  | "Eye"
+  | "Minus"
+  | "Plus"
+  | "Copy"
+  | "Create"
+  | "Save"
+  | "Upload"
+  | "Reset"
+  | "Import"
+  | "Template"
+  | "Delete"
+  | "Overflow"
 
 /**
  * Single icon-only action rendered by `CompactIconBar`. 44×44 touch target,
@@ -14,11 +31,14 @@ export type ActionFooterVariant = "default" | "compact"
 export interface CompactIconBarAction {
   /** Stable identity — also used for `data-action-key` and aria-controls. */
   key: string
-  /** Lucide icon name. The bar resolves this to a component; we keep it as a literal
-   *  here to keep this type module React-free. */
-  iconName: "Play" | "Pause" | "SkipForward" | "Eye" | "Minus" | "Plus"
+  /** Lucide icon name, resolved by the bar without a React type dependency. */
+  iconName: CompactIconName
   /** Pre-translated label rendered into `aria-label` (i18n parity). */
   label: string
+  /** Visual hierarchy. Omitted keeps the legacy Users icon-button styling. */
+  intent?: CompactActionIntent
+  /** Optional stable selector for focused integration tests. */
+  testId?: string
   /** When true, `active` reflects the toggled-on state and the bar styles it as pressed. */
   toggle?: boolean
   /** Pressed-state hint (only meaningful when `toggle` is true). */
@@ -27,21 +47,18 @@ export interface CompactIconBarAction {
   onClick: () => void
   /** Disabled state — bar keeps the slot visible but non-interactive. */
   disabled?: boolean
+  /** Accessible explanation announced when the action is disabled. */
+  disabledReason?: string
 }
 
 /**
  * CompactIconBar — icon-only footer for tabs that opted into
  * `actionFooterVariant: "compact"`. Renders as a horizontal 44px-tall bar
- * with a leading slot, N action slots, and a trailing slot. Honors
- * `prefers-reduced-motion` for state transitions.
+ * with N action slots. Honors `prefers-reduced-motion` for state transitions.
  */
 export interface CompactIconBarProps {
-  /** Ordered actions. Order = visual order (leading → trailing). */
+  /** Ordered actions. Order = visual and keyboard order. */
   actions: readonly CompactIconBarAction[]
-  /** Optional leading slot (e.g. status badge, count chip). */
-  leading?: ReactNode
-  /** Optional trailing slot (e.g. overflow trigger, save indicator). */
-  trailing?: ReactNode
   /** Extra className applied to the outer bar. */
   className?: string
   /**

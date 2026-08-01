@@ -9,7 +9,7 @@ import type { CompactIconBarProps } from "@razzoozle/web/components/ui/ActionFoo
 /**
  * AF07 / WP-1.2 — CompactIconBar portal-consumer.
  *
- * Renders an icon-only footer (44×44 buttons, leading + trailing slots) into
+ * Renders an icon-only footer (44×44 buttons) into
  * the shell-local `ConsoleActionFooterHost` portal target. Tabs opt-in by
  * setting `TabDef.actionFooterVariant: "compact"`; ConsoleShell flips the
  * host's `variant` to `"compact"` so `ActionFooterHostSlot` swaps chrome.
@@ -19,8 +19,6 @@ import type { CompactIconBarProps } from "@razzoozle/web/components/ui/ActionFoo
  */
 export function ActionFooterCompact({
   actions,
-  leading,
-  trailing,
   className,
   instanceId,
 }: CompactIconBarProps) {
@@ -42,17 +40,14 @@ export function ActionFooterCompact({
 
   return createPortal(
     <div
-      role="toolbar"
-      aria-label={t("aria.actionFooter", { defaultValue: "Page actions" })}
       data-testid="action-footer-compact"
       className={clsx("flex items-center justify-end gap-2", className)}
     >
-      {leading != null && (
-        <div className="flex min-w-0 items-center gap-2">{leading}</div>
-      )}
-      {actions.length > 0 && <IconBarDock actions={actions} />}
-      {trailing != null && (
-        <div className="ml-auto flex items-center gap-2">{trailing}</div>
+      {actions.length > 0 && (
+        <IconBarDock
+          actions={actions}
+          ariaLabel={t("aria.actionFooter", { defaultValue: "Page actions" })}
+        />
       )}
     </div>,
     portalTarget,

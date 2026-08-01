@@ -61,22 +61,18 @@ describe("ActionFooterCompact a11y & integration", () => {
         useActionFooterHostOptional: () => null,
       }),
     )
-    const { ActionFooterCompact: NoHost } = await import(
-      "../ActionFooter.compact"
-    )
-    const html = render(
-      <NoHost actions={[baseAction]} instanceId="tab-0" />,
-    )
+    const { ActionFooterCompact: NoHost } =
+      await import("../ActionFooter.compact")
+    const html = render(<NoHost actions={[baseAction]} instanceId="tab-0" />)
     expect(html).toBe("")
   })
 
-  it("renders a role=toolbar footer with the compact a11y label", () => {
+  it("leaves toolbar semantics to the labelled icon group", () => {
     const html = render(
       <ActionFooterCompact actions={[baseAction]} instanceId="tab-1" />,
     )
-    expect(html).toMatch(/<div[^>]*role="toolbar"/)
-    expect(html).not.toMatch(/<footer[^>]*role="toolbar"/)
-    expect(html).toContain('aria-label="Page actions"')
+    expect(html).not.toContain('role="toolbar"')
+    expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-label="Page actions"/)
     expect(html).toContain('data-testid="action-footer-compact"')
   })
 
@@ -92,7 +88,12 @@ describe("ActionFooterCompact a11y & integration", () => {
       <ActionFooterCompact
         actions={[
           { key: "play", iconName: "Play", label: "Play", onClick: () => {} },
-          { key: "pause", iconName: "Pause", label: "Pause", onClick: () => {} },
+          {
+            key: "pause",
+            iconName: "Pause",
+            label: "Pause",
+            onClick: () => {},
+          },
         ]}
         instanceId="tab-3"
       />,
@@ -114,44 +115,29 @@ describe("ActionFooterCompact a11y & integration", () => {
     expect(html).toContain('aria-pressed="true"')
   })
 
-  it("disabled action renders disabled + cursor-not-allowed", () => {
+  it("disabled action stays focusable and exposes aria-disabled", () => {
     const html = render(
       <ActionFooterCompact
         actions={[{ ...baseAction, disabled: true }]}
         instanceId="tab-5"
       />,
     )
-    expect(html).toContain("disabled=")
+    expect(html).toContain('aria-disabled="true"')
+    expect(html).not.toMatch(/\sdisabled(?:=|\s|>)/)
     expect(html).toContain("cursor-not-allowed")
   })
 
-  it("leading slot renders before the action dock", () => {
-    const html = render(
-      <ActionFooterCompact
-        actions={[baseAction]}
-        leading={<span data-testid="leading-chip">12</span>}
-        instanceId="tab-6"
-      />,
-    )
-    expect(html).toContain('data-testid="leading-chip"')
-    expect(html.indexOf("leading-chip")).toBeLessThan(
-      html.indexOf("icon-bar-button-auto"),
-    )
-  })
-
-  it("trailing slot renders after the action dock with ml-auto wrapper", () => {
-    const html = render(
-      <ActionFooterCompact
-        actions={[baseAction]}
-        trailing={<span data-testid="trailing-chip">Save</span>}
-        instanceId="tab-7"
-      />,
-    )
-    expect(html).toContain('data-testid="trailing-chip"')
-    expect(html.indexOf("icon-bar-button-auto")).toBeLessThan(
-      html.indexOf("trailing-chip"),
-    )
-    expect(html).toMatch(/<div[^>]*class="[^"]*ml-auto[^"]*"[^>]*>\s*<span/)
+  it("ignores non-contract leading and trailing escape-hatch props", () => {
+    const escapedProps = {
+      actions: [baseAction],
+      leading: <button data-testid="escaped-leading">Leading</button>,
+      trailing: <button data-testid="escaped-trailing">Trailing</button>,
+      instanceId: "tab-6",
+    }
+    const html = render(<ActionFooterCompact {...escapedProps} />)
+    expect(html).not.toContain("escaped-leading")
+    expect(html).not.toContain("escaped-trailing")
+    expect(html.match(/<button/g)).toHaveLength(1)
   })
 
   it("merges custom className onto the footer", () => {
@@ -159,7 +145,7 @@ describe("ActionFooterCompact a11y & integration", () => {
       <ActionFooterCompact
         actions={[baseAction]}
         className="my-compact-bar"
-        instanceId="tab-8"
+        instanceId="tab-7"
       />,
     )
     expect(html).toContain("my-compact-bar")

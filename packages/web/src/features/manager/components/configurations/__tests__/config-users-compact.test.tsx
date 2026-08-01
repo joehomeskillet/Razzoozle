@@ -2,8 +2,6 @@ import type { ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
-import { ActionFooterCompact } from "@razzoozle/web/components/ui"
-import Button from "@razzoozle/web/components/Button"
 import ConfigUsers from "../ConfigUsers"
 
 vi.mock("react-i18next", () => ({
@@ -85,25 +83,18 @@ describe("ConfigUsers compact footer", () => {
   it("keeps one accessible 44x44 create action with the legacy selector", () => {
     const html = render(<ConfigUsers />)
     expect(html.match(/data-testid="users-create-btn"/g)).toHaveLength(1)
+    expect(html).toContain('data-action-key="create"')
     expect(html).toContain('aria-label="manager:users.create"')
     expect(html).toContain('title="manager:users.create"')
-    expect(html).toContain("size-11")
-    expect(html).not.toContain('data-testid="icon-bar-dock"')
+    expect(html).toContain("h-11")
+    expect(html).toContain("w-11")
+    expect(html).toContain("bg-[var(--color-primary)]")
   })
 
-  it("uses the host footer without a nested footer landmark", () => {
-    const html = render(
-      <ActionFooterCompact
-        actions={[]}
-        trailing={
-          <Button size="icon" aria-label="Create user" title="Create user">
-            Create
-          </Button>
-        }
-        instanceId="users"
-      />,
-    )
-    expect(html).toContain('role="toolbar"')
+  it("uses the action dock without a nested footer landmark", () => {
+    const html = render(<ConfigUsers />)
+    expect(html).not.toContain('role="toolbar"')
+    expect(html).toContain('role="group" aria-label="aria.actionFooter"')
     expect(html).not.toContain("<footer")
     expect(html.match(/<button/g)).toHaveLength(1)
   })

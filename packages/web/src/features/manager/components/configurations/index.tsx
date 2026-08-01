@@ -110,6 +110,9 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Play,
     component: ConfigSelectQuizz,
     actionFooter: "required",
+    // WP wp-ea1a389d5d03 — six start-option controls moved to visible page
+    // content; the bottom bar carries only the Copy + Start icon actions.
+    actionFooterVariant: "compact",
   },
   {
     key: "quiz",
@@ -124,6 +127,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Library,
     component: ConfigCatalog,
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "classes",

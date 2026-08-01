@@ -58,7 +58,7 @@ vi.mock(
 vi.mock(
   "@razzoozle/web/features/manager/components/configurations/ConfigCatalog",
   () => ({
-    default: () => <div />,
+    default: () => <div data-testid="catalog-view" />,
   }),
 )
 vi.mock(
@@ -195,9 +195,28 @@ describe("configurations footer variants", () => {
     expect(shellProps.footerPolicy).toBe("required")
   })
 
-  it("keeps play on default footer mode and keeps play list view", () => {
+  it("opts play tab into compact footer variant and keeps play list view", () => {
     const html = renderConfigs("play")
     expect(html).toContain('data-testid="play-view"')
-    expect(shellProps.variant).toBeUndefined()
+    expect(shellProps.variant).toBe("compact")
+    expect(shellProps.footerPolicy).toBe("required")
+  })
+
+  it("pins BUILTIN_TABS play entry to compact variant", async () => {
+    const { BUILTIN_TABS } = await import("../index")
+    const play = BUILTIN_TABS.find((tab) => tab.key === "play")
+    expect(play).toBeDefined()
+    // WP wp-ea1a389d5d03 — six control families now live in page content,
+    // so the play tab no longer needs the full ActionFooter markup; it opts
+    // into the compact icon bar instead.
+    expect(play?.actionFooterVariant).toBe("compact")
+    expect(play?.actionFooter).toBe("required")
+  })
+
+  it("registers catalog tab as compact and keeps actionFooter required", () => {
+    const html = renderConfigs("catalog")
+    expect(html).toContain('data-testid="catalog-view"')
+    expect(shellProps.variant).toBe("compact")
+    expect(shellProps.footerPolicy).toBe("required")
   })
 })
