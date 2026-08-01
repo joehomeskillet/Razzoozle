@@ -110,6 +110,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Play,
     component: ConfigSelectQuizz,
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "quiz",
