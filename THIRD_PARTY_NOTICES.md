@@ -105,6 +105,7 @@ This document lists all open-source and proprietary software components used in 
 ### Other Licenses
 
 For a complete list of all dependencies, run:
+
 ```bash
 pnpm licenses list
 ```
@@ -117,10 +118,28 @@ Licenses of transitive dependencies are included in `node_modules/.pnpm/` and ca
 
 ### Plant Illustrations & Animations
 
-**Status:** Procedural implementation (no external assets requiring separate license)
+The Flower Battle production plant stages include derivatives of Microsoft
+Fluent Emoji color SVGs.
 
-- Ownership: Razzoozle publisher / art team
-- Implementation: PixiJS Containers + GSAP tweens (code-based, not editor assets)
+- **Name:** Microsoft Fluent Emoji
+- **Source:** https://github.com/microsoft/fluentui-emoji
+- **Pinned commit:** `62ecdc0d7ca5c6df32148c169556bc8d3782fca4`
+- **License:** MIT
+- **Copyright:** Microsoft Corporation
+- **Used for:** Seedling, sprout, hibiscus, tulip, sunflower, and blossom
+  source artwork used to derive the 14 production plant-stage SVGs
+- **Provenance:**
+  `packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/flower-assets-source-manifest.json`
+- **License text:**
+  `packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/third-party-licenses/Microsoft-Fluent-Emoji-MIT.txt`
+
+Razzoozle preserves the pinned source SVGs and derives production assets with
+`packages/web/src/assets/experiences/flower-battle/scripts/derive-fluent-plants.mjs`.
+Natural stem and leaf colors are retained; flower artwork is recolored and
+composed into game-specific growth stages.
+
+Other procedural Flower Battle scene elements remain Razzoozle-owned code and
+art unless another notice in this file says otherwise.
 
 ---
 
@@ -130,9 +149,11 @@ This notice must be included in any distributed version of Razzoozle Flower Batt
 
 1. ✓ PixiJS MIT notice (always)
 2. ✓ GSAP MIT notice (always)
-3. ✓ All other open-source licenses per the list above
+3. ✓ Microsoft Fluent Emoji MIT notice when derived plant assets ship
+4. ✓ All other open-source licenses per the list above
 
 Place visible link in app:
+
 - `/about/licenses` or
 - Game credits screen or
 - Website footer
@@ -141,7 +162,6 @@ Place visible link in app:
 
 ## Updates
 
-This document will be updated as dependencies are upgraded or new licenses are added. Last updated: **2026-07-30** (Spine-free decision, GSAP added).
+This document will be updated as dependencies are upgraded or new licenses are added. Last updated: **2026-08-01** (Microsoft Fluent Emoji plant provenance added).
 
 For questions, refer to the maintainer.
-

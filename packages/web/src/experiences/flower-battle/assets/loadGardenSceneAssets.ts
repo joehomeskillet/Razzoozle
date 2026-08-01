@@ -13,7 +13,7 @@
  * zero missing required aliases.
  */
 
-import { Texture } from "pixi.js"
+import { Texture, TextureSource } from "pixi.js"
 
 import type { LayerAssets } from "../rendering/gardenLayers"
 import type { GardenPalette } from "../rendering/gardenPalette"
@@ -47,14 +47,90 @@ export interface PlantBodyTextures {
   pot?: Texture
 }
 
+/* ------------------------------------------------------------------ */
+/* Fluent-derived production plant stages (full source colors preserved) */
+/* ------------------------------------------------------------------ */
+
+/** Stable team plant species keys (slot -> species mapping is fixed). */
+export type TeamPlantKey = "violet" | "blue" | "orange" | "green"
+
+/** Visual macro growth states supported by the production plant assets. */
+export type PlantMacroStage =
+  "seedling" | "sprout" | "bud" | "halfBloom" | "fullBloom"
+
+/** All 5 macro stages for a single species. */
+export interface PlantStageTextures {
+  seedling: Texture
+  sprout: Texture
+  bud: Texture
+  halfBloom: Texture
+  fullBloom: Texture
+}
+
+/** Complete stage textures for every species whose bundle loaded intact. */
+export type PlantVariantTextures = Partial<
+  Record<TeamPlantKey, PlantStageTextures>
+>
+
+/**
+ * Runtime alias lookup for textures created by this loader. Weak keys keep the
+ * diagnostics registry from extending texture lifetime beyond scene teardown.
+ */
+const GARDEN_TEXTURE_ALIASES = new WeakMap<Texture, GardenSceneAssetAlias>()
+
+export function registerGardenTextureAlias(
+  alias: GardenSceneAssetAlias,
+  texture: Texture,
+): void {
+  GARDEN_TEXTURE_ALIASES.set(texture, alias)
+}
+
+export function gardenAssetAliasForTexture(
+  texture: Texture,
+): GardenSceneAssetAlias | undefined {
+  return GARDEN_TEXTURE_ALIASES.get(texture)
+}
+
+/**
+ * Deterministic team-slot → species mapping.
+ * Slot 0 = violet hibiscus, 1 = blue tulip, 2 = orange sunflower, 3 = green blossom.
+ */
+export const TEAM_PLANT_KEYS: readonly TeamPlantKey[] = [
+  "violet",
+  "blue",
+  "orange",
+  "green",
+]
+
+/** Map a 0–10 growth stage to its visual macro state. */
+export function plantMacroStageForGrowth(growthStage: number): PlantMacroStage {
+  const s = Math.max(0, Math.min(10, Math.floor(growthStage)))
+  if (s <= 1) return "seedling"
+  if (s <= 4) return "sprout"
+  if (s <= 6) return "bud"
+  if (s <= 8) return "halfBloom"
+  return "fullBloom"
+}
+
 export interface GardenSceneLoadedAssets {
   layers: LayerAssets
   plantHeads: Partial<PlantHeadTextures>
   plantBody: PlantBodyTextures
+  /**
+   * Full-color Fluent production plant stage textures per species.
+   * `null` when no species has a complete bundle. Missing species are omitted
+   * so only their slots use the procedural fallback.
+   */
+  plantVariants: PlantVariantTextures | null
   texturesByAlias: Record<string, Texture>
   diagnostics: GardenAssetDiagnostics
   /** True when every required alias loaded a usable Texture. */
   complete: boolean
+  /**
+   * Idempotently releases only resources created by this loader invocation.
+   * Optional for compatibility with injected test/static asset maps.
+   */
+  release?: () => void
 }
 
 /** Convert 0xRRGGBB to #rrggbb for SVG attribute injection. */
@@ -78,38 +154,17 @@ export function bakeSvgForPixi(
   // heads that were authored with origin-centred (negative) viewBoxes.
   out = normalizeSvgViewBox(out)
   // CSS custom properties first (longer patterns before short currentColor).
-  out = out.replace(
-    /var\(--flower-battle-sky(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
-  out = out.replace(
-    /var\(--flower-battle-sun(?:,[^)]*)?\)/gi,
-    accent,
-  )
-  out = out.replace(
-    /var\(--flower-battle-cloud(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
+  out = out.replace(/var\(--flower-battle-sky(?:,[^)]*)?\)/gi, colors.fill)
+  out = out.replace(/var\(--flower-battle-sun(?:,[^)]*)?\)/gi, accent)
+  out = out.replace(/var\(--flower-battle-cloud(?:,[^)]*)?\)/gi, colors.fill)
   out = out.replace(
     /var\(--flower-battle-hill-back(?:,[^)]*)?\)/gi,
     colors.fill,
   )
-  out = out.replace(
-    /var\(--flower-battle-hill-mid(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
-  out = out.replace(
-    /var\(--flower-battle-bush(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
-  out = out.replace(
-    /var\(--flower-battle-fence(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
-  out = out.replace(
-    /var\(--flower-battle-grass(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
+  out = out.replace(/var\(--flower-battle-hill-mid(?:,[^)]*)?\)/gi, colors.fill)
+  out = out.replace(/var\(--flower-battle-bush(?:,[^)]*)?\)/gi, colors.fill)
+  out = out.replace(/var\(--flower-battle-fence(?:,[^)]*)?\)/gi, colors.fill)
+  out = out.replace(/var\(--flower-battle-grass(?:,[^)]*)?\)/gi, colors.fill)
   out = out.replace(
     /var\(--flower-battle-soil(?:,[^)]*)?\)/gi,
     colors.accent ?? colors.fill,
@@ -118,18 +173,9 @@ export function bakeSvgForPixi(
     /var\(--flower-battle-foreground(?:,[^)]*)?\)/gi,
     colors.fill,
   )
-  out = out.replace(
-    /var\(--flower-battle-primary(?:,[^)]*)?\)/gi,
-    accent,
-  )
-  out = out.replace(
-    /var\(--flower-battle-ink(?:,[^)]*)?\)/gi,
-    colors.ink,
-  )
-  out = out.replace(
-    /var\(--flower-battle-cream(?:,[^)]*)?\)/gi,
-    colors.fill,
-  )
+  out = out.replace(/var\(--flower-battle-primary(?:,[^)]*)?\)/gi, accent)
+  out = out.replace(/var\(--flower-battle-ink(?:,[^)]*)?\)/gi, colors.ink)
+  out = out.replace(/var\(--flower-battle-cream(?:,[^)]*)?\)/gi, colors.fill)
   out = out.replace(/var\(--sky-color-[^,)]+(?:,[^)]*)?\)/gi, colors.fill)
   out = out.replace(/var\(--status-pending-bg(?:,[^)]*)?\)/gi, accent)
   out = out.replace(/var\(--status-online-text(?:,[^)]*)?\)/gi, colors.ink)
@@ -151,9 +197,9 @@ export interface SvgViewBox {
 
 /** Parse the root SVG viewBox; returns null if missing/invalid. */
 export function parseSvgViewBox(svg: string): SvgViewBox | null {
-  const match = svg.match(
-    /viewBox\s*=\s*["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/i,
-  )
+  const re =
+    /viewBox\s*=\s*["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/i
+  const match = re.exec(svg)
   if (!match) return null
   const minX = Number(match[1])
   const minY = Number(match[2])
@@ -203,7 +249,7 @@ export function ensureSvgIntrinsicSize(
   const w = Math.max(1, Math.round(width))
   const h = Math.max(1, Math.round(height))
   return svg.replace(/<svg\b([^>]*)>/i, (_full, attrs: string) => {
-    let next = attrs
+    const next = attrs
       .replace(/\swidth\s*=\s*["'][^"']*["']/gi, "")
       .replace(/\sheight\s*=\s*["'][^"']*["']/gi, "")
     return `<svg${next} width="${w}" height="${h}">`
@@ -218,6 +264,11 @@ export function targetRasterSize(
   alias: GardenSceneAssetAlias,
   vb: SvgViewBox,
 ): { width: number; height: number } {
+  // Fluent-derived production plants: high-resolution, square contain-fit.
+  if (isFluentPlantAlias(alias)) {
+    return { width: 512, height: 512 }
+  }
+
   const isHead = alias.startsWith("plant_head_") || alias.startsWith("face_")
   if (isHead) {
     return { width: 256, height: 256 }
@@ -268,6 +319,50 @@ async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
+ * Build a correctly auto-detected Pixi source without entering global Cache.
+ * `Texture.from(resource, true)` still installs a destroy listener that may
+ * evict a newer cache replacement for the same resource.
+ */
+function createUncachedTexture(
+  resource: HTMLCanvasElement | HTMLImageElement,
+): Texture {
+  return new Texture({ source: TextureSource.from(resource) })
+}
+
+function createGardenAssetRelease(
+  ownedTextures: ReadonlySet<Texture>,
+): () => void {
+  const textures = [...ownedTextures]
+  const sources = [...new Set(textures.map((texture) => texture.source))]
+  let releasing = false
+  let released = false
+
+  return () => {
+    if (released || releasing) return
+    releasing = true
+    try {
+      for (const texture of textures) {
+        try {
+          if (!texture.destroyed) texture.destroy(false)
+        } catch {
+          // Best-effort: every remaining texture/source must still be tried.
+        }
+      }
+      for (const source of sources) {
+        try {
+          if (!source.destroyed) source.destroy()
+        } catch {
+          // Best-effort: one failing source must not retain the rest.
+        }
+      }
+    } finally {
+      released = true
+      releasing = false
+    }
+  }
+}
+
+/**
  * True for PNG/JPEG sources — including Vite-inlined `data:image/png;base64,…`
  * URLs. The old `\.png($|?)` check missed data-URIs, so production builds
  * (which inline small Kenney props) treated rasters as SVG text, bake failed,
@@ -296,12 +391,12 @@ export async function loadRasterTexture(
   canvas.width = iw * upscale
   canvas.height = ih * upscale
   const ctx = canvas.getContext("2d")
-  if (!ctx) return Texture.from(img)
+  if (!ctx) return createUncachedTexture(img)
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-  const texture = Texture.from(canvas)
+  const texture = createUncachedTexture(canvas)
   try {
     texture.source.scaleMode = "linear"
   } catch {
@@ -333,16 +428,20 @@ export async function rasterizeSvgToTexture(
   canvas.height = target.height
   const ctx = canvas.getContext("2d")
   if (!ctx) {
-    const fallback = Texture.from(img)
+    const fallback = createUncachedTexture(img)
     return fallback
   }
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
   ctx.clearRect(0, 0, target.width, target.height)
 
-  // Heads: contain-fit into square. Everything else: stretch to target
-  // (target already matches aspect of viewBox).
-  if (alias.startsWith("plant_head_") || alias.startsWith("face_")) {
+  // Heads: contain-fit into square. Fluent plants also contain-fit (512x512).
+  // Everything else: stretch to target (target already matches aspect of viewBox).
+  if (
+    alias.startsWith("plant_head_") ||
+    alias.startsWith("face_") ||
+    isFluentPlantAlias(alias)
+  ) {
     const iw = img.naturalWidth || target.width
     const ih = img.naturalHeight || target.height
     const s = Math.min(target.width / iw, target.height / ih)
@@ -359,7 +458,7 @@ export async function rasterizeSvgToTexture(
     ctx.drawImage(img, 0, 0, target.width, target.height)
   }
 
-  const texture = Texture.from(canvas)
+  const texture = createUncachedTexture(canvas)
   // Prefer smooth filtering when the sprite is scaled on screen.
   try {
     texture.source.scaleMode = "linear"
@@ -367,6 +466,51 @@ export async function rasterizeSvgToTexture(
     // Older pixi texture sources may not expose scaleMode — ignore.
   }
   return texture
+}
+
+function isFluentPlantAlias(alias: GardenSceneAssetAlias): boolean {
+  return (
+    alias === "plant_shared_seedling" ||
+    alias === "plant_shared_sprout" ||
+    alias.startsWith("plant_violet_") ||
+    alias.startsWith("plant_blue_") ||
+    alias.startsWith("plant_orange_") ||
+    alias.startsWith("plant_green_")
+  )
+}
+
+/**
+ * Build the typed per-species stage map from the flat alias texture map.
+ * Shared seedling/sprout are mandatory for every species. Once present, each
+ * complete species is retained independently; an incomplete species is simply
+ * omitted so only that slot falls back to DummyPlantView.
+ */
+export function buildPlantVariants(
+  texturesByAlias: Record<string, Texture>,
+): PlantVariantTextures | null {
+  const seedling = texturesByAlias.plant_shared_seedling
+  const sprout = texturesByAlias.plant_shared_sprout
+  if (!seedling || !sprout) return null
+
+  const stages = (
+    bud?: Texture,
+    half?: Texture,
+    full?: Texture,
+  ): PlantStageTextures | null => {
+    if (!bud || !half || !full) return null
+    return { seedling, sprout, bud, halfBloom: half, fullBloom: full }
+  }
+
+  const variants: PlantVariantTextures = {}
+  for (const key of TEAM_PLANT_KEYS) {
+    const variant = stages(
+      texturesByAlias[`plant_${key}_bud`],
+      texturesByAlias[`plant_${key}_half`],
+      texturesByAlias[`plant_${key}_full`],
+    )
+    if (variant) variants[key] = variant
+  }
+  return Object.keys(variants).length > 0 ? variants : null
 }
 
 function paletteFillForAlias(
@@ -399,6 +543,15 @@ function paletteFillForAlias(
       fill: hexToCssColor(0xffffff),
       ink: hexToCssColor(palette.teamMeterFrame),
       accent: hexToCssColor(palette.soil),
+    }
+  }
+
+  // Fluent-derived full-color plant stages: keep original source colors.
+  if (isFluentPlantAlias(alias)) {
+    return {
+      fill: hexToCssColor(0xffffff),
+      ink: hexToCssColor(palette.teamMeterFrame),
+      accent: hexToCssColor(0xffffff),
     }
   }
 
@@ -435,6 +588,21 @@ function paletteFillForAlias(
     plant_stem_01: 0xffffff,
     plant_leaf_01: 0xffffff,
     plant_pot_01: 0xffffff,
+    // Fluent-derived full-color plant stages (unreachable: early return above).
+    plant_shared_seedling: 0xffffff,
+    plant_shared_sprout: 0xffffff,
+    plant_violet_bud: 0xffffff,
+    plant_violet_half: 0xffffff,
+    plant_violet_full: 0xffffff,
+    plant_blue_bud: 0xffffff,
+    plant_blue_half: 0xffffff,
+    plant_blue_full: 0xffffff,
+    plant_orange_bud: 0xffffff,
+    plant_orange_half: 0xffffff,
+    plant_orange_full: 0xffffff,
+    plant_green_bud: 0xffffff,
+    plant_green_half: 0xffffff,
+    plant_green_full: 0xffffff,
   }
   return {
     fill: hexToCssColor(map[alias]),
@@ -456,6 +624,7 @@ export async function loadGardenSceneAssets(
 
   // Sequential load keeps memory + main-thread rasterisation predictable.
   const texturesByAlias: Record<string, Texture> = {}
+  const ownedTextures = new Set<Texture>()
   const loadedAliases: string[] = []
   const missingAliases: string[] = []
   const failedUrls: string[] = []
@@ -479,6 +648,7 @@ export async function loadGardenSceneAssets(
         const baked = bakeSvgForPixi(raw, paletteFillForAlias(alias, palette))
         texture = await rasterizeSvgToTexture(baked, alias)
       }
+      ownedTextures.add(texture)
       if (!isTexture(texture)) {
         missingAliases.push(alias)
         failedUrls.push(url)
@@ -486,6 +656,7 @@ export async function loadGardenSceneAssets(
         continue
       }
       texturesByAlias[alias] = texture
+      registerGardenTextureAlias(alias, texture)
       loadedAliases.push(alias)
     } catch {
       missingAliases.push(alias)
@@ -544,35 +715,6 @@ export async function loadGardenSceneAssets(
     pot: texturesByAlias.plant_pot_01,
   }
 
-  const usedSpriteAliases = Object.entries({
-    bg_sky_day: layers.sky,
-    bg_sun_glow: layers.sun,
-    bg_cloud_01: layers.cloud01,
-    bg_cloud_02: layers.cloud02,
-    bg_cloud_03: layers.cloud03,
-    bg_cloud_04: layers.cloud04,
-    bg_hill_back_01: layers.distantHills,
-    bg_bush_back_01: layers.distantBushes,
-    bg_tree_mid_01: layers.midTrees,
-    bg_tree_02: texturesByAlias.bg_tree_02,
-    bg_tree_03: texturesByAlias.bg_tree_03,
-    env_fence_white: layers.fence,
-    env_grass_base: layers.grass,
-    env_soil_plot_01: layers.soilPlots,
-    env_foreground_leaf_left: layers.foregroundLeafLeft,
-    env_foreground_leaf_right: layers.foregroundLeafRight,
-    plant_head_round: plantHeads.round,
-    plant_head_bell: plantHeads.bell,
-    plant_head_sun: plantHeads.sun,
-    plant_head_tulip: plantHeads.tulip,
-    face_emote_happy: plantHeads.faceHappy,
-    plant_stem_01: plantBody.stem,
-    plant_leaf_01: plantBody.leaf,
-    plant_pot_01: plantBody.pot,
-  })
-    .filter(([, tex]) => tex != null)
-    .map(([alias]) => alias)
-
   const requiredMissing = GARDEN_SCENE_REQUIRED_ALIASES.filter(
     (a) => !loadedAliases.includes(a),
   )
@@ -580,19 +722,25 @@ export async function loadGardenSceneAssets(
   const diagnostics: GardenAssetDiagnostics = {
     requiredAliases: [...GARDEN_SCENE_REQUIRED_ALIASES],
     loadedAliases,
-    missingAliases: requiredMissing.length > 0 ? requiredMissing : missingAliases,
+    missingAliases:
+      requiredMissing.length > 0 ? requiredMissing : missingAliases,
     failedUrls,
     fallbackAliases,
-    usedSpriteAliases,
+    // Scene construction records only textures that are actually selected by
+    // visible Sprites. Loaded/available assets stay separately observable via
+    // loadedAliases.
+    usedSpriteAliases: [],
   }
 
   return {
     layers,
     plantHeads,
     plantBody,
+    plantVariants: buildPlantVariants(texturesByAlias),
     texturesByAlias,
     diagnostics,
     complete: requiredMissing.length === 0,
+    release: createGardenAssetRelease(ownedTextures),
   }
 }
 
@@ -610,8 +758,9 @@ export function publishGardenAssetDiagnostics(
     })
   } catch {
     // Non-configurable window in some test fakes.
-    ;(window as Window & { __razzoozleGardenAssets?: GardenAssetDiagnostics })
-      .__razzoozleGardenAssets = diagnostics
+    ;(
+      window as Window & { __razzoozleGardenAssets?: GardenAssetDiagnostics }
+    ).__razzoozleGardenAssets = diagnostics
   }
 }
 

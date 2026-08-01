@@ -8,7 +8,7 @@
  *   → load garden SVG bundle (production default only)
  *   → createGardenScene with textures
  *   → ResizeObserver + visibility pause/resume
- *   → dispose (scene → Application → listeners)
+ *   → dispose (listeners → scene → loaded assets → Application; keep canvas)
  */
 
 import {
@@ -18,6 +18,7 @@ import {
   type GardenAssetDiagnostics,
   type PlantBodyTextures,
   type PlantHeadTextures,
+  type PlantVariantTextures,
 } from "./assets/loadGardenSceneAssets"
 import { GARDEN_SCENE_REQUIRED_ALIASES } from "./assets/garden-scene-asset-urls"
 import {
@@ -165,7 +166,67 @@ export async function attachGardenPixiApplication(
     antialias: antialias && !prefersReducedMotion,
   })
 
-  let scene: GardenScene
+  let scene: GardenScene | undefined
+  let releaseLoadedAssets: (() => void) | undefined
+  let resizeObserver: GardenPixiResizeObserver | undefined
+  let observingCanvas = false
+  let visibilityListenerRegistered = false
+  let diagnosticsPublished = false
+  let cleanupRunning = false
+  let cleanupComplete = false
+
+  function onVisibilityChange(): void {
+    if (cleanupRunning || cleanupComplete) return
+    if (environment.document.visibilityState === "hidden") {
+      app.ticker.stop()
+    } else {
+      app.ticker.start()
+    }
+  }
+
+  function runCleanupStep(step: () => void): void {
+    try {
+      step()
+    } catch {
+      // Cleanup is best-effort and initialization errors keep precedence.
+    }
+  }
+
+  function cleanup(): void {
+    if (cleanupRunning || cleanupComplete) return
+    cleanupRunning = true
+    try {
+      runCleanupStep(() => app.ticker.stop())
+      if (observingCanvas && resizeObserver) {
+        runCleanupStep(() => resizeObserver?.disconnect())
+      }
+      if (visibilityListenerRegistered) {
+        runCleanupStep(() =>
+          environment.document.removeEventListener(
+            "visibilitychange",
+            onVisibilityChange,
+          ),
+        )
+      }
+      if (diagnosticsPublished) {
+        runCleanupStep(clearGardenAssetDiagnostics)
+      }
+      if (scene) {
+        runCleanupStep(() => scene?.destroy())
+      }
+      runCleanupStep(() => releaseLoadedAssets?.())
+      runCleanupStep(() =>
+        app.destroy(
+          { removeView: false },
+          { children: true, texture: false, textureSource: false },
+        ),
+      )
+    } finally {
+      cleanupComplete = true
+      cleanupRunning = false
+    }
+  }
+
   try {
     // Production path: load SVG textures BEFORE scene construction so layers
     // mount Sprites instead of procedural Graphics. Injected createScene
@@ -181,14 +242,18 @@ export async function attachGardenPixiApplication(
       let layerAssets: LayerAssets | undefined
       let plantHeads: Partial<PlantHeadTextures> | undefined
       let plantBody: PlantBodyTextures | undefined
+      let plantVariants: PlantVariantTextures | null = null
       let assetDiagnostics: GardenAssetDiagnostics | null = null
       try {
         const loaded = await loadGardenSceneAssets(palette)
+        releaseLoadedAssets = loaded.release
         layerAssets = loaded.layers
         plantHeads = loaded.plantHeads
         plantBody = loaded.plantBody
+        plantVariants = loaded.plantVariants
         assetDiagnostics = loaded.diagnostics
         publishGardenAssetDiagnostics(loaded.diagnostics)
+        diagnosticsPublished = true
         if (
           typeof console !== "undefined" &&
           typeof console.info === "function"
@@ -211,6 +276,7 @@ export async function attachGardenPixiApplication(
         }
         assetDiagnostics = failed
         publishGardenAssetDiagnostics(failed)
+        diagnosticsPublished = true
         if (
           typeof console !== "undefined" &&
           typeof console.warn === "function"
@@ -226,78 +292,47 @@ export async function attachGardenPixiApplication(
         layerAssets,
         plantHeads,
         plantBody,
+        plantVariants,
+        prefersReducedMotion,
         assetDiagnostics,
       })
     } else {
       scene = createScene(app)
     }
-  } catch (error) {
-    try {
-      app.destroy(
-        { removeView: true },
-        { children: true, texture: true, textureSource: true },
-      )
-    } catch {
-      // Preserve the scene-creation error that caused this cleanup path.
+    scene.updateLayout(width, height)
+
+    const resize = (): void => {
+      if (cleanupRunning || cleanupComplete || !scene) return
+      const size = readCanvasSize(canvas)
+      app.renderer.resize(size.width, size.height)
+      scene.updateLayout(size.width, size.height)
     }
-    throw error
-  }
-  scene.updateLayout(width, height)
 
-  let disposed = false
+    resizeObserver = new environment.ResizeObserver(() => resize())
+    resizeObserver.observe(canvas)
+    observingCanvas = true
 
-  function resize(): void {
-    if (disposed) return
-    const size = readCanvasSize(canvas)
-    app.renderer.resize(size.width, size.height)
-    scene.updateLayout(size.width, size.height)
-  }
-
-  const resizeObserver = new environment.ResizeObserver(() => resize())
-  resizeObserver.observe(canvas)
-
-  function onVisibilityChange(): void {
-    if (disposed) return
-    if (environment.document.visibilityState === "hidden") {
-      app.ticker.stop()
-    } else {
-      app.ticker.start()
-    }
-  }
-
-  environment.document.addEventListener("visibilitychange", onVisibilityChange)
-
-  // Honour current hidden state (e.g. attach while backgrounded).
-  if (environment.document.visibilityState === "hidden") {
-    app.ticker.stop()
-  }
-
-  options.onReady?.(app, scene)
-
-  function dispose(): void {
-    if (disposed) return
-    disposed = true
-
-    app.ticker.stop()
-    resizeObserver.disconnect()
-    environment.document.removeEventListener(
+    environment.document.addEventListener(
       "visibilitychange",
       onVisibilityChange,
     )
-    clearGardenAssetDiagnostics()
+    visibilityListenerRegistered = true
 
-    try {
-      scene.destroy()
-    } catch {
-      // Scene destroy is best-effort; Application teardown still runs.
+    // Honour current hidden state (e.g. attach while backgrounded).
+    if (environment.document.visibilityState === "hidden") {
+      app.ticker.stop()
     }
 
-    // Recursive destroy: children + textures + texture sources (v8 baseTexture).
-    app.destroy(
-      { removeView: true },
-      { children: true, texture: true, textureSource: true },
-    )
+    options.onReady?.(app, scene)
+  } catch (error) {
+    cleanup()
+    throw error
   }
 
-  return { app, scene, prefersReducedMotion, dispose }
+  if (!scene) {
+    cleanup()
+    throw new Error("Garden scene initialization completed without a scene")
+  }
+
+  return { app, scene, prefersReducedMotion, dispose: cleanup }
 }
