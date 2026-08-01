@@ -69,6 +69,12 @@ export type ActionFooterPolicy =
   | { actionFooter: "optional"; actionFooterReason: string }
   | { actionFooter: "none"; actionFooterReason: string }
 
+/**
+ * AF-compact (WP-0 contract): tabs opt into the compact icon-bar footer.
+ * "default" = current ActionFooter zones; "compact" = icon-only bar.
+ */
+export type ActionFooterVariant = "default" | "compact"
+
 export type TabDef = {
   key: string
   nameKey: string
@@ -87,6 +93,11 @@ export type TabDef = {
    *  - "klassenEnabled" → only when klassenEnabled is true
    */
   gated?: "devMode" | "klassenEnabled"
+  /**
+   * Footer variant. "default" → standard ActionFooter zones; "compact" →
+   * CompactIconBar. Optional — undefined falls back to "default" at runtime.
+   */
+  actionFooterVariant?: ActionFooterVariant
 } & ActionFooterPolicy
 
 // The built-in sections, in display order. The nav rail maps each to a NavItem;
@@ -202,6 +213,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigUsers,
     roleGate: "admin",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "design",

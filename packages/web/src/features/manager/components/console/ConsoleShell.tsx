@@ -22,6 +22,7 @@ import {
   ActionFooterHostProvider,
   ActionFooterHostSlot,
   type ActionFooterPolicyMode,
+  type ActionFooterVariant,
 } from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
 
 export interface ConsoleNavItem {
@@ -55,6 +56,14 @@ export interface ConsoleShellProps {
    * Used for dev/test contract checks on the shell host registry.
    */
   footerPolicy?: ActionFooterPolicyMode
+  /**
+   * AF-compact WP-2.1: which footer render-mode the host uses for the
+   * active tab. Sourced from `TabDef.actionFooterVariant` (caller resolves
+   * the active tab to its variant). Omitted/undefined keeps the legacy
+   * "default" footer — opt-in tabs set this to "compact" so the host
+   * swaps chrome for `ActionFooterCompact`.
+   */
+  variant?: ActionFooterVariant
 }
 
 // The desktop-rail breakpoint (design.md Mobile-First scale: 920/600/375).
@@ -166,6 +175,7 @@ const ConsoleShell = ({
   children,
   className,
   footerPolicy,
+  variant,
 }: ConsoleShellProps) => {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -301,6 +311,7 @@ const ConsoleShell = ({
       <ActionFooterHostProvider
         activeKey={activeKey}
         footerPolicy={footerPolicy}
+        variant={variant}
       >
       <motion.section
         initial={reducedMotion ? false : { opacity: 0, y: 16 }}

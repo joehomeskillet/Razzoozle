@@ -16,7 +16,15 @@
   "aria": {
     "openNav": "Open navigation",
     "navTitle": "Navigation",
-    "exportQuestionsCsv": "Export question answers as CSV"
+    "actionFooterCompact": "Compact game controls",
+    "exportQuestionsCsv": "Export question answers as CSV",
+    "actions": {
+      "autoToggle": "Toggle auto-advance",
+      "skipQuestion": "Skip question",
+      "revealAnswer": "Reveal answer",
+      "subtractTime": "Subtract 10 seconds",
+      "addTime": "Add 10 seconds"
+    }
   },
   "kickPlayer": {
     "aria": "Remove {{name}} from the game",

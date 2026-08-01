@@ -26,3 +26,7 @@ export type { ToggleFieldProps } from "@razzoozle/web/components/ui/ToggleField"
 
 export { default as ColorPickerField } from "@razzoozle/web/components/ui/ColorPickerField"
 export type { ColorPickerFieldProps } from "@razzoozle/web/components/ui/ColorPickerField"
+
+export { ActionFooterCompact } from "@razzoozle/web/components/ui/ActionFooter.compact"
+export { IconBarButton, IconBarDock } from "@razzoozle/web/components/ui/ActionFooter.primitives"
+export type { CompactIconBarProps, CompactIconBarAction } from "@razzoozle/web/components/ui/ActionFooter.compact.types"
