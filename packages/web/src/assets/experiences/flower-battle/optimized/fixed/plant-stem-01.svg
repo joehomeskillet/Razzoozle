@@ -1,0 +1,36 @@
+<!--
+  plant-stem-01.svg — vertical cartoon stem (tintable body + soft highlight).
+  Self-generated Razzoozle-internal CC0. viewBox origin at soil foot.
+  White body → Pixi Sprite.tint multiplies to stem green.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 256" width="48" height="256" aria-hidden="true">
+  <g id="plant-stem">
+    <!-- soft ground contact blob -->
+    <ellipse cx="24" cy="248" rx="18" ry="7" fill="currentColor" opacity="0.22" />
+    <!-- main stalk -->
+    <path
+      d="M18 248
+         C16 200 15 140 16 80
+         C16.5 48 18 24 20 8
+         C21 3 23 1 24 1
+         C25 1 27 3 28 8
+         C30 24 31.5 48 32 80
+         C33 140 32 200 30 248
+         Z"
+      fill="currentColor"
+    />
+    <!-- highlight rib -->
+    <path
+      d="M21 240
+         C20 190 19.5 130 20.5 70
+         C21 40 22 18 23 6
+         C23.3 4 23.7 3.5 24 3.5
+         C24.2 3.5 24.4 4 24.5 6
+         C25 18 25.5 40 25.8 70
+         C26.5 130 26 190 25 240
+         Z"
+      fill="currentColor"
+      opacity="0.28"
+    />
+  </g>
+</svg>

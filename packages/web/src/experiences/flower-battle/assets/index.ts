@@ -76,5 +76,6 @@ export {
 export type {
   GardenAssetDiagnostics,
   GardenSceneLoadedAssets,
+  PlantBodyTextures,
   PlantHeadTextures,
 } from "./loadGardenSceneAssets"

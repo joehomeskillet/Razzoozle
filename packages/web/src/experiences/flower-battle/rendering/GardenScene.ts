@@ -19,6 +19,7 @@ import { Container, Texture } from "pixi.js"
 
 import type {
   GardenAssetDiagnostics,
+  PlantBodyTextures,
   PlantHeadTextures,
 } from "../assets/loadGardenSceneAssets"
 import type {
@@ -130,6 +131,8 @@ export interface CreateGardenSceneOptions {
   layerAssets?: LayerAssets
   /** Preloaded flower-head textures per style. */
   plantHeads?: Partial<PlantHeadTextures>
+  /** Preloaded stem / leaf / pot body textures for asset-built flowers. */
+  plantBody?: PlantBodyTextures
   /** Diagnostics snapshot for E2E / window probe. */
   assetDiagnostics?: GardenAssetDiagnostics | null
 }
@@ -150,6 +153,7 @@ export function createGardenScene(
   const palette = options.palette ?? resolveGardenPalette(resolveColor)
   const layerAssets = options.layerAssets
   const plantHeads = options.plantHeads
+  const plantBody = options.plantBody
   const assetDiagnostics = options.assetDiagnostics ?? null
 
   const root = new Container()
@@ -354,8 +358,8 @@ export function createGardenScene(
     while (plants.length < teamCount) {
       const index = plants.length
       const tint = teamTints[index] ?? palette.plantPetal
-      // Heads already bake eyes/smile into the SVG — do not overlay face-emote
-      // (full-disc yellow sprite) which washed team petal tints.
+      // Full asset plant: pot + stem + leaves + head (Graphics only if missing).
+      // Heads already bake eyes/smile — no face-emote overlay.
       const plant = new DummyPlantView({
         colors: {
           ...defaultPlantColors(palette),
@@ -363,6 +367,9 @@ export function createGardenScene(
         },
         label: `actor-plant-${index}`,
         headTexture: headTextureForIndex(index),
+        stemTexture: plantBody?.stem,
+        leafTexture: plantBody?.leaf,
+        potTexture: plantBody?.pot,
       })
       plants.push(plant)
       // SDD §30 probe-v3: per-plant team name parallel to the actorPlants

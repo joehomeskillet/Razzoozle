@@ -40,9 +40,17 @@ export interface PlantHeadTextures {
   faceHappy?: Texture
 }
 
+/** Shared body parts for asset-built team flowers (stem / leaf / pot). */
+export interface PlantBodyTextures {
+  stem?: Texture
+  leaf?: Texture
+  pot?: Texture
+}
+
 export interface GardenSceneLoadedAssets {
   layers: LayerAssets
   plantHeads: Partial<PlantHeadTextures>
+  plantBody: PlantBodyTextures
   texturesByAlias: Record<string, Texture>
   diagnostics: GardenAssetDiagnostics
   /** True when every required alias loaded a usable Texture. */
@@ -104,7 +112,7 @@ export function bakeSvgForPixi(
   )
   out = out.replace(
     /var\(--flower-battle-soil(?:,[^)]*)?\)/gi,
-    colors.fill,
+    colors.accent ?? colors.fill,
   )
   out = out.replace(
     /var\(--flower-battle-foreground(?:,[^)]*)?\)/gi,
@@ -374,6 +382,18 @@ function paletteFillForAlias(
       accent: hexToCssColor(0xfff3c8),
     }
   }
+  // Stem / leaf / pot: white body for runtime tint; pot soil lip = accent.
+  if (
+    alias === "plant_stem_01" ||
+    alias === "plant_leaf_01" ||
+    alias === "plant_pot_01"
+  ) {
+    return {
+      fill: hexToCssColor(0xffffff),
+      ink: hexToCssColor(palette.teamMeterFrame),
+      accent: hexToCssColor(palette.soil),
+    }
+  }
 
   const map: Record<GardenSceneAssetAlias, number> = {
     bg_sky_day: palette.sky,
@@ -405,6 +425,9 @@ function paletteFillForAlias(
     plant_head_sun: 0xffffff,
     plant_head_tulip: 0xffffff,
     face_emote_happy: 0xffffff,
+    plant_stem_01: 0xffffff,
+    plant_leaf_01: 0xffffff,
+    plant_pot_01: 0xffffff,
   }
   return {
     fill: hexToCssColor(map[alias]),
@@ -508,6 +531,12 @@ export async function loadGardenSceneAssets(
     faceHappy: texturesByAlias.face_emote_happy,
   }
 
+  const plantBody: PlantBodyTextures = {
+    stem: texturesByAlias.plant_stem_01,
+    leaf: texturesByAlias.plant_leaf_01,
+    pot: texturesByAlias.plant_pot_01,
+  }
+
   const usedSpriteAliases = Object.entries({
     bg_sky_day: layers.sky,
     bg_sun_glow: layers.sun,
@@ -530,6 +559,9 @@ export async function loadGardenSceneAssets(
     plant_head_sun: plantHeads.sun,
     plant_head_tulip: plantHeads.tulip,
     face_emote_happy: plantHeads.faceHappy,
+    plant_stem_01: plantBody.stem,
+    plant_leaf_01: plantBody.leaf,
+    plant_pot_01: plantBody.pot,
   })
     .filter(([, tex]) => tex != null)
     .map(([alias]) => alias)
@@ -550,6 +582,7 @@ export async function loadGardenSceneAssets(
   return {
     layers,
     plantHeads,
+    plantBody,
     texturesByAlias,
     diagnostics,
     complete: requiredMissing.length === 0,

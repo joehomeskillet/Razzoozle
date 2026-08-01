@@ -141,4 +141,32 @@ describe("DummyPlantView", () => {
     const keys = [0, 1, 2, 3].map(plantHeadKeyForIndex)
     expect(new Set(keys).size).toBe(4)
   })
+
+  it("uses stem / leaf / pot sprites when body textures are provided", () => {
+    const plant = new DummyPlantView({
+      colors: COLORS,
+      headTexture: Texture.WHITE,
+      stemTexture: Texture.WHITE,
+      leafTexture: Texture.WHITE,
+      potTexture: Texture.WHITE,
+    })
+    try {
+      expect(findByLabel(plant.root, "plant-stem-sprite")).toBeDefined()
+      expect(findByLabel(plant.root, "plant-leaf-l-sprite")).toBeDefined()
+      expect(findByLabel(plant.root, "plant-leaf-r-sprite")).toBeDefined()
+      expect(findByLabel(plant.root, "plant-pot-sprite")).toBeDefined()
+      plant.setGrowthStage(6)
+      const stem = findByLabel(plant.root, "plant-stem-sprite") as Sprite
+      expect(stem.visible).toBe(true)
+      expect(stem.tint).toBe(COLORS.stem)
+      const leaf = findByLabel(plant.root, "plant-leaf-l-sprite") as Sprite
+      expect(leaf.visible).toBe(true)
+      expect(leaf.tint).toBe(COLORS.leaf)
+      // Upper leaves appear from stage 4
+      const leaf2 = findByLabel(plant.root, "plant-leaf-l2-sprite") as Sprite
+      expect(leaf2.visible).toBe(true)
+    } finally {
+      plant.destroy()
+    }
+  })
 })

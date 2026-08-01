@@ -16,6 +16,7 @@ import {
   loadGardenSceneAssets,
   publishGardenAssetDiagnostics,
   type GardenAssetDiagnostics,
+  type PlantBodyTextures,
   type PlantHeadTextures,
 } from "./assets/loadGardenSceneAssets"
 import { GARDEN_SCENE_REQUIRED_ALIASES } from "./assets/garden-scene-asset-urls"
@@ -179,11 +180,13 @@ export async function attachGardenPixiApplication(
       // procedural Graphics path and still publish diagnostics for probes.
       let layerAssets: LayerAssets | undefined
       let plantHeads: Partial<PlantHeadTextures> | undefined
+      let plantBody: PlantBodyTextures | undefined
       let assetDiagnostics: GardenAssetDiagnostics | null = null
       try {
         const loaded = await loadGardenSceneAssets(palette)
         layerAssets = loaded.layers
         plantHeads = loaded.plantHeads
+        plantBody = loaded.plantBody
         assetDiagnostics = loaded.diagnostics
         publishGardenAssetDiagnostics(loaded.diagnostics)
         if (
@@ -222,6 +225,7 @@ export async function attachGardenPixiApplication(
         palette,
         layerAssets,
         plantHeads,
+        plantBody,
         assetDiagnostics,
       })
     } else {
