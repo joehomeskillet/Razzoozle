@@ -177,6 +177,22 @@ export const ExperienceModeSection = ({
   )
 }
 
+export const getPlayActionDisabledReasons = (
+  selected: string | null,
+  klassenMode: boolean,
+  classId: string,
+  reasons: { selectQuiz: string; selectClass: string },
+) => {
+  const selectQuizReason = selected ? undefined : reasons.selectQuiz
+
+  return {
+    copy: selectQuizReason,
+    start:
+      selectQuizReason ??
+      (klassenMode && !classId ? reasons.selectClass : undefined),
+  }
+}
+
 const ConfigSelectQuizz = () => {
   const { socket } = useSocket()
   const { quizz: quizzList } = useConfig()
@@ -431,10 +447,18 @@ const ConfigSelectQuizz = () => {
   }
 
   const footerControlsDisabled = !selected
+  const actionDisabledReasons = getPlayActionDisabledReasons(
+    selected,
+    klassenMode,
+    classId,
+    {
+      selectQuiz: t("manager:quizz.pleaseSelect"),
+      selectClass: t("manager:selectQuizz.klassenModeNeedsClass"),
+    },
+  )
 
   return (
     <>
-      {/* Content: title, search, quiz list only (AF06 — options live in footer). */}
       <div className="flex flex-1 flex-col">
         <div className="mb-4 flex shrink-0 flex-col gap-3">
           <PageHeader
@@ -453,14 +477,7 @@ const ConfigSelectQuizz = () => {
           />
         </div>
 
-        {/* WP wp-ea1a389d5d03 — start options moved OUT of the legacy full
-            ActionFooter zones INTO this always-visible compact responsive
-            section, so nothing ever hides behind a mobile disclosure. The 6
-            control families remain: scoring, experience, team assignment,
-            class mode + class selector, endscreen, participant cap. Same test
-            IDs + same onChange handlers — the wire payload for game:create is
-            built from the same state. The compact bar (Copy + Start) at the
-            bottom carries the actual start action. */}
+        {/* Keep start options in page content; compact footer contains actions only. */}
         <FormSection
           title={t("manager:selectQuizz.optionsTitle", {
             defaultValue: "Startoptionen",
@@ -691,10 +708,8 @@ const ConfigSelectQuizz = () => {
             onClick: () => {
               void handleCopySoloLink()
             },
-            disabled: !selected,
-            disabledReason: !selected
-              ? t("manager:quizz.pleaseSelect")
-              : undefined,
+            disabled: actionDisabledReasons.copy !== undefined,
+            disabledReason: actionDisabledReasons.copy,
           },
           {
             key: "play-start",
@@ -703,12 +718,8 @@ const ConfigSelectQuizz = () => {
             testId: "quizz-start-btn",
             label: t("manager:quizz.startGame"),
             onClick: handleSubmit,
-            disabled: !selected || (klassenMode && !classId),
-            disabledReason: !selected
-              ? t("manager:quizz.pleaseSelect")
-              : klassenMode && !classId
-                ? t("manager:selectQuizz.klassenModeNeedsClass")
-                : undefined,
+            disabled: actionDisabledReasons.start !== undefined,
+            disabledReason: actionDisabledReasons.start,
           },
         ]}
       />
