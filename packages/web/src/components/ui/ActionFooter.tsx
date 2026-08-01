@@ -7,35 +7,73 @@ import {
 import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import { useActionFooterHostOptional } from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
+import { ActionFooterOptionsDisclosure } from "@razzoozle/web/components/ui/ActionFooter.primitives"
 
 export interface ActionFooterProps {
-  /** Action buttons (e.g. Save / Reset). Free `children` deprecated after AF05 zones. */
-  children: ReactNode
+  /** Context zone: selection, title, bulk count (AF-05). */
+  context?: ReactNode
+  /** Controls zone: compact options that affect the next commit/start. */
+  controls?: ReactNode
+  /** Explicit status node (validation / saving). Prefer over only `dirty`. */
+  status?: ReactNode
+  /** At most two visible secondary actions. */
+  secondaryActions?: ReactNode
+  /** Overflow / ⋮ actions. */
+  overflowActions?: ReactNode
+  /** Single primary action — last in DOM (AF-06). */
+  primaryAction?: ReactNode
+  /** Mobile disclosure label for controls (AF-10). */
+  mobileOptionsLabel?: string
+  /** Badge count for changed mobile options. */
+  mobileChangedCount?: number
   className?: string
   /**
-   * Dirty-state indicator. When true, shows "Ungespeicherte Änderungen"
-   * (role="status", aria-live="polite"). Does **not** dim the whole bar
-   * (AF-12 — no global opacity).
+   * Dirty-state indicator. When true and `status` is omitted, shows
+   * "Ungespeicherte Änderungen" (role="status"). No global opacity (AF-12).
    */
   dirty?: boolean
+  /**
+   * @deprecated AF05 — free `children` for transition only. Prefer named zones
+   * (`context` / `controls` / `secondaryActions` / `primaryAction`). Removed in AF09.
+   */
+  children?: ReactNode
 }
 
+// Re-export primitives from the main module path for ergonomic imports.
+export {
+  ActionFooterSummary,
+  ActionFooterField,
+  ActionFooterControls,
+  ActionFooterActions,
+  ActionFooterOptionsDisclosure,
+} from "@razzoozle/web/components/ui/ActionFooter.primitives"
+export type {
+  ActionFooterSummaryProps,
+  ActionFooterFieldProps,
+  ActionFooterControlsProps,
+  ActionFooterActionsProps,
+  ActionFooterOptionsDisclosureProps,
+} from "@razzoozle/web/components/ui/ActionFooter.primitives"
+
 /**
- * Manager page actions — AF04 portals into the ConsoleShell ActionFooterHost.
+ * Manager page actions — portals into ConsoleShell ActionFooterHost (AF04).
  *
- * **Shell contract (AF03/AF04 / #983):**
- * - When rendered under `ActionFooterHostProvider`, content is portaled into
- *   the shell host (`<footer>` sibling of BodyGrid, full shell width).
- * - Registers via `host.register(instanceId)` and cleans up on unmount.
- * - No `position: sticky` / `fixed`, no negative margin bleed, no `pb-20`
- *   clearance (AF-17). Host owns chrome (border, surface, padding, safe-area).
- *
- * **Fallback:** Outside the shell provider (tests, rare non-console mounts),
- * renders an in-flow bar with the same chrome — still no sticky/neg margins.
- *
- * Presentational — children provide the button row until AF05 zone slots.
+ * **Zones (AF05 / AF-05):** context → controls → secondary → primary (DOM/tab order).
+ * Free `children` remains during migration (deprecated, AF09 removes).
  */
-const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => {
+const ActionFooter = ({
+  context,
+  controls,
+  status,
+  secondaryActions,
+  overflowActions,
+  primaryAction,
+  mobileOptionsLabel,
+  mobileChangedCount,
+  children,
+  className,
+  dirty,
+}: ActionFooterProps) => {
   const { t } = useTranslation("manager")
   const host = useActionFooterHostOptional()
   const instanceId = useId()
@@ -45,40 +83,122 @@ const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => {
     return host.register(instanceId)
   }, [host, instanceId])
 
-  const inner = (
+  const dirtyStatus =
+    dirty && status == null ? (
+      <span
+        role="status"
+        aria-live="polite"
+        data-testid="action-footer-dirty"
+        className="text-sm font-medium text-[var(--ink-muted)]"
+      >
+        {t("editor.unsavedChanges")}
+      </span>
+    ) : null
+
+  const statusNode = status ?? dirtyStatus
+
+  const hasZones =
+    context != null ||
+    controls != null ||
+    statusNode != null ||
+    secondaryActions != null ||
+    overflowActions != null ||
+    primaryAction != null
+
+  const body = hasZones ? (
     <div
       data-testid="action-footer"
       data-portaled={host ? "true" : "false"}
+      data-layout="zones"
       className={clsx(
-        // Button row: right-aligned on ≥sm, stacked full-width below sm
+        "flex w-full min-w-0 flex-col gap-3",
+        // ≥sm: one row when possible — context left, actions right
+        "sm:flex-row sm:flex-wrap sm:items-center sm:gap-4",
+        className,
+      )}
+    >
+      {(context != null || statusNode != null) && (
+        <div
+          data-testid="action-footer-context-zone"
+          className="flex min-w-0 flex-col gap-1 sm:mr-auto sm:max-w-md"
+        >
+          {context}
+          {statusNode}
+        </div>
+      )}
+
+      {controls != null && (
+        <>
+          {/* Mobile: controls behind disclosure (AF-10). */}
+          <div className="w-full min-[600px]:hidden">
+            <ActionFooterOptionsDisclosure
+              label={mobileOptionsLabel}
+              changedCount={mobileChangedCount}
+            >
+              {controls}
+            </ActionFooterOptionsDisclosure>
+          </div>
+          {/* ≥600px: controls inline. */}
+          <div
+            data-testid="action-footer-controls-zone"
+            className="hidden min-w-0 min-[600px]:block"
+          >
+            {controls}
+          </div>
+        </>
+      )}
+
+      <div
+        data-testid="action-footer-actions-zone"
+        className={clsx(
+          "flex w-full flex-col gap-2",
+          "sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3",
+        )}
+      >
+        {secondaryActions != null && (
+          <div
+            data-testid="action-footer-secondary"
+            className="flex flex-col gap-2 sm:flex-row sm:gap-3"
+          >
+            {secondaryActions}
+          </div>
+        )}
+        {overflowActions != null && (
+          <div data-testid="action-footer-overflow">{overflowActions}</div>
+        )}
+        {primaryAction != null && (
+          <div data-testid="action-footer-primary">{primaryAction}</div>
+        )}
+        {/* Legacy children — after secondary, before/with primary cluster end. */}
+        {children != null && (
+          <div data-testid="action-footer-legacy-children">{children}</div>
+        )}
+      </div>
+    </div>
+  ) : (
+    // Legacy-only path (pre-zone call sites).
+    <div
+      data-testid="action-footer"
+      data-portaled={host ? "true" : "false"}
+      data-layout="legacy-children"
+      className={clsx(
         "flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
         className,
       )}
     >
-      {dirty && (
-        <span
-          role="status"
-          aria-live="polite"
-          className="text-sm font-medium text-[var(--ink-muted)] sm:mr-auto sm:order-first"
-        >
-          {t("editor.unsavedChanges")}
-        </span>
+      {statusNode && (
+        <div className="sm:mr-auto sm:order-first">{statusNode}</div>
       )}
       {children}
     </div>
   )
 
-  // Shell path: portal into host (chrome lives on ActionFooterHostSlot).
   if (host) {
-    if (!host.target) {
-      // Host mounted but ref not yet committed — register already ran;
-      // render nothing at the tabpanel call site (no sticky ghost).
-      return null
-    }
-    return createPortal(inner, host.target)
+    if (!host.target) return null
+    return createPortal(body, host.target)
   }
 
-  // Fallback: in-flow chrome, no sticky / negative margins (AF-17).
+  // Fallback chrome outside shell (tests).
   return (
     <div
       data-testid="action-footer-fallback"
@@ -86,20 +206,9 @@ const ActionFooter = ({ children, className, dirty }: ActionFooterProps) => {
         "shrink-0 border-t border-[var(--line)] bg-[var(--surface)]",
         "shadow-[var(--shadow-flat)]",
         "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4",
-        className,
       )}
     >
-      {dirty && (
-        <span
-          role="status"
-          aria-live="polite"
-          className="text-sm font-medium text-[var(--ink-muted)] sm:mr-auto sm:order-first"
-        >
-          {t("editor.unsavedChanges")}
-        </span>
-      )}
-      {children}
+      {body}
     </div>
   )
 }

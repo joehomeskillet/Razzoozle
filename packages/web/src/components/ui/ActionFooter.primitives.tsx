@@ -1,0 +1,236 @@
+import clsx from "clsx"
+import { ChevronDown } from "lucide-react"
+import {
+  Children,
+  type ReactNode,
+  useId,
+} from "react"
+import { useTranslation } from "react-i18next"
+
+/**
+ * AF05 #1011 — typed zone primitives for ActionFooter.
+ * Labels, compact fields, mobile disclosure. No sticky/layout chrome.
+ */
+
+export interface ActionFooterSummaryProps {
+  /** Primary context line (quiz title, selection count, …). */
+  title: ReactNode
+  /** Secondary meta (question count, dirty bulk hint, …). */
+  meta?: ReactNode
+  className?: string
+}
+
+/** Context zone: selection / record identity. */
+export function ActionFooterSummary({
+  title,
+  meta,
+  className,
+}: ActionFooterSummaryProps) {
+  return (
+    <div
+      data-testid="action-footer-summary"
+      className={clsx("min-w-0 flex-1 sm:mr-auto", className)}
+    >
+      <div className="truncate text-sm font-semibold text-[var(--ink)]">
+        {title}
+      </div>
+      {meta != null && meta !== false && (
+        <div className="truncate text-xs text-[var(--ink-muted)]">{meta}</div>
+      )}
+    </div>
+  )
+}
+
+export interface ActionFooterFieldProps {
+  /** Visible label — required for a11y (AF-11 / AF-13). */
+  label: ReactNode
+  /** Optional id linkage for the control. */
+  htmlFor?: string
+  children: ReactNode
+  className?: string
+}
+
+/** Compact labelled control for the Controls zone. */
+export function ActionFooterField({
+  label,
+  htmlFor,
+  children,
+  className,
+}: ActionFooterFieldProps) {
+  const autoId = useId()
+  const labelId = `${autoId}-label`
+  return (
+    <div
+      data-testid="action-footer-field"
+      className={clsx("flex min-w-0 flex-col gap-1", className)}
+    >
+      {htmlFor ? (
+        <label
+          htmlFor={htmlFor}
+          className="text-xs font-medium text-[var(--ink-muted)]"
+        >
+          {label}
+        </label>
+      ) : (
+        <span
+          id={labelId}
+          className="text-xs font-medium text-[var(--ink-muted)]"
+        >
+          {label}
+        </span>
+      )}
+      <div
+        role="group"
+        aria-labelledby={htmlFor ? undefined : labelId}
+        className="min-h-11 min-w-0"
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export interface ActionFooterControlsProps {
+  children: ReactNode
+  className?: string
+}
+
+/** Flex wrap for compact footer controls (no horizontal page scroll). */
+export function ActionFooterControls({
+  children,
+  className,
+}: ActionFooterControlsProps) {
+  return (
+    <div
+      data-testid="action-footer-controls"
+      className={clsx(
+        "flex min-w-0 flex-wrap items-end gap-3",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+export interface ActionFooterActionsProps {
+  /** At most two visible secondary actions (AF-05 / AF-06). */
+  secondary?: ReactNode
+  /** Overflow / ⋮ menu slot. */
+  overflow?: ReactNode
+  /** Exactly one primary — rendered last in DOM (AF-06). */
+  primary?: ReactNode
+  className?: string
+}
+
+/**
+ * Action cluster: secondary → overflow → primary (DOM order = tab order).
+ * Dev/test: warns if more than two secondary children.
+ */
+export function ActionFooterActions({
+  secondary,
+  overflow,
+  primary,
+  className,
+}: ActionFooterActionsProps) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    secondary != null &&
+    Children.count(secondary) > 2
+  ) {
+    console.warn(
+      "ActionFooterActions: at most two visible secondary actions (AF-05).",
+    )
+  }
+
+  return (
+    <div
+      data-testid="action-footer-actions"
+      className={clsx(
+        "flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3",
+        className,
+      )}
+    >
+      {secondary != null && (
+        <div
+          data-testid="action-footer-secondary"
+          className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+        >
+          {secondary}
+        </div>
+      )}
+      {overflow != null && (
+        <div data-testid="action-footer-overflow">{overflow}</div>
+      )}
+      {primary != null && (
+        <div data-testid="action-footer-primary" className="sm:order-none">
+          {primary}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export interface ActionFooterOptionsDisclosureProps {
+  /** Visible summary label (mobile options). */
+  label?: string
+  /** Optional badge of changed/active options. */
+  changedCount?: number
+  /** Default closed on mobile (AF-10). */
+  defaultOpen?: boolean
+  children: ReactNode
+  className?: string
+}
+
+/**
+ * Mobile controls disclosure (`<details>`). Desktop callers hide this and
+ * show controls inline instead.
+ */
+export function ActionFooterOptionsDisclosure({
+  label,
+  changedCount,
+  defaultOpen = false,
+  children,
+  className,
+}: ActionFooterOptionsDisclosureProps) {
+  const { t } = useTranslation("manager")
+  const resolvedLabel =
+    label ??
+    t("actionFooter.options", { defaultValue: "Options" })
+
+  return (
+    <details
+      data-testid="action-footer-options-disclosure"
+      className={clsx(
+        "group w-full rounded-[var(--radius-theme)] border border-[var(--line)] bg-[var(--surface)]",
+        className,
+      )}
+      open={defaultOpen || undefined}
+    >
+      <summary
+        className={clsx(
+          "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2",
+          "text-sm font-medium text-[var(--ink)]",
+          "marker:content-none [&::-webkit-details-marker]:hidden",
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate">{resolvedLabel}</span>
+          {changedCount != null && changedCount > 0 && (
+            <span
+              data-testid="action-footer-options-changed"
+              className="rounded-full bg-[var(--accent-tint)] px-2 py-0.5 text-xs font-semibold text-[var(--accent-contrast)]"
+            >
+              {changedCount}
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className="size-4 shrink-0 text-[var(--ink-muted)] transition-transform group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <div className="border-t border-[var(--line)] px-3 py-3">{children}</div>
+    </details>
+  )
+}
