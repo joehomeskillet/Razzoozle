@@ -93,7 +93,7 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
       </ActionFooterHostProvider>,
     )
     expect(html).toContain('data-testid="console-action-footer-host"')
-    expect(html).toContain("h-0")  // collapsed empty host (no HTML hidden attr)
+    expect(html).toContain("empty:h-0")  // collapse when no portal children
     expect(html).toContain('data-registered="0"')
   })
 
