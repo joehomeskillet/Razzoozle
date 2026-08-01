@@ -18,6 +18,7 @@ import {
   type GardenAssetDiagnostics,
   type PlantBodyTextures,
   type PlantHeadTextures,
+  type PlantVariantTextures,
 } from "./assets/loadGardenSceneAssets"
 import { GARDEN_SCENE_REQUIRED_ALIASES } from "./assets/garden-scene-asset-urls"
 import {
@@ -181,12 +182,14 @@ export async function attachGardenPixiApplication(
       let layerAssets: LayerAssets | undefined
       let plantHeads: Partial<PlantHeadTextures> | undefined
       let plantBody: PlantBodyTextures | undefined
+      let plantVariants: PlantVariantTextures | null = null
       let assetDiagnostics: GardenAssetDiagnostics | null = null
       try {
         const loaded = await loadGardenSceneAssets(palette)
         layerAssets = loaded.layers
         plantHeads = loaded.plantHeads
         plantBody = loaded.plantBody
+        plantVariants = loaded.plantVariants
         assetDiagnostics = loaded.diagnostics
         publishGardenAssetDiagnostics(loaded.diagnostics)
         if (
@@ -226,6 +229,8 @@ export async function attachGardenPixiApplication(
         layerAssets,
         plantHeads,
         plantBody,
+        plantVariants,
+        prefersReducedMotion,
         assetDiagnostics,
       })
     } else {
