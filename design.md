@@ -344,7 +344,182 @@ The **Schule/School** group renders **only when Klassen-Modus (System → Mode) 
 
 **D13 — List-action pattern (<600px).** Rows in lists show max. 1–2 primary actions inline; overflow goes to ⋮ menu. **Title stays always visible** (`min-w-0 flex-1 truncate` + guaranteed minimum row width). Mobile screenshot in `manager-uiux-review/03-quiz--mobile.png` shows the problem (title vanished, width:0). Fixes W3-1 + W1-4.
 
-**D14 — Primary-action placement = ActionFooter.** Every tab-level screen docks its primary actions (Create, Import, Start, Save, bulk actions) into the shared `ActionFooter` (`components/ui/ActionFooter.tsx`) at the bottom — the pattern the Play tab establishes (Start game / Copy solo link). Top-of-list creation bars or header-corner create buttons are a D14 violation; list content scrolls with `scroll-padding-bottom: 5rem` above the footer. Actions must never float **over** content (F5 regression: Play-Tab buttons obscured cards) — the rule bans floating overlays, not placement: header actions that sit in normal document flow (in-flow, non-floating) are conformant ONLY for secondary/utility actions (refresh, filter, view toggles), never for the screen's primary action. Fixes W3-3; re-affirmed 2026-07-17 (Quiz tab violated this with a top creation bar — every list screen migrates to ActionFooter in wave P3).
+**D14 — Primary-action placement = shell-owned ActionFooter (full-width band).** Every tab-level primary action (Create, Import, Start, Save, bulk) docks into the shared `ActionFooter` (`components/ui/ActionFooter.tsx`). The footer is **owned by `ConsoleShell`**, not by the tab panel: it is a `shrink-0` sibling of the scrollable body (Nav rail + Tabpanel), spanning the **full ConsoleShell width** like the header — from left shell edge to right shell edge, under both navigation and content. Tabs **register** footer content via a shell-local portal host (`ActionFooterHost` + context `register()` with mandatory cleanup); they do not mount their own sticky/fixed footer surface.
+
+**Architecture (normative):**
+```text
+ConsoleShell
+├── HeaderBand           full shell width
+├── BodyGrid             NavigationRail + ScrollableTabPanel
+└── ActionFooterHost     full shell width (sibling, NOT a tabpanel child)
+```
+
+**Supersedes (deprecated 2026-08-01, program #983):** The prior D14 wording that treated ActionFooter as a *direct flex child of the tabpanel* with `position: sticky`, negative margin bleed (`-mx-4 -mb-4` / `sm:-mx-6 sm:-mb-6`), and content `pb-20` / `scroll-padding-bottom` clearance. Those patterns solved W2/W3 sticky geometry but clip the nav rail and force overlay hacks. They are **forbidden** for new work (see AF-03, AF-17). Migration: WP-AF03…AF09 under parent issue #983.
+
+**Still true from prior D14:** Top-of-list creation bars or header-corner create buttons are a D14 violation for the screen's primary action. Header actions in normal document flow remain conformant **only** for secondary/utility actions (refresh, filter, view toggles). Actions must never float **over** content (F5 regression). EmptyState recovery CTAs may stay in content when they solely fix the empty state and are not duplicated in the footer (AF-09). Origin: W3-3; re-affirmed 2026-07-17 (Quiz top creation bar); shell-band rewrite 2026-08-01 (#983 / AF-01…AF-18).
+
+#### Manager ActionFooter Manifest (AF-01…AF-18)
+
+Canonical console rules for the manager ActionFooter. **D17 applies:** this section lives only in `design.md` — do not add a parallel `*.manifest.md` as a second source of truth. Implementation program: Gitea #983.
+
+##### AF-01 – Shell ownership
+
+The manager ActionFooter belongs to `ConsoleShell`. A tab declares footer **content** (zones/slots); it does not own a sticky, fixed, or local footer surface.
+
+##### AF-02 – Full-width band
+
+Header and footer share the same outer shell bounds. The footer starts at the left shell edge and ends at the right shell edge. A footer that begins only to the right of the nav rail is non-conformant.
+
+##### AF-03 – No overlay
+
+The footer is a `shrink-0` sibling of the scrollable body. It must never cover content. Negative margin, bottom-offset, and `pb-20`-only-for-footer-clearance hacks are forbidden.
+
+##### AF-04 – Visual hierarchy
+
+- Footer surface: `bg-[var(--surface)]`
+- Top divider: `border-[var(--line)]`
+- Optional light upward shadow via existing shadow tokens only
+- No inner card, no own radius, no glass, no blur
+- Shell clips both bottom corners
+- Same horizontal shell padding logic as the header
+- Footer is functionally calmer than the header; no strong extra gradient
+
+##### AF-05 – Four semantic zones
+
+1. **Context:** selection, record identity, dirty/bulk state  
+2. **Controls:** options that change the immediately following commit/start  
+3. **Secondary/Overflow:** at most two visible secondary actions  
+4. **Primary:** at most one primary action  
+
+The API maps these zones as named props/slots. Unstructured free `children` are not allowed after migration (AF09).
+
+##### AF-06 – Primary action
+
+- At most one Primary Action per footer.
+- Primary is last in DOM order.
+- Desktop: outer right.
+- Mobile: full available width or clearly strongest action.
+- Save / Start / Create / Apply are Primary.
+- Destructive actions are never Primary without a confirmation dialog.
+
+##### AF-07 – What belongs in the footer
+
+- Start, Save, Apply, Create, Import, Export primary actions  
+- Bulk actions while a selection is active  
+- Options that change the immediately following commit/start  
+- Dirty, saving, validation, or selection status  
+- Wizard Back / Next / Finish  
+
+##### AF-08 – What stays in content
+
+- Search, filter, sort, view toggles  
+- Purely informative preview  
+- Row actions and their overflow menus  
+- Navigation  
+- Form fields that constitute the page body  
+- Modal actions in the respective dialog footer  
+
+##### AF-09 – Empty-state exception
+
+An `EmptyState` recovery CTA may remain in content when it solely resolves the empty state. It is not duplicated in the footer. Normal page primary actions still go in the footer.
+
+##### AF-10 – Responsive behaviour
+
+- `≥1280`: prefer one row, max two.  
+- `920–1279`: context rail + two-line action cell.  
+- `600–919`: full width without rail cell.  
+- `<600`: controls in a closed-by-default footer disclosure; actions stay visible.  
+- No horizontal footer scroll.  
+- Interactive targets ≥ 44×44 px.  
+- Respect bottom safe-area inset.  
+
+##### AF-11 – Controls
+
+- Footer controls are compact and visibly labelled.  
+- Dropdowns use the existing `Select`.  
+- Toggles use existing toggle primitives.  
+- No long description copy in the footer.  
+- Help via accessible short description, tooltip, or dialog.  
+- No large `SectionCard` / setting cards in the footer.  
+- Participant limit as compact select: Unlimited, 25, 50, 100, 200, Custom (Custom reveals a compact number field with server bound).  
+
+##### AF-12 – States
+
+| State | Behaviour |
+|---|---|
+| Default | normal controls and actions |
+| Selection | Context shows count; bulk actions replace normal actions where sensible |
+| Dirty | explicit status; **no** global opacity dimming of the whole bar |
+| Saving | status via `aria-live`; affected controls/actions disabled |
+| Validation error | message next to control; focus first invalid field |
+| Error | inputs retained; retry reachable |
+| Success | toast or short status without lasting layout shift |
+
+##### AF-13 – Accessibility
+
+- Shell host is a semantic `<footer>` with translated `aria-label`.  
+- Natural tab order: Controls → secondary → Primary.  
+- No focus traps except inside a real Radix dialog.  
+- All controls have visible labels and stable IDs.  
+- Disabled reasons are not available via `title` alone.  
+- Status uses `role="status"` / `aria-live="polite"`.  
+- On tab switch, no stale footer actions remain focusable.  
+- Respect reduced motion.  
+
+##### AF-14 – No empty footer
+
+Tabs without page actions reserve no footer height. No decorative empty bar.
+
+##### AF-15 – Explicit tab policy
+
+Every manager tab registry entry must use one of:
+
+```ts
+type ActionFooterPolicy =
+  | { actionFooter: "required" }
+  | { actionFooter: "optional"; actionFooterReason: string }
+  | { actionFooter: "none"; actionFooterReason: string }
+```
+
+A new tab without policy must fail typecheck. `none` and `optional` require a reason.
+
+##### AF-16 – Runtime / test contract
+
+- `required` without a registered footer → error in development/test  
+- more than one footer → error in development/test  
+- `none` with a registered footer → error in development/test  
+- `optional` may be null or one instance  
+- Contract re-checked when the active tab changes  
+
+##### AF-17 – Forbidden patterns
+
+```text
+ActionFooter inside tabpanel DOM
+position: sticky
+position: fixed
+negative mx/mb/bottom compensation
+pb-20 solely as footer clearance
+duplicate Primary in header and footer
+empty footer bar
+page-specific footer colours or shadows
+unlabelled selects/toggles
+multiple visible Primary buttons
+large cards or long explanatory copy in the footer
+global storage of React nodes/handlers
+```
+
+##### AF-18 – New tabs and generator
+
+New manager tabs are created via a manager-tab generator (`pnpm g:manager-tab`). The generator requires a footer policy and produces:
+
+- PageHeader / content scaffold  
+- ActionFooter skeleton when `required`  
+- Reason comment when `none` / `optional`  
+- Unit test for the policy  
+- No header primary action  
+
+**Implementation track (not design text):** AF02 policy types → AF03 host → AF04 portal ActionFooter → AF05 zone API → AF06/07 Play → AF08.x migrations → AF09 cleanup → AF10 CI gate → AF11 generator. Parent issue #983.
+
 
 **D15 — Form standard.** All inputs, selects, date pickers follow D7-focus + hairline borders (`border border-[var(--line)]`) idle state. Native `<input type=date>` (no date-picker library). Error states use adjacent error message + `aria-invalid=true` on control + focus first invalid field. Never color-only signals. Replaces custom focus-rings + divergent input heights.
 
