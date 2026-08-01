@@ -1,11 +1,20 @@
 import clsx from "clsx"
-import { ChevronDown } from "lucide-react"
+import {
+  ChevronDown,
+  Eye,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  SkipForward,
+} from "lucide-react"
 import {
   Children,
   type ReactNode,
   useId,
 } from "react"
 import { useTranslation } from "react-i18next"
+import type { CompactIconBarAction } from "./ActionFooter.compact.types"
 
 /**
  * AF05 #1011 — typed zone primitives for ActionFooter.
@@ -232,5 +241,70 @@ export function ActionFooterOptionsDisclosure({
       </summary>
       <div className="border-t border-[var(--line)] px-3 py-3">{children}</div>
     </details>
+  )
+}
+
+
+/**
+ * AF07 — CompactIconBar atom + dock. 44×44 icon button + row container
+ * (`role="group"`). Token-only coloring, motion-reduce aware, focus-visible ring.
+ */
+
+const ICON_BAR_ICON_MAP = {
+  Play,
+  Pause,
+  SkipForward,
+  Eye,
+  Minus,
+  Plus,
+} as const
+
+export interface IconBarButtonProps {
+  action: CompactIconBarAction
+  className?: string
+}
+
+/** Single icon button — 44×44 touch target, token-driven active state. */
+export function IconBarButton({ action, className }: IconBarButtonProps) {
+  const Icon = ICON_BAR_ICON_MAP[action.iconName]
+  return (
+    <button
+      type="button"
+      onClick={action.onClick}
+      aria-label={action.label}
+      aria-pressed={action.toggle ? action.active : undefined}
+      title={action.label}
+      disabled={action.disabled}
+      data-testid={`icon-bar-button-${action.key}`}
+      className={clsx(
+        "inline-flex h-11 w-11 items-center justify-center rounded-md",
+        "transition-colors motion-reduce:transition-none",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]",
+        action.disabled
+          ? "text-[var(--ink-muted)] opacity-50 cursor-not-allowed"
+          : action.active
+            ? "bg-[var(--accent-contrast)] text-[var(--accent-contrast-text)]"
+            : "text-[var(--ink)] hover:bg-[var(--accent-tint)] focus-visible:bg-[var(--accent-tint)]",
+        className,
+      )}
+    >
+      <Icon className="size-5" aria-hidden strokeWidth={2} />
+    </button>
+  )
+}
+
+export interface IconBarDockProps {
+  actions: readonly CompactIconBarAction[]
+  className?: string
+}
+
+/** Row of IconBarButtons — `role="group"` for landmark semantics. */
+export function IconBarDock({ actions, className }: IconBarDockProps) {
+  return (
+    <div role="group" className={clsx("flex items-center gap-1", className)}>
+      {actions.map((a) => (
+        <IconBarButton key={a.key} action={a} />
+      ))}
+    </div>
   )
 }
