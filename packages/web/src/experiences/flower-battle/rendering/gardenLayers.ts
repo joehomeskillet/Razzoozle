@@ -43,9 +43,11 @@ export const LAYER_LABELS = [
   "layer-weather",
   "layer-powerup",
   "layer-ambient",
+  // Foreground frame first, then HUD/banner so team meters stay readable
+  // above corner bushes/leaves (not buried under foliage).
+  "layer-foreground-frame",
   "layer-presenter-hud",
   "layer-event-banner",
-  "layer-foreground-frame",
 ] as const
 
 export type LayerLabel = (typeof LAYER_LABELS)[number]
@@ -993,9 +995,10 @@ export function createGardenLayers(
     weather,
     powerup,
     ambient,
+    foregroundFrame,
+    // HUD + banner above foliage so plot meters/names are never occluded.
     presenterHud,
     eventBanner,
-    foregroundFrame,
   ]
   return {
     sky,
