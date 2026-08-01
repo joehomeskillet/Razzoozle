@@ -110,7 +110,6 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Play,
     component: ConfigSelectQuizz,
     actionFooter: "required",
-    actionFooterVariant: "compact",
   },
   {
     key: "quiz",
@@ -214,6 +213,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigUsers,
     roleGate: "admin",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "design",
