@@ -29,3 +29,19 @@ export type {
 } from "@razzoozle/web/features/manager/components/console/ManagerActionFooter"
 export * from "@razzoozle/web/features/manager/components/console/rowStyles"
 export * from "@razzoozle/web/features/manager/components/console/listMotion"
+
+// AF03 #1009 — shell ActionFooter host (re-export for console consumers)
+export {
+  ActionFooterHostProvider,
+  ActionFooterHostSlot,
+  useActionFooterHost,
+  useActionFooterHostOptional,
+  createActionFooterRegistry,
+  setRequiredFooterEnforcement,
+  REQUIRED_FOOTER_ENFORCEMENT,
+} from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
+export type {
+  ActionFooterPolicyMode,
+  ConsoleActionFooterHost,
+  ActionFooterRegistry,
+} from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
