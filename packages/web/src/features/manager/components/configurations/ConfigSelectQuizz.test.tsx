@@ -257,7 +257,8 @@ describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", 
     const html = renderPlay()
 
     expect(html).toContain('data-testid="action-footer-compact"')
-    expect(html).toMatch(/<div[^>]*role="toolbar"/)
+    expect(html).not.toContain('role="toolbar"')
+    expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-label="Page actions"/)
 
     expect(html).toContain('data-testid="play-copy-btn"')
     expect(html).toContain('data-testid="quizz-start-btn"')
