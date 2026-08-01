@@ -16,7 +16,7 @@
 // indent, no semicolons).
 
 import { renderToStaticMarkup } from "react-dom/server"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import {
   ActionFooterControls,
@@ -25,6 +25,14 @@ import {
   IconBarDock,
 } from "../ActionFooter.primitives"
 import type { CompactIconBarAction } from "../ActionFooter.compact.types"
+
+vi.mock("react", async () => {
+  const actual = await vi.importActual<typeof import("react")>("react")
+  return {
+    ...actual,
+    useId: () => "icon-bar-test",
+  }
+})
 
 const render = (node: React.ReactNode) => renderToStaticMarkup(node)
 
@@ -64,14 +72,29 @@ describe("IconBarButton", () => {
     expect(html).toContain('aria-pressed="true"')
   })
 
-  it("disabled action renders disabled + cursor-not-allowed + opacity-50", () => {
+  it("keeps a disabled action focusable with aria-disabled", () => {
     const html = render(
       <IconBarButton action={{ ...baseAction, disabled: true }} />,
     )
-    expect(html).toContain('disabled=""')
+    expect(html).toContain('aria-disabled="true"')
+    expect(html).not.toMatch(/\sdisabled(?:=|\s|>)/)
+    expect(html).not.toContain('tabindex="-1"')
     expect(html).toContain("cursor-not-allowed")
     expect(html).toContain("opacity-50")
     expectCanonicalFocus(html)
+  })
+
+  it("suppresses the click handler when aria-disabled", () => {
+    const onClick = vi.fn()
+    const enabled = IconBarButton({
+      action: { ...baseAction, onClick },
+    }) as React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>>
+    const disabled = IconBarButton({
+      action: { ...baseAction, onClick, disabled: true },
+    }) as React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>>
+
+    expect(enabled.props.onClick).toBe(onClick)
+    expect(disabled.props.onClick).toBeUndefined()
   })
 
   it("data-testid uses action.key (icon-bar-button-<key>)", () => {
@@ -150,7 +173,8 @@ describe("IconBarButton", () => {
     expect(html).toContain(`id="${describedBy}"`)
     expect(html).toContain("sr-only")
     expect(html).toContain("Zuerst ein Quiz auswählen")
-    expect(html).toContain('title="Auto-Modus"')
+    expect(html).toContain('aria-label="Auto-Modus"')
+    expect(html).toContain('title="Zuerst ein Quiz auswählen"')
   })
 
   it("does not add aria-describedby without a disabled reason", () => {

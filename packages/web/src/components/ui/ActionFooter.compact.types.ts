@@ -1,5 +1,3 @@
-import type { ReactNode } from "react"
-
 /**
  * AF-compact (WP-0 contract). Canonical name lives here and on
  * `TabDef.actionFooterVariant` in `features/manager/components/configurations/index.tsx`.
@@ -56,16 +54,11 @@ export interface CompactIconBarAction {
 /**
  * CompactIconBar — icon-only footer for tabs that opted into
  * `actionFooterVariant: "compact"`. Renders as a horizontal 44px-tall bar
- * with a leading slot, N action slots, and a trailing slot. Honors
- * `prefers-reduced-motion` for state transitions.
+ * with N action slots. Honors `prefers-reduced-motion` for state transitions.
  */
 export interface CompactIconBarProps {
-  /** Ordered actions. Order = visual order (leading → trailing). */
+  /** Ordered actions. Order = visual and keyboard order. */
   actions: readonly CompactIconBarAction[]
-  /** Optional leading slot (e.g. status badge, count chip). */
-  leading?: ReactNode
-  /** Optional trailing slot (e.g. overflow trigger, save indicator). */
-  trailing?: ReactNode
   /** Extra className applied to the outer bar. */
   className?: string
   /**

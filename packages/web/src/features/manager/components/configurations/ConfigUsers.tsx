@@ -6,7 +6,6 @@ import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl
 import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import { Plus } from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -407,20 +406,16 @@ const ConfigUsers = () => {
 
     <ActionFooterCompact
       instanceId="users"
-      actions={[]}
-      trailing={
-        <Button
-          data-testid="users-create-btn"
-          variant="primary"
-          size="icon"
-          type="button"
-          onClick={handleOpenCreateDialog}
-          aria-label={t("manager:users.create")}
-          title={t("manager:users.create")}
-        >
-          <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-        </Button>
-      }
+      actions={[
+        {
+          key: "create",
+          iconName: "Create",
+          intent: "primary",
+          label: t("manager:users.create"),
+          onClick: handleOpenCreateDialog,
+          testId: "users-create-btn",
+        },
+      ]}
     />
     </>
   )

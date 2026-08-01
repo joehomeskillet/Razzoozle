@@ -19,6 +19,7 @@ import NavItem from "@razzoozle/web/features/manager/components/console/NavItem"
 import SubGroup from "@razzoozle/web/features/manager/components/console/SubGroup"
 import "@razzoozle/web/features/manager/components/console/tokens.css"
 import {
+  ACTION_FOOTER_GRADIENT_CLASS,
   ActionFooterHostProvider,
   ActionFooterHostSlot,
   type ActionFooterPolicyMode,
@@ -337,7 +338,7 @@ const ConsoleShell = ({
           className={clsx(
             "flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-4 py-3 sm:px-6",
             // Subtle accent-tinted gradient → warm, but legible under any theme.
-            "bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]",
+            ACTION_FOOTER_GRADIENT_CLASS,
           )}
         >
           {!isDesktop && (

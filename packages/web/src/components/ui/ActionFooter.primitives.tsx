@@ -305,12 +305,16 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
   return (
     <button
       type="button"
-      onClick={action.onClick}
+      onClick={action.disabled ? undefined : action.onClick}
       aria-label={action.label}
       aria-pressed={action.toggle ? action.active : undefined}
+      aria-disabled={action.disabled || undefined}
       aria-describedby={describedBy}
-      title={action.label}
-      disabled={action.disabled}
+      title={
+        action.disabled && action.disabledReason
+          ? action.disabledReason
+          : action.label
+      }
       data-action-key={action.key}
       data-testid={action.testId ?? `icon-bar-button-${action.key}`}
       className={clsx(

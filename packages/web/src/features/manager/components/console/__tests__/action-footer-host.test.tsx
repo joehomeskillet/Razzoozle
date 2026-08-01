@@ -4,12 +4,14 @@
 import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
 import {
+  ACTION_FOOTER_GRADIENT_CLASS,
   ActionFooterHostProvider,
   ActionFooterHostSlot,
   createActionFooterRegistry,
   setRequiredFooterEnforcement,
   REQUIRED_FOOTER_ENFORCEMENT,
 } from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
+import ConsoleShell from "@razzoozle/web/features/manager/components/console/ConsoleShell"
 
 describe("createActionFooterRegistry", () => {
   it("register returns cleanup and tracks count", () => {
@@ -104,23 +106,37 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
   })
 
   it("uses the exact header gradient while preserving shell chrome", () => {
-    const html = renderToStaticMarkup(
+    const footerHtml = renderToStaticMarkup(
       <ActionFooterHostProvider activeKey="play" strict={false}>
         <ActionFooterHostSlot />
       </ActionFooterHostProvider>,
     )
+    const shellHtml = renderToStaticMarkup(
+      <ConsoleShell
+        brand={<span>Razzoozle</span>}
+        title="Manager"
+        nav={[]}
+        activeKey="play"
+        onSelect={() => {}}
+      >
+        <div>Content</div>
+      </ConsoleShell>,
+    )
+    const headerClass = /<header[^>]*class="([^"]+)"/.exec(shellHtml)?.[1]
 
-    expect(html).toContain("bg-gradient-to-r")
-    expect(html).toContain("from-[var(--accent-tint)]")
-    expect(html).toContain("to-[var(--surface)]")
-    expect(html).toContain("border-t")
-    expect(html).toContain("border-[var(--line)]")
-    expect(html).toContain("shadow-[var(--shadow-flat)]")
-    expect(html).toContain("env(safe-area-inset-bottom)")
-    expect(html).toContain("empty:h-0")
-    expect(html).toContain("empty:border-0")
-    expect(html).toContain("empty:p-0")
-    expect(html).toContain("empty:shadow-none")
+    expect(ACTION_FOOTER_GRADIENT_CLASS).toBe(
+      "bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]",
+    )
+    expect(footerHtml).toContain(ACTION_FOOTER_GRADIENT_CLASS)
+    expect(headerClass).toContain(ACTION_FOOTER_GRADIENT_CLASS)
+    expect(footerHtml).toContain("border-t")
+    expect(footerHtml).toContain("border-[var(--line)]")
+    expect(footerHtml).toContain("shadow-[var(--shadow-flat)]")
+    expect(footerHtml).toContain("env(safe-area-inset-bottom)")
+    expect(footerHtml).toContain("empty:h-0")
+    expect(footerHtml).toContain("empty:border-0")
+    expect(footerHtml).toContain("empty:p-0")
+    expect(footerHtml).toContain("empty:shadow-none")
   })
 
   it("host is a footer landmark with accessible name", () => {
