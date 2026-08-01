@@ -181,7 +181,7 @@ const SPECIES = {
     headElements: () => range(14, 29),
     stemFrom: "tulip",
     headAnchor: [16, 19.7],
-    fullScale: 1.0,
+    fullScale: 0.78,
     faceSource: [16, 10.5],
     colors: [
       // Magenta -> Blau (Hue ~325 -> ~215); Hell/Dunkel-Verteilung bleibt
@@ -236,7 +236,7 @@ const SPECIES = {
     headElements: () => range(14, 25),
     stemFrom: "blossom",
     headAnchor: [16, 19.6],
-    fullScale: 0.62,
+    fullScale: 0.78,
     faceSource: [16, 13],
     colors: [
       // Orange-Mitte -> gediegenes Gruen (Hue ~11-32 -> ~95, deutlich entsaettigt)
@@ -321,7 +321,7 @@ function faceGroup([fx, fy]) {
 }
 
 function svgDoc(inner, defs) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">${defs}${inner}</svg>\n`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">${defs}${inner}</svg>\n`
 }
 
 /**
