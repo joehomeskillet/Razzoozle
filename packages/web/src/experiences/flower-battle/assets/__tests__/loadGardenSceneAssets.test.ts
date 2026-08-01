@@ -53,14 +53,15 @@ describe("normalizeSvgViewBox", () => {
       '<svg viewBox="-40 -40 80 80"><circle cx="0" cy="0" r="10"/></svg>'
     const out = normalizeSvgViewBox(raw)
     expect(out).toContain('viewBox="0 0 80 80"')
-    expect(out).toContain('translate(40 40)')
+    expect(out).toContain("translate(40 40)")
     expect(out).toContain("</g></svg>")
   })
 })
 
 describe("ensureSvgIntrinsicSize", () => {
   it("injects explicit width/height so browsers do not default to 300×150", () => {
-    const raw = '<svg viewBox="0 0 1920 400" xmlns="http://www.w3.org/2000/svg"></svg>'
+    const raw =
+      '<svg viewBox="0 0 1920 400" xmlns="http://www.w3.org/2000/svg"></svg>'
     const out = ensureSvgIntrinsicSize(raw, 1920, 400)
     expect(out).toContain('width="1920"')
     expect(out).toContain('height="400"')
@@ -102,9 +103,12 @@ describe("targetRasterSize", () => {
 
 describe("parseSvgViewBox", () => {
   it("reads width/height from viewBox", () => {
-    expect(
-      parseSvgViewBox('<svg viewBox="0 0 1920 350"></svg>'),
-    ).toEqual({ minX: 0, minY: 0, width: 1920, height: 350 })
+    expect(parseSvgViewBox('<svg viewBox="0 0 1920 350"></svg>')).toEqual({
+      minX: 0,
+      minY: 0,
+      width: 1920,
+      height: 350,
+    })
   })
 })
 
@@ -138,7 +142,9 @@ describe("GARDEN_SCENE_ASSET_URLS", () => {
 
   it("includes layer + plant head coverage", () => {
     expect(GARDEN_SCENE_ASSET_URLS.bg_sky_day).toMatch(/sky-day/)
-    expect(GARDEN_SCENE_ASSET_URLS.plant_head_round).toMatch(/flower-head-round/)
+    expect(GARDEN_SCENE_ASSET_URLS.plant_head_round).toMatch(
+      /flower-head-round/,
+    )
     expect(GARDEN_SCENE_ASSET_URLS.env_fence_white).toMatch(/fence-white/)
   })
 
@@ -148,5 +154,42 @@ describe("GARDEN_SCENE_ASSET_URLS", () => {
       expect(url, alias).not.toMatch(/\/placeholders\//i)
       expect(url, alias).not.toMatch(/(^|\/)placeholder\//i)
     }
+  })
+
+  it("exposes Vite URLs for all 14 Fluent plant stage assets", () => {
+    const fluentAliases = [
+      "plant_shared_seedling",
+      "plant_shared_sprout",
+      "plant_violet_bud",
+      "plant_violet_half",
+      "plant_violet_full",
+      "plant_blue_bud",
+      "plant_blue_half",
+      "plant_blue_full",
+      "plant_orange_bud",
+      "plant_orange_half",
+      "plant_orange_full",
+      "plant_green_bud",
+      "plant_green_half",
+      "plant_green_full",
+    ] as const
+    for (const alias of fluentAliases) {
+      expect(GARDEN_SCENE_ASSET_URLS[alias], alias).toBeTruthy()
+      expect(typeof GARDEN_SCENE_ASSET_URLS[alias]).toBe("string")
+    }
+    // All 14 are also mandatory.
+    for (const alias of fluentAliases) {
+      expect(GARDEN_SCENE_REQUIRED_ALIASES).toContain(alias)
+    }
+  })
+
+  it("Fluent plant assets are rasterized at 512x512 (preserveSourceColors)", () => {
+    const size = targetRasterSize("plant_violet_full", {
+      minX: 0,
+      minY: 0,
+      width: 32,
+      height: 32,
+    })
+    expect(size).toEqual({ width: 512, height: 512 })
   })
 })

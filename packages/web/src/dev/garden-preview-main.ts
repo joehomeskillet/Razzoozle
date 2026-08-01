@@ -19,13 +19,26 @@ function readTeamCount(): number {
   }
 }
 
-function teamSnapshots(count: number) {
+/** Uniform growth stage override for screenshot gates (?stage=0..10). */
+function readGrowthStage(): number | null {
+  try {
+    const raw = new URLSearchParams(location.search).get("stage")
+    if (raw == null || raw === "") return null
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return null
+    return Math.min(10, Math.max(0, Math.floor(n)))
+  } catch {
+    return null
+  }
+}
+
+function teamSnapshots(count: number, stage: number | null) {
   const names = ["Violett", "Blau", "Orange", "Grün"]
   // Growth spread across 0..MAX_GROWTH(=10) — matches live experience range.
   const growth = [2, 6, 10, 8]
   return Array.from({ length: count }, (_, i) => ({
     name: names[i] ?? `Team ${i + 1}`,
-    growthStage: growth[i] ?? 6,
+    growthStage: stage ?? growth[i] ?? 6,
   }))
 }
 
@@ -57,9 +70,11 @@ async function main(): Promise<void> {
   }
 
   const teamCount = readTeamCount()
+  const stageOverride = readGrowthStage()
   status && (status.textContent = `init Pixi… teams=${teamCount}`)
 
-  const { scene, dispose } = await attachGardenPixiApplication(canvas)
+  const { scene, dispose, prefersReducedMotion } =
+    await attachGardenPixiApplication(canvas)
   const procedural = scene as ProceduralGardenScene
 
   // Debug handles for automated layout verification (read-only, dev-only).
@@ -76,7 +91,7 @@ async function main(): Promise<void> {
     })
   }
 
-  const teams = teamSnapshots(teamCount)
+  const teams = teamSnapshots(teamCount, stageOverride)
   if (typeof procedural.updateSnapshot === "function") {
     procedural.updateSnapshot({
       teams,
@@ -109,7 +124,8 @@ async function main(): Promise<void> {
     }
   ).__razzoozleGardenAssets
 
-  const loaded = diag?.loadedAliases?.length ?? winDiag?.loadedAliases?.length ?? 0
+  const loaded =
+    diag?.loadedAliases?.length ?? winDiag?.loadedAliases?.length ?? 0
   const missing = diag?.missingAliases ?? winDiag?.missingAliases ?? []
   const used = diag?.usedSpriteAliases ?? winDiag?.usedSpriteAliases ?? []
   const failed = diag?.failedUrls ?? winDiag?.failedUrls ?? []
@@ -117,6 +133,8 @@ async function main(): Promise<void> {
 
   const readyPayload = {
     teams: teamCount,
+    stage: stageOverride,
+    reducedMotion: prefersReducedMotion,
     loaded,
     sprites: used.length,
     missing: missing.length,
@@ -129,6 +147,8 @@ async function main(): Promise<void> {
   if (status) {
     status.textContent = [
       `teams=${teamCount}`,
+      `stage=${stageOverride ?? "mixed"}`,
+      `reducedMotion=${prefersReducedMotion}`,
       `loaded=${loaded}`,
       `sprites=${used.length}`,
       `hud=${hudMounted}`,
@@ -156,6 +176,7 @@ main().catch((err) => {
     status.textContent = `ERROR: ${err instanceof Error ? err.message : String(err)}`
   }
   console.error(err)
-  ;(window as Window & { __gardenPreviewReady?: boolean }).__gardenPreviewReady =
-    false
+  ;(
+    window as Window & { __gardenPreviewReady?: boolean }
+  ).__gardenPreviewReady = false
 })
