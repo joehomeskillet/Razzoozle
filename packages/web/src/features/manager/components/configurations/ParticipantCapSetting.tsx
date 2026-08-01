@@ -1,6 +1,8 @@
 import Input from "@razzoozle/web/components/Input"
+import Select from "@razzoozle/web/components/Select"
 import clsx from "clsx"
 import { Users } from "lucide-react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 export interface ParticipantCapSettingProps {
@@ -9,10 +11,17 @@ export interface ParticipantCapSettingProps {
   disabled?: boolean
   testIdPrefix?: string
   className?: string
+  /**
+   * `card` — full surface card (legacy).
+   * `compact` — footer-ready select: Unlimited / 25 / 50 / 100 / 200 / Custom (AF-11 / AF06).
+   */
+  variant?: "card" | "compact"
 }
 
 // Server ceiling is MAX_PLAYERS_PER_GAME = 200; presets stay within this bound
 export const CAP_PRESETS = [25, 50, 100, 200, null] as const
+
+const PRESET_VALUES = new Set<number | null>([null, 25, 50, 100, 200])
 
 export function ParticipantCapSetting({
   value = null,
@@ -20,8 +29,18 @@ export function ParticipantCapSetting({
   disabled = false,
   testIdPrefix = "",
   className,
+  variant = "card",
 }: ParticipantCapSettingProps) {
   const { t } = useTranslation()
+  const isCustom =
+    value != null && value > 0 && !PRESET_VALUES.has(value)
+  const [customMode, setCustomMode] = useState(isCustom)
+
+  const selectValue = useMemo(() => {
+    if (customMode || isCustom) return "custom"
+    if (value == null || value === 0) return "unlimited"
+    return String(value)
+  }, [customMode, isCustom, value])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
@@ -31,8 +50,75 @@ export function ParticipantCapSetting({
     }
     const num = parseInt(raw, 10)
     if (!isNaN(num) && num >= 0) {
-      onChange(num === 0 ? null : num)
+      onChange(num === 0 ? null : Math.min(200, num))
     }
+  }
+
+  if (variant === "compact") {
+    return (
+      <div
+        className={clsx("flex min-w-0 flex-col gap-1", className)}
+        data-testid={`${testIdPrefix}participant-cap-setting`}
+        data-variant="compact"
+      >
+        <label
+          htmlFor={`${testIdPrefix}cap-select`}
+          className="text-xs font-medium text-[var(--ink-muted)]"
+        >
+          {t("manager:cap.title", { defaultValue: "Teilnehmer-Limit" })}
+        </label>
+        <div className="flex min-h-11 min-w-0 flex-wrap items-center gap-2">
+          <Select
+            id={`${testIdPrefix}cap-select`}
+            value={selectValue}
+            disabled={disabled}
+            data-testid={`${testIdPrefix}participant-cap-select`}
+            className="min-w-[8rem] flex-1"
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === "unlimited") {
+                setCustomMode(false)
+                onChange(null)
+              } else if (v === "custom") {
+                setCustomMode(true)
+                if (value == null || PRESET_VALUES.has(value)) {
+                  onChange(30)
+                }
+              } else {
+                setCustomMode(false)
+                onChange(Number(v))
+              }
+            }}
+          >
+            <option value="unlimited">
+              {t("manager:cap.unlimited", { defaultValue: "Unbegrenzt" })}
+            </option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="custom">
+              {t("manager:cap.custom", { defaultValue: "Benutzerdefiniert" })}
+            </option>
+          </Select>
+          {(customMode || isCustom) && (
+            <Input
+              type="number"
+              min={1}
+              max={200}
+              value={value ?? ""}
+              onChange={handleInputChange}
+              disabled={disabled}
+              className="w-24 min-h-11"
+              data-testid={`${testIdPrefix}participant-cap-input`}
+              aria-label={t("manager:cap.custom", {
+                defaultValue: "Benutzerdefiniert",
+              })}
+            />
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -51,7 +137,8 @@ export function ParticipantCapSetting({
           </h3>
           <p className="text-xs font-semibold text-[var(--ink-muted)]">
             {t("manager:cap.subtitle", {
-              defaultValue: "Maximale Anzahl gleichzeitiger Spieler in der Session",
+              defaultValue:
+                "Maximale Anzahl gleichzeitiger Spieler in der Session",
             })}
           </p>
         </div>
@@ -65,13 +152,14 @@ export function ParticipantCapSetting({
             max={200}
             value={value ?? ""}
             onChange={handleInputChange}
-            placeholder={t("manager:cap.unlimited", { defaultValue: "Unbegrenzt" })}
+            placeholder={t("manager:cap.unlimited", {
+              defaultValue: "Unbegrenzt",
+            })}
             disabled={disabled}
             data-testid={`${testIdPrefix}participant-cap-input`}
           />
         </div>
 
-        {/* Preset Pills */}
         <div className="flex flex-wrap gap-2" role="group">
           {CAP_PRESETS.map((preset) => {
             const isSelected = value === preset
