@@ -22,11 +22,6 @@ export { default as AssetPreview } from "@razzoozle/web/features/manager/compone
 export type { AssetPreviewProps } from "@razzoozle/web/features/manager/components/console/AssetPreview"
 export { default as AssetPreviewCard } from "@razzoozle/web/features/manager/components/console/AssetPreviewCard"
 export type { AssetPreviewCardProps } from "@razzoozle/web/features/manager/components/console/AssetPreviewCard"
-export { default as ManagerActionFooter } from "@razzoozle/web/features/manager/components/console/ManagerActionFooter"
-export type {
-  ManagerActionFooterProps,
-  ManagerTeamStatus,
-} from "@razzoozle/web/features/manager/components/console/ManagerActionFooter"
 export * from "@razzoozle/web/features/manager/components/console/rowStyles"
 export * from "@razzoozle/web/features/manager/components/console/listMotion"
 

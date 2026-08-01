@@ -1,0 +1,12 @@
+<!--
+  Self-generated Razzoozle-internal CC0. viewBox 0 0 36 36.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" aria-hidden="true">
+  <g id="face">
+    <circle cx="18" cy="18" r="14" fill="#e5e7eb" />
+    <circle cx="13" cy="15" r="1.8" fill="#1f2937" />
+    <circle cx="23" cy="15" r="1.8" fill="#1f2937" />
+    
+    <path d="M13 22 L23 22" fill="none" stroke="#1f2937" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>
