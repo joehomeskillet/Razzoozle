@@ -180,6 +180,26 @@ pub async fn handle_spa_fallback(uri: Uri) -> Result<impl IntoResponse, (StatusC
         return Err((StatusCode::NOT_FOUND, "Not found".to_string()));
     }
 
+    // Prefer real files under WEB_DIST (pwa-*.png, favicon, robots.txt, …).
+    // Without this, SPA index.html is returned as text/html for every unknown
+    // path — browsers then reject PWA icons as "not a valid image".
+    if !path.is_empty()
+        && !path.ends_with('/')
+        && path.contains('.')
+        && !path.contains("..")
+    {
+        if let Ok((status, mut headers, body)) =
+            serve_static_file(&get_web_dist_path(), path).await
+        {
+            // Root statics (icons, manifest siblings) should revalidate.
+            headers.insert(
+                axum::http::header::CACHE_CONTROL,
+                "public, max-age=86400".parse().unwrap(),
+            );
+            return Ok((status, headers, body));
+        }
+    }
+
     // SPA fallback: return index.html with no-cache
     serve_static_file(&get_web_dist_path(), "index.html")
         .await
