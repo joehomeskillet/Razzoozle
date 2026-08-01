@@ -127,6 +127,7 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Library,
     component: ConfigCatalog,
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "classes",

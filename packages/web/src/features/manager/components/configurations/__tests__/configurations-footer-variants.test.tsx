@@ -58,7 +58,7 @@ vi.mock(
 vi.mock(
   "@razzoozle/web/features/manager/components/configurations/ConfigCatalog",
   () => ({
-    default: () => <div />,
+    default: () => <div data-testid="catalog-view" />,
   }),
 )
 vi.mock(
@@ -211,5 +211,12 @@ describe("configurations footer variants", () => {
     // into the compact icon bar instead.
     expect(play?.actionFooterVariant).toBe("compact")
     expect(play?.actionFooter).toBe("required")
+  })
+
+  it("registers catalog tab as compact and keeps actionFooter required", () => {
+    const html = renderConfigs("catalog")
+    expect(html).toContain('data-testid="catalog-view"')
+    expect(shellProps.variant).toBe("compact")
+    expect(shellProps.footerPolicy).toBe("required")
   })
 })

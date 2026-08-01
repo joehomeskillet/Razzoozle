@@ -15,14 +15,13 @@ import Button from "@razzoozle/web/components/Button"
 import Input from "@razzoozle/web/components/Input"
 import LabelChip from "@razzoozle/web/components/labels/LabelChip"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
-import { ActionFooter } from "@razzoozle/web/components/ui"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import {
   EmptyState,
   ListRow,
 } from "@razzoozle/web/features/manager/components/console"
 import { useLabelManager } from "@razzoozle/web/features/manager/components/configurations/labels/useLabelManager"
 import {
-  BookOpen,
   Library,
   Pencil,
   Plus,
@@ -73,8 +72,7 @@ const ConfigCatalog = () => {
 
   return (
     <>
-      {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
-      <div className="flex flex-1 flex-col pb-20">
+      <div className="flex flex-1 flex-col">
         <div className="mb-4 flex shrink-0 flex-col gap-3">
           <PageHeader
             title={t("manager:catalog.title")}
@@ -366,18 +364,19 @@ const ConfigCatalog = () => {
         />
       </div>
 
-      <ActionFooter>
-        <Button
-          data-testid="catalog-create-btn"
-          variant="primary"
-          size="lg"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={openAddModal}
-        >
-          <BookOpen className="size-5" aria-hidden />
-          <span>{t("manager:catalog.addManual")}</span>
-        </Button>
-      </ActionFooter>
+      <ActionFooterCompact
+        instanceId="catalog"
+        actions={[
+          {
+            key: "catalog-create",
+            iconName: "Create",
+            intent: "primary",
+            label: t("manager:catalog.addManual"),
+            onClick: openAddModal,
+            testId: "catalog-create-btn",
+          },
+        ]}
+      />
     </>
   )
 }
