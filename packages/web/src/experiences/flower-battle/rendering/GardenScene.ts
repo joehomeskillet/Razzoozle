@@ -223,25 +223,36 @@ export function createGardenScene(
     return plantHeads[key]
   }
 
-  function faceTextureForPlants(): Texture | undefined {
-    return plantHeads?.faceHappy
-  }
-
   function ensureTeamTints(count: number): void {
     if (teamTints.length >= count) return
-    if (options.resolveColor) {
-      teamTints = resolveTeamPlotColors(count, options.resolveColor)
-      return
+    // Production attach passes `palette` but team petal colours MUST come from
+    // --team-red/blue/green/yellow — not reused hill/leaf palette channels
+    // (which washed teams 1–3 into greens). Prefer live team tokens always.
+    const resolver = options.resolveColor ?? resolveThemeTokenColor
+    try {
+      const resolved = resolveTeamPlotColors(count, resolver)
+      if (resolved.length > 0) {
+        teamTints = resolved.slice()
+        while (teamTints.length < count) {
+          teamTints.push(resolved[teamTints.length % resolved.length]!)
+        }
+        return
+      }
+    } catch {
+      // Theme tokens unavailable (unit tests without CSS vars).
     }
     if (options.palette) {
-      // Injected palette (tests / offline): reuse already-resolved channels —
-      // never invent hex literals and never touch the live DOM.
-      teamTints = [
+      // Offline fallback: distinct palette channels only (no hill greens for blue).
+      const fallback = [
         options.palette.plantPetal,
-        options.palette.hillsNear,
+        options.palette.sun,
         options.palette.plantLeaf,
-        options.palette.hillsFar,
+        options.palette.sky,
       ]
+      teamTints = []
+      for (let i = 0; i < count; i += 1) {
+        teamTints.push(fallback[i % fallback.length]!)
+      }
       return
     }
     teamTints = resolveTeamPlotColors(count, resolveThemeTokenColor)
@@ -343,6 +354,8 @@ export function createGardenScene(
     while (plants.length < teamCount) {
       const index = plants.length
       const tint = teamTints[index] ?? palette.plantPetal
+      // Heads already bake eyes/smile into the SVG — do not overlay face-emote
+      // (full-disc yellow sprite) which washed team petal tints.
       const plant = new DummyPlantView({
         colors: {
           ...defaultPlantColors(palette),
@@ -350,7 +363,6 @@ export function createGardenScene(
         },
         label: `actor-plant-${index}`,
         headTexture: headTextureForIndex(index),
-        faceTexture: faceTextureForPlants(),
       })
       plants.push(plant)
       // SDD §30 probe-v3: per-plant team name parallel to the actorPlants

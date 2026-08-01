@@ -557,27 +557,27 @@ export function buildMidTreesLayer(
       tint: number
       tree: number
     }> = [
-      // Far band (smaller, slightly higher on the hill)
-      { x: 70, y: 0.7, height: 220, flip: false, alpha: 0.78, tint: 0xffffff, tree: 2 },
-      { x: 240, y: 0.69, height: 260, flip: true, alpha: 0.82, tint: 0xffffff, tree: 4 },
-      { x: 450, y: 0.71, height: 200, flip: false, alpha: 0.75, tint: 0xffffff, tree: 1 },
-      { x: 700, y: 0.68, height: 280, flip: true, alpha: 0.8, tint: 0xffffff, tree: 3 },
-      { x: 920, y: 0.7, height: 240, flip: false, alpha: 0.78, tint: 0xffffff, tree: 5 },
-      { x: 1150, y: 0.69, height: 250, flip: true, alpha: 0.8, tint: 0xffffff, tree: 0 },
-      { x: 1380, y: 0.71, height: 210, flip: false, alpha: 0.76, tint: 0xffffff, tree: 2 },
-      { x: 1620, y: 0.7, height: 230, flip: true, alpha: 0.78, tint: 0xffffff, tree: 4 },
-      { x: 1850, y: 0.69, height: 200, flip: false, alpha: 0.74, tint: 0xffffff, tree: 1 },
-      // Near-fence band (taller, denser)
-      { x: 140, y: 0.74, height: 380, flip: false, alpha: 0.95, tint: 0xffffff, tree: 0 },
-      { x: 320, y: 0.73, height: 440, flip: true, alpha: 0.98, tint: 0xffffff, tree: 1 },
-      { x: 500, y: 0.75, height: 340, flip: false, alpha: 0.93, tint: 0xffffff, tree: 2 },
-      { x: 680, y: 0.74, height: 300, flip: true, alpha: 0.9, tint: 0xffffff, tree: 5 },
-      { x: 860, y: 0.73, height: 400, flip: false, alpha: 0.96, tint: 0xffffff, tree: 3 },
-      { x: 1060, y: 0.75, height: 320, flip: true, alpha: 0.92, tint: 0xffffff, tree: 4 },
-      { x: 1240, y: 0.74, height: 360, flip: false, alpha: 0.94, tint: 0xffffff, tree: 0 },
-      { x: 1440, y: 0.73, height: 420, flip: true, alpha: 0.97, tint: 0xffffff, tree: 1 },
-      { x: 1620, y: 0.75, height: 340, flip: false, alpha: 0.91, tint: 0xffffff, tree: 2 },
-      { x: 1780, y: 0.74, height: 380, flip: true, alpha: 0.94, tint: 0xffffff, tree: 5 },
+      // Far band — soft midground/bush tints for depth (no pure-white wash).
+      { x: 70, y: 0.7, height: 220, flip: false, alpha: 0.78, tint: palette.bushBack, tree: 2 },
+      { x: 240, y: 0.69, height: 260, flip: true, alpha: 0.82, tint: palette.midground, tree: 4 },
+      { x: 450, y: 0.71, height: 200, flip: false, alpha: 0.75, tint: palette.bushBack, tree: 1 },
+      { x: 700, y: 0.68, height: 280, flip: true, alpha: 0.8, tint: palette.midground, tree: 3 },
+      { x: 920, y: 0.7, height: 240, flip: false, alpha: 0.78, tint: palette.bushMid, tree: 5 },
+      { x: 1150, y: 0.69, height: 250, flip: true, alpha: 0.8, tint: palette.midground, tree: 0 },
+      { x: 1380, y: 0.71, height: 210, flip: false, alpha: 0.76, tint: palette.bushBack, tree: 2 },
+      { x: 1620, y: 0.7, height: 230, flip: true, alpha: 0.78, tint: palette.midground, tree: 4 },
+      { x: 1850, y: 0.69, height: 200, flip: false, alpha: 0.74, tint: palette.bushBack, tree: 1 },
+      // Near-fence band — fuller foliage tints, keep crowns distinct
+      { x: 140, y: 0.74, height: 380, flip: false, alpha: 0.95, tint: palette.foreground, tree: 0 },
+      { x: 320, y: 0.73, height: 440, flip: true, alpha: 0.98, tint: palette.midground, tree: 1 },
+      { x: 500, y: 0.75, height: 340, flip: false, alpha: 0.93, tint: palette.foreground, tree: 2 },
+      { x: 680, y: 0.74, height: 300, flip: true, alpha: 0.9, tint: palette.bushMid, tree: 5 },
+      { x: 860, y: 0.73, height: 400, flip: false, alpha: 0.96, tint: palette.midground, tree: 3 },
+      { x: 1060, y: 0.75, height: 320, flip: true, alpha: 0.92, tint: palette.foreground, tree: 4 },
+      { x: 1240, y: 0.74, height: 360, flip: false, alpha: 0.94, tint: palette.midground, tree: 0 },
+      { x: 1440, y: 0.73, height: 420, flip: true, alpha: 0.97, tint: palette.foreground, tree: 1 },
+      { x: 1620, y: 0.75, height: 340, flip: false, alpha: 0.91, tint: palette.bushMid, tree: 2 },
+      { x: 1780, y: 0.74, height: 380, flip: true, alpha: 0.94, tint: palette.midground, tree: 5 },
     ]
     const treesArr = orderedTrees
     for (let i = 0; i < placements.length; i += 1) {
@@ -699,9 +699,27 @@ export function buildGrassLayer(
         : []
   ).filter((t): t is Texture => t != null && t.width > 0)
   if (tuftTextures.length > 0) {
-    // Dense lawn detail — two bands (mid lawn + near camera) so the meadow
-    // never reads as a flat green plate under the plants.
+    // Dense lawn detail — mid band + near camera + between plots so the
+    // meadow never reads as a flat green plate under the plants.
     const spots = [
+      // Mid lawn (behind fence feet / between tree trunks)
+      [60, 0.78, 0.85, 0],
+      [180, 0.8, 0.95, 1],
+      [300, 0.79, 0.9, 2],
+      [420, 0.81, 1.0, 0],
+      [540, 0.78, 0.88, 1],
+      [660, 0.8, 0.92, 2],
+      [780, 0.79, 0.86, 0],
+      [900, 0.81, 0.98, 1],
+      [1020, 0.78, 0.9, 2],
+      [1140, 0.8, 0.94, 0],
+      [1260, 0.79, 0.88, 1],
+      [1380, 0.81, 0.96, 2],
+      [1500, 0.78, 0.9, 0],
+      [1620, 0.8, 0.92, 1],
+      [1740, 0.79, 0.86, 2],
+      [1860, 0.8, 0.94, 0],
+      // Plot band
       [80, 0.84, 1.1, 0],
       [200, 0.88, 1.2, 1],
       [320, 0.86, 0.95, 2],
@@ -719,23 +737,30 @@ export function buildGrassLayer(
       [1760, 0.87, 1.05, 2],
       [1860, 0.91, 0.95, 0],
       // Near-camera band
-      [140, 0.97, 1.35, 1],
-      [380, 0.96, 1.2, 2],
-      [620, 0.98, 1.4, 0],
-      [900, 0.95, 1.15, 1],
-      [1180, 0.97, 1.3, 2],
-      [1460, 0.96, 1.25, 0],
-      [1720, 0.98, 1.2, 1],
+      [100, 0.96, 1.25, 1],
+      [240, 0.97, 1.15, 2],
+      [380, 0.96, 1.2, 0],
+      [520, 0.98, 1.35, 1],
+      [660, 0.95, 1.1, 2],
+      [800, 0.97, 1.3, 0],
+      [940, 0.96, 1.2, 1],
+      [1080, 0.98, 1.4, 2],
+      [1220, 0.95, 1.15, 0],
+      [1360, 0.97, 1.25, 1],
+      [1500, 0.96, 1.2, 2],
+      [1640, 0.98, 1.3, 0],
+      [1780, 0.95, 1.15, 1],
+      [1900, 0.97, 1.1, 2],
     ] as const
     for (const [x, yPct, sc, ti] of spots) {
       const tex = tuftTextures[ti % tuftTextures.length]!
       const tuft = new Sprite(tex)
-      tuft.label = `grass-detail-${x}`
+      tuft.label = `grass-detail-${x}-${yPct}`
       tuft.anchor.set(0.5, 1)
       tuft.position.set(x, GARDEN_LOGICAL_HEIGHT * yPct)
       const h = 52 * sc
       tuft.scale.set(h / tex.height)
-      tuft.alpha = 0.92
+      tuft.alpha = 0.88
       tuft.tint = palette.foreground
       layer.addChild(tuft)
     }

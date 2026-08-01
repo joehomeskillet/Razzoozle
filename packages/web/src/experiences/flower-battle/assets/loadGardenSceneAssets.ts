@@ -360,6 +360,21 @@ function paletteFillForAlias(
 ): { fill: string; ink: string; accent: string } {
   const ink = hexToCssColor(palette.plantStem)
   const accent = hexToCssColor(palette.sun)
+
+  // Plant heads are team-tinted via Pixi Sprite.tint (multiply). Bake:
+  //   fill   = white petals (currentColor)
+  //   accent = soft cream centre (was sun yellow via --status-pending-bg)
+  //   ink    = dark face lines (eyes/smile)
+  // Never bake the sun colour into heads — it washed every team to yellow.
+  if (alias.startsWith("plant_head_") || alias.startsWith("face_")) {
+    // Soft cream centre (0xfff3c8) multiplies cleanly with team tint.
+    return {
+      fill: hexToCssColor(0xffffff),
+      ink: hexToCssColor(palette.teamMeterFrame),
+      accent: hexToCssColor(0xfff3c8),
+    }
+  }
+
   const map: Record<GardenSceneAssetAlias, number> = {
     bg_sky_day: palette.sky,
     bg_sun_glow: palette.sun,
@@ -384,7 +399,7 @@ function paletteFillForAlias(
     env_foreground_leaf_left: palette.foreground,
     env_foreground_leaf_right: palette.foreground,
     env_foreground_bush_01: palette.bushMid,
-    // White petal mask → DummyPlantView tints per team colour.
+    // Unreachable for plant/face aliases (early return above) — kept for exhaustiveness.
     plant_head_round: 0xffffff,
     plant_head_bell: 0xffffff,
     plant_head_sun: 0xffffff,
