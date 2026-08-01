@@ -121,7 +121,7 @@ describe("IconBarButton", () => {
   })
 
   it.each([
-    ["primary", "bg-[var(--color-primary)]", "text-white"],
+    ["primary", "bg-[var(--color-primary)]", "text-[var(--surface)]"],
     ["secondary", "bg-[var(--surface)]", "border-[var(--border-hairline)]"],
     ["danger", "bg-transparent", "text-[var(--state-wrong)]"],
     ["ghost", "hover:bg-accent-tint", "text-[var(--ink)]"],
@@ -143,7 +143,7 @@ describe("IconBarButton", () => {
     expect(html).toContain("hover:bg-[var(--state-wrong-soft)]")
     expect(html).toContain("active:bg-[var(--state-wrong-soft)]")
     expect(html).not.toContain("bg-[var(--danger-bg)]")
-    expect(html).not.toContain("text-white")
+    expect(html).not.toContain("text-[var(--surface)]")
   })
 
   it("uses contrast-correct white text and canonical focus for active toggles", () => {
@@ -152,7 +152,7 @@ describe("IconBarButton", () => {
     )
 
     expect(html).toContain("bg-[var(--accent-contrast)]")
-    expect(html).toContain("text-white")
+    expect(html).toContain("text-[var(--surface)]")
     expect(html).not.toContain("text-[var(--accent-contrast-text)]")
     expectCanonicalFocus(html)
   })

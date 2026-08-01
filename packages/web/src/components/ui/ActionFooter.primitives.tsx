@@ -281,7 +281,7 @@ const ICON_BAR_ICON_MAP: Record<CompactIconName, LucideIcon> = {
 
 const ICON_BAR_INTENT_CLASSES: Record<CompactActionIntent, string> = {
   primary:
-    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-flat)] hover:brightness-110 active:brightness-95",
+    "bg-[var(--color-primary)] text-[var(--surface)] shadow-[var(--shadow-flat)] hover:brightness-110 active:brightness-95",
   secondary:
     "border border-[var(--border-hairline)] bg-[var(--surface)] text-[var(--ink-muted)] shadow-sm hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)]",
   danger:
@@ -324,7 +324,7 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
         action.disabled
           ? "cursor-not-allowed text-[var(--ink-muted)] opacity-50"
           : action.active
-            ? "bg-[var(--accent-contrast)] text-white"
+            ? "bg-[var(--accent-contrast)] text-[var(--surface)]"
             : ICON_BAR_INTENT_CLASSES[intent],
         className,
       )}
