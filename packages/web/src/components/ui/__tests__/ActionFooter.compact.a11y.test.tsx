@@ -1,0 +1,166 @@
+// AF07 — ActionFooterCompact a11y + integration (node env, SSR markup).
+//
+// Like the primitives test, `@testing-library/react` is NOT installed and the
+// packages/web vitest env is `node` (no jsdom). `createPortal` would otherwise
+// throw without a DOM — we mock it to render its child inline, which lets
+// `renderToStaticMarkup` capture the portal child markup as if it were inline.
+// Without a host target the component returns null (empty-string branch); the
+// dedicated no-host test uses `vi.resetModules` + dynamic import so the file-
+// level `useActionFooterHostOptional` mock does not shadow it.
+
+import { renderToStaticMarkup } from "react-dom/server"
+import { describe, expect, it, vi } from "vitest"
+
+import { ActionFooterCompact } from "../ActionFooter.compact"
+import type { CompactIconBarAction } from "../ActionFooter.compact.types"
+
+vi.mock("react-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-dom")>("react-dom")
+  return {
+    ...actual,
+    createPortal: (children: React.ReactNode) => children,
+  }
+})
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) =>
+      options?.defaultValue ?? key,
+  }),
+}))
+
+vi.mock(
+  "@razzoozle/web/features/manager/contexts/action-footer-host-context",
+  () => ({
+    useActionFooterHostOptional: () => ({
+      // createPortal is mocked above, so this stub target is never touched.
+      target: {} as HTMLElement,
+      register: vi.fn(() => () => undefined),
+      registrationCount: 1,
+      setTarget: vi.fn(),
+      variant: "compact",
+    }),
+  }),
+)
+
+const render = (node: React.ReactNode) => renderToStaticMarkup(node)
+
+const baseAction: CompactIconBarAction = {
+  key: "auto",
+  iconName: "Play",
+  label: "Auto-Modus",
+  onClick: () => {},
+}
+
+describe("ActionFooterCompact a11y & integration", () => {
+  it("returns null when no host target is mounted", async () => {
+    vi.resetModules()
+    vi.doMock(
+      "@razzoozle/web/features/manager/contexts/action-footer-host-context",
+      () => ({
+        useActionFooterHostOptional: () => null,
+      }),
+    )
+    const { ActionFooterCompact: NoHost } = await import(
+      "../ActionFooter.compact"
+    )
+    const html = render(
+      <NoHost actions={[baseAction]} instanceId="tab-0" />,
+    )
+    expect(html).toBe("")
+  })
+
+  it("renders a role=toolbar footer with the compact a11y label", () => {
+    const html = render(
+      <ActionFooterCompact actions={[baseAction]} instanceId="tab-1" />,
+    )
+    expect(html).toMatch(/<footer[^>]*role="toolbar"/)
+    expect(html).toContain('aria-label="aria.actionFooterCompact"')
+    expect(html).toContain('data-testid="action-footer-compact"')
+  })
+
+  it("includes iOS safe-area-inset-bottom padding on the footer", () => {
+    const html = render(
+      <ActionFooterCompact actions={[baseAction]} instanceId="tab-2" />,
+    )
+    expect(html).toContain("env(safe-area-inset-bottom)")
+  })
+
+  it("renders one button per action in DOM order", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[
+          { key: "play", iconName: "Play", label: "Play", onClick: () => {} },
+          { key: "pause", iconName: "Pause", label: "Pause", onClick: () => {} },
+        ]}
+        instanceId="tab-3"
+      />,
+    )
+    const buttons = html.match(/data-testid="icon-bar-button-/g) ?? []
+    expect(buttons).toHaveLength(2)
+    expect(html.indexOf("icon-bar-button-play")).toBeLessThan(
+      html.indexOf("icon-bar-button-pause"),
+    )
+  })
+
+  it("renders aria-pressed=true on active toggle actions", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[{ ...baseAction, toggle: true, active: true }]}
+        instanceId="tab-4"
+      />,
+    )
+    expect(html).toContain('aria-pressed="true"')
+  })
+
+  it("disabled action renders disabled + cursor-not-allowed", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[{ ...baseAction, disabled: true }]}
+        instanceId="tab-5"
+      />,
+    )
+    expect(html).toContain("disabled=")
+    expect(html).toContain("cursor-not-allowed")
+  })
+
+  it("leading slot renders before the action dock", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[baseAction]}
+        leading={<span data-testid="leading-chip">12</span>}
+        instanceId="tab-6"
+      />,
+    )
+    expect(html).toContain('data-testid="leading-chip"')
+    expect(html.indexOf("leading-chip")).toBeLessThan(
+      html.indexOf("icon-bar-button-auto"),
+    )
+  })
+
+  it("trailing slot renders after the action dock with ml-auto wrapper", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[baseAction]}
+        trailing={<span data-testid="trailing-chip">Save</span>}
+        instanceId="tab-7"
+      />,
+    )
+    expect(html).toContain('data-testid="trailing-chip"')
+    expect(html.indexOf("icon-bar-button-auto")).toBeLessThan(
+      html.indexOf("trailing-chip"),
+    )
+    expect(html).toMatch(/<div[^>]*class="[^"]*ml-auto[^"]*"[^>]*>\s*<span/)
+  })
+
+  it("merges custom className onto the footer", () => {
+    const html = render(
+      <ActionFooterCompact
+        actions={[baseAction]}
+        className="my-compact-bar"
+        instanceId="tab-8"
+      />,
+    )
+    expect(html).toContain("my-compact-bar")
+  })
+})
