@@ -11,6 +11,8 @@
  *   → dispose (scene → Application → listeners)
  */
 
+import { Cache, type Texture } from "pixi.js"
+
 import {
   clearGardenAssetDiagnostics,
   loadGardenSceneAssets,
@@ -166,6 +168,51 @@ export async function attachGardenPixiApplication(
     antialias: antialias && !prefersReducedMotion,
   })
 
+  const ownedTextures = new Set<Texture>()
+  const ownedTextureSources = new Set<Texture["source"]>()
+  const ownedTextureCacheKeys = new Set<Parameters<typeof Cache.remove>[0]>()
+  let ownedTexturesReleased = false
+
+  function trackOwnedTextures(texturesByAlias: Record<string, Texture>): void {
+    for (const [alias, texture] of Object.entries(texturesByAlias)) {
+      ownedTextures.add(texture)
+      ownedTextureSources.add(texture.source)
+      ownedTextureCacheKeys.add(alias)
+      if (texture.source.resource != null) {
+        ownedTextureCacheKeys.add(texture.source.resource)
+      }
+    }
+  }
+
+  function releaseOwnedTextures(): void {
+    if (ownedTexturesReleased) return
+    ownedTexturesReleased = true
+
+    for (const key of ownedTextureCacheKeys) {
+      if (Cache.has(key) && ownedTextures.has(Cache.get<Texture>(key))) {
+        Cache.remove(key)
+      }
+    }
+    for (const texture of ownedTextures) {
+      if (!texture.destroyed) texture.destroy(false)
+    }
+    for (const source of ownedTextureSources) {
+      if (!source.destroyed) source.destroy()
+    }
+  }
+
+  function destroyApplication(): void {
+    const destroyUntrackedSceneTextures = ownedTextures.size === 0
+    app.destroy(
+      { removeView: true },
+      {
+        children: true,
+        texture: destroyUntrackedSceneTextures,
+        textureSource: destroyUntrackedSceneTextures,
+      },
+    )
+  }
+
   let scene: GardenScene
   try {
     // Production path: load SVG textures BEFORE scene construction so layers
@@ -186,6 +233,7 @@ export async function attachGardenPixiApplication(
       let assetDiagnostics: GardenAssetDiagnostics | null = null
       try {
         const loaded = await loadGardenSceneAssets(palette)
+        trackOwnedTextures(loaded.texturesByAlias)
         layerAssets = loaded.layers
         plantHeads = loaded.plantHeads
         plantBody = loaded.plantBody
@@ -238,10 +286,11 @@ export async function attachGardenPixiApplication(
     }
   } catch (error) {
     try {
-      app.destroy(
-        { removeView: true },
-        { children: true, texture: true, textureSource: true },
-      )
+      try {
+        releaseOwnedTextures()
+      } finally {
+        destroyApplication()
+      }
     } catch {
       // Preserve the scene-creation error that caused this cleanup path.
     }
@@ -297,11 +346,11 @@ export async function attachGardenPixiApplication(
       // Scene destroy is best-effort; Application teardown still runs.
     }
 
-    // Recursive destroy: children + textures + texture sources (v8 baseTexture).
-    app.destroy(
-      { removeView: true },
-      { children: true, texture: true, textureSource: true },
-    )
+    try {
+      releaseOwnedTextures()
+    } finally {
+      destroyApplication()
+    }
   }
 
   return { app, scene, prefersReducedMotion, dispose }
