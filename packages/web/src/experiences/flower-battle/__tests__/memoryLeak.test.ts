@@ -62,17 +62,16 @@ function createBrowserFake() {
     addEventListener: vi.fn((_type: string, listener: StoredListener) => {
       visibilityListeners.add(listener)
     }),
-    removeEventListener: vi.fn(
-      (_type: string, listener: StoredListener) => {
-        visibilityListeners.delete(listener)
-      },
-    ),
+    removeEventListener: vi.fn((_type: string, listener: StoredListener) => {
+      visibilityListeners.delete(listener)
+    }),
   }
   return {
     environment: {
       devicePixelRatio: 1,
       matchMedia: vi.fn(() => mediaQuery),
-      ResizeObserver: ResizeObserverFake as unknown as GardenPixiEnvironment["ResizeObserver"],
+      ResizeObserver:
+        ResizeObserverFake as unknown as GardenPixiEnvironment["ResizeObserver"],
       document: documentFake as unknown as GardenPixiDocument,
     } satisfies GardenPixiEnvironment,
     resizeObserver: resizeObserver as unknown as GardenPixiResizeObserver & {
@@ -113,10 +112,12 @@ describe("Flower Battle host memory-leak guard", () => {
     vi.restoreAllMocks()
   })
 
-  it("disposes the Application with recursive texture cleanup on every cycle", async () => {
+  it("disposes the scene graph without removing the React canvas or foreign textures", async () => {
     const browser = createBrowserFake()
     const { app, destroy } = createAppFake()
-    const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
+    const createApplication: CreateGardenPixiApplication = vi.fn(
+      async () => app,
+    )
     const createScene = vi.fn(() => createEmptyGardenScene())
 
     for (let cycle = 0; cycle < LIFECYCLE_CYCLES; cycle += 1) {
@@ -129,20 +130,22 @@ describe("Flower Battle host memory-leak guard", () => {
       dispose()
     }
 
-    // destroy() must run once per cycle, with the recursive options that
-    // clear children + textures + textureSources. Anything else risks a
-    // PixiJS v8 leak of baseTexture GPU resources.
+    // The Application owns its scene graph, but React owns the canvas and the
+    // asset loader owns its textures/sources through its release callback.
     expect(destroy).toHaveBeenCalledTimes(LIFECYCLE_CYCLES)
     for (const call of destroy.mock.calls) {
       const [rendererOptions, destroyOptions] = call as [
         boolean | { removeView?: boolean } | undefined,
-        { children?: boolean; texture?: boolean; textureSource?: boolean } | undefined,
+        (
+          | { children?: boolean; texture?: boolean; textureSource?: boolean }
+          | undefined
+        ),
       ]
-      expect(rendererOptions).toEqual({ removeView: true })
+      expect(rendererOptions).toEqual({ removeView: false })
       expect(destroyOptions).toEqual({
         children: true,
-        texture: true,
-        textureSource: true,
+        texture: false,
+        textureSource: false,
       })
     }
   })
@@ -155,7 +158,9 @@ describe("Flower Battle host memory-leak guard", () => {
       destroy: sceneDestroy,
     }
     const { app } = createAppFake()
-    const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
+    const createApplication: CreateGardenPixiApplication = vi.fn(
+      async () => app,
+    )
     const createScene = vi.fn(() => scene)
 
     for (let cycle = 0; cycle < LIFECYCLE_CYCLES; cycle += 1) {
@@ -181,7 +186,9 @@ describe("Flower Battle host memory-leak guard", () => {
   it("treats dispose as idempotent — repeated calls do not re-trigger destroy", async () => {
     const browser = createBrowserFake()
     const { app, destroy } = createAppFake()
-    const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
+    const createApplication: CreateGardenPixiApplication = vi.fn(
+      async () => app,
+    )
     const createScene = vi.fn(() => createEmptyGardenScene())
 
     const canvas = createCanvasFake()
@@ -206,7 +213,9 @@ describe("Flower Battle host memory-leak guard", () => {
   it("does not retain canvas references after unmount", async () => {
     const browser = createBrowserFake()
     const { app } = createAppFake()
-    const createApplication: CreateGardenPixiApplication = vi.fn(async () => app)
+    const createApplication: CreateGardenPixiApplication = vi.fn(
+      async () => app,
+    )
     const createScene = vi.fn(() => createEmptyGardenScene())
 
     const heldCanvases: HTMLCanvasElement[] = []

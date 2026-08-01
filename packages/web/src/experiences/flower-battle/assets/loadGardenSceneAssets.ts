@@ -13,7 +13,7 @@
  * zero missing required aliases.
  */
 
-import { Texture } from "pixi.js"
+import { Texture, TextureSource } from "pixi.js"
 
 import type { LayerAssets } from "../rendering/gardenLayers"
 import type { GardenPalette } from "../rendering/gardenPalette"
@@ -126,6 +126,11 @@ export interface GardenSceneLoadedAssets {
   diagnostics: GardenAssetDiagnostics
   /** True when every required alias loaded a usable Texture. */
   complete: boolean
+  /**
+   * Idempotently releases only resources created by this loader invocation.
+   * Optional for compatibility with injected test/static asset maps.
+   */
+  release?: () => void
 }
 
 /** Convert 0xRRGGBB to #rrggbb for SVG attribute injection. */
@@ -314,6 +319,50 @@ async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
+ * Build a correctly auto-detected Pixi source without entering global Cache.
+ * `Texture.from(resource, true)` still installs a destroy listener that may
+ * evict a newer cache replacement for the same resource.
+ */
+function createUncachedTexture(
+  resource: HTMLCanvasElement | HTMLImageElement,
+): Texture {
+  return new Texture({ source: TextureSource.from(resource) })
+}
+
+function createGardenAssetRelease(
+  ownedTextures: ReadonlySet<Texture>,
+): () => void {
+  const textures = [...ownedTextures]
+  const sources = [...new Set(textures.map((texture) => texture.source))]
+  let releasing = false
+  let released = false
+
+  return () => {
+    if (released || releasing) return
+    releasing = true
+    try {
+      for (const texture of textures) {
+        try {
+          if (!texture.destroyed) texture.destroy(false)
+        } catch {
+          // Best-effort: every remaining texture/source must still be tried.
+        }
+      }
+      for (const source of sources) {
+        try {
+          if (!source.destroyed) source.destroy()
+        } catch {
+          // Best-effort: one failing source must not retain the rest.
+        }
+      }
+    } finally {
+      released = true
+      releasing = false
+    }
+  }
+}
+
+/**
  * True for PNG/JPEG sources — including Vite-inlined `data:image/png;base64,…`
  * URLs. The old `\.png($|?)` check missed data-URIs, so production builds
  * (which inline small Kenney props) treated rasters as SVG text, bake failed,
@@ -342,12 +391,12 @@ export async function loadRasterTexture(
   canvas.width = iw * upscale
   canvas.height = ih * upscale
   const ctx = canvas.getContext("2d")
-  if (!ctx) return Texture.from(img)
+  if (!ctx) return createUncachedTexture(img)
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-  const texture = Texture.from(canvas)
+  const texture = createUncachedTexture(canvas)
   try {
     texture.source.scaleMode = "linear"
   } catch {
@@ -379,7 +428,7 @@ export async function rasterizeSvgToTexture(
   canvas.height = target.height
   const ctx = canvas.getContext("2d")
   if (!ctx) {
-    const fallback = Texture.from(img)
+    const fallback = createUncachedTexture(img)
     return fallback
   }
   ctx.imageSmoothingEnabled = true
@@ -409,7 +458,7 @@ export async function rasterizeSvgToTexture(
     ctx.drawImage(img, 0, 0, target.width, target.height)
   }
 
-  const texture = Texture.from(canvas)
+  const texture = createUncachedTexture(canvas)
   // Prefer smooth filtering when the sprite is scaled on screen.
   try {
     texture.source.scaleMode = "linear"
@@ -575,6 +624,7 @@ export async function loadGardenSceneAssets(
 
   // Sequential load keeps memory + main-thread rasterisation predictable.
   const texturesByAlias: Record<string, Texture> = {}
+  const ownedTextures = new Set<Texture>()
   const loadedAliases: string[] = []
   const missingAliases: string[] = []
   const failedUrls: string[] = []
@@ -598,6 +648,7 @@ export async function loadGardenSceneAssets(
         const baked = bakeSvgForPixi(raw, paletteFillForAlias(alias, palette))
         texture = await rasterizeSvgToTexture(baked, alias)
       }
+      ownedTextures.add(texture)
       if (!isTexture(texture)) {
         missingAliases.push(alias)
         failedUrls.push(url)
@@ -689,6 +740,7 @@ export async function loadGardenSceneAssets(
     texturesByAlias,
     diagnostics,
     complete: requiredMissing.length === 0,
+    release: createGardenAssetRelease(ownedTextures),
   }
 }
 

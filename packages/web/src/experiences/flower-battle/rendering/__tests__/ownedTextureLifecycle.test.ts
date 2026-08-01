@@ -1,10 +1,8 @@
-import { Cache, Texture, TextureSource } from "pixi.js"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { GardenSceneLoadedAssets } from "../../assets/loadGardenSceneAssets"
 import { createEmptyGardenScene } from "../../garden-pixi.types"
 import type {
-  CreateGardenPixiApplication,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../../garden-pixi.types"
@@ -39,49 +37,23 @@ import {
 
 const TEST_BACKGROUND = 0x112233
 
-type CacheKey = Parameters<typeof Cache.set>[0]
-
-const cacheKeys: CacheKey[] = []
-const textures: Texture[] = []
-const sources: TextureSource[] = []
-
-function cache(key: CacheKey, texture: Texture): void {
-  Cache.set(key, texture)
-  cacheKeys.push(key)
-}
-
-function makeTexture(resource?: { width: number; height: number }): {
-  texture: Texture
-  source: TextureSource
-} {
-  const source = new TextureSource(
-    resource ? { resource } : { width: 4, height: 4 },
-  )
-  const texture = new Texture({ source })
-  sources.push(source)
-  textures.push(texture)
-  return { texture, source }
-}
-
-function makeLoaded(
-  texturesByAlias: Record<string, Texture>,
-): GardenSceneLoadedAssets {
-  const aliases = Object.keys(texturesByAlias)
+function makeLoaded(release?: () => void): GardenSceneLoadedAssets {
   return {
     layers: {} as GardenSceneLoadedAssets["layers"],
     plantHeads: {},
     plantBody: {},
     plantVariants: null,
-    texturesByAlias,
+    texturesByAlias: {},
     diagnostics: {
-      requiredAliases: aliases,
-      loadedAliases: aliases,
+      requiredAliases: [],
+      loadedAliases: [],
       missingAliases: [],
       failedUrls: [],
       fallbackAliases: [],
-      usedSpriteAliases: aliases,
+      usedSpriteAliases: [],
     },
     complete: true,
+    release,
   }
 }
 
@@ -95,16 +67,19 @@ function createCanvas(): HTMLCanvasElement {
 function createApp(): {
   app: GardenPixiApplicationHandle
   destroy: ReturnType<typeof vi.fn>
+  stop: ReturnType<typeof vi.fn>
 } {
   const destroy = vi.fn()
+  const stop = vi.fn()
   return {
     app: {
       canvas: createCanvas(),
       renderer: { resize: vi.fn(), width: 640, height: 360 },
-      ticker: { start: vi.fn(), stop: vi.fn() },
+      ticker: { start: vi.fn(), stop },
       destroy,
     },
     destroy,
+    stop,
   }
 }
 
@@ -140,9 +115,6 @@ function createEnvironment(): GardenPixiEnvironment {
 }
 
 beforeEach(() => {
-  cacheKeys.length = 0
-  textures.length = 0
-  sources.length = 0
   mocks.loadAssets.mockReset()
   mocks.createScene.mockReset()
   mocks.createScene.mockReturnValue(createEmptyGardenScene())
@@ -153,30 +125,20 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const key of cacheKeys) {
-    if (Cache.has(key)) Cache.remove(key)
-  }
-  for (const texture of textures) {
-    if (!texture.destroyed) texture.destroy()
-  }
-  for (const source of sources) {
-    if (!source.destroyed) source.destroy()
-  }
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
 describe("owned garden texture lifecycle", () => {
-  it("destroys its TextureSource and evicts alias and resource cache entries", async () => {
-    const resource = { width: 4, height: 4 }
-    const { texture, source } = makeTexture(resource)
-    const destroySource = vi.spyOn(source, "destroy")
-    cache("plant_violet_full", texture)
-    cache(resource, texture)
-    mocks.loadAssets.mockResolvedValue(
-      makeLoaded({ plant_violet_full: texture }),
-    )
+  it("releases loader-owned assets once after the scene and before the app", async () => {
+    const order: string[] = []
+    const release = vi.fn(() => order.push("release"))
+    const scene = createEmptyGardenScene()
+    scene.destroy = vi.fn(() => order.push("scene"))
+    mocks.loadAssets.mockResolvedValue(makeLoaded(release))
+    mocks.createScene.mockReturnValue(scene)
     const { app, destroy } = createApp()
+    destroy.mockImplementation(() => order.push("app"))
 
     const attached = await attachGardenPixiApplication(
       createCanvas(),
@@ -184,75 +146,22 @@ describe("owned garden texture lifecycle", () => {
       createEnvironment(),
     )
     attached.dispose()
+    attached.dispose()
 
-    expect(texture.destroyed).toBe(true)
-    expect(source.destroyed).toBe(true)
-    expect(destroySource).toHaveBeenCalledTimes(1)
-    expect(Cache.has("plant_violet_full")).toBe(false)
-    expect(Cache.has(resource)).toBe(false)
+    expect(order).toEqual(["scene", "release", "app"])
+    expect(release).toHaveBeenCalledTimes(1)
     expect(destroy).toHaveBeenCalledWith(
-      { removeView: true },
+      { removeView: false },
       { children: true, texture: false, textureSource: false },
     )
   })
 
-  it("does not evict or destroy a cached texture outside its loaded map", async () => {
-    const owned = makeTexture()
-    const shared = makeTexture()
-    cache("owned", owned.texture)
-    cache("shared-global", shared.texture)
-    mocks.loadAssets.mockResolvedValue(makeLoaded({ owned: owned.texture }))
-    const { app } = createApp()
-
-    const { dispose } = await attachGardenPixiApplication(
-      createCanvas(),
-      { createApplication: async () => app, background: TEST_BACKGROUND },
-      createEnvironment(),
-    )
-    dispose()
-
-    expect(owned.source.destroyed).toBe(true)
-    expect(shared.texture.destroyed).toBe(false)
-    expect(shared.source.destroyed).toBe(false)
-    expect(Cache.has("shared-global")).toBe(true)
-  })
-
-  it("deduplicates duplicate aliases, Texture objects, and shared sources", async () => {
-    const source = new TextureSource({ width: 4, height: 4 })
-    const first = new Texture({ source })
-    const second = new Texture({ source })
-    sources.push(source)
-    textures.push(first, second)
-    const destroySource = vi.spyOn(source, "destroy")
-    const destroyFirst = vi.spyOn(first, "destroy")
-    const destroySecond = vi.spyOn(second, "destroy")
-    mocks.loadAssets.mockResolvedValue(
-      makeLoaded({ first, duplicate: first, second }),
-    )
-    const { app } = createApp()
-
-    const { dispose } = await attachGardenPixiApplication(
-      createCanvas(),
-      { createApplication: async () => app, background: TEST_BACKGROUND },
-      createEnvironment(),
-    )
-    dispose()
-    dispose()
-
-    expect(destroyFirst).toHaveBeenCalledTimes(1)
-    expect(destroySecond).toHaveBeenCalledTimes(1)
-    expect(destroySource).toHaveBeenCalledTimes(1)
-  })
-
-  it("releases loaded resources when production scene creation fails", async () => {
-    const owned = makeTexture()
-    const destroySource = vi.spyOn(owned.source, "destroy")
-    cache("failing-plant", owned.texture)
-    mocks.loadAssets.mockResolvedValue(
-      makeLoaded({ "failing-plant": owned.texture }),
-    )
+  it("releases assets when production scene creation fails", async () => {
+    const release = vi.fn()
+    const sceneError = new Error("scene failed")
+    mocks.loadAssets.mockResolvedValue(makeLoaded(release))
     mocks.createScene.mockImplementation(() => {
-      throw new Error("scene failed")
+      throw sceneError
     })
     const { app, destroy } = createApp()
 
@@ -262,54 +171,78 @@ describe("owned garden texture lifecycle", () => {
         { createApplication: async () => app, background: TEST_BACKGROUND },
         createEnvironment(),
       ),
-    ).rejects.toThrow("scene failed")
+    ).rejects.toBe(sceneError)
 
-    expect(destroySource).toHaveBeenCalledTimes(1)
-    expect(Cache.has("failing-plant")).toBe(false)
+    expect(release).toHaveBeenCalledTimes(1)
     expect(destroy).toHaveBeenCalledTimes(1)
   })
 
-  it("can attach again after disposal without reusing a destroyed cache entry", async () => {
-    const first = makeTexture()
-    const second = makeTexture()
-    mocks.loadAssets
-      .mockImplementationOnce(async () => {
-        cache("plant", first.texture)
-        return makeLoaded({ plant: first.texture })
-      })
-      .mockImplementationOnce(async () => {
-        expect(Cache.has("plant")).toBe(false)
-        cache("plant", second.texture)
-        return makeLoaded({ plant: second.texture })
-      })
-    const firstApp = createApp()
-    const secondApp = createApp()
-    const createApplication: CreateGardenPixiApplication = vi
-      .fn<CreateGardenPixiApplication>()
-      .mockResolvedValueOnce(firstApp.app)
-      .mockResolvedValueOnce(secondApp.app)
+  it("preserves an onReady error while attempting every cleanup phase", async () => {
+    const order: string[] = []
+    const readyError = new Error("onReady failed")
+    const release = vi.fn(() => {
+      order.push("release")
+      throw new Error("release failed")
+    })
+    const scene = createEmptyGardenScene()
+    scene.destroy = vi.fn(() => {
+      order.push("scene")
+      throw new Error("scene destroy failed")
+    })
+    mocks.loadAssets.mockResolvedValue(makeLoaded(release))
+    mocks.createScene.mockReturnValue(scene)
+    const { app, destroy } = createApp()
+    destroy.mockImplementation(() => {
+      order.push("app")
+      throw new Error("app destroy failed")
+    })
 
-    const firstAttach = await attachGardenPixiApplication(
-      createCanvas(),
-      { createApplication, background: TEST_BACKGROUND },
-      createEnvironment(),
-    )
-    firstAttach.dispose()
-    const secondAttach = await attachGardenPixiApplication(
-      createCanvas(),
-      { createApplication, background: TEST_BACKGROUND },
-      createEnvironment(),
-    )
-    secondAttach.dispose()
+    await expect(
+      attachGardenPixiApplication(
+        createCanvas(),
+        {
+          createApplication: async () => app,
+          background: TEST_BACKGROUND,
+          onReady: () => {
+            throw readyError
+          },
+        },
+        createEnvironment(),
+      ),
+    ).rejects.toBe(readyError)
 
-    expect(mocks.loadAssets).toHaveBeenCalledTimes(2)
-    expect(first.source.destroyed).toBe(true)
-    expect(second.source.destroyed).toBe(true)
-    expect(Cache.has("plant")).toBe(false)
+    expect(order).toEqual(["scene", "release", "app"])
   })
 
-  it("keeps explicit loadAssets false free of asset ownership work", async () => {
-    const { app } = createApp()
+  it("releases assets when initial scene layout fails", async () => {
+    const release = vi.fn()
+    const layoutError = new Error("layout failed")
+    const destroyScene = vi.fn()
+    const scene: GardenScene = {
+      updateLayout: vi.fn(() => {
+        throw layoutError
+      }),
+      destroy: destroyScene,
+    }
+    mocks.loadAssets.mockResolvedValue(makeLoaded(release))
+    mocks.createScene.mockReturnValue(scene)
+    const { app, destroy } = createApp()
+
+    await expect(
+      attachGardenPixiApplication(
+        createCanvas(),
+        { createApplication: async () => app, background: TEST_BACKGROUND },
+        createEnvironment(),
+      ),
+    ).rejects.toBe(layoutError)
+
+    expect(destroyScene).toHaveBeenCalledTimes(1)
+    expect(release).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps explicit loadAssets false free of loader ownership", async () => {
+    const { app, destroy } = createApp()
     const createScene = vi.fn(() => createEmptyGardenScene())
 
     const { dispose } = await attachGardenPixiApplication(
@@ -326,5 +259,23 @@ describe("owned garden texture lifecycle", () => {
 
     expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(createScene).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledWith(
+      { removeView: false },
+      { children: true, texture: false, textureSource: false },
+    )
+  })
+
+  it("keeps compatibility with injected loaded assets that omit release", async () => {
+    mocks.loadAssets.mockResolvedValue(makeLoaded())
+    const { app, destroy } = createApp()
+
+    const { dispose } = await attachGardenPixiApplication(
+      createCanvas(),
+      { createApplication: async () => app, background: TEST_BACKGROUND },
+      createEnvironment(),
+    )
+    dispose()
+
+    expect(destroy).toHaveBeenCalledTimes(1)
   })
 })

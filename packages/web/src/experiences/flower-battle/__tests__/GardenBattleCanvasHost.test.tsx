@@ -66,6 +66,7 @@ import { Container } from "pixi.js"
 import {
   attachGardenPixiApplication,
   createDefaultGardenScene,
+  type GardenPixiResizeObserver,
 } from "../attachGardenPixiApplication"
 import {
   GardenBattleCanvasHost,
@@ -77,6 +78,7 @@ import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 import type {
   CreateGardenPixiApplication,
   GardenE2EProbeHandle,
+  GardenPixiInitOptions,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
@@ -303,6 +305,9 @@ function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
       const index = children.indexOf(child)
       if (index >= 0) {
         children.splice(index, 1)
+        if (child && typeof child === "object" && "parentNode" in child) {
+          ;(child as DomElement).parentNode = null
+        }
       }
       return child
     },
@@ -480,8 +485,8 @@ describe("attachGardenPixiApplication", () => {
       browser.environment.document.removeEventListener,
     ).toHaveBeenCalledTimes(20)
     expect(textureDestroyFlags.every((f) => f.children === true)).toBe(true)
-    expect(textureDestroyFlags.every((f) => f.texture === true)).toBe(true)
-    expect(textureDestroyFlags.every((f) => f.textureSource === true)).toBe(
+    expect(textureDestroyFlags.every((f) => f.texture === false)).toBe(true)
+    expect(textureDestroyFlags.every((f) => f.textureSource === false)).toBe(
       true,
     )
   })
@@ -655,6 +660,98 @@ describe("attachGardenPixiApplication", () => {
     expect(destroy).toHaveBeenCalledTimes(1)
     expect(browser.visibilityListeners.size).toBe(0)
     expect(browser.resizeObserver.disconnect).not.toHaveBeenCalled()
+  })
+
+  it("cleans up the scene and app when ResizeObserver construction fails", async () => {
+    const browser = createBrowserFake()
+    const observerError = new Error("ResizeObserver constructor failed")
+    function ThrowingResizeObserver(
+      this: GardenPixiResizeObserver,
+      _callback: ResizeObserverCallback,
+    ): never {
+      throw observerError
+    }
+    browser.environment.ResizeObserver =
+      ThrowingResizeObserver as unknown as typeof browser.environment.ResizeObserver
+    const { app, destroy } = createAppFake()
+    const { scene, destroy: destroyScene } = createSceneFake()
+
+    await expect(
+      attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication: async () => app,
+          createScene: () => scene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
+        browser.environment,
+      ),
+    ).rejects.toBe(observerError)
+
+    expect(destroyScene).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledTimes(1)
+    expect(browser.resizeObserver.disconnect).not.toHaveBeenCalled()
+    expect(
+      browser.environment.document.removeEventListener,
+    ).not.toHaveBeenCalled()
+  })
+
+  it("does not disconnect an observer whose observe call failed", async () => {
+    const browser = createBrowserFake()
+    const observeError = new Error("ResizeObserver observe failed")
+    browser.resizeObserver.observe.mockImplementation(() => {
+      throw observeError
+    })
+    const { app, destroy } = createAppFake()
+    const { scene, destroy: destroyScene } = createSceneFake()
+
+    await expect(
+      attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication: async () => app,
+          createScene: () => scene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
+        browser.environment,
+      ),
+    ).rejects.toBe(observeError)
+
+    expect(destroyScene).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledTimes(1)
+    expect(browser.resizeObserver.disconnect).not.toHaveBeenCalled()
+    expect(
+      browser.environment.document.removeEventListener,
+    ).not.toHaveBeenCalled()
+  })
+
+  it("disconnects only the registered observer when listener setup fails", async () => {
+    const browser = createBrowserFake()
+    const listenerError = new Error("visibility listener failed")
+    browser.environment.document.addEventListener = vi.fn(() => {
+      throw listenerError
+    })
+    const { app, destroy } = createAppFake()
+    const { scene, destroy: destroyScene } = createSceneFake()
+
+    await expect(
+      attachGardenPixiApplication(
+        createCanvasFake(),
+        {
+          createApplication: async () => app,
+          createScene: () => scene,
+          background: TEST_CANVAS_BACKGROUND,
+        },
+        browser.environment,
+      ),
+    ).rejects.toBe(listenerError)
+
+    expect(browser.resizeObserver.disconnect).toHaveBeenCalledTimes(1)
+    expect(
+      browser.environment.document.removeEventListener,
+    ).not.toHaveBeenCalled()
+    expect(destroyScene).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledTimes(1)
   })
 
   it("invokes onReady with app and scene after successful attach", async () => {
@@ -1598,10 +1695,22 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
             resolveReattach = resolve
           },
         )
-        const createApplication = vi
-          .fn<() => Promise<GardenPixiApplicationHandle>>()
-          .mockResolvedValueOnce(firstAppWithStage)
-          .mockReturnValueOnce(delayedReattach)
+        const attachedCanvases: HTMLCanvasElement[] = []
+        let applicationIndex = 0
+        const createApplication = vi.fn(
+          (
+            init: GardenPixiInitOptions,
+          ): Promise<GardenPixiApplicationHandle> => {
+            attachedCanvases.push(init.canvas)
+            applicationIndex += 1
+            if (applicationIndex === 1) {
+              Object.assign(firstAppWithStage, { canvas: init.canvas })
+              return Promise.resolve(firstAppWithStage)
+            }
+            Object.assign(secondAppWithStage, { canvas: init.canvas })
+            return delayedReattach
+          },
+        )
         const canvasRef: { current: DomElement | null } = { current: null }
         const scenes: ReturnType<typeof createGardenScene>[] = []
         const sceneDestroySpies: ReturnType<typeof vi.fn>[] = []
@@ -1648,16 +1757,23 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         canvasRef.current = canvas
         const firstHandle = canvasProbe(canvas).handle
         expect(firstHandle).toBeDefined()
-        firstApp.destroy.mockImplementation(() => {
+        const destroyLikePixi = (
+          rendererOptions?: boolean | { removeView?: boolean },
+        ) => {
           expect(canvasProbe(canvas).descriptor).toBeUndefined()
           expect(canvasProbe(canvas).handle).toBeUndefined()
-        })
-        secondApp.destroy.mockImplementation(() => {
-          expect(canvasProbe(canvas).descriptor).toBeUndefined()
-          expect(canvasProbe(canvas).handle).toBeUndefined()
-        })
+          if (
+            typeof rendererOptions === "object" &&
+            rendererOptions.removeView === true
+          ) {
+            canvas.parentNode?.removeChild(canvas)
+          }
+        }
+        firstApp.destroy.mockImplementation(destroyLikePixi)
+        secondApp.destroy.mockImplementation(destroyLikePixi)
 
         await renderQuality(nextQuality, "resolution")
+        expect(canvas.parentNode).not.toBeNull()
         expect(findDomCanvas(container)).toBe(canvas)
         expect(canvasProbe(canvas).handle).toBeUndefined()
         expect(createApplication).toHaveBeenCalledTimes(2)
@@ -1673,6 +1789,9 @@ describe("WP-PIX-05B production scene factory + live snapshot", () => {
         const secondHandle = canvasProbe(canvas).handle
         expect(secondHandle).toBeDefined()
         expect(secondHandle).not.toBe(firstHandle)
+        expect(attachedCanvases).toEqual([canvas, canvas])
+        expect(findDomCanvas(container)).toBe(canvas)
+        expect(canvas.parentNode).not.toBeNull()
         expect(createScene).toHaveBeenCalledTimes(2)
         expect(scenes).toHaveLength(2)
 

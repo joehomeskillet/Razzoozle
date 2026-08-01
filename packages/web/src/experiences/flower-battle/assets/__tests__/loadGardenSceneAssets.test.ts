@@ -1,5 +1,5 @@
-import { Texture } from "pixi.js"
-import { describe, expect, it } from "vitest"
+import { Cache, Texture, TextureSource } from "pixi.js"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   bakeSvgForPixi,
@@ -7,6 +7,7 @@ import {
   ensureSvgIntrinsicSize,
   hexToCssColor,
   isRasterUrl,
+  loadGardenSceneAssets,
   normalizeSvgViewBox,
   parseSvgViewBox,
   targetRasterSize,
@@ -15,6 +16,35 @@ import {
   GARDEN_SCENE_ASSET_URLS,
   GARDEN_SCENE_REQUIRED_ALIASES,
 } from "../garden-scene-asset-urls"
+import type { GardenPalette } from "../../rendering/gardenPalette"
+
+const TEST_PALETTE: GardenPalette = {
+  sky: 0x112233,
+  sun: 0x112233,
+  cloud: 0x112233,
+  hillBack: 0x112233,
+  hillMid: 0x112233,
+  bushBack: 0x112233,
+  bushMid: 0x112233,
+  midground: 0x112233,
+  fence: 0x112233,
+  grass: 0x112233,
+  soil: 0x112233,
+  soilEdge: 0x112233,
+  foreground: 0x112233,
+  plantStem: 0x112233,
+  plantLeaf: 0x112233,
+  plantPetal: 0x112233,
+  hillsFar: 0x112233,
+  hillsNear: 0x112233,
+  clouds: 0x112233,
+  teamMeterFrame: 0x112233,
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 describe("hexToCssColor", () => {
   it("formats 0xRRGGBB as #rrggbb", () => {
@@ -172,6 +202,98 @@ describe("isRasterUrl", () => {
     expect(isRasterUrl("data:image/svg+xml,%3Csvg")).toBe(false)
     expect(isRasterUrl("/assets/sky-day.svg")).toBe(false)
     expect(isRasterUrl("data:image/svg+xml;charset=utf-8,x")).toBe(false)
+  })
+})
+
+describe("loadGardenSceneAssets ownership", () => {
+  it("releases only its uncached textures once and survives one destroy failure", async () => {
+    class ImageFake {
+      decoding = "auto"
+      crossOrigin: string | null = null
+      naturalWidth = 64
+      naturalHeight = 64
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.())
+      }
+    }
+    interface CanvasFakeInstance {
+      width: number
+      height: number
+      getContext(): CanvasRenderingContext2D
+    }
+    function CanvasFake(this: CanvasFakeInstance): void {
+      this.width = 0
+      this.height = 0
+      this.getContext = () =>
+        ({
+          clearRect: vi.fn(),
+          drawImage: vi.fn(),
+          imageSmoothingEnabled: false,
+          imageSmoothingQuality: "low",
+        }) as unknown as CanvasRenderingContext2D
+    }
+    const createCanvasFake = () =>
+      new (CanvasFake as unknown as new () => CanvasFakeInstance)()
+
+    vi.stubGlobal("Image", ImageFake)
+    vi.stubGlobal("HTMLImageElement", ImageFake)
+    vi.stubGlobal("HTMLCanvasElement", CanvasFake)
+    vi.stubGlobal("document", {
+      createElement: (tag: string) => {
+        expect(tag).toBe("canvas")
+        return createCanvasFake()
+      },
+    })
+    vi.stubGlobal("fetch", async () => ({
+      ok: true,
+      text: async () => '<svg viewBox="0 0 64 64"></svg>',
+    }))
+
+    const sharedResource = createCanvasFake()
+    sharedResource.width = 64
+    sharedResource.height = 64
+    const sharedSource = TextureSource.from(
+      sharedResource as unknown as HTMLCanvasElement,
+    )
+    const destroySharedSource = vi.spyOn(sharedSource, "destroy")
+    vi.spyOn(TextureSource, "from").mockReturnValue(sharedSource)
+
+    const loaded = await loadGardenSceneAssets(TEST_PALETTE)
+    const owned = Object.values(loaded.texturesByAlias)
+    expect(owned.length).toBeGreaterThan(2)
+    expect(loaded.release).toBeTypeOf("function")
+
+    const first = owned[0]!
+    const second = owned[1]!
+    expect(first.source).toBe(sharedSource)
+    expect(second.source).toBe(sharedSource)
+    const firstDestroy = vi.spyOn(first, "destroy").mockImplementation(() => {
+      throw new Error("first texture destroy failed")
+    })
+    const secondDestroy = vi.spyOn(second, "destroy")
+    const sharedOutside = new Texture({ source: Texture.WHITE.source })
+    const cacheReplacement = new Texture({ source: Texture.WHITE.source })
+    const resourceKey = first.source.resource
+    Cache.set(resourceKey, cacheReplacement)
+
+    loaded.release?.()
+    loaded.release?.()
+
+    expect(firstDestroy).toHaveBeenCalledTimes(1)
+    expect(secondDestroy).toHaveBeenCalledTimes(1)
+    expect(destroySharedSource).toHaveBeenCalledTimes(1)
+    expect(second.destroyed).toBe(true)
+    expect(first.source.destroyed).toBe(true)
+    expect(sharedOutside.destroyed).toBe(false)
+    expect(cacheReplacement.destroyed).toBe(false)
+    expect(Cache.get(resourceKey)).toBe(cacheReplacement)
+
+    Cache.remove(resourceKey)
+    sharedOutside.destroy(false)
+    cacheReplacement.destroy(false)
   })
 })
 
