@@ -20,21 +20,27 @@ import { getThemeTokenCssVar } from "@razzoozle/common/theme-tokens"
 import { resolveThemeTokenColor, type ThemeColorResolver } from "./resolveThemeColor"
 import { GARDEN_LOGICAL_HEIGHT, GARDEN_LOGICAL_WIDTH } from "./gardenViewport"
 
-const LABEL_PILL_WIDTH = 168
-const LABEL_PILL_HEIGHT = 32
-const LABEL_OUTLINE_WIDTH = 2.5
-const LABEL_TEXT_FONT_SIZE = 16
+const LABEL_PILL_WIDTH = 176
+const LABEL_PILL_HEIGHT = 34
+const LABEL_OUTLINE_WIDTH = 3
+const LABEL_TEXT_FONT_SIZE = 17
 
 const METER_GROWTH_SEGMENTS = 10
 const METER_SUN_SEGMENTS = 3
 const METER_SEGMENT_GAP = 3
-const METER_HEIGHT = 14
-const METER_WIDTH = 168
+const METER_HEIGHT = 16
+const METER_WIDTH = 176
 
 const CHIP_PADDING_X = 10
 const CHIP_HEIGHT = 26
 
-const TEAM_HUD_VERTICAL_GAP = 18
+const TEAM_HUD_VERTICAL_GAP = 14
+/**
+ * Distance below the plot anchor (plant foot / soil contact) to the HUD
+ * root. Keeps the name pill + meters under the soil mound, never over the
+ * flower head. Exported for layout tests.
+ */
+export const TEAM_HUD_BELOW_ANCHOR_Y = 72
 
 /** Theme tokens used by the team HUD — mapped to existing Razzoozle design tokens. */
 export const TEAM_HUD_TOKENS = {
@@ -161,29 +167,56 @@ export function buildSegmentedGrowthMeter(
   const growthY = METER_HEIGHT / 2
   const sunY = -METER_HEIGHT / 2 - 4
 
-  // Growth row
+  // Soft plate behind both rows so the meter stays readable on busy lawn.
+  const plate = new Graphics()
+  plate.label = "team-hud-meter-plate"
+  const platePadX = 6
+  const platePadY = 6
+  const plateH = METER_HEIGHT * 2 + 10 + platePadY * 2
+  plate.roundRect(
+    -METER_WIDTH / 2 - platePadX,
+    sunY - METER_HEIGHT / 2 - platePadY,
+    METER_WIDTH + platePadX * 2,
+    plateH,
+    8,
+  )
+  plate.fill({ color: palette.meterFill, alpha: 0.88 })
+  plate.stroke({ color: teamColor, width: 1.5, alpha: 0.35 })
+  container.addChild(plate)
+
+  // Growth row (10-segment primary meter)
   const growthRow = new Graphics()
   growthRow.label = "team-hud-meter-growth"
   for (let i = 0; i < safeGrowthMax; i += 1) {
     const x = -METER_WIDTH / 2 + i * (growthSegW + METER_SEGMENT_GAP)
+    const filled = i < growthCurrent
     growthRow.roundRect(x, -METER_HEIGHT / 2, growthSegW, METER_HEIGHT, 3)
     growthRow.fill({
-      color: i < growthCurrent ? teamColor : palette.meterTrack,
-      alpha: i < growthCurrent ? 1 : 0.6,
+      color: filled ? teamColor : palette.meterTrack,
+      alpha: filled ? 1 : 0.55,
     })
+    if (filled) {
+      growthRow.stroke({ color: palette.labelText, width: 0.75, alpha: 0.2 })
+    }
   }
   growthRow.position.y = growthY
   container.addChild(growthRow)
 
-  // Sun row (slightly shorter to read as a sub-meter)
+  // Sun row (3-segment sub-meter)
   const sunRow = new Graphics()
   sunRow.label = "team-hud-meter-sun"
   for (let i = 0; i < safeSunMax; i += 1) {
     const x = -METER_WIDTH / 2 + i * (sunSegW + METER_SEGMENT_GAP)
+    const filled = i < sunCurrent
     sunRow.roundRect(x, -METER_HEIGHT / 2, sunSegW, METER_HEIGHT, 3)
     sunRow.fill({
-      color: i < sunCurrent ? teamColor : palette.meterFill,
-      alpha: i < sunCurrent ? 1 : 0.5,
+      color: filled ? teamColor : palette.meterFill,
+      alpha: filled ? 1 : 0.45,
+    })
+    sunRow.stroke({
+      color: filled ? palette.labelText : palette.meterTrack,
+      width: 1,
+      alpha: filled ? 0.25 : 0.5,
     })
   }
   sunRow.position.y = sunY
@@ -288,7 +321,9 @@ export function buildTeamHud(options: TeamHudOptions): Container {
 
   const container = new Container()
   container.label = "team-hud"
-  container.position.set(anchor.x, anchor.y + 56)
+  // Anchor = plant foot / soil contact. HUD stacks *below* the mound so
+  // meters never cover flower heads.
+  container.position.set(anchor.x, anchor.y + TEAM_HUD_BELOW_ANCHOR_Y)
 
   const label = buildTeamLabel({ text: teamName, palette, teamColor })
   label.position.set(0, 0)
@@ -302,12 +337,20 @@ export function buildTeamHud(options: TeamHudOptions): Container {
     palette,
     teamColor,
   })
-  meter.position.set(0, LABEL_PILL_HEIGHT / 2 + TEAM_HUD_VERTICAL_GAP)
+  // Meter sits just under the name pill (sun row above growth row inside meter).
+  meter.position.set(0, LABEL_PILL_HEIGHT / 2 + TEAM_HUD_VERTICAL_GAP + METER_HEIGHT)
   container.addChild(meter)
 
   if (chipText && chipText.length > 0) {
     const chip = buildStatusChip({ text: chipText, palette })
-    chip.position.set(0, LABEL_PILL_HEIGHT / 2 + TEAM_HUD_VERTICAL_GAP + METER_HEIGHT * 2 + 12)
+    chip.position.set(
+      0,
+      LABEL_PILL_HEIGHT / 2 +
+        TEAM_HUD_VERTICAL_GAP +
+        METER_HEIGHT * 2 +
+        TEAM_HUD_VERTICAL_GAP +
+        18,
+    )
     container.addChild(chip)
   }
 

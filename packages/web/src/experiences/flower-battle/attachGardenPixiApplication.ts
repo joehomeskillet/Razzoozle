@@ -15,7 +15,11 @@ import {
   clearGardenAssetDiagnostics,
   loadGardenSceneAssets,
   publishGardenAssetDiagnostics,
+  type GardenAssetDiagnostics,
+  type PlantBodyTextures,
+  type PlantHeadTextures,
 } from "./assets/loadGardenSceneAssets"
+import { GARDEN_SCENE_REQUIRED_ALIASES } from "./assets/garden-scene-asset-urls"
 import {
   GARDEN_CANVAS_BACKGROUND,
   type CreateGardenPixiApplication,
@@ -25,6 +29,7 @@ import {
   type GardenScene,
 } from "./garden-pixi.types"
 import { createGardenScene } from "./rendering/GardenScene"
+import type { LayerAssets } from "./rendering/gardenLayers"
 import { resolveGardenPalette } from "./rendering/gardenPalette"
 import { resolveThemeTokenColor } from "./rendering/resolveThemeColor"
 
@@ -171,24 +176,57 @@ export async function attachGardenPixiApplication(
 
     if (shouldLoadAssets && options.createScene == null) {
       const palette = resolveGardenPalette(resolveThemeTokenColor)
-      const loaded = await loadGardenSceneAssets(palette)
-      publishGardenAssetDiagnostics(loaded.diagnostics)
-      if (
-        typeof console !== "undefined" &&
-        typeof console.info === "function"
-      ) {
-        console.info("[flower-battle] garden assets", {
-          complete: loaded.complete,
-          loaded: loaded.diagnostics.loadedAliases.length,
-          missing: loaded.diagnostics.missingAliases,
-          usedSprites: loaded.diagnostics.usedSpriteAliases,
-        })
+      // Asset load must never abort the match: on throw, fall back to the
+      // procedural Graphics path and still publish diagnostics for probes.
+      let layerAssets: LayerAssets | undefined
+      let plantHeads: Partial<PlantHeadTextures> | undefined
+      let plantBody: PlantBodyTextures | undefined
+      let assetDiagnostics: GardenAssetDiagnostics | null = null
+      try {
+        const loaded = await loadGardenSceneAssets(palette)
+        layerAssets = loaded.layers
+        plantHeads = loaded.plantHeads
+        plantBody = loaded.plantBody
+        assetDiagnostics = loaded.diagnostics
+        publishGardenAssetDiagnostics(loaded.diagnostics)
+        if (
+          typeof console !== "undefined" &&
+          typeof console.info === "function"
+        ) {
+          console.info("[flower-battle] garden assets", {
+            complete: loaded.complete,
+            loaded: loaded.diagnostics.loadedAliases.length,
+            missing: loaded.diagnostics.missingAliases,
+            usedSprites: loaded.diagnostics.usedSpriteAliases,
+          })
+        }
+      } catch (loadError) {
+        const failed: GardenAssetDiagnostics = {
+          requiredAliases: [...GARDEN_SCENE_REQUIRED_ALIASES],
+          loadedAliases: [],
+          missingAliases: [...GARDEN_SCENE_REQUIRED_ALIASES],
+          failedUrls: [],
+          fallbackAliases: [...GARDEN_SCENE_REQUIRED_ALIASES],
+          usedSpriteAliases: [],
+        }
+        assetDiagnostics = failed
+        publishGardenAssetDiagnostics(failed)
+        if (
+          typeof console !== "undefined" &&
+          typeof console.warn === "function"
+        ) {
+          console.warn(
+            "[flower-battle] garden assets load failed; using procedural scene",
+            loadError,
+          )
+        }
       }
       scene = createGardenScene(app, {
         palette,
-        layerAssets: loaded.layers,
-        plantHeads: loaded.plantHeads,
-        assetDiagnostics: loaded.diagnostics,
+        layerAssets,
+        plantHeads,
+        plantBody,
+        assetDiagnostics,
       })
     } else {
       scene = createScene(app)

@@ -1,0 +1,30 @@
+<!--
+  plant-leaf-01.svg — friendly cartoon leaf (points right; flip for left).
+  Self-generated Razzoozle-internal CC0.
+  White fill → Pixi Sprite.tint multiplies to leaf green.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 56" width="96" height="56" aria-hidden="true">
+  <g id="plant-leaf">
+    <!-- main blade -->
+    <path
+      d="M6 30
+         C18 8 48 2 78 14
+         C92 22 94 34 86 40
+         C70 52 36 54 14 42
+         C4 36 2 32 6 30
+         Z"
+      fill="currentColor"
+    />
+    <!-- midrib -->
+    <path
+      d="M14 32 C36 28 58 24 80 28"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      opacity="0.35"
+    />
+    <!-- tip sheen -->
+    <ellipse cx="62" cy="22" rx="14" ry="7" fill="currentColor" opacity="0.22" transform="rotate(-18 62 22)" />
+  </g>
+</svg>

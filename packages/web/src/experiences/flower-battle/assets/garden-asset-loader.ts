@@ -1,5 +1,11 @@
 /**
- * Garden asset loader (WP-03) — thin, failure-tolerant wrapper over PixiJS Assets.
+ * Legacy garden asset loader (WP-03) — thin, failure-tolerant wrapper over
+ * PixiJS Assets.
+ *
+ * **Non-production for the presenter garden scene.** Production path is
+ * `loadGardenSceneAssets` + `GARDEN_SCENE_ASSET_URLS` (Vite `?url` imports).
+ * This loader remains for the legacy bundle API (`loadBundle` / boot /
+ * team-lazy orchestration) and unit tests.
  *
  * Contract:
  * - `loadBundle` never throws; failures return `{ fallback: true, error }`.
@@ -8,8 +14,8 @@
  * - `preloadBundle` is fire-and-forget (does not block the caller).
  * - `unloadBundle` releases tracked resources for memory cleanup.
  *
- * Real graphics (WP-04+): keep aliases stable, replace relative paths in the
- * manifest, and either set `basePath` or Vite-import URLs into the manifest.
+ * Manifest assets are Vite-hashed absolute URLs (see garden-asset-manifest);
+ * `basePath` is only applied to relative test paths. Never uses `/placeholders/`.
  */
 
 import {
@@ -505,8 +511,11 @@ export function resetDefaultGardenAssetLoader(): void {
 }
 
 /**
- * Convenience: configure the default loader for production PixiJS loading.
- * Call once near app boot or before GardenBattleCanvasHost mounts.
+ * Configure the default loader for PixiJS bundle loading (legacy path).
+ *
+ * Presenter garden scene should use `loadGardenSceneAssets` instead.
+ * `basePath` defaults to empty — manifest entries are already absolute
+ * Vite-hashed URLs. Pass a relative base only when injecting test paths.
  */
 export function configurePixiGardenAssetLoader(
   basePath: string = GARDEN_ASSET_BASE_PATH,

@@ -1,6 +1,9 @@
 /**
  * Dev-only garden preview for visual acceptance of the asset pipeline.
  * Open via Vite: /garden-preview.html?teams=2|4
+ *
+ * Production path: attachGardenPixiApplication loads textures and
+ * createGardenScene wires layer sprites + team HUD under each plot.
  */
 
 import { attachGardenPixiApplication } from "../experiences/flower-battle/attachGardenPixiApplication"
@@ -24,6 +27,26 @@ function teamSnapshots(count: number) {
     name: names[i] ?? `Team ${i + 1}`,
     growthStage: growth[i] ?? 6,
   }))
+}
+
+function waitFrames(n: number): Promise<void> {
+  return new Promise((resolve) => {
+    let left = Math.max(1, n)
+    const step = () => {
+      left -= 1
+      if (left <= 0) resolve()
+      else requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  })
+}
+
+function countSceneTeamHuds(procedural: ProceduralGardenScene): number {
+  const layer = procedural.layers?.presenterHud
+  if (!layer?.children) return 0
+  return layer.children.filter(
+    (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
+  ).length
 }
 
 async function main(): Promise<void> {
@@ -52,12 +75,27 @@ async function main(): Promise<void> {
       },
     })
   }
+
+  const teams = teamSnapshots(teamCount)
   if (typeof procedural.updateSnapshot === "function") {
     procedural.updateSnapshot({
-      teams: teamSnapshots(teamCount),
+      teams,
       phase: "preview",
     })
   }
+
+  // Let layout + first paint settle (ResizeObserver, cover-fit, asset glyphs).
+  await waitFrames(4)
+  // Force a full-size layout pass so anchors match the canvas client size.
+  if (typeof procedural.updateLayout === "function") {
+    procedural.updateLayout(
+      Math.max(1, canvas.clientWidth || 1920),
+      Math.max(1, canvas.clientHeight || 1080),
+    )
+  }
+  await waitFrames(3)
+
+  const hudMounted = countSceneTeamHuds(procedural)
 
   const diag = procedural.assetDiagnostics
   const winDiag = (
@@ -75,13 +113,25 @@ async function main(): Promise<void> {
   const missing = diag?.missingAliases ?? winDiag?.missingAliases ?? []
   const used = diag?.usedSpriteAliases ?? winDiag?.usedSpriteAliases ?? []
   const failed = diag?.failedUrls ?? winDiag?.failedUrls ?? []
+  const layout = procedural.getLayoutDiagnostics()
+
+  const readyPayload = {
+    teams: teamCount,
+    loaded,
+    sprites: used.length,
+    missing: missing.length,
+    failed: failed.length,
+    hudMounted,
+    anchorsInside: layout.allAnchorsInsideVisibleRect,
+    plantsInside: layout.allPlantsInsideVisibleRect,
+  }
 
   if (status) {
-    const layout = procedural.getLayoutDiagnostics()
     status.textContent = [
       `teams=${teamCount}`,
       `loaded=${loaded}`,
       `sprites=${used.length}`,
+      `hud=${hudMounted}`,
       `missing=${missing.length ? missing.join(",") : "none"}`,
       `failed=${failed.length}`,
       `anchorsInside=${layout.allAnchorsInsideVisibleRect}`,
@@ -89,9 +139,15 @@ async function main(): Promise<void> {
     ].join("\n")
   }
 
-  // Keep dispose reachable for manual teardown in console.
-  ;(window as Window & { __gardenDispose?: () => void }).__gardenDispose =
-    dispose
+  // Ready flag for Playwright screenshot gate.
+  const win = window as Window & {
+    __gardenPreviewReady?: boolean
+    __gardenPreviewDiag?: typeof readyPayload
+    __gardenDispose?: () => void
+  }
+  win.__gardenPreviewDiag = readyPayload
+  win.__gardenPreviewReady = true
+  win.__gardenDispose = dispose
 }
 
 main().catch((err) => {
@@ -100,4 +156,6 @@ main().catch((err) => {
     status.textContent = `ERROR: ${err instanceof Error ? err.message : String(err)}`
   }
   console.error(err)
+  ;(window as Window & { __gardenPreviewReady?: boolean }).__gardenPreviewReady =
+    false
 })

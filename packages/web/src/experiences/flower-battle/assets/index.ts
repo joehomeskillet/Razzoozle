@@ -1,16 +1,15 @@
 /**
- * Flower Battle garden asset pipeline (WP-03).
+ * Flower Battle garden asset pipeline.
  *
- * Integration (WP-02 host / WP-05 scene):
- * 1. On canvas mount: `await loadBundle('boot', onProgress)` before scene init.
- * 2. Progress → HTML loading overlay (do not block match if fallback).
- * 3. When teams known: `preloadBundle('garden-flower-' + colorKey)`.
- * 4. Quality tier: load `garden-effects-low` or `garden-effects-high`.
- * 5. On `result.fallback === true`: keep match alive; show StaticFallback.
- * 6. After match: `unloadBundle` for lazy team/effect bundles.
+ * **Production (presenter garden scene):**
+ * 1. `GARDEN_SCENE_ASSET_URLS` — Vite `?url` imports of optimized textures
+ * 2. `loadGardenSceneAssets(palette)` — bake SVG colours, rasterise, diagnose
+ * 3. Host (`attachGardenPixiApplication`) wires textures into `GardenScene`
  *
- * Real art (WP-04+): update paths in `GARDEN_BUNDLES` and optionally call
- * `configurePixiGardenAssetLoader(basePath)` with CDN/Vite public base.
+ * **Legacy bundle API (WP-03, non-production for the scene):**
+ * 1. `loadBundle('boot' | …)` — failure-tolerant Pixi Assets wrapper
+ * 2. Bundles in `GARDEN_BUNDLES` point at the same Vite URLs (no `/placeholders/`)
+ * 3. On `result.fallback === true`: keep match alive; show StaticFallback
  */
 
 export {
@@ -31,6 +30,7 @@ export {
 export type { GardenAssetLoader } from "./garden-asset-loader"
 
 export {
+  assertNoPlaceholderPaths,
   GARDEN_ASSET_BASE_PATH,
   GARDEN_BUNDLE_NAMES,
   GARDEN_BUNDLES,
@@ -76,5 +76,6 @@ export {
 export type {
   GardenAssetDiagnostics,
   GardenSceneLoadedAssets,
+  PlantBodyTextures,
   PlantHeadTextures,
 } from "./loadGardenSceneAssets"

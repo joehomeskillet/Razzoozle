@@ -38,6 +38,9 @@ import flowerHeadBellUrl from "../../../assets/experiences/flower-battle/optimiz
 import flowerHeadSunUrl from "../../../assets/experiences/flower-battle/optimized/fixed/flower-head-sun.svg?url"
 import flowerHeadTulipUrl from "../../../assets/experiences/flower-battle/optimized/fixed/flower-head-tulip.svg?url"
 import faceHappyUrl from "../../../assets/experiences/flower-battle/optimized/fixed/face-emotes-face-emote-happy-01.svg?url"
+import plantStemUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-stem-01.svg?url"
+import plantLeafUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-leaf-01.svg?url"
+import plantPotUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-pot-01.svg?url"
 
 /** Stable Pixi / diagnostics alias → Vite-hashed asset URL. */
 export const GARDEN_SCENE_ASSET_URLS = {
@@ -70,6 +73,10 @@ export const GARDEN_SCENE_ASSET_URLS = {
   plant_head_sun: flowerHeadSunUrl,
   plant_head_tulip: flowerHeadTulipUrl,
   face_emote_happy: faceHappyUrl,
+  /** Tintable stem / leaf / pot body for asset-built team flowers. */
+  plant_stem_01: plantStemUrl,
+  plant_leaf_01: plantLeafUrl,
+  plant_pot_01: plantPotUrl,
 } as const
 
 export type GardenSceneAssetAlias = keyof typeof GARDEN_SCENE_ASSET_URLS
@@ -95,6 +102,9 @@ export const GARDEN_SCENE_REQUIRED_ALIASES = [
   "plant_head_bell",
   "plant_head_sun",
   "plant_head_tulip",
+  "plant_stem_01",
+  "plant_leaf_01",
+  "plant_pot_01",
 ] as const satisfies readonly GardenSceneAssetAlias[]
 
 export type GardenSceneRequiredAlias =
