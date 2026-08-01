@@ -202,6 +202,134 @@ describe("createGardenScene", () => {
     expect(() => scene.updateLayout(800, 600)).not.toThrow()
   })
 
+  describe("team HUD under plants (presenterHud)", () => {
+    it("mounts one team-hud per team with name label + growth meter", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({
+        teams: [team("Violet", 3), team("Orange", 7)],
+        phase: "question",
+      })
+
+      const huds = scene.layers.presenterHud.children.filter(
+        (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
+      )
+      expect(huds).toHaveLength(2)
+      expect(huds[0]!.label).toBe("team-hud-0")
+      expect(huds[1]!.label).toBe("team-hud-1")
+
+      // Label text is nested: team-hud → team-hud-label → team-hud-label-text
+      for (let i = 0; i < 2; i += 1) {
+        const hud = huds[i]! as Container
+        const label = hud.children.find((c) => c.label === "team-hud-label")
+        expect(label).toBeDefined()
+        const meter = hud.children.find((c) => c.label === "team-hud-meter")
+        expect(meter).toBeDefined()
+        const textNode = (label as Container).children.find(
+          (c) => c.label === "team-hud-label-text",
+        ) as { text?: string } | undefined
+        expect(textNode?.text).toBe(i === 0 ? "Violet" : "Orange")
+      }
+
+      // HUD sits under the plant anchor (buildTeamHud offsets y by +56).
+      const anchors = scene.getPlotAnchors()
+      expect(huds[0]!.position.x).toBe(anchors[0]!.x)
+      expect(huds[0]!.position.y).toBe(anchors[0]!.y + 56)
+      expect(huds[1]!.position.x).toBe(anchors[1]!.x)
+      expect(huds[1]!.position.y).toBe(anchors[1]!.y + 56)
+
+      scene.destroy()
+    })
+
+    it("updates growth meters and names without recreating plant instances", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2)],
+      })
+      const plantsBefore = scene.layers.actors.children.slice()
+      const hudBefore = scene.layers.presenterHud.children
+        .filter(
+          (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
+        )
+        .slice()
+
+      scene.updateSnapshot({
+        teams: [team("Alpha", 9), team("Beta", 10)],
+      })
+
+      // Plants stay identity-stable; HUD widgets are rebuilt for new meters/names.
+      expect(scene.layers.actors.children).toEqual(plantsBefore)
+      const hudAfter = scene.layers.presenterHud.children.filter(
+        (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
+      )
+      expect(hudAfter).toHaveLength(2)
+      expect(hudAfter[0]).not.toBe(hudBefore[0])
+      expect(hudAfter[1]).not.toBe(hudBefore[1])
+
+      const label0 = (hudAfter[0] as Container).children.find(
+        (c) => c.label === "team-hud-label",
+      ) as Container
+      const text0 = label0.children.find(
+        (c) => c.label === "team-hud-label-text",
+      ) as { text?: string }
+      expect(text0.text).toBe("Alpha")
+
+      scene.destroy()
+    })
+
+    it("trims HUDs when team count shrinks and cleans them on destroy", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({
+        teams: [team("A", 1), team("B", 2), team("C", 3)],
+      })
+      expect(
+        scene.layers.presenterHud.children.filter((c) =>
+          String(c.label).startsWith("team-hud-"),
+        ),
+      ).toHaveLength(3)
+
+      scene.updateSnapshot({
+        teams: [team("A", 4), team("B", 5)],
+      })
+      expect(
+        scene.layers.presenterHud.children.filter((c) =>
+          String(c.label).startsWith("team-hud-"),
+        ),
+      ).toHaveLength(2)
+
+      scene.destroy()
+      // Root (and presenterHud) destroyed — stage no longer holds the scene.
+      expect(app.stage.children).not.toContain(scene.root)
+    })
+
+    it("repositions HUDs with anchors on cover-crop resize", () => {
+      const app = fakeApp(1920, 1080)
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateLayout(1920, 1080)
+      scene.updateSnapshot({
+        teams: [team("A", 3), team("B", 3)],
+      })
+      const hud16 = scene.layers.presenterHud.children.find(
+        (c) => c.label === "team-hud-0",
+      )!
+      const x16 = hud16.position.x
+
+      scene.updateLayout(1024, 768)
+      const hud4 = scene.layers.presenterHud.children.find(
+        (c) => c.label === "team-hud-0",
+      )!
+      const anchors = scene.getPlotAnchors()
+      expect(hud4.position.x).toBe(anchors[0]!.x)
+      expect(hud4.position.y).toBe(anchors[0]!.y + 56)
+      // On 4:3 the visible band crops left/right so anchors (and HUDs) move.
+      expect(hud4.position.x).not.toBe(x16)
+
+      scene.destroy()
+    })
+  })
+
   it("surfaces controlled palette errors for host static fallback", () => {
     const app = fakeApp()
     expect(() =>
