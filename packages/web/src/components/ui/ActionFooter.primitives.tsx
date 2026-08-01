@@ -40,11 +40,11 @@ export function ActionFooterSummary({
       data-testid="action-footer-summary"
       className={clsx("min-w-0 flex-1 sm:mr-auto", className)}
     >
-      <div className="truncate text-sm font-semibold text-[var(--ink)]">
+      <div className="truncate text-sm font-semibold text-ink">
         {title}
       </div>
       {meta != null && meta !== false && (
-        <div className="truncate text-xs text-[var(--ink-muted)]">{meta}</div>
+        <div className="truncate text-xs text-ink-muted">{meta}</div>
       )}
     </div>
   )
@@ -76,14 +76,14 @@ export function ActionFooterField({
       {htmlFor ? (
         <label
           htmlFor={htmlFor}
-          className="text-xs font-medium text-[var(--ink-muted)]"
+          className="text-xs font-medium text-ink-muted"
         >
           {label}
         </label>
       ) : (
         <span
           id={labelId}
-          className="text-xs font-medium text-[var(--ink-muted)]"
+          className="text-xs font-medium text-ink-muted"
         >
           {label}
         </span>
@@ -228,7 +228,7 @@ export function ActionFooterOptionsDisclosure({
           {changedCount != null && changedCount > 0 && (
             <span
               data-testid="action-footer-options-changed"
-              className="rounded-full bg-[var(--accent-tint)] px-2 py-0.5 text-xs font-semibold text-[var(--accent-contrast)]"
+              className="rounded-full bg-accent-tint px-2 py-0.5 text-xs font-semibold text-accent-contrast"
             >
               {changedCount}
             </span>
@@ -284,7 +284,7 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
           ? "text-[var(--ink-muted)] opacity-50 cursor-not-allowed"
           : action.active
             ? "bg-[var(--accent-contrast)] text-[var(--accent-contrast-text)]"
-            : "text-[var(--ink)] hover:bg-[var(--accent-tint)] focus-visible:bg-[var(--accent-tint)]",
+            : "text-[var(--ink)] hover:bg-accent-tint focus-visible:bg-accent-tint",
         className,
       )}
     >
