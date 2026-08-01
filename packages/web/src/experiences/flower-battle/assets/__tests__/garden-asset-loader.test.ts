@@ -6,12 +6,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
+  assertNoPlaceholderPaths,
+  GARDEN_ASSET_BASE_PATH,
   GARDEN_BUNDLE_NAMES,
   GARDEN_BUNDLES,
   getGardenBundle,
   isGardenBundleName,
   listBundlesByPriority,
+  PLACEHOLDER_TEXTURE_DATA_URI,
 } from "../garden-asset-manifest"
+import { GARDEN_SCENE_ASSET_URLS } from "../garden-scene-asset-urls"
 import {
   createGardenAssetLoader,
   createPixiAssetLoaderFn,
@@ -71,6 +75,28 @@ describe("garden-asset-manifest", () => {
         true,
       )
     }
+  })
+
+  it("does not use /placeholders/ base or placeholder-only paths", () => {
+    expect(GARDEN_ASSET_BASE_PATH).not.toContain("placeholders")
+    expect(GARDEN_ASSET_BASE_PATH).not.toContain("placeholder")
+    expect(assertNoPlaceholderPaths()).toEqual([])
+  })
+
+  it("maps visual bundles onto production Vite URLs (shared source of truth)", () => {
+    expect(GARDEN_BUNDLES.boot.assets["boot-clear-color"]).toBe(
+      GARDEN_SCENE_ASSET_URLS.bg_sky_day,
+    )
+    expect(GARDEN_BUNDLES["garden-background"].assets["bg-sky"]).toBe(
+      GARDEN_SCENE_ASSET_URLS.bg_sky_day,
+    )
+    expect(GARDEN_BUNDLES["garden-flower-violet"].assets["flower-violet-head"]).toBe(
+      GARDEN_SCENE_ASSET_URLS.plant_head_round,
+    )
+    // Audio remains structural data-URI until real media lands.
+    expect(GARDEN_BUNDLES["garden-audio"].assets["sfx-plant"]).toBe(
+      PLACEHOLDER_TEXTURE_DATA_URI,
+    )
   })
 
   it("isGardenBundleName / getGardenBundle / listBundlesByPriority", () => {
@@ -669,16 +695,17 @@ describe("WP-03 review findings regression suite", () => {
 
   it("finding 4: normalizes Pixi v8 URL keys to alias result keys", async () => {
     pixiAssetsMock.init.mockResolvedValueOnce(undefined)
-    // Pixi returns keys formatted as full path URLs
+    // Pixi may return keys as full resolved URLs (synthetic relative paths —
+    // not production /placeholders/; exercises join + reverse lookup only).
     pixiAssetsMock.load.mockResolvedValueOnce({
-      "/test-base/placeholder/boot-clear-color.png": { tex: 1 },
-      "/test-base/placeholder/boot-logo-mark.png": { tex: 2 },
+      "/test-base/assets/boot-clear-color.png": { tex: 1 },
+      "/test-base/assets/boot-logo-mark.png": { tex: 2 },
     })
 
     const loadAssets = createPixiAssetLoaderFn("/test-base")
     const res = await loadAssets({
-      "boot-clear-color": "placeholder/boot-clear-color.png",
-      "boot-logo-mark": "placeholder/boot-logo-mark.png",
+      "boot-clear-color": "assets/boot-clear-color.png",
+      "boot-logo-mark": "assets/boot-logo-mark.png",
     })
 
     expect(res["boot-clear-color"]).toEqual({ tex: 1 })

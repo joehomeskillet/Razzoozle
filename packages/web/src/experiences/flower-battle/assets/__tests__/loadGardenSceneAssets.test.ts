@@ -120,4 +120,12 @@ describe("GARDEN_SCENE_ASSET_URLS", () => {
     expect(GARDEN_SCENE_ASSET_URLS.plant_head_round).toMatch(/flower-head-round/)
     expect(GARDEN_SCENE_ASSET_URLS.env_fence_white).toMatch(/fence-white/)
   })
+
+  it("production URLs never use /placeholders/ public path", () => {
+    for (const [alias, url] of Object.entries(GARDEN_SCENE_ASSET_URLS)) {
+      // Path segment only — inline SVG comments may contain the word "placeholder".
+      expect(url, alias).not.toMatch(/\/placeholders\//i)
+      expect(url, alias).not.toMatch(/(^|\/)placeholder\//i)
+    }
+  })
 })

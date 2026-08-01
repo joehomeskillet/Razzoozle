@@ -1,28 +1,34 @@
 /**
- * Flower Battle garden asset bundle definitions (WP-03).
+ * Flower Battle garden asset bundle definitions.
  *
- * Placeholder structure only — no production graphics. Real textures / Spine
- * rigs land in WP-04+; swap the relative paths in `assets` and optionally set
- * `GARDEN_ASSET_BASE_PATH` (or pass `basePath` into the loader) so PixiJS
- * `Assets.init({ basePath })` resolves them. Prefer Vite `import url from
- * '…/optimized/…'` for hashed production URLs instead of hard-coded paths.
+ * Production scene textures live in `garden-scene-asset-urls.ts` (Vite `?url`
+ * imports) and are loaded by `loadGardenSceneAssets.ts` — that is the
+ * production path used by the presenter.
  *
+ * This manifest maps the legacy WP-03 bundle API (`loadBundle` /
+ * `garden-asset-loader`) onto the same Vite-resolved production URLs so both
+ * loaders share one source of truth. Asset values are absolute hashed URLs
+ * (or data-URIs for non-visual structural slots). No `/placeholders/` base.
+ *
+ * @see garden-scene-asset-urls.ts
+ * @see loadGardenSceneAssets.ts
  * @see docs/design/flower-battle-pixi-spine-sdd.md §8
- * @see docs/design/wp-02-03-canvas-host-prep.md
  */
+
+import { GARDEN_SCENE_ASSET_URLS } from "./garden-scene-asset-urls"
 
 /** Load priority for a garden asset bundle. */
 export type BundlePriority = "boot" | "eager" | "lazy"
 
 /**
  * Reproducible bundle definition consumed by the garden asset loader.
- * Paths in `assets` are relative to the configured base path (never absolute
- * host paths).
+ * Paths in `assets` are absolute Vite-hashed URLs (or data-URIs). When a
+ * value is already absolute / data-URI, loader `basePath` is not applied.
  */
 export interface AssetBundle {
   /** Stable bundle id (matches key in `GARDEN_BUNDLES`). */
   name: string
-  /** Alias → relative asset path (or data-URI placeholder). */
+  /** Alias → Vite-hashed URL (or data-URI for non-visual slots). */
   assets: Record<string, string>
   priority: BundlePriority
   /** Optional uncompressed size hint in bytes (informational only). */
@@ -47,128 +53,159 @@ export type GardenBundleName =
   | "garden-audio"
 
 /**
- * Default base path for garden assets. Overridable via loader `basePath` or
- * PixiJS `Assets.init({ basePath })`. Not a hard-coded filesystem path.
+ * Base path for relative asset keys only.
+ *
+ * Production bundle entries use Vite-hashed absolute URLs from
+ * `GARDEN_SCENE_ASSET_URLS`, so this is intentionally empty. Override via
+ * loader `basePath` if you inject relative paths in tests.
+ *
+ * @deprecated Prefer Vite `?url` imports in `garden-scene-asset-urls.ts`.
+ * Do not reintroduce `/assets/experiences/flower-battle/placeholders/`.
  */
-export const GARDEN_ASSET_BASE_PATH =
-  "/assets/experiences/flower-battle/placeholders/"
+export const GARDEN_ASSET_BASE_PATH = ""
 
-/** 1×1 transparent PNG data URI — structure tests without network/WebGL. */
+/**
+ * 1×1 transparent PNG data URI — unit-test structural stand-in and
+ * non-visual slots (audio) that have no file asset yet. Not a filesystem
+ * path and never under `/placeholders/`.
+ */
 export const PLACEHOLDER_TEXTURE_DATA_URI =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 
-function placeholderAssets(aliases: readonly string[]): Record<string, string> {
+/** Shorthand: production Vite URLs (single source of truth). */
+const U = GARDEN_SCENE_ASSET_URLS
+
+/**
+ * Build a Record of alias → data-URI for slots without production media
+ * (audio). Keeps the bundle shape intact without `/placeholders/` paths.
+ */
+function dataUriAssets(aliases: readonly string[]): Record<string, string> {
   const out: Record<string, string> = {}
   for (const alias of aliases) {
-    // Relative key under basePath; tests inject data-URI loaders and ignore path.
-    out[alias] = `placeholder/${alias}.png`
+    out[alias] = PLACEHOLDER_TEXTURE_DATA_URI
   }
   return out
 }
 
 /**
- * All garden asset bundles. Keep small and declarative; real art is WP-04+.
+ * All garden asset bundles. Visual aliases resolve via
+ * `GARDEN_SCENE_ASSET_URLS` (Vite `?url`). Keep alias keys stable for the
+ * legacy loader API; production scene code uses scene aliases directly.
  */
 export const GARDEN_BUNDLES: Record<GardenBundleName, AssetBundle> = {
   boot: {
     name: "boot",
     priority: "boot",
     size: 8_192,
-    assets: placeholderAssets(["boot-clear-color", "boot-logo-mark"]),
+    assets: {
+      "boot-clear-color": U.bg_sky_day,
+      "boot-logo-mark": U.face_emote_happy,
+    },
   },
   "garden-background": {
     name: "garden-background",
     priority: "eager",
     size: 64_000,
-    assets: placeholderAssets([
-      "bg-sky",
-      "bg-horizon",
-      "bg-ground",
-      "bg-cloud",
-    ]),
+    assets: {
+      "bg-sky": U.bg_sky_day,
+      "bg-horizon": U.bg_hill_back_01,
+      "bg-ground": U.env_grass_base,
+      "bg-cloud": U.bg_cloud_01,
+      // Extra production layers for the legacy bundle surface
+      "bg-sun": U.bg_sun_glow,
+      "bg-hills": U.bg_hill_back_01,
+      "bg-bush": U.bg_bush_back_01,
+    },
   },
   "garden-common": {
     name: "garden-common",
     priority: "eager",
     size: 48_000,
-    assets: placeholderAssets([
-      "common-plot",
-      "common-particle-dot",
-      "common-powerup-icon",
-    ]),
+    assets: {
+      "common-plot": U.env_soil_plot_01,
+      "common-particle-dot": U.env_grass_detail_01,
+      "common-powerup-icon": U.face_emote_happy,
+      "common-fence": U.env_fence_white,
+      "common-leaf-left": U.env_foreground_leaf_left,
+      "common-leaf-right": U.env_foreground_leaf_right,
+    },
   },
   "garden-flower-violet": {
     name: "garden-flower-violet",
     priority: "lazy",
     size: 96_000,
-    assets: placeholderAssets([
-      "flower-violet-stem",
-      "flower-violet-head",
-      "flower-violet-atlas",
-    ]),
+    assets: {
+      "flower-violet-stem": U.env_foreground_leaf_left,
+      "flower-violet-head": U.plant_head_round,
+      "flower-violet-atlas": U.plant_head_round,
+    },
   },
   "garden-flower-blue": {
     name: "garden-flower-blue",
     priority: "lazy",
     size: 96_000,
-    assets: placeholderAssets([
-      "flower-blue-stem",
-      "flower-blue-head",
-      "flower-blue-atlas",
-    ]),
+    assets: {
+      "flower-blue-stem": U.env_foreground_leaf_left,
+      "flower-blue-head": U.plant_head_bell,
+      "flower-blue-atlas": U.plant_head_bell,
+    },
   },
   "garden-flower-orange": {
     name: "garden-flower-orange",
     priority: "lazy",
     size: 96_000,
-    assets: placeholderAssets([
-      "flower-orange-stem",
-      "flower-orange-head",
-      "flower-orange-atlas",
-    ]),
+    assets: {
+      "flower-orange-stem": U.env_foreground_leaf_right,
+      "flower-orange-head": U.plant_head_sun,
+      "flower-orange-atlas": U.plant_head_sun,
+    },
   },
   "garden-flower-green": {
     name: "garden-flower-green",
     priority: "lazy",
     size: 96_000,
-    assets: placeholderAssets([
-      "flower-green-stem",
-      "flower-green-head",
-      "flower-green-atlas",
-    ]),
+    assets: {
+      "flower-green-stem": U.env_foreground_leaf_right,
+      "flower-green-head": U.plant_head_tulip,
+      "flower-green-atlas": U.plant_head_tulip,
+    },
   },
   "garden-effects-low": {
     name: "garden-effects-low",
     priority: "lazy",
     size: 24_000,
-    assets: placeholderAssets(["fx-low-spark", "fx-low-puff"]),
+    assets: {
+      "fx-low-spark": U.bg_sun_glow,
+      "fx-low-puff": U.bg_cloud_01,
+    },
   },
   "garden-effects-high": {
     name: "garden-effects-high",
     priority: "lazy",
     size: 80_000,
-    assets: placeholderAssets([
-      "fx-high-spark",
-      "fx-high-weather",
-      "fx-high-bloom",
-    ]),
+    assets: {
+      "fx-high-spark": U.bg_sun_glow,
+      "fx-high-weather": U.bg_cloud_02,
+      "fx-high-bloom": U.plant_head_sun,
+    },
   },
   "shared-ui": {
     name: "shared-ui",
     priority: "eager",
     size: 32_000,
-    assets: placeholderAssets([
-      "ui-button",
-      "ui-panel",
-      "ui-icon-sheet",
-      "ui-font-atlas",
-    ]),
+    assets: {
+      "ui-button": U.face_emote_happy,
+      "ui-panel": U.env_soil_plot_01,
+      "ui-icon-sheet": U.face_emote_happy,
+      "ui-font-atlas": U.env_fence_white,
+    },
   },
+  // Audio has no file assets in this package yet — structural data-URIs only.
   "garden-audio": {
     name: "garden-audio",
     priority: "lazy",
     size: 48_000,
-    assets: placeholderAssets([
+    assets: dataUriAssets([
       "sfx-plant",
       "sfx-harvest",
       "sfx-water",
@@ -204,4 +241,26 @@ export function listBundlesByPriority(
   return GARDEN_BUNDLE_NAMES.map((n) => GARDEN_BUNDLES[n]).filter((b) =>
     wanted.has(b.priority),
   )
+}
+
+/**
+ * True when every visual (non-audio) asset URL is a Vite-hashed absolute URL
+ * or data-URI — never a `/placeholders/` path. Used by unit tests.
+ */
+export function assertNoPlaceholderPaths(
+  bundles: Record<string, AssetBundle> = GARDEN_BUNDLES,
+): string[] {
+  const offenders: string[] = []
+  for (const [bundleName, bundle] of Object.entries(bundles)) {
+    for (const [alias, src] of Object.entries(bundle.assets)) {
+      if (
+        src.includes("/placeholders/") ||
+        src.startsWith("placeholder/") ||
+        src.includes("/placeholder/")
+      ) {
+        offenders.push(`${bundleName}.${alias}: ${src}`)
+      }
+    }
+  }
+  return offenders
 }
