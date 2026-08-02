@@ -220,7 +220,6 @@ type DomElement = {
   clientHeight?: number
   className: string
   style: {
-    [key: string]: string | number
     setProperty: (propertyName: string, value: string) => void
     getPropertyValue: (propertyName: string) => string
   }
@@ -286,16 +285,16 @@ function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
   const children: unknown[] = []
   const eventListeners = new Map<string, Set<() => void>>()
   const attributes = new Map<string, string>()
+  const styleStore: Record<string, string> = {}
   const style: {
-    [key: string]: string | number
     setProperty: (propertyName: string, value: string) => void
     getPropertyValue: (propertyName: string) => string
   } = {
     setProperty(propertyName: string, value: string) {
-      style[propertyName] = value
+      styleStore[propertyName] = value
     },
     getPropertyValue(propertyName: string) {
-      return String(style[propertyName] ?? "")
+      return styleStore[propertyName] ?? ""
     },
   }
   const element: DomElement = {
