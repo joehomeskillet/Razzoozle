@@ -117,13 +117,29 @@ async function createDefaultApplication(
   return app
 }
 
+/**
+ * Read the canvas's CSS pixel size for the renderer init / resize path.
+ *
+ * WP3 (FB-HUD-WP3): keep the exact fractional `clientWidth/clientHeight` (no
+ * `Math.round`). Rounding to an integer pushes the canvas to a sub-pixel
+ * position inside its flex/grid parent slot, and the compositor then resamples
+ * it bilinearly → canvas content looks blurred even when the backing store is
+ * pixel-perfect. Passing the fractional value lets Pixi set
+ * `canvas.style.{width,height}` to the layout's true size; the backing store
+ * is still derived by multiplying by `resolution`, so 1 device-pixel = 1/CSS-
+ * pixel/2/3 mapping stays intact.
+ *
+ * `Math.max(1, …)` keeps the backing store non-zero during the brief hidden
+ * pre-attach window (a 0×0 parent reports clientWidth=0 and would force a 0×0
+ * `app.renderer.resize` that Pixi v8 treats as destroy).
+ */
 function readCanvasSize(canvas: HTMLCanvasElement): {
   width: number
   height: number
 } {
   return {
-    width: Math.max(1, Math.round(canvas.clientWidth || 1)),
-    height: Math.max(1, Math.round(canvas.clientHeight || 1)),
+    width: Math.max(1, canvas.clientWidth || 1),
+    height: Math.max(1, canvas.clientHeight || 1),
   }
 }
 
@@ -152,7 +168,13 @@ export async function attachGardenPixiApplication(
     "(prefers-reduced-motion: reduce)",
   ).matches
 
-  const resolution = Math.min(environment.devicePixelRatio || 1, 2)
+  // WP3 (FB-HUD-WP3): use the actual devicePixelRatio (no cap). The previous
+  // `Math.min(dpr, 2)` clamped high-DPR beamers / phones (DPR 3+) to a 2×
+  // backing store, so the browser then bilinear-upscaled the canvas to fill
+  // every device pixel — that was the source of the presenter / HUD blur on
+  // 3× displays. Passing the true DPR keeps the backing store pixel-aligned
+  // to the device grid and the compositor from re-sampling.
+  const resolution = environment.devicePixelRatio || 1
   const { width, height } = readCanvasSize(canvas)
 
   const app = await createApplication({
