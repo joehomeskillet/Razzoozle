@@ -120,6 +120,10 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: ListChecks,
     component: ConfigManageQuizz,
     actionFooter: "required",
+    // WP wp-b-1 — Quiz tab migrates to the icon-only ActionFooterCompact
+    // (Create / Import / Open Template). Mirrors the play, catalog and
+    // users tabs in #1045.
+    actionFooterVariant: "compact",
   },
   {
     key: "catalog",
