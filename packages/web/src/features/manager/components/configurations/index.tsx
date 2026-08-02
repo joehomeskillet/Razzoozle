@@ -136,6 +136,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigKlassen,
     gated: "klassenEnabled",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "students",
