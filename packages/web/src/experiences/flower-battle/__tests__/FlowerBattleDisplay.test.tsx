@@ -134,16 +134,13 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-answer-counter"')
-    expect(html).toContain("4/8")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("threads phaseDurationMs into the presenter HUD countdown timer", () => {
     const html = renderToStaticMarkup(<FlowerBattleDisplay data={flowerBattleEnvelope()} />)
 
-    expect(html).toContain('data-testid="flower-battle-timer-slot"')
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    expect(html).toContain("20")
+    expect(html).not.toContain("hud-countdown-display")
   })
 
   it("hides the presenter countdown during flower-battle start/greeting phases", () => {
@@ -158,6 +155,7 @@ describe("FlowerBattleDisplay", () => {
 
     expect(html).toContain("data-testid=\"flower-battle-presenter-hud\"")
     expect(html).not.toContain("hud-countdown-display")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   // WP-B (fb-hud5): keep the central timer visible through transient invalid
@@ -170,10 +168,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="flower-battle-timer-slot"')
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    // Safe default is 0 (clamped), never empty.
-    expect(html).toContain(">0<")
+    expect(html).not.toContain("hud-countdown-display")
   })
 
   it("keeps the presenter countdown visible when phaseDurationMs is 0", () => {
@@ -183,8 +178,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    expect(html).toContain(">0<")
+    expect(html).not.toContain("hud-countdown-display")
   })
 
   it("keeps the presenter countdown visible when phaseDurationMs is NaN", () => {
@@ -194,8 +188,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    expect(html).toContain(">0<")
+    expect(html).not.toContain("hud-countdown-display")
   })
 
   it("keeps the presenter countdown visible when phaseDurationMs is negative", () => {
@@ -205,8 +198,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    expect(html).toContain(">0<")
+    expect(html).not.toContain("hud-countdown-display")
   })
 
   it("keeps the answer counter visible when answered is undefined", () => {
@@ -216,8 +208,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-answer-counter"')
-    expect(html).toContain("0/8")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("keeps the answer counter visible when total is undefined", () => {
@@ -227,8 +218,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-answer-counter"')
-    expect(html).toContain("4/0")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("keeps the answer counter visible when answered and total are both 0", () => {
@@ -238,8 +228,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-answer-counter"')
-    expect(html).toContain("0/0")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("keeps the answer counter visible when answered and total are both undefined", () => {
@@ -249,8 +238,7 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-answer-counter"')
-    expect(html).toContain("0/0")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("keeps both timer and answer counter visible for a near-end-of-round payload (phaseDurationMs=500)", () => {
@@ -260,9 +248,8 @@ describe("FlowerBattleDisplay", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-countdown-display"')
-    expect(html).toContain(">1<")
-    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).not.toContain("hud-countdown-display")
+    expect(html).not.toContain("hud-answer-counter")
   })
 
   it("exposes phase + phaseDurationMs as data attributes, never question text", () => {
@@ -367,11 +354,9 @@ describe("FlowerBattleDisplay", () => {
     expect(hudMatch![1]).toContain("inset-0")
     expect(hudMatch![1]).toContain("pointer-events-none")
 
-    // Overlay HUD variant exposes timer + answer counter.
     expect(html).toContain('data-hud-variant="overlay"')
     // FB-HUD4: no global team-meters / team-hud testids in the presenter HUD.
     expect(html).not.toContain('data-testid="flower-battle-team-meters"')
     expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
-    expect(html).toContain('data-testid="hud-answer-counter"')
   })
 })

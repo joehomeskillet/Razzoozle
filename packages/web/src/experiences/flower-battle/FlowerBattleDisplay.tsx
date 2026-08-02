@@ -28,29 +28,9 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
   const state =
     data.payload?.mode === "flowerBattle" ? data.payload.data?.state : undefined
   const teams = state?.teams ?? []
-  const answered = data.answered ?? 0
-  const total = data.total ?? 0
-  const phaseDurationMs = data.phaseDurationMs
-  // FB-HUD5 / WP-B: always derive a safe non-negative seconds value so the
-  // central timer stays visible for every value 20→0 and for transient
-  // invalid payloads (undefined / NaN / negative). `0` is a valid render
-  // state and signals "phase ended" to the audience without hiding the chip.
-  const safeCountdownSeconds =
-    typeof phaseDurationMs === "number" && Number.isFinite(phaseDurationMs) && phaseDurationMs > 0
-      ? Math.ceil(phaseDurationMs / 1000)
-      : 0
-  const isFlowerBattleReadyPhase =
-    state?.phase === "start" ||
-    state?.phase === "greeting" ||
-    state?.phase === "role_assignment"
   const seed = state?.background.seed ?? 0
   const recipeVersion =
     state?.background.recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION
-  // Hide the timer only during pre-game / role-assignment phases — never on
-  // data validity. During active question play (round1/2/3, voting, results)
-  // the timer is always rendered so the audience can track the clock down to
-  // 0 even through momentary wire glitches.
-  const shouldShowCountdown = !isFlowerBattleReadyPhase
 
   return (
     <div
@@ -97,14 +77,6 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
           variant="overlay"
           teams={teams}
           sunPoints={{}}
-          answerCounter={{ answered, total }}
-          countdown={
-            shouldShowCountdown
-              ? {
-                  seconds: safeCountdownSeconds,
-                }
-              : undefined
-          }
         />
       </div>
     </div>

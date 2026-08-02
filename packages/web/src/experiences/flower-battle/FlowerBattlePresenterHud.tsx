@@ -105,6 +105,7 @@ export const FlowerBattlePresenterHud = ({
         : undefined
 
   const mergedStatusBanner = powerUpBanner ?? statusBanner
+  const showBottomHud = Boolean(countdown || answerCounter)
 
   if (variant === "overlay") {
     return (
@@ -122,24 +123,26 @@ export const FlowerBattlePresenterHud = ({
           </div>
         ) : null}
 
-        <div
-          data-testid="flower-battle-bottom-hud"
-          className="garden-bottom-hud pointer-events-none absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 flex items-end justify-between gap-2 sm:gap-3"
-        >
+        {showBottomHud ? (
           <div
-            data-testid="flower-battle-timer-slot"
-            className="pointer-events-auto flex flex-1 items-end justify-center"
+            data-testid="flower-battle-bottom-hud"
+            className="garden-bottom-hud pointer-events-none absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 flex items-end justify-between gap-2 sm:gap-3"
           >
-            {countdown ? <CountdownDisplay {...countdown} /> : null}
-          </div>
+            <div
+              data-testid="flower-battle-timer-slot"
+              className="pointer-events-auto flex flex-1 items-end justify-center"
+            >
+              {countdown ? <CountdownDisplay {...countdown} /> : null}
+            </div>
 
-          <div
-            data-testid="flower-battle-answer-counter-slot"
-            className="pointer-events-auto flex items-end justify-end"
-          >
-            {answerCounter ? <AnswerCounter {...answerCounter} /> : null}
+            <div
+              data-testid="flower-battle-answer-counter-slot"
+              className="pointer-events-auto flex items-end justify-end"
+            >
+              {answerCounter ? <AnswerCounter {...answerCounter} /> : null}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     )
   }

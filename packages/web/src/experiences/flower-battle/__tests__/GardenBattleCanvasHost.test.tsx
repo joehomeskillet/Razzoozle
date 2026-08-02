@@ -418,29 +418,16 @@ describe("GardenBattleCanvasHost markup", () => {
     expect(html).toContain('data-testid="garden-pixi-canvas"')
     expect(html).toContain('role="region"')
     expect(html).toContain('aria-label="Flower Battle garden scene"')
-    expect(html).toContain('aria-describedby="garden-status"')
-    expect(html).toContain('id="garden-status"')
-    expect(html).toContain("sr-only")
+    expect(html).not.toContain('aria-describedby="garden-status"')
+    expect(html).not.toContain('id="garden-status"')
   })
 
-  it("defensively hides #garden-status via inline styles (WP-H)", () => {
+  it("does not render a visible #garden-status live-region in static server markup", () => {
     const html = renderToStaticMarkup(
       <GardenBattleCanvasHost teams={TEAMS} quality="high" />,
     )
-    const statusMatches = [...html.matchAll(/<div[^>]*id="garden-status"[^>]*>/g)]
-    expect(statusMatches.length).toBeGreaterThan(0)
-    for (const match of statusMatches) {
-      const tag = match[0]
-      expect(tag).toContain('aria-live="polite"')
-      expect(tag).toContain('aria-atomic="true"')
-      expect(tag).toContain("sr-only")
-      expect(tag).toMatch(/style="[^"]*position:\s*absolute/)
-      expect(tag).toMatch(/style="[^"]*width:\s*1px/)
-      expect(tag).toMatch(/style="[^"]*height:\s*1px/)
-      expect(tag).toMatch(/style="[^"]*overflow:\s*hidden/)
-      expect(tag).toMatch(/style="[^"]*clip:\s*rect\(0,0,0,0\)/)
-      expect(tag).toMatch(/style="[^"]*white-space:\s*nowrap/)
-    }
+    expect(html).not.toContain('id="garden-status"')
+    expect(html).not.toContain("sr-only")
   })
 
   it("exposes idle hook defaults outside a host provider", () => {

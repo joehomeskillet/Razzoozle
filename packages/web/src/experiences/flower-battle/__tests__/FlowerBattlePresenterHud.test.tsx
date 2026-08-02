@@ -50,7 +50,7 @@ describe("FlowerBattlePresenterHud", () => {
 
     expect(html).toContain('data-testid="flower-battle-presenter-hud"')
     expect(html).toContain('data-hud-variant="overlay"')
-    expect(html).toContain('data-testid="flower-battle-bottom-hud"')
+    expect(html).not.toContain('data-testid="flower-battle-bottom-hud"')
     // Overlay composes primitives directly — no ExperienceHud shell.
     expect(html).not.toContain('data-testid="experience-hud"')
     // FB-HUD4: team cards live under each plant now; the bottom HUD owns
@@ -58,8 +58,8 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).not.toContain('data-testid="flower-battle-team-meters"')
     expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
     expect(html).not.toContain('data-testid="flower-battle-team-hud-1"')
-    expect(html).toContain('data-testid="flower-battle-timer-slot"')
-    expect(html).toContain('data-testid="flower-battle-answer-counter-slot"')
+    expect(html).not.toContain('data-testid="flower-battle-timer-slot"')
+    expect(html).not.toContain('data-testid="flower-battle-answer-counter-slot"')
     // WP-2 replaces nested phase chip with in-card dot/name header.
     expect(html).not.toContain('data-testid="hud-phase-indicator"')
   })
@@ -95,6 +95,7 @@ describe("FlowerBattlePresenterHud", () => {
       <FlowerBattlePresenterHud
         teams={baseTeams}
         sunPoints={{ red: 2, blue: 1 }}
+        countdown={{ seconds: 30 }}
         answerCounter={{ answered: 3, total: 10 }}
       />,
     )

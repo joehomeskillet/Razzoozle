@@ -203,7 +203,6 @@ interface StaticFallbackProps {
   recipeVersion?: number | string
   fallback?: ReactNode
   reason: "static" | "error"
-  errorMessage?: string
 }
 
 function GardenStaticFallback({
@@ -212,7 +211,6 @@ function GardenStaticFallback({
   recipeVersion = CURRENT_GARDEN_RECIPE_VERSION,
   fallback,
   reason,
-  errorMessage,
 }: StaticFallbackProps) {
   return (
     <div
@@ -222,27 +220,6 @@ function GardenStaticFallback({
       role="region"
       aria-label="Flower Battle garden scene (static)"
     >
-      <div
-        id="garden-status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        style={{
-          position: "absolute",
-          width: "1px",
-          height: "1px",
-          padding: 0,
-          margin: "-1px",
-          overflow: "hidden",
-          clip: "rect(0,0,0,0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
-      >
-        {reason === "error"
-          ? `Garden scene unavailable${errorMessage ? `: ${errorMessage}` : ""}`
-          : "Garden scene static view"}
-      </div>
       {fallback ?? (
         <FlowerGardenScene
           seed={seed}
@@ -521,7 +498,6 @@ export function GardenBattleCanvasHost({
       recipeVersion={recipeVersion}
       fallback={fallback}
       reason={error ? "error" : "static"}
-      errorMessage={error?.message}
     />
   )
 
@@ -536,14 +512,13 @@ export function GardenBattleCanvasHost({
           setError(boundaryError)
           onErrorRef.current?.(boundaryError)
         }}
-        fallback={(boundaryError) => (
+        fallback={(_boundaryError) => (
           <GardenStaticFallback
             teams={teams}
             seed={seed}
             recipeVersion={recipeVersion}
             fallback={fallback}
             reason="error"
-            errorMessage={boundaryError.message}
           />
         )}
       >
@@ -578,28 +553,8 @@ export function GardenBattleCanvasHost({
                 data-testid="garden-pixi-canvas"
                 role="region"
                 aria-label="Flower Battle garden scene"
-                aria-describedby="garden-status"
                 className="block h-full w-full"
               />
-              <div
-                id="garden-status"
-                aria-live="polite"
-                aria-atomic="true"
-                className="sr-only"
-                style={{
-                  position: "absolute",
-                  width: "1px",
-                  height: "1px",
-                  padding: 0,
-                  margin: "-1px",
-                  overflow: "hidden",
-                  clip: "rect(0,0,0,0)",
-                  whiteSpace: "nowrap",
-                  border: 0,
-                }}
-              >
-                {isReady ? "Garden scene ready" : "Garden scene loading"}
-              </div>
               {/* FB-HUD4: DOM overlay of PlantTeamCards anchored over the
                   canvas. Renders only when teams exist; static-fallback path
                   already covers the cards via FlowerGardenScene. */}
