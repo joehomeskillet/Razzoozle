@@ -315,7 +315,15 @@ const GameWrapper = ({
                   )}
                 >
                   {/* GROUP A: Progress + Auto-Mode */}
-                  <div className="hud-chip-cream flex shrink-0 items-center gap-2 p-1">
+                  <div
+                    className={clsx(
+                      "flex shrink-0 items-center gap-2",
+                      // FB-HUD4: fullBleedCanvas drops the cream chip wrapper
+                      // so only the buttons themselves sit on the canvas —
+                      // no cream/gray bg behind the buttons.
+                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                    )}
+                  >
                     {questionStates && (
                       <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
                         {`${questionStates.current} / ${questionStates.total}`}
@@ -357,7 +365,12 @@ const GameWrapper = ({
                   </div>
 
                   {/* GROUP B: Media/Display Controls (Icon Buttons) */}
-                  <div className="hud-chip-cream flex flex-1 flex-wrap items-center justify-center gap-2 p-1">
+                  <div
+                    className={clsx(
+                      "flex flex-1 flex-wrap items-center justify-center gap-2",
+                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                    )}
+                  >
                     <AvToggles />
                     {statusName !== STATUS.FINISHED && lowLatencyEnabled && (
                       <LowLatencyHealth />
@@ -391,7 +404,12 @@ const GameWrapper = ({
                   </div>
 
                   {/* GROUP C: Phase Actions (Primary Next + Secondary Exit) */}
-                  <div className="hud-chip-cream flex shrink-0 items-center gap-2 p-1">
+                  <div
+                    className={clsx(
+                      "flex shrink-0 items-center gap-2",
+                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                    )}
+                  >
                     {statusName !== STATUS.FINISHED &&
                       statusName !== STATUS.SHOW_ROUND_RECAP &&
                       next && (
@@ -495,8 +513,15 @@ const GameWrapper = ({
                       "hud-chip-cream pointer-events-auto flex shrink-0 items-center gap-2 p-1",
                     )}
                   >
-                    {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-3 text-base font-bold text-ink sm:px-4 sm:text-lg">
+{questionStates && (
+                      <div
+                        className={clsx(
+                          "flex min-h-11 items-center rounded-lg px-4 text-lg font-bold text-ink",
+                          // FB-HUD4: fullBleedCanvas strips the cream
+                          // background — text floats on the canvas.
+                          fullBleedCanvas ? "" : "bg-surface-cream",
+                        )}
+                      >
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
