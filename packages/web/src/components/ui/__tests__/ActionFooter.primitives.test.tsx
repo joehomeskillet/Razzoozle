@@ -120,6 +120,54 @@ describe("IconBarButton", () => {
     expectCanonicalFocus(html)
   })
 
+  it("renders a tooltip marker that is visible on hover and keyboard focus", () => {
+    const html = render(<IconBarButton action={baseAction} />)
+    expect(html).toContain("pointer-events-none")
+    expect(html).toContain("bottom-full")
+    expect(html).toContain("mb-2")
+    expect(html).toContain("invisible")
+    expect(html).not.toContain("top-full")
+    expect(html).not.toContain("mt-2")
+    expect(html).toContain("group-hover:opacity-100")
+    expect(html).toContain("group-focus-visible:opacity-100")
+    expect(html).toContain(">Auto-Modus</span>")
+  })
+
+  it("passes popup controls through aria attributes", () => {
+    const html = render(
+      <IconBarButton
+        action={{
+          ...baseAction,
+          popup: {
+            hasPopup: "dialog",
+            controls: "play-options-panel",
+            expanded: false,
+          },
+        }}
+      />,
+    )
+    expect(html).toContain('aria-haspopup="dialog"')
+    expect(html).toContain('aria-controls="play-options-panel"')
+    expect(html).toContain('aria-expanded="false"')
+  })
+
+  it("derives a deterministic trigger id from popup.controls", () => {
+    const html = render(
+      <IconBarButton
+        action={{
+          ...baseAction,
+          popup: {
+            hasPopup: "dialog",
+            controls: "play-options-panel",
+            expanded: false,
+          },
+        }}
+      />,
+    )
+
+    expect(html).toContain('id="play-options-panel-trigger"')
+  })
+
   it.each([
     ["primary", "bg-[var(--color-primary)]", "text-[var(--surface)]"],
     ["secondary", "bg-[var(--surface)]", "border-[var(--border-hairline)]"],
@@ -145,6 +193,28 @@ describe("IconBarButton", () => {
     expect(html).not.toContain("bg-[var(--danger-bg)]")
     expect(html).not.toContain("text-[var(--surface)]")
   })
+
+  it.each([["primary"], ["danger"]] as const)(
+    "does not force icon ink hover color for %s intent while preserving tooltip",
+    (intent) => {
+      const html = render(<IconBarButton action={{ ...baseAction, intent }} />)
+      const expectedSurface =
+        intent === "primary" ? "bg-[var(--color-primary)]" : "bg-transparent"
+      const expectedForeground =
+        intent === "primary" ? "text-[var(--surface)]" : "text-[var(--state-wrong)]"
+
+      expect(html).toContain(expectedSurface)
+      expect(html).toContain(expectedForeground)
+      expect(html).not.toContain("group-hover:text-[var(--ink)]")
+      expect(html).toContain("group-hover:visible")
+      expect(html).toContain("group-focus-visible:visible")
+      expect(html).toContain("text-[var(--ink)]")
+      expect(html).toContain("bottom-full")
+      expect(html).toContain("mb-2")
+      expect(html).not.toContain("top-full")
+      expect(html).not.toContain("mt-2")
+    },
+  )
 
   it("uses contrast-correct white text and canonical focus for active toggles", () => {
     const html = render(
@@ -201,6 +271,7 @@ describe("IconBarButton", () => {
     "Template",
     "Delete",
     "Overflow",
+    "SlidersHorizontal",
   ] as const)("renders supported %s icon without losing a11y", (iconName) => {
     const html = render(<IconBarButton action={{ ...baseAction, iconName }} />)
     expect(html).toContain('aria-label="Auto-Modus"')

@@ -10,11 +10,8 @@ import {
   type RadioGroupOption,
 } from "@razzoozle/web/components/Radio"
 import Select from "@razzoozle/web/components/Select"
-import {
-  ActionFooterCompact,
-  FormSection,
-  LabelRow,
-} from "@razzoozle/web/components/ui"
+import { ActionFooterCompact, LabelRow } from "@razzoozle/web/components/ui"
+import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import { useSocket } from "@razzoozle/web/features/game/contexts/socket-context"
 import {
   EmptyState,
@@ -209,6 +206,7 @@ const ConfigSelectQuizz = () => {
   const [participantCap, setParticipantCap] = useState<number | null>(null)
   const [experienceMode, setExperienceMode] =
     useState<ExperienceModeKey>("classic")
+  const [isOptionsPanelOpen, setIsOptionsPanelOpen] = useState(false)
   const [search, setSearch] = useState("")
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion()
@@ -456,6 +454,180 @@ const ConfigSelectQuizz = () => {
       selectClass: t("manager:selectQuizz.klassenModeNeedsClass"),
     },
   )
+  const startOptionsTitle = t("manager:selectQuizz.optionsTitle", {
+    defaultValue: "Startoptionen",
+  })
+  const optionsContent = (
+    <div className="grid grid-cols-1 gap-3">
+      {config.scoringMode !== undefined && (
+        <LabelRow
+          label={t("manager:gameMode.speedMode")}
+          htmlFor="play-scoring-mode"
+        >
+          <Select
+            id="play-scoring-mode"
+            value={scoringMode}
+            disabled={footerControlsDisabled}
+            onChange={(e) =>
+              setScoringMode(
+                e.target.value === "accuracy" ? "accuracy" : "speed",
+              )
+            }
+            data-testid="play-scoring-mode"
+            className="min-h-11 min-w-[9rem]"
+          >
+            <option value="speed">{t("manager:gameMode.speedMode")}</option>
+            <option value="accuracy">
+              {t("manager:gameMode.accuracyMode", {
+                defaultValue: "Genauigkeit",
+              })}
+            </option>
+          </Select>
+        </LabelRow>
+      )}
+
+      {experienceModesActive && (
+        <LabelRow
+          label={t("manager:selectQuizz.experienceMode.label")}
+          htmlFor="play-experience-mode"
+        >
+          <Select
+            id="play-experience-mode"
+            value={experienceMode}
+            disabled={footerControlsDisabled}
+            onChange={(e) =>
+              setExperienceMode(e.target.value as ExperienceModeKey)
+            }
+            data-testid="experience-mode-select"
+            className="min-h-11 min-w-[10rem]"
+          >
+            {EXPERIENCE_MODE_OPTIONS.map((opt) => (
+              <option
+                key={opt.key}
+                value={opt.key}
+                disabled={!unlockedExperienceModes.has(opt.csvToken)}
+              >
+                {t(
+                  `manager:selectQuizz.experienceMode.options.${opt.key}.name`,
+                )}
+              </option>
+            ))}
+          </Select>
+        </LabelRow>
+      )}
+
+      {config.teamMode === true && (
+        <LabelRow
+          label={t("manager:gameMode.teamMode")}
+          htmlFor="play-team-mode"
+        >
+          <Select
+            id="play-team-mode"
+            value={teamMode || selectedRequiresTeams ? teamAssignment : "off"}
+            disabled={footerControlsDisabled || selectedRequiresTeams}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === "off") {
+                setTeamMode(false)
+              } else {
+                setTeamMode(true)
+                setTeamAssignment(v as "self" | "auto")
+              }
+            }}
+            data-testid="play-team-mode"
+            className="min-h-11 min-w-[9rem]"
+          >
+            {!selectedRequiresTeams && (
+              <option value="off">
+                {t("common:off", { defaultValue: "Aus" })}
+              </option>
+            )}
+            <option value="self">
+              {t("manager:selectQuizz.teamAssignment.self")}
+            </option>
+            <option value="auto">
+              {t("manager:selectQuizz.teamAssignment.auto")}
+            </option>
+          </Select>
+        </LabelRow>
+      )}
+
+      {config.klassenEnabled === true && (
+        <LabelRow
+          label={t("manager:gameMode.klassenMode")}
+          htmlFor="play-klassen-mode"
+        >
+          <Select
+            id="play-klassen-mode"
+            value={klassenMode ? "on" : "off"}
+            disabled={footerControlsDisabled}
+            onChange={(e) => setKlassenMode(e.target.value === "on")}
+            data-testid="play-klassen-mode"
+            className="min-h-11 min-w-[8rem]"
+          >
+            <option value="off">
+              {t("common:off", { defaultValue: "Aus" })}
+            </option>
+            <option value="on">{t("common:on", { defaultValue: "An" })}</option>
+          </Select>
+        </LabelRow>
+      )}
+
+      {config.klassenEnabled === true && klassenMode && (
+        <LabelRow
+          label={t("manager:selectQuizz.selectClass")}
+          htmlFor="class-select"
+        >
+          <Select
+            id="class-select"
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            data-testid="class-select"
+            disabled={footerControlsDisabled}
+            className="min-h-11 min-w-[10rem]"
+          >
+            <option value="">{t("manager:selectQuizz.chooseClass")}</option>
+            {classes
+              .filter((cls) => (cls as { active?: boolean }).active !== false)
+              .map((cls) => (
+                <option key={cls.id} value={String(cls.id)}>
+                  {cls.name}
+                </option>
+              ))}
+          </Select>
+        </LabelRow>
+      )}
+
+      {endScreenModesList.length > 1 && (
+        <LabelRow
+          label={t("manager:gameMode.endScreenSelectTitle")}
+          htmlFor="endscreen-select"
+        >
+          <Select
+            id="endscreen-select"
+            value={endScreen}
+            disabled={footerControlsDisabled}
+            onChange={(e) => setEndScreen(e.target.value)}
+            className="min-h-11 min-w-[9rem]"
+          >
+            {endScreenModesList.map((mode) => (
+              <option key={mode} value={mode}>
+                {t(`manager:gameMode.endScreenMode.${mode}`)}
+              </option>
+            ))}
+          </Select>
+        </LabelRow>
+      )}
+
+      <ParticipantCapSetting
+        variant="compact"
+        value={participantCap}
+        onChange={setParticipantCap}
+        disabled={footerControlsDisabled}
+        testIdPrefix="select-quizz-"
+      />
+    </div>
+  )
 
   return (
     <>
@@ -476,196 +648,6 @@ const ConfigSelectQuizz = () => {
             className="min-h-11 w-full rounded-[var(--radius-theme)]"
           />
         </div>
-
-        {/* Keep start options in page content; compact footer contains actions only. */}
-        <FormSection
-          title={t("manager:selectQuizz.optionsTitle", {
-            defaultValue: "Startoptionen",
-          })}
-          className="mb-4 shrink-0"
-        >
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:gap-4">
-            {config.scoringMode !== undefined && (
-              <LabelRow
-                label={t("manager:gameMode.speedMode")}
-                htmlFor="play-scoring-mode"
-              >
-                <Select
-                  id="play-scoring-mode"
-                  value={scoringMode}
-                  disabled={footerControlsDisabled}
-                  onChange={(e) =>
-                    setScoringMode(
-                      e.target.value === "accuracy" ? "accuracy" : "speed",
-                    )
-                  }
-                  data-testid="play-scoring-mode"
-                  className="min-h-11 min-w-[9rem]"
-                >
-                  <option value="speed">
-                    {t("manager:gameMode.speedMode")}
-                  </option>
-                  <option value="accuracy">
-                    {t("manager:gameMode.accuracyMode", {
-                      defaultValue: "Genauigkeit",
-                    })}
-                  </option>
-                </Select>
-              </LabelRow>
-            )}
-
-            {experienceModesActive && (
-              <LabelRow
-                label={t("manager:selectQuizz.experienceMode.label")}
-                htmlFor="play-experience-mode"
-              >
-                <Select
-                  id="play-experience-mode"
-                  value={experienceMode}
-                  disabled={footerControlsDisabled}
-                  onChange={(e) =>
-                    setExperienceMode(e.target.value as ExperienceModeKey)
-                  }
-                  data-testid="experience-mode-select"
-                  className="min-h-11 min-w-[10rem]"
-                >
-                  {EXPERIENCE_MODE_OPTIONS.map((opt) => (
-                    <option
-                      key={opt.key}
-                      value={opt.key}
-                      disabled={!unlockedExperienceModes.has(opt.csvToken)}
-                    >
-                      {t(
-                        `manager:selectQuizz.experienceMode.options.${opt.key}.name`,
-                      )}
-                    </option>
-                  ))}
-                </Select>
-              </LabelRow>
-            )}
-
-            {config.teamMode === true && (
-              <LabelRow
-                label={t("manager:gameMode.teamMode")}
-                htmlFor="play-team-mode"
-              >
-                <Select
-                  id="play-team-mode"
-                  value={
-                    teamMode || selectedRequiresTeams ? teamAssignment : "off"
-                  }
-                  disabled={footerControlsDisabled || selectedRequiresTeams}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    if (v === "off") {
-                      setTeamMode(false)
-                    } else {
-                      setTeamMode(true)
-                      setTeamAssignment(v as "self" | "auto")
-                    }
-                  }}
-                  data-testid="play-team-mode"
-                  className="min-h-11 min-w-[9rem]"
-                >
-                  {!selectedRequiresTeams && (
-                    <option value="off">
-                      {t("common:off", { defaultValue: "Aus" })}
-                    </option>
-                  )}
-                  <option value="self">
-                    {t("manager:selectQuizz.teamAssignment.self")}
-                  </option>
-                  <option value="auto">
-                    {t("manager:selectQuizz.teamAssignment.auto")}
-                  </option>
-                </Select>
-              </LabelRow>
-            )}
-
-            {config.klassenEnabled === true && (
-              <LabelRow
-                label={t("manager:gameMode.klassenMode")}
-                htmlFor="play-klassen-mode"
-              >
-                <Select
-                  id="play-klassen-mode"
-                  value={klassenMode ? "on" : "off"}
-                  disabled={footerControlsDisabled}
-                  onChange={(e) => setKlassenMode(e.target.value === "on")}
-                  data-testid="play-klassen-mode"
-                  className="min-h-11 min-w-[8rem]"
-                >
-                  <option value="off">
-                    {t("common:off", { defaultValue: "Aus" })}
-                  </option>
-                  <option value="on">
-                    {t("common:on", { defaultValue: "An" })}
-                  </option>
-                </Select>
-              </LabelRow>
-            )}
-
-            {config.klassenEnabled === true && klassenMode && (
-              <div className="xl:col-span-2">
-                <LabelRow
-                  label={t("manager:selectQuizz.selectClass")}
-                  htmlFor="class-select"
-                >
-                  <Select
-                    id="class-select"
-                    value={classId}
-                    onChange={(e) => setClassId(e.target.value)}
-                    data-testid="class-select"
-                    disabled={footerControlsDisabled}
-                    className="min-h-11 min-w-[10rem]"
-                  >
-                    <option value="">
-                      {t("manager:selectQuizz.chooseClass")}
-                    </option>
-                    {classes
-                      .filter(
-                        (cls) => (cls as { active?: boolean }).active !== false,
-                      )
-                      .map((cls) => (
-                        <option key={cls.id} value={String(cls.id)}>
-                          {cls.name}
-                        </option>
-                      ))}
-                  </Select>
-                </LabelRow>
-              </div>
-            )}
-
-            {endScreenModesList.length > 1 && (
-              <LabelRow
-                label={t("manager:gameMode.endScreenSelectTitle")}
-                htmlFor="endscreen-select"
-              >
-                <Select
-                  id="endscreen-select"
-                  value={endScreen}
-                  disabled={footerControlsDisabled}
-                  onChange={(e) => setEndScreen(e.target.value)}
-                  className="min-h-11 min-w-[9rem]"
-                >
-                  {endScreenModesList.map((mode) => (
-                    <option key={mode} value={mode}>
-                      {t(`manager:gameMode.endScreenMode.${mode}`)}
-                    </option>
-                  ))}
-                </Select>
-              </LabelRow>
-            )}
-
-            <ParticipantCapSetting
-              variant="compact"
-              value={participantCap}
-              onChange={setParticipantCap}
-              disabled={footerControlsDisabled}
-              testIdPrefix="select-quizz-"
-            />
-          </div>
-        </FormSection>
 
         <motion.div
           role="radiogroup"
@@ -696,6 +678,18 @@ const ConfigSelectQuizz = () => {
         </motion.div>
       </div>
 
+      <DialogPanel
+        open={isOptionsPanelOpen}
+        onOpenChange={setIsOptionsPanelOpen}
+        titleId="play-options-title"
+        contentId="play-options-panel"
+        contentTestId="play-options-panel"
+        scrollable
+        title={startOptionsTitle}
+      >
+        {optionsContent}
+      </DialogPanel>
+
       <ActionFooterCompact
         instanceId="play"
         actions={[
@@ -710,6 +704,19 @@ const ConfigSelectQuizz = () => {
             },
             disabled: actionDisabledReasons.copy !== undefined,
             disabledReason: actionDisabledReasons.copy,
+          },
+          {
+            key: "play-options",
+            iconName: "SlidersHorizontal",
+            intent: "secondary",
+            testId: "play-options-btn",
+            label: startOptionsTitle,
+            onClick: () => setIsOptionsPanelOpen(true),
+            popup: {
+              hasPopup: "dialog",
+              controls: "play-options-panel",
+              expanded: isOptionsPanelOpen,
+            },
           },
           {
             key: "play-start",

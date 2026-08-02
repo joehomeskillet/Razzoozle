@@ -1,7 +1,7 @@
 import type { ManagerConfig } from "@razzoozle/common/types/manager"
 import type { QuizzMeta } from "@razzoozle/common/types/game"
 import { renderToStaticMarkup } from "react-dom/server"
-import type { ReactNode } from "react"
+import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 import ConfigSelectQuizz, {
@@ -27,7 +27,7 @@ vi.mock("motion/react", () => ({
       children,
       className,
     }: {
-      children: ReactNode
+      children: React.ReactNode
       className?: string
     }) => <div className={className}>{children}</div>,
   },
@@ -36,6 +36,78 @@ vi.mock("motion/react", () => ({
 vi.mock("react-hot-toast", () => ({
   default: { error: vi.fn(), success: vi.fn() },
 }))
+
+let lastDialogContentProps: Record<string, unknown> | null = null
+
+vi.mock("@radix-ui/react-dialog", () => {
+  const Root = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  const Portal = ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  )
+  const Overlay = ({
+    className,
+    children,
+    ...props
+  }: {
+    className?: string
+    children?: React.ReactNode
+    [key: string]: unknown
+  }) => (
+    <div className={className} {...props}>
+      {children}
+    </div>
+  )
+  const Content = ({
+    children,
+    className,
+    ...props
+  }: {
+    children: React.ReactNode
+    className?: string
+    [key: string]: unknown
+  }) => {
+    lastDialogContentProps = props
+    return (
+      <div className={className} {...props}>
+        {children}
+      </div>
+    )
+  }
+  const Title = ({
+    children,
+    ...props
+  }: {
+    children: React.ReactNode
+    [key: string]: unknown
+  }) => <h2 {...props}>{children}</h2>
+  const Close = ({
+    asChild,
+    children,
+    ...props
+  }: {
+    asChild?: boolean
+    children: React.ReactNode
+    [key: string]: unknown
+  }) => {
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(
+        children as React.ReactElement,
+        props as React.ComponentProps<"button">,
+      )
+    }
+
+    return <button {...props}>{children}</button>
+  }
+
+  return {
+    Root,
+    Portal,
+    Overlay,
+    Content,
+    Title,
+    Close,
+  }
+})
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
@@ -77,7 +149,7 @@ vi.mock("react-dom", async () => {
   const actual = await vi.importActual<typeof import("react-dom")>("react-dom")
   return {
     ...actual,
-    createPortal: (children: ReactNode) => children,
+    createPortal: (children: React.ReactNode) => children,
   }
 })
 
@@ -231,38 +303,68 @@ const renderPlay = (config: ManagerConfig = fullConfig) => {
   mockedEmit.mockClear()
   currentUseConfig.mockReset()
   currentUseConfig.mockReturnValue(config)
+  lastDialogContentProps = null
   return renderToStaticMarkup(<ConfigSelectQuizz />)
 }
 
 describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", () => {
-  it("keeps start options single-column until the viewport can fit both label rows", () => {
+  it("keeps start options in a single column inside the options panel", () => {
     const html = renderPlay()
+    const panelMarker = /<div[^>]*data-testid="play-options-panel"[^>]*>/.exec(
+      html,
+    )?.[0]
 
-    expect(html).toContain(
-      'class="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:gap-4"',
-    )
-    expect(html).not.toContain("sm:grid-cols-2")
+    expect(panelMarker).toBeTruthy()
+    expect(panelMarker).toContain('id="play-options-panel"')
+    expect(panelMarker).toContain('class="')
+    const classMatch = /class="([^"]+)"/.exec(panelMarker ?? "")
+
+    expect(classMatch).toBeTruthy()
+    expect(classMatch?.[1]).toContain("max-h-dvh")
+    expect(classMatch?.[1]).toContain("overflow-y-auto")
+    expect(panelMarker).toContain('data-testid="play-options-panel"')
+
+    const panelStart = html.indexOf('data-testid="play-options-panel"')
+    expect(panelStart).toBeGreaterThan(-1)
+    const panelHtml = html.slice(panelStart)
+    expect(panelHtml).toContain('class="grid grid-cols-1 gap-3"')
+    expect(panelHtml).not.toContain("xl:grid-cols-2")
+    expect(panelHtml).not.toContain("xl:gap-4")
   })
 
-  it("renders all six start-option control families in page content, not the old footer zones", () => {
+  it("does not render the six start-option control families in always-visible page content", () => {
     const html = renderPlay()
+    const panelIndex = html.indexOf('data-testid="play-options-panel"')
+    const outsidePanelHtml = html.slice(0, Math.max(panelIndex, 0))
+    const panelMarker = /<div[^>]*data-testid="play-options-panel"[^>]*>/.exec(
+      html,
+    )?.[0]
+
+    expect(panelIndex).toBeGreaterThan(-1)
+    expect(panelMarker).toBeTruthy()
+    expect(panelMarker).toContain('id="play-options-panel"')
+    expect(panelMarker).toContain("max-h-dvh")
+    expect(panelMarker).toContain("overflow-y-auto")
 
     // Scoring, experience, team mode, class mode, endscreen, participant cap.
-    expect(html).toContain('data-testid="play-scoring-mode"')
-    expect(html).toContain('data-testid="experience-mode-select"')
-    expect(html).toContain('data-testid="play-team-mode"')
-    expect(html).toContain('data-testid="play-klassen-mode"')
-    expect(html).toContain('id="endscreen-select"')
-    expect(html).toContain('data-testid="select-quizz-participant-cap-setting"')
+    const controlMarkers = [
+      'data-testid="play-scoring-mode"',
+      'data-testid="experience-mode-select"',
+      'data-testid="play-team-mode"',
+      'data-testid="play-klassen-mode"',
+      'id="endscreen-select"',
+      'data-testid="select-quizz-participant-cap-setting"',
+    ]
 
-    expect(html).not.toContain('data-testid="action-footer-controls"')
-    expect(html).not.toContain('data-testid="action-footer-summary"')
-    expect(html).not.toContain('data-testid="action-footer-actions"')
-    expect(html).not.toContain('data-testid="action-footer-options-disclosure"')
-    expect(html).not.toContain('data-testid="action-footer-options-changed"')
+    for (const marker of controlMarkers) {
+      expect(outsidePanelHtml).not.toContain(marker)
+      expect(html.indexOf(marker)).toBeGreaterThan(panelIndex)
+    }
+
+    expect(html).toContain('data-testid="play-options-panel"')
   })
 
-  it("registers a compact ActionFooterCompact bar with instanceId=play and exactly two icon actions", () => {
+  it("registers a compact ActionFooterCompact bar with instanceId=play and three icon actions", () => {
     const html = renderPlay()
 
     expect(html).toContain('data-testid="action-footer-compact"')
@@ -270,15 +372,82 @@ describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", 
     expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-label="Page actions"/)
 
     expect(html).toContain('data-testid="play-copy-btn"')
+    expect(html).toContain('data-testid="play-options-btn"')
     expect(html).toContain('data-testid="quizz-start-btn"')
+    expect(html).toContain('data-action-key="play-copy"')
+    expect(html).toContain('data-action-key="play-options"')
+    expect(html).toContain('data-action-key="play-start"')
+
+    const optionsButton =
+      /<button[^>]*data-testid="play-options-btn"[^>]*>/.exec(html)?.[0]
+    expect(optionsButton).toBeTruthy()
+    expect(optionsButton).toContain('id="play-options-panel-trigger"')
+    expect(optionsButton).toContain('data-action-key="play-options"')
+    expect(optionsButton).toContain('aria-haspopup="dialog"')
+    expect(optionsButton).toContain('aria-controls="play-options-panel"')
+    expect(optionsButton).toContain('aria-expanded="false"')
+    expect(optionsButton).toContain("h-11")
+    expect(optionsButton).toContain("w-11")
+
+    const optionsSection = html.slice(
+      html.indexOf('data-testid="play-options-btn"'),
+    )
+    const optionsTitle = /title="([^"]+)"/.exec(optionsButton ?? "")?.[1]
+    const optionsAria = /aria-label="([^"]+)"/.exec(optionsButton ?? "")?.[1]
+    const optionsTooltip = /<span aria-hidden="true"[^>]*>([^<]+)<\/span>/.exec(
+      optionsSection,
+    )?.[1]
+    expect(optionsTitle).toBeTruthy()
+    expect(optionsAria).toBeTruthy()
+    expect(optionsTitle).toBe(optionsAria)
+    expect(optionsTooltip).toBeTruthy()
+    if (optionsTitle !== undefined) {
+      expect(optionsTooltip).toContain(optionsTitle)
+    }
+
     expect(html.indexOf("play-copy-btn")).toBeGreaterThan(-1)
+    expect(html.indexOf("play-options-btn")).toBeGreaterThan(-1)
     expect(html.indexOf("quizz-start-btn")).toBeGreaterThan(-1)
     expect(html.indexOf("play-copy-btn")).toBeLessThan(
+      html.indexOf("play-options-btn"),
+    )
+    expect(html.indexOf("play-options-btn")).toBeLessThan(
       html.indexOf("quizz-start-btn"),
     )
   })
 
-  it("keeps quizz-start-btn test id and the canonical copy/start action keys (one primary, one secondary)", () => {
+  it("passes aria-describedby={undefined} to DialogPanel content", () => {
+    renderPlay()
+
+    expect(lastDialogContentProps).not.toBeNull()
+    expect(lastDialogContentProps?.["aria-describedby"]).toBeUndefined()
+  })
+
+  it("restores focus to the deterministic popup trigger on dialog close", () => {
+    const originalDocument = (globalThis as Record<string, unknown>).document
+    const focusTarget = { focus: vi.fn() }
+    const getElementById = vi.fn().mockReturnValue(focusTarget)
+    ;(globalThis as Record<string, unknown>).document = { getElementById }
+
+    renderPlay()
+
+    const onCloseAutoFocus = lastDialogContentProps?.onCloseAutoFocus as
+      | ((event: { preventDefault: () => void }) => void)
+      | undefined
+
+    expect(onCloseAutoFocus).toBeTypeOf("function")
+
+    const preventDefault = vi.fn()
+    onCloseAutoFocus?.({ preventDefault })
+
+    expect(preventDefault).toHaveBeenCalledTimes(1)
+    expect(getElementById).toHaveBeenCalledWith("play-options-panel-trigger")
+    expect(focusTarget.focus).toHaveBeenCalledTimes(1)
+
+    ;(globalThis as Record<string, unknown>).document = originalDocument
+  })
+
+  it("keeps quizz-start-btn test id and the canonical copy/start action keys", () => {
     const html = renderPlay()
 
     expect(html).toContain('data-testid="quizz-start-btn"')
@@ -286,9 +455,11 @@ describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", 
     expect(html).toContain('data-action-key="play-start"')
     expect(html).toContain('data-testid="play-copy-btn"')
     expect(html).toContain('data-testid="quizz-start-btn"')
+    expect(html).toContain('data-testid="play-options-btn"')
+    expect(html).toContain('data-action-key="play-options"')
   })
 
-  it("disables both compact actions when no quiz is selected and surfaces a translated disabled reason", () => {
+  it("keeps copy/start disabled before quiz selection while keeping options action enabled", () => {
     currentUseConfig.mockReset()
     currentUseConfig.mockReturnValue(fullConfig)
     mockedEmit.mockClear()
@@ -320,6 +491,16 @@ describe("ConfigSelectQuizz — compact footer migration (WP wp-ea1a389d5d03)", 
 
     expect(copyMatch?.[0]).toMatch(/aria-label="[^"]+"/)
     expect(startMatch?.[0]).toMatch(/aria-label="[^"]+"/)
+
+    const optionsMatch =
+      /<button[^>]*data-action-key="play-options"[^>]*>/.exec(html)?.[0]
+    expect(optionsMatch).toBeTruthy()
+    expect(optionsMatch).not.toContain('aria-disabled="true"')
+    expect(optionsMatch).toContain('aria-expanded="false"')
+    expect(optionsMatch).toContain('aria-haspopup="dialog"')
+    expect(optionsMatch).toContain('aria-controls="play-options-panel"')
+    expect(optionsMatch).toMatch(/title="[^"]+"/)
+    expect(optionsMatch).toMatch(/aria-label="[^"]+"/)
   })
 
   it("uses the class-required reason only when a selected quiz lacks a class", () => {

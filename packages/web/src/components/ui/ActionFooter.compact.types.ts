@@ -23,6 +23,7 @@ export type CompactIconName =
   | "Template"
   | "Delete"
   | "Overflow"
+  | "SlidersHorizontal"
 
 /**
  * Single icon-only action rendered by `CompactIconBar`. 44×44 touch target,
@@ -49,6 +50,18 @@ export interface CompactIconBarAction {
   disabled?: boolean
   /** Accessible explanation announced when the action is disabled. */
   disabledReason?: string
+  /**
+   * Optional popup contract when this action opens a popover/dialog panel.
+   * `aria-haspopup` + expanded state + `aria-controls` are projected as-is.
+   */
+  popup?: {
+    /** Token from ARIA for `aria-haspopup`. */
+    hasPopup: "dialog" | "menu" | "listbox" | "tree" | "grid"
+    /** `aria-controls` target id for the popup region. */
+    controls: string
+    /** Controlled expansion state for `aria-expanded`. */
+    expanded?: boolean
+  }
 }
 
 /**

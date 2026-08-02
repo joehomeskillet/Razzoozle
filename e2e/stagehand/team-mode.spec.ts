@@ -13,6 +13,7 @@ import { newStagehand } from './config';
 import quizFixture from '../fixtures/all-types-quiz.json';
 
 const BASE_URL = process.env.E2E_BASE_URL ?? 'https://rust.razzoozle.xyz';
+const TEAM_PICKER_SELECTOR = 'div[role=group][aria-label] button[aria-pressed]';
 
 function requireE2EPassword(): string {
   const pw = process.env.E2E_PW;
@@ -32,6 +33,23 @@ async function waitForTestId(page: Page, id: string, timeout = 15_000) {
 }
 async function waitForTestIdPrefix(page: Page, prefix: string, timeout = 15_000) {
   await page.waitForSelector(testIdPrefixSel(prefix), { state: 'visible', timeout });
+}
+
+async function setNativeSelectValue(page: Page, testId: string, value: string) {
+  await page.evaluate(
+    (target: [string, string]) => {
+      const [id, nextValue] = target as [string, string];
+      const el = document.querySelector(`[data-testid="${id}"]`) as HTMLSelectElement | null;
+      if (!el) throw new Error(`Missing required select [data-testid="${id}"]`);
+      const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
+      if (!descriptor?.set) throw new Error(`No value setter for [data-testid="${id}"]`);
+
+      descriptor.set.call(el, nextValue);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    [testId, value],
+  );
 }
 
 async function resolveQuizId(page: Page): Promise<string> {
@@ -113,28 +131,6 @@ async function ensureTeamModeCapability(page: Page) {
   await page.waitForTimeout(500);
 }
 
-async function enableTeamOnStartPanel(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const nodes = Array.from(document.querySelectorAll('label, button, [role="switch"], div, span'));
-    for (const el of nodes) {
-      const t = (el.textContent ?? '').toLowerCase();
-      if (!(t.includes('team mode') || t.includes('teammodus') || t.includes('team mode') || t.includes('teams'))) {
-        continue;
-      }
-      // Prefer switch near label
-      let sw: Element | null = el.matches('[role="switch"]') ? el : null;
-      sw = sw || el.querySelector('[role="switch"]');
-      sw = sw || el.closest('div')?.querySelector('[role="switch"]') || null;
-      if (sw) {
-        const pressed = sw.getAttribute('aria-checked') === 'true' || sw.getAttribute('data-state') === 'checked';
-        if (!pressed) (sw as HTMLElement).click();
-        return true;
-      }
-    }
-    return false;
-  });
-}
-
 async function run() {
   const managerSh: Stagehand = newStagehand();
   const p1Sh: Stagehand = newStagehand();
@@ -162,36 +158,19 @@ async function run() {
     await waitForTestIdPrefix(manager, 'quizz-row-');
     const quizId = await resolveQuizId(manager);
     await manager.locator(testIdSel(`quizz-row-${quizId}`)).click();
+    await waitForTestId(manager, 'play-options-btn');
+
+    await manager.locator(testIdSel('play-options-btn')).click();
+    await waitForTestId(manager, 'play-options-panel');
+    await waitForTestId(manager, 'play-team-mode');
+    await setNativeSelectValue(manager, 'play-team-mode', 'self');
+    await manager.keyboard.press('Escape');
+    await manager.waitForSelector(testIdSel('play-options-panel'), { state: 'hidden' });
+    await manager.waitForSelector(testIdSel('play-team-mode'), { state: 'hidden' });
+
     await waitForTestId(manager, 'quizz-start-btn');
-
-    const toggled = await enableTeamOnStartPanel(manager);
-    if (!toggled) {
-      throw new Error('teamMode toggle not available (config.teamMode !== true) — feature not enabled in config/game.json');
-    }
-    console.log('Team mode toggled on start panel');
-
     await manager.locator(testIdSel('quizz-start-btn')).click();
-    // Start can require a second click if mode toggles dirty the form.
-    const pinDeadline = Date.now() + 25_000;
-    let pinVisible = false;
-    while (Date.now() < pinDeadline) {
-      if (await manager.locator(testIdSel('game-pin')).isVisible().catch(() => false)) {
-        pinVisible = true;
-        break;
-      }
-      // Retry start if still on panel
-      if (await manager.locator(testIdSel('quizz-start-btn')).isVisible().catch(() => false)) {
-        await manager.locator(testIdSel('quizz-start-btn')).click().catch(() => {});
-      }
-      await manager.waitForTimeout(800);
-    }
-    if (!pinVisible) {
-      const body = await manager.evaluate(() => document.body.innerText.toLowerCase());
-      if (body.includes('rate') || body.includes('limit') || body.includes('zu viele') || body.includes('throttl')) {
-        throw new Error('game-create rate limited (10/h) — test cannot continue, rate limit reached');
-      }
-      throw new Error('game-pin never appeared after team-mode start (25s timeout) — start failed, possibly rate-limited or server error');
-    }
+    await waitForTestId(manager, 'game-pin');
     const { pin } = await managerSh.extract(
       'Locate the 6-digit PIN code displayed on the screen for players to join.',
       PinSchema,
@@ -200,34 +179,15 @@ async function run() {
     await joinPlayer(p1, pin, 'Team-A-P1');
     await joinPlayer(p2, pin, 'Team-B-P2');
 
-    // Team picker in lobby Wait UI (aria-label from game:teams.pick)
-    const teamUi = await p1.evaluate(() => {
-      const text = document.body.innerText.toLowerCase();
-      const buttons = Array.from(document.querySelectorAll('button[aria-pressed], button'));
-      const teamBtns = buttons.filter((b) => {
-        const a = (b.getAttribute('aria-label') ?? b.textContent ?? '').toLowerCase();
-        return a.includes('red') || a.includes('blue') || a.includes('team') || a.includes('rot') || a.includes('blau');
-      });
-      return {
-        hasTeamText: text.includes('team') || text.includes('mannschaft'),
-        teamButtonCount: teamBtns.length,
-      };
-    });
-
-    if (!teamUi.hasTeamText && teamUi.teamButtonCount < 2) {
-      // Still accept waiting-room with 2 players if teamMode payload is soft
-      console.warn(`WARNING: weak team UI signal ${JSON.stringify(teamUi)}`);
-    } else {
-      console.log(`Team lobby UI OK: ${JSON.stringify(teamUi)}`);
-      // Pick a team if buttons exist
-      await p1.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button'));
-        const btn = buttons.find((b) => {
-          const a = (b.getAttribute('aria-label') ?? b.textContent ?? '').toLowerCase();
-          return a.includes('red') || a.includes('rot') || a.includes('blue') || a.includes('blau');
-        });
-        (btn as HTMLButtonElement | undefined)?.click();
-      });
+    const teamButtons = p1.locator(TEAM_PICKER_SELECTOR);
+    const teamButtonCount = await teamButtons.count();
+    console.log(`Team picker has ${teamButtonCount} buttons`);
+    if (teamButtonCount < 2) throw new Error(`Team picker contract missing: expected at least 2 selectable teams, got ${teamButtonCount}`);
+    const firstTeam = teamButtons.first();
+    await firstTeam.click();
+    const firstPressed = await firstTeam.getAttribute('aria-pressed');
+    if (firstPressed !== 'true') {
+      throw new Error(`Team selection did not apply: first team button aria-pressed is ${String(firstPressed)}`);
     }
 
     console.log('W6-7 team-mode PASSED');

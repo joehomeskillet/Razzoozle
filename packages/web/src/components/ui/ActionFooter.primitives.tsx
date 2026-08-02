@@ -1,6 +1,7 @@
 import clsx from "clsx"
 import {
   ChevronDown,
+  SlidersHorizontal,
   Copy,
   Ellipsis,
   Eye,
@@ -277,6 +278,7 @@ const ICON_BAR_ICON_MAP: Record<CompactIconName, LucideIcon> = {
   Template: LayoutTemplate,
   Delete: Trash2,
   Overflow: Ellipsis,
+  SlidersHorizontal,
 }
 
 const ICON_BAR_INTENT_CLASSES: Record<CompactActionIntent, string> = {
@@ -299,16 +301,23 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
   const Icon = ICON_BAR_ICON_MAP[action.iconName]
   const intent = action.intent ?? "ghost"
   const disabledDescriptionId = `${useId()}-disabled-reason`
+  const popupTriggerId = action.popup?.controls
+    ? `${action.popup.controls}-trigger`
+    : undefined
   const describedBy =
     action.disabled && action.disabledReason ? disabledDescriptionId : undefined
 
   return (
     <button
       type="button"
+      id={popupTriggerId}
       onClick={action.disabled ? undefined : action.onClick}
       aria-label={action.label}
       aria-pressed={action.toggle ? action.active : undefined}
       aria-disabled={action.disabled || undefined}
+      aria-haspopup={action.popup?.hasPopup}
+      aria-controls={action.popup?.controls}
+      aria-expanded={action.popup?.expanded}
       aria-describedby={describedBy}
       title={
         action.disabled && action.disabledReason
@@ -318,7 +327,7 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
       data-action-key={action.key}
       data-testid={action.testId ?? `icon-bar-button-${action.key}`}
       className={clsx(
-        "inline-flex h-11 w-11 items-center justify-center rounded-lg",
+        "group relative inline-flex h-11 w-11 items-center justify-center rounded-lg",
         "transition-colors motion-reduce:transition-none",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
         action.disabled
@@ -330,6 +339,19 @@ export function IconBarButton({ action, className }: IconBarButtonProps) {
       )}
     >
       <Icon className="size-5" aria-hidden strokeWidth={2} />
+      <span
+        aria-hidden="true"
+        className={clsx(
+          "pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2",
+          "invisible z-10 rounded-[var(--radius-theme)] whitespace-nowrap",
+          "border border-[var(--line)] bg-[var(--surface-2)] px-2 py-1 text-xs",
+          "text-[var(--ink)] opacity-0 transition-opacity motion-reduce:transition-none",
+          "group-hover:visible group-hover:opacity-100",
+          "group-focus-visible:visible group-focus-visible:opacity-100",
+        )}
+      >
+        {action.label}
+      </span>
       {describedBy && (
         <span id={describedBy} className="sr-only">
           {action.disabledReason}

@@ -11,7 +11,10 @@ export interface DialogPanelProps {
   titleId: string
   title: ReactNode
   children: ReactNode
+  contentId?: string
+  contentTestId?: string
   maxWidth?: "md" | "lg"
+  scrollable?: boolean
 }
 
 // Shared Radix Dialog chrome (overlay + centered content surface + the
@@ -24,8 +27,11 @@ const DialogPanel = ({
   onOpenChange,
   titleId,
   title,
+  contentId,
+  contentTestId,
   children,
   maxWidth = "lg",
+  scrollable = false,
 }: DialogPanelProps) => {
   const { t } = useTranslation()
 
@@ -34,14 +40,32 @@ const DialogPanel = ({
       <Portal>
         <Overlay className="fixed inset-0 z-40 bg-black/40" />
         <Dialog.Content
+          aria-describedby={undefined}
           aria-labelledby={titleId}
+          onCloseAutoFocus={
+            contentId
+              ? (event) => {
+                  event.preventDefault()
+                  if (typeof document === "undefined") return
+                  document
+                    .getElementById(`${contentId}-trigger`)
+                    ?.focus()
+                }
+              : undefined
+          }
           className={clsx(
-            "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-[var(--shadow-flat)]",
+            "fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface)] p-6 shadow-[var(--shadow-flat)]",
+            scrollable && "max-h-dvh overflow-y-auto",
             maxWidth === "md" ? "max-w-md" : "max-w-lg",
           )}
+          id={contentId}
+          data-testid={contentTestId}
         >
           <div className="flex items-center justify-between">
-            <Dialog.Title id={titleId} className="text-lg font-semibold text-[var(--ink)]">
+            <Dialog.Title
+              id={titleId}
+              className="text-lg font-semibold text-[var(--ink)]"
+            >
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>

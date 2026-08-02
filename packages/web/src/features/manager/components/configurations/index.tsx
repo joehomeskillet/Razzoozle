@@ -110,8 +110,8 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Play,
     component: ConfigSelectQuizz,
     actionFooter: "required",
-    // WP wp-ea1a389d5d03 — six start-option controls moved to visible page
-    // content; the bottom bar carries only the Copy + Start icon actions.
+    // WP wp-ea1a389d5d03 — start-option controls moved into options dialog;
+    // bottom bar order remains Copy, Spieloptionen, Start.
     actionFooterVariant: "compact",
   },
   {
