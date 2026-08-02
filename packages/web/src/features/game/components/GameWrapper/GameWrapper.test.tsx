@@ -258,6 +258,21 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     return match![1]
   }
 
+  const toolbarClassOf = (html: string, variant: "flow" | "overlay") => {
+    const match = new RegExp(
+      `<div[^>]*data-testid="presenter-toolbar"[^>]*data-toolbar-variant="${variant}"[^>]*class="([^\"]*)"`,
+    ).exec(html)
+    expect(match).not.toBeNull()
+    return match![1]
+  }
+
+  const expectNoShellSurface = (className: string) => {
+    expect(className).not.toMatch(/(^|\s)bg-[^\s]+(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)border[^\s]*[^-]?(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)shadow[^\s]*(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)backdrop-blur-[^\s]+(\s|$)/)
+  }
+
   it.each([true, false])(
     "suppresses manager chrome and removes content padding when controls=$controls",
     (controls) => {
@@ -287,6 +302,27 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
       expect(contentShellClass).not.toContain("pb-4")
     },
   )
+
+  it("keeps flow/overlay presenter toolbar shells transparent (no bg/border/shadow/backdrop classes)", () => {
+    const flowHtml = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic presenter</div>
+      </GameWrapper>,
+    )
+    const overlayHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        presenterLayout="experience-immersive"
+      >
+        <div>immersive presenter</div>
+      </GameWrapper>,
+    )
+
+    expectNoShellSurface(toolbarClassOf(flowHtml, "flow"))
+    expectNoShellSurface(toolbarClassOf(overlayHtml, "overlay"))
+  })
 
   it("experience-immersive keeps floating overlay toolbar and full-bleed content", () => {
     const html = renderToStaticMarkup(
