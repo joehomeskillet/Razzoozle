@@ -183,6 +183,12 @@ const ManagerGamePage = () => {
         presenterLayout={
           isExperienceImmersive ? "experience-immersive" : "normal"
         }
+        // FB-HUD4: flower-battle wants the flow toolbar visible AND the canvas
+        // full-bleed (no cream gap between them). Decouples the two from
+        // the immersive layout so the chips stay normal-looking.
+        fullBleedCanvas={
+          experienceTransition?.mode === "flowerBattle"
+        }
         onNext={handleSkip}
         // Exit (LogOut) button opens the confirm dialog instead of leaving
         // immediately; performExit runs after the host confirms.

@@ -73,6 +73,14 @@ type Props = PropsWithChildren & {
    * full-bleed game surface; `normal` keeps the classic cream + toolbar flow.
    */
   presenterLayout?: PresenterLayout
+  /**
+   * FB-HUD4: keep the flow toolbar visible AND let the content area fill the
+   * remaining viewport (no padding, no overflow). Used by flower-battle
+   * presenter where the classic cream chips should sit on top of a
+   * full-bleed canvas. Independent of `presenterLayout` so flow chrome +
+   * full-bleed canvas can coexist without flipping into immersive mode.
+   */
+  fullBleedCanvas?: boolean
 }
 
 const GameWrapper = ({
@@ -87,6 +95,7 @@ const GameWrapper = ({
   controls = true,
   managerKioskFullBleed = false,
   presenterLayout = "normal",
+  fullBleedCanvas = false,
 }: Props) => {
   const { isConnected, socket } = useSocket()
   const { player } = usePlayerStore()
@@ -171,10 +180,14 @@ const GameWrapper = ({
     manager && presenterLayout === "experience-immersive"
   // Full-bleed content shell: satellite kiosk OR immersive experience on the
   // phone manager — both need the game to own the entire content box.
-  const isContentFullBleed = isManagerKioskFullBleed || isExperienceImmersive
-  // Flow toolbar (classic cream presenter). Immersive keeps controls, but as
-  // an absolute overlay so the canvas is not pushed down.
-  const showFlowToolbar = manager && !isContentFullBleed
+  // FB-HUD4: `fullBleedCanvas` adds a third path that keeps the flow toolbar
+  // visible AND lets the content area fill the remaining viewport.
+  const isContentFullBleed =
+    isManagerKioskFullBleed || isExperienceImmersive || fullBleedCanvas
+  // Flow toolbar (classic cream presenter). Immersive + full-bleed kiosk both
+  // skip the flow toolbar so the canvas owns the viewport; fullBleedCanvas
+  // alone keeps the flow chrome visible on top of the canvas.
+  const showFlowToolbar = manager && !isManagerKioskFullBleed && !isExperienceImmersive
   const showOverlayToolbar = isExperienceImmersive && controls
 
   return (
@@ -293,7 +306,13 @@ const GameWrapper = ({
                 <div
                   data-testid="presenter-toolbar"
                   data-toolbar-variant="flow"
-                  className="flex w-full flex-wrap items-center justify-between gap-2 p-4"
+                  className={clsx(
+                    "flex w-full flex-wrap items-center justify-between gap-2",
+                    // FB-HUD4: fullBleedCanvas keeps the toolbar flush against
+                    // the canvas (no cream margin between them). The chips
+                    // still carry their own p-1 inside.
+                    fullBleedCanvas ? "p-2" : "p-4",
+                  )}
                 >
                   {/* GROUP A: Progress + Auto-Mode */}
                   <div className="hud-chip-cream flex shrink-0 items-center gap-2 p-1">
