@@ -107,7 +107,7 @@ export const PlantTeamCard = ({
       aria-label={t("flowerBattlePresenter.plantCard.ariaLabel", {
         defaultValue: `Team ${displayName} — ${safeStage} von ${safeStageTarget} Fortschritt, ${safePercent} Prozent Sonnenpunkte`,
       })}
-      className="plant-team-card relative isolate w-full min-w-0 rounded-[14px] border border-[var(--border-hairline)] bg-[var(--surface-cream)] px-3 py-2.5 text-ink shadow-[var(--shadow-flat)]"
+      className="plant-team-card relative isolate w-full min-w-0 rounded-[14px] bg-[var(--surface-cream)] px-3 py-2.5 text-ink"
     >
       <div className="flex min-w-0 items-center gap-2">
         <span
