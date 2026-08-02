@@ -371,12 +371,17 @@ const ConfigTheme = () => {
       <ActionFooterCompact
         instanceId="design"
         actions={[
+          // manager:theme.reset / manager:theme.save do NOT exist in any locale's
+          // manager.json (verified WP-1..WP-8, 2026-08-02). Per Handoff §2.B
+          // (no new keys), reuse the closest existing config-save/reset pair
+          // from achievementsConfig — same semantic role (config panel reset +
+          // save), identical key shape, all 6 locales ship them.
           {
             key: "design-reset",
             iconName: "Reset",
             intent: "secondary",
             testId: "design-reset-btn",
-            label: t("manager:theme.reset"),
+            label: t("manager:achievementsConfig.reset"),
             onClick: handleReset,
           },
           {
@@ -384,7 +389,7 @@ const ConfigTheme = () => {
             iconName: "Save",
             intent: "primary",
             testId: "design-save-btn",
-            label: t("manager:theme.save"),
+            label: t("manager:achievementsConfig.save"),
             onClick: handleSave,
           },
         ]}

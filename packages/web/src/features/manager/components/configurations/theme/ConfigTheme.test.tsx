@@ -235,7 +235,7 @@ describe("ConfigTheme — ActionFooterCompact (WP-b-6)", () => {
     )
   })
 
-  it("uses the existing theme.reset / theme.save i18n keys for button labels", () => {
+  it("uses the existing achievementsConfig.reset / achievementsConfig.save i18n keys for button labels", () => {
     const html = renderTheme()
 
     const resetButton =
@@ -247,14 +247,19 @@ describe("ConfigTheme — ActionFooterCompact (WP-b-6)", () => {
 
     // aria-label, title and tooltip text must all carry the same i18n key
     // so screen readers, hover tooltips and the visible bar agree.
+    //
+    // WP-1..WP-8 (2026-08-02): manager:theme.reset / manager:theme.save do not
+    // exist in any locale's manager.json. The fix reuses the closest existing
+    // config-save/reset pair from achievementsConfig (same semantic role,
+    // already used by ConfigAchievements.tsx for its own footer).
     const labelOf = (button: string | undefined) =>
       /aria-label="([^"]+)"/.exec(button ?? "")?.[1]
     const titleOf = (button: string | undefined) =>
       /title="([^"]+)"/.exec(button ?? "")?.[1]
-    expect(labelOf(resetButton)).toBe("manager:theme.reset")
-    expect(labelOf(saveButton)).toBe("manager:theme.save")
-    expect(titleOf(resetButton)).toBe("manager:theme.reset")
-    expect(titleOf(saveButton)).toBe("manager:theme.save")
+    expect(labelOf(resetButton)).toBe("manager:achievementsConfig.reset")
+    expect(labelOf(saveButton)).toBe("manager:achievementsConfig.save")
+    expect(titleOf(resetButton)).toBe("manager:achievementsConfig.reset")
+    expect(titleOf(saveButton)).toBe("manager:achievementsConfig.save")
   })
 
   it("stamps the 44×44 touch target and a reset/save pairing on both actions", () => {
