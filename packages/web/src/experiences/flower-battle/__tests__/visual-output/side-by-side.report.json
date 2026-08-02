@@ -1,0 +1,362 @@
+[
+  {
+    "fixtureId": "2teams-stage-1",
+    "vorher": {
+      "plantHeightsPx": [
+        60,
+        60
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        100,
+        100
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        40,
+        40
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "2teams-stage-4",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        460
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        400
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "3teams-mixed",
+    "vorher": {
+      "plantHeightsPx": [
+        60,
+        320,
+        460
+      ],
+      "visiblePlotCount": 3,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        100,
+        300,
+        400
+      ],
+      "visiblePlotCount": 3,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        40,
+        -20,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "4teams-all-stages",
+    "vorher": {
+      "plantHeightsPx": [
+        60,
+        200,
+        320,
+        460
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        100,
+        200,
+        300,
+        400
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        40,
+        0,
+        -20,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "fertilizer-on-team",
+    "vorher": {
+      "plantHeightsPx": [
+        200,
+        320
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        200,
+        300
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        0,
+        -20
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "acid-rain-on-team",
+    "vorher": {
+      "plantHeightsPx": [
+        320,
+        460
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        300,
+        400
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -20,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "shield-blocks-acid-rain",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        320
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        300
+      ],
+      "visiblePlotCount": 2,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -20
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "sunbeam-and-growth",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        460,
+        460
+      ],
+      "visiblePlotCount": 3,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        400,
+        400
+      ],
+      "visiblePlotCount": 3,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -60,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "damage-hurt",
+    "vorher": {
+      "plantHeightsPx": [
+        320,
+        320,
+        320,
+        320
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        300,
+        300,
+        300,
+        300
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -20,
+        -20,
+        -20,
+        -20
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "game-completed-winner",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        320,
+        200,
+        60
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        300,
+        200,
+        100
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -20,
+        0,
+        40
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "reconnect-latest-revision",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        460,
+        460,
+        460
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        400,
+        400,
+        400
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -60,
+        -60,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  },
+  {
+    "fixtureId": "reduced-motion",
+    "vorher": {
+      "plantHeightsPx": [
+        460,
+        460,
+        460,
+        460
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "nachher": {
+      "plantHeightsPx": [
+        400,
+        400,
+        400,
+        400
+      ],
+      "visiblePlotCount": 4,
+      "cloudCount": 3
+    },
+    "deltas": {
+      "plantHeightsPx": [
+        -60,
+        -60,
+        -60,
+        -60
+      ],
+      "visiblePlotCount": 0,
+      "cloudCount": 0
+    }
+  }
+]
