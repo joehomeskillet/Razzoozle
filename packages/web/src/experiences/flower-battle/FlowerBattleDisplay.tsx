@@ -30,6 +30,10 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
   const teams = state?.teams ?? []
   const answered = data.answered ?? 0
   const total = data.total ?? 0
+  const phaseDurationMs = data.phaseDurationMs
+  const countdownSeconds = Number.isFinite(phaseDurationMs)
+    ? Math.ceil(phaseDurationMs / 1000)
+    : undefined
   const seed = state?.background.seed ?? 0
   const recipeVersion =
     state?.background.recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION
@@ -79,6 +83,13 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
           teams={teams}
           sunPoints={{}}
           answerCounter={{ answered, total }}
+          countdown={
+            countdownSeconds === undefined
+              ? undefined
+              : {
+                  seconds: countdownSeconds,
+                }
+          }
         />
       </div>
     </div>
