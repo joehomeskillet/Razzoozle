@@ -146,6 +146,125 @@ describe("FlowerBattleDisplay", () => {
     expect(html).toContain("20")
   })
 
+  it("hides the presenter countdown during flower-battle start/greeting phases", () => {
+    const envelope = flowerBattleEnvelope({ phaseDurationMs: 45_000 })
+    if (envelope.payload?.data?.state) {
+      envelope.payload.data.state.phase = "start"
+    }
+
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay data={envelope} />,
+    )
+
+    expect(html).toContain("data-testid=\"flower-battle-presenter-hud\"")
+    expect(html).not.toContain("hud-countdown-display")
+  })
+
+  // WP-B (fb-hud5): keep the central timer visible through transient invalid
+  // wire payloads. The audience must see the clock tick from 20 down to 0
+  // even if the server briefly sends a 10s-boundary glitch.
+  it("keeps the presenter countdown visible when phaseDurationMs is undefined during question play", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ phaseDurationMs: undefined })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="flower-battle-timer-slot"')
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    // Safe default is 0 (clamped), never empty.
+    expect(html).toContain(">0<")
+  })
+
+  it("keeps the presenter countdown visible when phaseDurationMs is 0", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ phaseDurationMs: 0 })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain(">0<")
+  })
+
+  it("keeps the presenter countdown visible when phaseDurationMs is NaN", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ phaseDurationMs: Number.NaN })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain(">0<")
+  })
+
+  it("keeps the presenter countdown visible when phaseDurationMs is negative", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ phaseDurationMs: -5_000 })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain(">0<")
+  })
+
+  it("keeps the answer counter visible when answered is undefined", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ answered: undefined, total: 8 })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("0/8")
+  })
+
+  it("keeps the answer counter visible when total is undefined", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ answered: 4, total: undefined })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("4/0")
+  })
+
+  it("keeps the answer counter visible when answered and total are both 0", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ answered: 0, total: 0 })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("0/0")
+  })
+
+  it("keeps the answer counter visible when answered and total are both undefined", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ answered: undefined, total: undefined })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("0/0")
+  })
+
+  it("keeps both timer and answer counter visible for a near-end-of-round payload (phaseDurationMs=500)", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattleDisplay
+        data={flowerBattleEnvelope({ phaseDurationMs: 500 })}
+      />,
+    )
+
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain(">1<")
+    expect(html).toContain('data-testid="hud-answer-counter"')
+  })
+
   it("exposes phase + phaseDurationMs as data attributes, never question text", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
