@@ -60,9 +60,12 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "@tanstack/react-router"
 
 /**
- * AF-15 / #1008 — every manager tab must declare footer policy.
- * `optional`/`none` require a human-readable reason (compile-time via
- * discriminated union). A tab entry without `actionFooter` fails typecheck.
+ * AF-Mandatory / Lead-Decision 2026-08-02 — every manager tab MUST render an
+ * action footer (even if empty) for consistent UX. Only "required" should be
+ * used by `BUILTIN_TABS` going forward. The "optional" and "none" variants
+ * are retained as comment-only stubs for backward compatibility with the
+ * shared `ActionFooterPolicyMode` host context and the assignability test in
+ * `index.test.ts` (out-of-scope for this change).
  */
 export type ActionFooterPolicy =
   | { actionFooter: "required" }
@@ -149,6 +152,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigSchueler,
     gated: "klassenEnabled",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "media",
@@ -156,30 +160,31 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Images,
     component: ConfigMedia,
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "results",
     nameKey: "manager:tabs.results",
     icon: Trophy,
     component: ConfigResults,
-    actionFooter: "none",
-    actionFooterReason: "Read-only results list; open/detail/row actions stay local (AF-08).",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "submissions",
     nameKey: "manager:tabs.submissions",
     icon: ClipboardList,
     component: ConfigSubmissions,
-    actionFooter: "optional",
-    actionFooterReason: "Bulk moderation may register a footer; row approve/reject stay on rows.",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "profile",
     nameKey: "manager:tabs.profile",
     icon: User,
     component: ConfigProfile,
-    actionFooter: "optional",
-    actionFooterReason: "Per-provider key save is optimistic in content; page-level Save bar only if added later.",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "gamemode",
@@ -187,8 +192,8 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Users,
     component: ConfigGameMode,
     roleGate: "admin",
-    actionFooter: "none",
-    actionFooterReason: "Optimistic per-field save; no collective dirty footer (existing product decision).",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "ai",
@@ -197,6 +202,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigAI,
     roleGate: "admin",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "achievements",
@@ -213,8 +219,8 @@ export const BUILTIN_TABS: TabDef[] = [
     icon: Radio,
     component: RunningGamesSection,
     roleGate: "admin",
-    actionFooter: "none",
-    actionFooterReason: "Running-games list is operational read-mostly; stop/end actions stay on rows if present.",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "users",
@@ -245,6 +251,7 @@ export const BUILTIN_TABS: TabDef[] = [
     roleGate: "admin",
     gated: "klassenEnabled",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "dev",
@@ -253,8 +260,8 @@ export const BUILTIN_TABS: TabDef[] = [
     gated: "devMode",
     roleGate: "admin",
     component: ConfigDev,
-    actionFooter: "optional",
-    actionFooterReason: "Dev tools may expose page actions later; none reserved until then.",
+    actionFooter: "required",
+    actionFooterVariant: "compact",
   },
 ]
 
