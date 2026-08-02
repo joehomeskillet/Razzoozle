@@ -186,16 +186,11 @@ function buildImmersiveDom(options: { withCreamField: boolean }) {
     rect: rect(0, 0, 1600, 900),
   })
   const canvas = createFakeElement({ rect: rect(0, 0, 1600, 900) })
-  const teamMeters = createFakeElement({
-    attrs: { "data-testid": "flower-battle-team-meters" },
-    rect: rect(12, 780, 400, 108),
-  })
   const answerCounter = createFakeElement({
     attrs: { "data-testid": "hud-answer-counter" },
     rect: rect(1440, 800, 148, 80),
   })
   display.appendChild(canvas)
-  display.appendChild(teamMeters)
   display.appendChild(answerCounter)
   doc.registerTree(display)
 
@@ -235,12 +230,9 @@ describe("collectGardenExperienceLayoutDiagnostics", () => {
       bottom: 120,
       left: 12,
     })
-    expect(diag.hudRects.teamMeters).toEqual({
-      x: 12,
-      y: 780,
-      width: 400,
-      height: 108,
-    })
+    // FB-HUD4: no global team-meters rect. The first per-plant card-wrap
+    // is the new probe target.
+    expect(diag.hudRects.teamMeters).toBeUndefined()
     expect(diag.hudRects.answerCounter).toEqual({
       x: 1440,
       y: 800,

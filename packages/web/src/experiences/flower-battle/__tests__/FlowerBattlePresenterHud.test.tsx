@@ -53,11 +53,13 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).toContain('data-testid="flower-battle-bottom-hud"')
     // Overlay composes primitives directly — no ExperienceHud shell.
     expect(html).not.toContain('data-testid="experience-hud"')
-    expect(html).toContain('data-testid="flower-battle-team-meters"')
+    // FB-HUD4: team cards live under each plant now; the bottom HUD owns
+    // only the timer + answer counter. No team-meters / team-hud testids.
+    expect(html).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-1"')
     expect(html).toContain('data-testid="flower-battle-timer-slot"')
     expect(html).toContain('data-testid="flower-battle-answer-counter-slot"')
-    expect(html).toContain('data-testid="flower-battle-team-hud-0"')
-    expect(html).toContain('data-testid="flower-battle-team-hud-1"')
     // WP-2 replaces nested phase chip with in-card dot/name header.
     expect(html).not.toContain('data-testid="hud-phase-indicator"')
   })
@@ -73,6 +75,9 @@ describe("FlowerBattlePresenterHud", () => {
 
     expect(html).toContain('data-hud-variant="flow"')
     expect(html).toContain('data-testid="experience-hud"')
+    // Flow variant must not reintroduce a global team-meters grid.
+    expect(html).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
 
     const rootMatch =
       /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(html)
@@ -85,7 +90,7 @@ describe("FlowerBattlePresenterHud", () => {
     expect(rootClass.split(/\s+/)).not.toContain("h-full")
   })
 
-  it("overlay variant fills the stage and places team meters absolutely", () => {
+  it("overlay variant fills the stage and places timer + answer counter absolutely", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -99,11 +104,13 @@ describe("FlowerBattlePresenterHud", () => {
     expect(rootMatch).not.toBeNull()
     expect(rootMatch![1]).toContain("relative")
     expect(rootMatch![1]).toContain("h-full")
+    // FB-HUD4: the HUD root is transparent (no shared panel background).
+    expect(rootMatch![1]).toContain("bg-transparent")
     expect(html).toContain('data-testid="hud-answer-counter"')
     expect(html).toContain("3/10")
   })
 
-  it("renders the bottom-hud grid with three explicit slots", () => {
+  it("renders the bottom-hud with timer slot centred and answer counter at the right", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -116,9 +123,11 @@ describe("FlowerBattlePresenterHud", () => {
     const bottomHudMatch =
       /data-testid="flower-battle-bottom-hud"[^>]*class="([^"]*)"/.exec(html)
     expect(bottomHudMatch).not.toBeNull()
-    expect(bottomHudMatch![1]).toContain(
-      "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
-    )
+    const bottomClass = bottomHudMatch![1]
+    // FB-HUD4: bottom HUD is a simple flex row (no team-meter column).
+    expect(bottomClass).toContain("flex")
+    expect(bottomClass).toContain("items-end")
+    expect(bottomClass).toContain("justify-between")
 
     expect(html).toContain('data-testid="flower-battle-timer-slot"')
     expect(html).toContain('data-testid="hud-countdown-display"')
@@ -129,7 +138,7 @@ describe("FlowerBattlePresenterHud", () => {
     expect(html).toContain("1/4")
   })
 
-  it("shows sun-point meters via RoundProgress primitives", () => {
+  it("does not render sun-point meters (FB-HUD4 moved them into PlantTeamCard)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -137,12 +146,14 @@ describe("FlowerBattlePresenterHud", () => {
       />,
     )
 
-    expect(html).toContain('data-testid="hud-round-progress"')
-    expect(html).toContain('aria-valuenow="67"')
-    expect(html).toContain('aria-valuenow="33"')
+    // RoundProgress primitive is no longer mounted by the presenter HUD.
+    expect(html).not.toContain('data-testid="hud-round-progress"')
+    // The aria-valuenow values that lived on the old meters are gone.
+    expect(html).not.toContain('aria-valuenow="67"')
+    expect(html).not.toContain('aria-valuenow="33"')
   })
 
-  it("renders active powerup status icons (WP-938.2 wiring) via FlowerPowerupStatusIcons", () => {
+  it("does not render powerup status icons in the global HUD (FB-HUD4 moved them to PlantTeamCard)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -150,26 +161,16 @@ describe("FlowerBattlePresenterHud", () => {
       />,
     )
 
-    // FlowerPowerupStatusIcons mounts the icon container
-    expect(html).toContain('data-testid="flower-powerup-status-icons"')
-    // sunbeam and umbrella_shield effects are rendered with their status text
-    expect(html).toContain('data-testid="flower-powerup-status-sunbeam"')
-    expect(html).toContain(
+    // Powerup status effects live under the per-plant card now, not the
+    // global HUD. The presenter HUD no longer mounts FlowerPowerupStatusIcons.
+    expect(html).not.toContain('data-testid="flower-powerup-status-icons"')
+    expect(html).not.toContain('data-testid="flower-powerup-status-sunbeam"')
+    expect(html).not.toContain(
       'data-testid="flower-powerup-status-umbrella-shield"',
     )
-  })
-
-  it("renders icon + text label pairs (no icon-only per a11y)", () => {
-    const html = renderToStaticMarkup(
-      <FlowerBattlePresenterHud
-        teams={baseTeams}
-        sunPoints={{ red: 2, blue: 1 }}
-      />,
-    )
-
-    // Verify text labels are present (Icon + Text together)
-    expect(html).toContain("Schutz aktiv")
-    expect(html).toContain("Nächstes Wachstum +1")
+    // And the a11y text they used to render is gone too.
+    expect(html).not.toContain("Schutz aktiv")
+    expect(html).not.toContain("Nächstes Wachstum +1")
   })
 
   it("announces an active power-up choice via StatusBanner", () => {
@@ -196,18 +197,5 @@ describe("FlowerBattlePresenterHud", () => {
     )
 
     expect(html).not.toContain('data-testid="question-text"')
-  })
-
-  it("renders no status icons when team has no active effects", () => {
-    const noEffectsTeams = [makeTeam("Grün", 0, [])]
-    const html = renderToStaticMarkup(
-      <FlowerBattlePresenterHud
-        teams={noEffectsTeams}
-        sunPoints={{ green: 0 }}
-      />,
-    )
-
-    // FlowerPowerupStatusIcons returns null when activeEffects is empty
-    expect(html).not.toContain('data-testid="flower-powerup-status-icons"')
   })
 })

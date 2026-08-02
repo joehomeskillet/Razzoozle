@@ -33,10 +33,12 @@ export const LAYER_LABELS = [
   "layer-sky",
   "layer-distant-hills",
   "layer-distant-bushes",
-  // Lawn first, then trees (so trunks aren't buried under solid grass),
-  // then fence in front of trunks, then plots/flowers.
+  // Lawn first, then far trees (so trunks aren't buried under solid grass),
+  // then mid + near trees, then fence in front of trunks, then plots/flowers.
   "layer-grass",
+  "layer-far-trees",
   "layer-mid-trees",
+  "layer-near-trees",
   "layer-fence",
   "layer-soil-plots",
   "layer-flower-teams",
@@ -57,7 +59,9 @@ export interface GardenLayerSet {
   distantHills: Container
   distantBushes: Container
   grass: Container
+  farTrees: Container
   midTrees: Container
+  nearTrees: Container
   fence: Container
   soilPlots: Container
   flowerTeams: Container
@@ -521,22 +525,35 @@ export function buildDistantBushesLayer(
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Mid trees — 4 taller trees framing the scene
+ * Tree layering (FB-HUD4 / Gartenmodus-Korrektur) — three independent
+ * depth layers (far, mid, near) so nearer trees fully occlude farther ones.
+ *
+ * Rule (SDD §7.2): opacity is applied to the *whole* layer, not to
+ * individual trees. Per-tree alpha would let the silhouette of a near
+ * tree let a far tree bleed through.
+ *
+ * Rule (SDD §7.3): the near-trees layer is fully opaque — no inherited
+ * transparency, no tint alpha, no blend mode that bleeds the background.
+ *
+ * Rule (SDD §7.4): within a layer, trees are sorted by depth, then by x
+ * (stable, reproducible). `assets.trees` provides the variant set; we
+ * spread the variants round-robin across the placements.
  * ────────────────────────────────────────────────────────────────────── */
-export function buildMidTreesLayer(
-  palette: GardenPalette,
-  assets?: LayerAssets,
-): Container {
-  const layer = new Container()
-  layer.label = "layer-mid-trees"
 
-  const trees =
-    assets?.trees?.filter((t) => t && t.width > 0) ??
-    (assets?.midTrees ? [assets.midTrees] : [])
+interface TreePlacement {
+  x: number
+  /** Vertical anchor as fraction of GARDEN_LOGICAL_HEIGHT (foot = y, top = 0). */
+  y: number
+  /** Tree height in logical pixels. */
+  height: number
+  flip: boolean
+  tint: number
+  tree: number
+}
 
-  // Interleave deciduous (round) and conifer (triangle) variants so the
-  // mid-ground never reads as a repeating row of identical shapes.
-  // Manifest order is deciduous ×6 then conifer ×6 — zip them together.
+/** Pre-shuffled tree-variant order so deciduous + conifer interleave. */
+function orderTreeVariants(trees: readonly Texture[]): Texture[] {
+  if (trees.length === 0) return []
   const deciduous = trees.slice(0, Math.ceil(trees.length / 2))
   const conifer = trees.slice(Math.ceil(trees.length / 2))
   const mixed: Texture[] = []
@@ -544,74 +561,211 @@ export function buildMidTreesLayer(
     if (i < deciduous.length) mixed.push(deciduous[i]!)
     if (i < conifer.length) mixed.push(conifer[i]!)
   }
-  const orderedTrees = mixed.length > 0 ? mixed : trees
+  return mixed.length > 0 ? mixed : [...trees]
+}
 
-  if (orderedTrees.length > 0) {
-    // Dense, varied grove — never a single copy-paste row or sparse silhouette.
-    // Far/smaller trees first (depth), then mid, then larger near-fence trees.
-    // Feet sit just behind the fence line; crowns rise into the sky band.
-    const placements: Array<{
-      x: number
-      y: number
-      height: number
-      flip: boolean
-      alpha: number
-      tint: number
-      tree: number
-    }> = [
-      // Far band — soft midground/bush tints for depth (no pure-white wash).
-      { x: 70, y: 0.7, height: 220, flip: false, alpha: 0.78, tint: palette.bushBack, tree: 2 },
-      { x: 240, y: 0.69, height: 260, flip: true, alpha: 0.82, tint: palette.midground, tree: 4 },
-      { x: 450, y: 0.71, height: 200, flip: false, alpha: 0.75, tint: palette.bushBack, tree: 1 },
-      { x: 700, y: 0.68, height: 280, flip: true, alpha: 0.8, tint: palette.midground, tree: 3 },
-      { x: 920, y: 0.7, height: 240, flip: false, alpha: 0.78, tint: palette.bushMid, tree: 5 },
-      { x: 1150, y: 0.69, height: 250, flip: true, alpha: 0.8, tint: palette.midground, tree: 0 },
-      { x: 1380, y: 0.71, height: 210, flip: false, alpha: 0.76, tint: palette.bushBack, tree: 2 },
-      { x: 1620, y: 0.7, height: 230, flip: true, alpha: 0.78, tint: palette.midground, tree: 4 },
-      { x: 1850, y: 0.69, height: 200, flip: false, alpha: 0.74, tint: palette.bushBack, tree: 1 },
-      // Near-fence band — fuller foliage tints, keep crowns distinct
-      { x: 140, y: 0.74, height: 380, flip: false, alpha: 0.95, tint: palette.foreground, tree: 0 },
-      { x: 320, y: 0.73, height: 440, flip: true, alpha: 0.98, tint: palette.midground, tree: 1 },
-      { x: 500, y: 0.75, height: 340, flip: false, alpha: 0.93, tint: palette.foreground, tree: 2 },
-      { x: 680, y: 0.74, height: 300, flip: true, alpha: 0.9, tint: palette.bushMid, tree: 5 },
-      { x: 860, y: 0.73, height: 400, flip: false, alpha: 0.96, tint: palette.midground, tree: 3 },
-      { x: 1060, y: 0.75, height: 320, flip: true, alpha: 0.92, tint: palette.foreground, tree: 4 },
-      { x: 1240, y: 0.74, height: 360, flip: false, alpha: 0.94, tint: palette.midground, tree: 0 },
-      { x: 1440, y: 0.73, height: 420, flip: true, alpha: 0.97, tint: palette.foreground, tree: 1 },
-      { x: 1620, y: 0.75, height: 340, flip: false, alpha: 0.91, tint: palette.bushMid, tree: 2 },
-      { x: 1780, y: 0.74, height: 380, flip: true, alpha: 0.94, tint: palette.midground, tree: 5 },
-    ]
-    const treesArr = orderedTrees
-    for (let i = 0; i < placements.length; i += 1) {
-      const p = placements[i]!
-      const tex = treesArr[p.tree % treesArr.length]!
-      const spr = new Sprite(tex)
-      spr.label = `mid-tree-${i}`
-      spr.anchor.set(0.5, 1)
-      spr.position.set(p.x, GARDEN_LOGICAL_HEIGHT * p.y)
-      const s = p.height / tex.height
-      spr.scale.set(p.flip ? -s : s, s)
-      spr.alpha = p.alpha
-      spr.tint = p.tint
-      layer.addChild(spr)
+function sortedByDepthX<T extends { x: number; depth?: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const da = a.depth ?? 0
+    const db = b.depth ?? 0
+    if (da !== db) return da - db
+    return a.x - b.x
+  })
+}
+
+function applyTreesToLayer(
+  layer: Container,
+  trees: readonly Texture[],
+  placements: readonly TreePlacement[],
+  childLabelPrefix: string,
+): void {
+  if (trees.length === 0 || placements.length === 0) return
+  for (let i = 0; i < placements.length; i += 1) {
+    const p = placements[i]!
+    const tex = trees[p.tree % trees.length]!
+    const spr = new Sprite(tex)
+    spr.label = `${childLabelPrefix}-${i}`
+    spr.anchor.set(0.5, 1)
+    spr.position.set(p.x, GARDEN_LOGICAL_HEIGHT * p.y)
+    const s = p.height / tex.height
+    spr.scale.set(p.flip ? -s : s, s)
+    // Per-tree alpha stays 1 — the whole layer's `layer.alpha` carries
+    // the depth fade (see FB-HUD4 / SDD §7.2).
+    spr.alpha = 1
+    spr.tint = p.tint
+    layer.addChild(spr)
+  }
+}
+
+/** Far trees — smallest, back row, soft midground tints. */
+export const FAR_TREE_LAYER_OPACITY = 0.42
+
+const FAR_TREE_PLACEMENTS: readonly TreePlacement[] = [
+  { x: 70, y: 0.7, height: 220, flip: false, tint: 0, tree: 2 },
+  { x: 240, y: 0.69, height: 260, flip: true, tint: 0, tree: 4 },
+  { x: 450, y: 0.71, height: 200, flip: false, tint: 0, tree: 1 },
+  { x: 700, y: 0.68, height: 280, flip: true, tint: 0, tree: 3 },
+  { x: 920, y: 0.7, height: 240, flip: false, tint: 0, tree: 5 },
+  { x: 1150, y: 0.69, height: 250, flip: true, tint: 0, tree: 0 },
+  { x: 1380, y: 0.71, height: 210, flip: false, tint: 0, tree: 2 },
+  { x: 1620, y: 0.7, height: 230, flip: true, tint: 0, tree: 4 },
+  { x: 1850, y: 0.69, height: 200, flip: false, tint: 0, tree: 1 },
+]
+
+/** Mid trees — intermediate depth band, between the soft far row and the
+ *  tall near-fence row. */
+export const MID_TREE_LAYER_OPACITY = 0.72
+
+const MID_TREE_PLACEMENTS: readonly TreePlacement[] = [
+  { x: 180, y: 0.715, height: 300, flip: false, tint: 0, tree: 3 },
+  { x: 560, y: 0.71, height: 320, flip: true, tint: 0, tree: 1 },
+  { x: 980, y: 0.715, height: 310, flip: false, tint: 0, tree: 4 },
+  { x: 1500, y: 0.71, height: 290, flip: true, tint: 0, tree: 2 },
+]
+
+/** Near trees — tallest, in front of the fence. Always fully opaque. */
+export const NEAR_TREE_LAYER_OPACITY = 1
+
+const NEAR_TREE_PLACEMENTS: readonly TreePlacement[] = [
+  { x: 140, y: 0.74, height: 380, flip: false, tint: 0, tree: 0 },
+  { x: 320, y: 0.73, height: 440, flip: true, tint: 0, tree: 1 },
+  { x: 500, y: 0.75, height: 340, flip: false, tint: 0, tree: 2 },
+  { x: 680, y: 0.74, height: 300, flip: true, tint: 0, tree: 5 },
+  { x: 860, y: 0.73, height: 400, flip: false, tint: 0, tree: 3 },
+  { x: 1060, y: 0.75, height: 320, flip: true, tint: 0, tree: 4 },
+  { x: 1240, y: 0.74, height: 360, flip: false, tint: 0, tree: 0 },
+  { x: 1440, y: 0.73, height: 420, flip: true, tint: 0, tree: 1 },
+  { x: 1620, y: 0.75, height: 340, flip: false, tint: 0, tree: 2 },
+  { x: 1780, y: 0.74, height: 380, flip: true, tint: 0, tree: 5 },
+]
+
+/** Resolve the trees palette channel for a given depth band. */
+function depthTints(palette: GardenPalette): {
+  far: number
+  mid: number
+  near: number
+} {
+  return {
+    far: palette.bushBack,
+    mid: palette.midground,
+    near: palette.foreground,
+  }
+}
+
+function tintPlacements(
+  placements: readonly TreePlacement[],
+  tint: number,
+): TreePlacement[] {
+  return placements.map((p) => ({ ...p, tint }))
+}
+
+export function buildFarTreesLayer(
+  palette: GardenPalette,
+  assets?: LayerAssets,
+): Container {
+  const layer = new Container()
+  layer.label = "layer-far-trees"
+  layer.alpha = FAR_TREE_LAYER_OPACITY
+  // Defensive: per-tree alpha stays 1; the layer alpha is the only depth
+  // fade (FB-HUD4 / SDD §7.2). Any inherited `alpha` from a parent is
+  // ignored on purpose because `layers.presenterHud` and friends are
+  // full-opacity containers.
+  const trees = orderTreeVariants(
+    assets?.trees?.filter((t): t is Texture => t != null && t.width > 0) ??
+      (assets?.midTrees ? [assets.midTrees] : []),
+  )
+  const tints = depthTints(palette)
+  if (trees.length > 0) {
+    applyTreesToLayer(
+      layer,
+      trees,
+      sortedByDepthX(tintPlacements(FAR_TREE_PLACEMENTS, tints.far)),
+      "far-tree",
+    )
+  } else {
+    // Procedural fallback: a soft row of small silhouettes behind everything.
+    const g = new Graphics()
+    g.label = "far-trees-fallback"
+    const tintsRow = depthTints(palette)
+    for (const x of [120, 300, 480, 700, 920, 1140, 1360, 1580, 1760]) {
+      g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.7, 38, 32)
+      g.fill({ color: tintsRow.far, alpha: 0.9 })
+      g.roundRect(x - 4, GARDEN_LOGICAL_HEIGHT * 0.7, 8, 70, 2)
+      g.fill({ color: tintsRow.mid, alpha: 0.85 })
     }
-    return layer
+    layer.addChild(g)
   }
+  return layer
+}
 
-  // Procedural fallback row — denser silhouette when no textures
-  const g = new Graphics()
-  g.label = "mid-trees-fallback"
-  for (const x of [120, 300, 480, 700, 920, 1140, 1360, 1580, 1760]) {
-    g.roundRect(x - 8, GARDEN_LOGICAL_HEIGHT * 0.52, 16, 110, 4)
-    g.fill({ color: palette.foreground, alpha: 0.85 })
-    g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.5, 56, 46)
-    g.fill({ color: palette.midground })
-    g.ellipse(x - 30, GARDEN_LOGICAL_HEIGHT * 0.52, 36, 30)
-    g.fill({ color: palette.midground, alpha: 0.9 })
-    g.ellipse(x + 28, GARDEN_LOGICAL_HEIGHT * 0.53, 36, 30)
-    g.fill({ color: palette.midground, alpha: 0.9 })
+export function buildMidTreesLayer(
+  palette: GardenPalette,
+  assets?: LayerAssets,
+): Container {
+  const layer = new Container()
+  layer.label = "layer-mid-trees"
+  layer.alpha = MID_TREE_LAYER_OPACITY
+  const trees = orderTreeVariants(
+    assets?.trees?.filter((t): t is Texture => t != null && t.width > 0) ??
+      (assets?.midTrees ? [assets.midTrees] : []),
+  )
+  const tints = depthTints(palette)
+  if (trees.length > 0) {
+    applyTreesToLayer(
+      layer,
+      trees,
+      sortedByDepthX(tintPlacements(MID_TREE_PLACEMENTS, tints.mid)),
+      "mid-tree",
+    )
+  } else {
+    // Procedural fallback row — denser silhouette when no textures.
+    const g = new Graphics()
+    g.label = "mid-trees-fallback"
+    for (const x of [180, 560, 980, 1500]) {
+      g.roundRect(x - 6, GARDEN_LOGICAL_HEIGHT * 0.55, 12, 130, 3)
+      g.fill({ color: tints.mid, alpha: 0.92 })
+      g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.52, 48, 40)
+      g.fill({ color: tints.mid })
+    }
+    layer.addChild(g)
   }
-  layer.addChild(g)
+  return layer
+}
+
+export function buildNearTreesLayer(
+  palette: GardenPalette,
+  assets?: LayerAssets,
+): Container {
+  const layer = new Container()
+  layer.label = "layer-near-trees"
+  // FB-HUD4 / SDD §7.3: near-trees layer is fully opaque. No inherited
+  // transparency, no alpha filter, no transparent fill — this is the
+  // single source of truth for the near-occlusion rule.
+  layer.alpha = NEAR_TREE_LAYER_OPACITY
+  const trees = orderTreeVariants(
+    assets?.trees?.filter((t): t is Texture => t != null && t.width > 0) ??
+      (assets?.midTrees ? [assets.midTrees] : []),
+  )
+  const tints = depthTints(palette)
+  if (trees.length > 0) {
+    applyTreesToLayer(
+      layer,
+      trees,
+      sortedByDepthX(tintPlacements(NEAR_TREE_PLACEMENTS, tints.near)),
+      "near-tree",
+    )
+  } else {
+    // Procedural fallback row — full-opacity foreground silhouettes.
+    const g = new Graphics()
+    g.label = "near-trees-fallback"
+    for (const x of [140, 320, 500, 680, 860, 1060, 1240, 1440, 1620, 1780]) {
+      g.roundRect(x - 8, GARDEN_LOGICAL_HEIGHT * 0.6, 16, 160, 4)
+      g.fill({ color: tints.near, alpha: 1 })
+      g.ellipse(x, GARDEN_LOGICAL_HEIGHT * 0.56, 56, 46)
+      g.fill({ color: tints.near, alpha: 1 })
+    }
+    layer.addChild(g)
+  }
   return layer
 }
 
@@ -969,8 +1123,12 @@ export function createGardenLayers(
   const sky = buildSkyLayer(palette, assets)
   const distantHills = buildDistantHillsLayer(palette, assets)
   const distantBushes = buildDistantBushesLayer(palette, assets)
-  const midTrees = buildMidTreesLayer(palette, assets)
   const grass = buildGrassLayer(palette, assets)
+  // FB-HUD4 / Gartenmodus-Korrektur: trees split into three depth layers.
+  // Opacity is on the whole layer, never on individual trees.
+  const farTrees = buildFarTreesLayer(palette, assets)
+  const midTrees = buildMidTreesLayer(palette, assets)
+  const nearTrees = buildNearTreesLayer(palette, assets)
   const fence = buildFenceLayer(palette, assets)
   const soilPlots = buildSoilPlotLayer()
   const flowerTeams = buildFlowerTeamsLayer()
@@ -988,7 +1146,9 @@ export function createGardenLayers(
     distantHills,
     distantBushes,
     grass,
+    farTrees,
     midTrees,
+    nearTrees,
     fence,
     soilPlots,
     flowerTeams,
@@ -1005,7 +1165,9 @@ export function createGardenLayers(
     distantHills,
     distantBushes,
     grass,
+    farTrees,
     midTrees,
+    nearTrees,
     fence,
     soilPlots,
     flowerTeams,

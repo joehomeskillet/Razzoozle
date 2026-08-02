@@ -1,13 +1,4 @@
-import { TEAMS } from "@razzoozle/common/constants"
-import type { Team } from "@razzoozle/common/constants"
-import { Sprout, Sun } from "lucide-react"
 import { useTranslation } from "react-i18next"
-
-import {
-  POWERUP_ICONS,
-  type PowerupType,
-} from "@razzoozle/web/features/game/components/player/flower-battle.types"
-import { teamColor } from "@razzoozle/web/features/game/utils/teams"
 
 import {
   ExperienceHud,
@@ -18,28 +9,18 @@ import {
   CountdownDisplay,
   type CountdownDisplayProps,
 } from "../shared/hud/CountdownDisplay"
-import { RoundProgress } from "../shared/hud/RoundProgress"
 import { StatusBanner } from "../shared/hud/StatusBanner"
-import { FlowerPowerupStatusIcons } from "./FlowerPowerupStatusIcons"
 import type {
-  FlowerBattleSunPointsByTeam,
   FlowerBattleTeamState,
   PowerUpData,
 } from "./flower-battle-scene.types"
 
-const MAX_SUN_POINTS = 3
-const MAX_TEAMS = 4
-
-const POWERUP_LABEL_KEYS: Record<PowerupType, string> = {
+const POWERUP_LABEL_KEYS: Record<string, string> = {
   fertilizer: "flowerBattlePresenter.powerUp.fertilizer",
   sunbeam: "flowerBattlePresenter.powerUp.sunbeam",
   umbrella_shield: "flowerBattlePresenter.powerUp.umbrellaShield",
   acid_rain: "flowerBattlePresenter.powerUp.acidRain",
 }
-
-/** Bottom HUD surface for all safe-zone cards (team, timer, answer). */
-const BOTTOM_HUD_SURFACE =
-  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface-cream)] text-ink shadow-[var(--shadow-flat)]"
 
 type FlowerBattleCountdownProps = CountdownDisplayProps
 
@@ -53,8 +34,14 @@ export interface FlowerBattlePresenterHudProps extends Omit<
   | "players"
   | "playerData"
 > {
-  teams: FlowerBattleTeamState[]
-  sunPoints: FlowerBattleSunPointsByTeam
+  /**
+   * @deprecated kept for backwards-compatible call sites; team cards are
+   * rendered UNDER each plant in the scene (PlantTeamCard) and no longer
+   * drawn globally by this HUD (FB-HUD4 / Gartenmodus-Korrektur).
+   */
+  teams?: FlowerBattleTeamState[]
+  /** @deprecated — same reason as `teams`. Sun points live in PlantTeamCard. */
+  sunPoints?: Record<string, number>
   powerUp?: PowerUpData
   powerUpChoiceMessage?: string
   /**
@@ -65,35 +52,21 @@ export interface FlowerBattlePresenterHudProps extends Omit<
   countdown?: FlowerBattleCountdownProps
 }
 
-const teamKeyForIndex = (index: number): Team => TEAMS[index] ?? TEAMS[0]
-
-const resolveSunPoints = (
-  team: FlowerBattleTeamState,
-  index: number,
-  sunPoints: FlowerBattleSunPointsByTeam,
-): number => {
-  const teamKey = teamKeyForIndex(index)
-  const override = sunPoints[teamKey]
-  const raw = override ?? team.sunPoints
-  return Number.isFinite(raw)
-    ? Math.min(MAX_SUN_POINTS, Math.max(0, Math.floor(raw)))
-    : 0
-}
-
-const sunPointsToPercent = (points: number): number =>
-  Math.round((points / MAX_SUN_POINTS) * 100)
-
 /**
  * FlowerBattlePresenterHud — additive presenter HUD for Flower Battle (WP-937).
  * Composes ExperienceHud + kit primitives; never renders question/answer text.
- * WP-938.2: Integrates FlowerPowerupStatusIcons for active effect display.
  *
- * Immersive overlay variant places team meters / answer counter as floating
- * chips inside the experience safe area so they never sit outside the canvas.
+ * FB-HUD4 (Gartenmodus-Korrektur): team cards are NOT part of this HUD
+ * anymore. The presenter HUD only owns the central timer (CountdownDisplay)
+ * and the bottom-right answer counter (AnswerCounter), plus an optional
+ * status banner. Per-team compact cards live UNDER each plant in the scene
+ * (PlantTeamCard). The wrapper is fully transparent — the visual scene
+ * (PixiJS canvas) shines through everywhere except the explicit safe-zone
+ * chips. `flower-battle-team-meters` and `flower-battle-team-hud-*` testids
+ * no longer exist; tests must update to use the scene-level team cards.
  */
 export const FlowerBattlePresenterHud = ({
   teams,
-  sunPoints,
   powerUp,
   powerUpChoiceMessage,
   className = "",
@@ -104,7 +77,13 @@ export const FlowerBattlePresenterHud = ({
   ...experienceHudProps
 }: FlowerBattlePresenterHudProps) => {
   const { t } = useTranslation("experience_hud")
-  const visibleTeams = teams.slice(0, MAX_TEAMS)
+  // Teams are rendered as compact cards UNDER each plant (PlantTeamCard) in
+  // the garden scene, not as a global bottom HUD anymore (FB-HUD4). The
+  // presenter HUD only owns the central timer + answer counter plus the
+  // status banner. Keeping the `teams` prop on the interface so callers
+  // (and flow-variant tests) keep working, but never mapping it to a global
+  // card row.
+  void teams
 
   const powerUpBanner =
     powerUpChoiceMessage && powerUpChoiceMessage.length > 0
@@ -117,8 +96,8 @@ export const FlowerBattlePresenterHud = ({
             type: "info" as const,
             message: t("flowerBattlePresenter.powerUpChoice", {
               defaultValue: "Team {{teamName}} wählt {{powerUp}}",
-              teamName: powerUp.teamName ?? visibleTeams[0]?.name ?? "",
-              powerUp: t(POWERUP_LABEL_KEYS[powerUp.type], {
+              teamName: powerUp.teamName ?? "",
+              powerUp: t(POWERUP_LABEL_KEYS[powerUp.type] ?? powerUp.type, {
                 defaultValue: powerUp.type,
               }),
             }),
@@ -127,69 +106,12 @@ export const FlowerBattlePresenterHud = ({
 
   const mergedStatusBanner = powerUpBanner ?? statusBanner
 
-  const teamCards = visibleTeams.map((team, index) => {
-    const teamKey = teamKeyForIndex(index)
-    const points = resolveSunPoints(team, index, sunPoints)
-    const colors = teamColor(teamKey)
-    const PowerUpIcon = powerUp?.type ? POWERUP_ICONS[powerUp.type] : Sprout
-
-    return (
-      <section
-        key={`${team.name}-${index}`}
-        data-testid={`flower-battle-team-hud-${index}`}
-        className={`flex min-w-0 flex-1 basis-36 flex-col gap-1.5 p-2.5 sm:gap-2 ${BOTTOM_HUD_SURFACE} max-w-56`}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden="true"
-            className={`h-2.5 w-2.5 shrink-0 rounded-full ${colors.bar}`}
-          />
-          <span
-            className={`min-w-0 flex-1 truncate text-sm font-semibold ${colors.text}`}
-          >
-            {team.name}
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold [font-variant-numeric:tabular-nums_slashed-zero]">
-            <Sun aria-hidden className="size-3.5" />
-            {`${points}/${MAX_SUN_POINTS}`}
-          </span>
-        </div>
-
-        <RoundProgress
-          value={sunPointsToPercent(points)}
-          label={t("flowerBattlePresenter.sunPoints.label", {
-            defaultValue: "Sonnenpunkte",
-          })}
-          variant={points >= MAX_SUN_POINTS ? "success" : "default"}
-        />
-
-        {team.effects && team.effects.length > 0 && (
-          <FlowerPowerupStatusIcons activeEffects={team.effects} />
-        )}
-
-        {powerUp && powerUp.teamName === team.name ? (
-          <div
-            data-testid={`flower-battle-powerup-status-${index}`}
-            className={`inline-flex items-center gap-2 text-xs font-medium ${colors.text}`}
-          >
-            <PowerUpIcon aria-hidden className="size-4 shrink-0" />
-            <span>
-              {t(POWERUP_LABEL_KEYS[powerUp.type], {
-                defaultValue: powerUp.type,
-              })}
-            </span>
-          </div>
-        ) : null}
-      </section>
-    )
-  })
-
   if (variant === "overlay") {
     return (
       <div
         data-testid="flower-battle-presenter-hud"
         data-hud-variant="overlay"
-        className={`relative h-full w-full ${className}`.trim()}
+        className={`garden-top-hud relative h-full w-full bg-transparent ${className}`.trim()}
       >
         {mergedStatusBanner ? (
           <div
@@ -202,18 +124,11 @@ export const FlowerBattlePresenterHud = ({
 
         <div
           data-testid="flower-battle-bottom-hud"
-          className="pointer-events-none absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 sm:gap-3"
+          className="garden-bottom-hud pointer-events-none absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 flex items-end justify-between gap-2 sm:gap-3"
         >
           <div
-            data-testid="flower-battle-team-meters"
-            className="pointer-events-auto flex min-w-0 flex-wrap items-end gap-2"
-          >
-            {teamCards}
-          </div>
-
-          <div
             data-testid="flower-battle-timer-slot"
-            className="pointer-events-auto flex items-end justify-center"
+            className="pointer-events-auto flex flex-1 items-end justify-center"
           >
             {countdown ? <CountdownDisplay {...countdown} /> : null}
           </div>
@@ -229,12 +144,13 @@ export const FlowerBattlePresenterHud = ({
     )
   }
 
-  // Legacy flow layout (tests / non-immersive embeds).
+  // Legacy flow layout (tests / non-immersive embeds). No team-meters grid —
+  // team cards live under each plant in the scene, never as a global row.
   return (
     <div
       data-testid="flower-battle-presenter-hud"
       data-hud-variant="flow"
-      className={`flex w-full flex-col gap-3 ${className}`.trim()}
+      className={`flex w-full flex-col gap-3 bg-transparent ${className}`.trim()}
     >
       <ExperienceHud
         {...experienceHudProps}
@@ -243,13 +159,6 @@ export const FlowerBattlePresenterHud = ({
         statusBanner={mergedStatusBanner}
         className="shrink-0"
       />
-
-      <div
-        data-testid="flower-battle-team-meters"
-        className="grid flex-1 gap-3 px-[5%] sm:grid-cols-2 lg:grid-cols-4"
-      >
-        {teamCards}
-      </div>
     </div>
   )
 }

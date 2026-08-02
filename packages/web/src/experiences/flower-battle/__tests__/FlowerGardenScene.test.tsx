@@ -103,14 +103,23 @@ describe("FlowerGardenScene", () => {
     expect(first).not.toBe(second)
   })
 
-  it.each([2, 3, 4])("renders %i team plant slots", (teamCount) => {
+  it.each([2, 3, 4])("renders %i team plant slots with one PlantTeamCard each (FB-HUD4)", (teamCount) => {
     const html = renderScene(teamCount)
 
     for (let index = 0; index < teamCount; index += 1) {
       expect(html).toContain(`data-testid="garden-team-slot-${index}"`)
-      expect(html).toContain('data-layer="garden-bed"')
-      expect(html).toContain('data-layer="garden-ground"')
+      expect(html).toContain(`data-testid="garden-plant-stage-${index}"`)
+      expect(html).toContain(`data-testid="garden-plant-team-card-wrap-${index}"`)
+      // Exactly one PlantTeamCard per active team — the global bottom
+      // team meter is gone (FB-HUD4 / Gartenmodus-Korrektur).
+      expect(html).toContain(`data-team-name="Team ${index + 1}"`)
     }
+  })
+
+  it("renders no global FlowerBattlePresenterHud inside the scene tree", () => {
+    const html = renderScene(3)
+    expect(html).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
   })
 
   it("renders a grid fallback for 5+ teams — no silent cap-at-4 (WP-D-1, SDD §20.3)", () => {

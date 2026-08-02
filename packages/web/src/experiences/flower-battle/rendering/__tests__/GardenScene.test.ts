@@ -13,7 +13,6 @@ import {
 } from "../../assets/loadGardenSceneAssets"
 import type { GardenPixiApplicationHandle } from "../../garden-pixi.types"
 import { createGardenScene, LAYER_LABELS } from "../GardenScene"
-import { TEAM_HUD_BELOW_ANCHOR_Y } from "../teamHud"
 import type { GardenPalette } from "../gardenPalette"
 import {
   computeVisibleLogicalRect,
@@ -72,6 +71,21 @@ function fakeApp(
 
 function team(name: string, growthStage: number) {
   return { name, growthStage }
+}
+
+/** Walk the entire Pixi scene graph and collect every node label as a string. */
+function collectLabels(root: Container): string[] {
+  const out: string[] = []
+  const visit = (node: Container): void => {
+    if (typeof node.label === "string" && node.label.length > 0) {
+      out.push(node.label)
+    }
+    for (const child of node.children) {
+      if (child instanceof Container) visit(child)
+    }
+  }
+  visit(root)
+  return out
 }
 
 describe("createGardenScene", () => {
@@ -208,8 +222,8 @@ describe("createGardenScene", () => {
     expect(() => scene.updateLayout(800, 600)).not.toThrow()
   })
 
-  describe("team HUD under plants (presenterHud)", () => {
-    it("mounts one team-hud per team with name label + growth meter", () => {
+  describe("FB-HUD4: Pixi team HUD removed (cards live in DOM under each plant)", () => {
+    it("presenterHud layer is empty — no team-hud-* Pixi widgets", () => {
       const app = fakeApp()
       const scene = createGardenScene(app, { palette: TEST_PALETTE })
       scene.updateSnapshot({
@@ -217,122 +231,85 @@ describe("createGardenScene", () => {
         phase: "question",
       })
 
-      const huds = scene.layers.presenterHud.children.filter(
-        (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
+      // The per-plot Pixi team HUD is gone (FB-HUD4). presenterHud is now
+      // a reserved layer for any future overlay; it must contain zero
+      // team-hud-* children so the canvas never re-introduces a global
+      // HUD under the plant.
+      const teamHudChildren = scene.layers.presenterHud.children.filter(
+        (c) =>
+          typeof c.label === "string" && c.label.startsWith("team-hud-"),
       )
-      expect(huds).toHaveLength(2)
-      expect(huds[0]!.label).toBe("team-hud-0")
-      expect(huds[1]!.label).toBe("team-hud-1")
+      expect(teamHudChildren).toHaveLength(0)
 
-      // Label text is nested: team-hud → team-hud-label → team-hud-label-text
-      for (let i = 0; i < 2; i += 1) {
-        const hud = huds[i]! as Container
-        const label = hud.children.find((c) => c.label === "team-hud-label")
-        expect(label).toBeDefined()
-        const meter = hud.children.find((c) => c.label === "team-hud-meter")
-        expect(meter).toBeDefined()
-        const textNode = (label as Container).children.find(
-          (c) => c.label === "team-hud-label-text",
-        ) as { text?: string } | undefined
-        expect(textNode?.text).toBe(i === 0 ? "Violet" : "Orange")
-      }
-
-      // HUD sits under the plant anchor (buildTeamHud offsets y by +56).
-      const anchors = scene.getPlotAnchors()
-      expect(huds[0]!.position.x).toBe(anchors[0]!.x)
-      expect(huds[0]!.position.y).toBe(anchors[0]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
-      expect(huds[1]!.position.x).toBe(anchors[1]!.x)
-      expect(huds[1]!.position.y).toBe(anchors[1]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
+      // The plant actors are still identity-stable per team.
+      expect(scene.layers.actors.children).toHaveLength(2)
+      expect((scene.layers.actors.children[0] as Container).label).toBe(
+        "actor-plant-0",
+      )
+      expect((scene.layers.actors.children[1] as Container).label).toBe(
+        "actor-plant-1",
+      )
 
       scene.destroy()
     })
 
-    it("updates growth meters and names without recreating plant instances", () => {
+    it("never mounts a team-hud label, segmented meter or status chip anywhere in the scene", () => {
       const app = fakeApp()
       const scene = createGardenScene(app, { palette: TEST_PALETTE })
       scene.updateSnapshot({
-        teams: [team("A", 1), team("B", 2)],
-      })
-      const plantsBefore = scene.layers.actors.children.slice()
-      const hudBefore = scene.layers.presenterHud.children
-        .filter(
-          (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
-        )
-        .slice()
-
-      scene.updateSnapshot({
-        teams: [team("Alpha", 9), team("Beta", 10)],
+        teams: [team("A", 1), team("B", 2), team("C", 3), team("D", 4)],
       })
 
-      // Plants stay identity-stable; HUD widgets are rebuilt for new meters/names.
-      expect(scene.layers.actors.children).toEqual(plantsBefore)
-      const hudAfter = scene.layers.presenterHud.children.filter(
-        (c) => typeof c.label === "string" && c.label.startsWith("team-hud-"),
-      )
-      expect(hudAfter).toHaveLength(2)
-      expect(hudAfter[0]).not.toBe(hudBefore[0])
-      expect(hudAfter[1]).not.toBe(hudBefore[1])
-
-      const label0 = (hudAfter[0] as Container).children.find(
-        (c) => c.label === "team-hud-label",
-      ) as Container
-      const text0 = label0.children.find(
-        (c) => c.label === "team-hud-label-text",
-      ) as { text?: string }
-      expect(text0.text).toBe("Alpha")
+      // No legacy Pixi widgets anywhere in the scene graph.
+      const allLabels = collectLabels(scene.root)
+      for (const label of allLabels) {
+        expect(label).not.toMatch(/^team-hud-/)
+        expect(label).not.toBe("team-hud-label")
+        expect(label).not.toBe("team-hud-label-text")
+        expect(label).not.toBe("team-hud-meter")
+        expect(label).not.toBe("team-hud-meter-growth")
+        expect(label).not.toBe("team-hud-meter-sun")
+        expect(label).not.toBe("team-hud-chip")
+        expect(label).not.toBe("team-hud-chip-bg")
+        expect(label).not.toBe("team-hud-chip-text")
+      }
 
       scene.destroy()
     })
 
-    it("trims HUDs when team count shrinks and cleans them on destroy", () => {
+    it("keeps plant actors identity-stable across updateSnapshot (no re-mount on growth)", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({ teams: [team("A", 1), team("B", 2)] })
+      const plantsBefore = scene.layers.actors.children.slice()
+
+      scene.updateSnapshot({ teams: [team("Alpha", 9), team("Beta", 10)] })
+
+      expect(scene.layers.actors.children).toEqual(plantsBefore)
+      // presenterHud still has no team-hud children.
+      expect(
+        scene.layers.presenterHud.children.filter((c) =>
+          String(c.label).startsWith("team-hud-"),
+        ),
+      ).toHaveLength(0)
+
+      scene.destroy()
+    })
+
+    it("trims plants when team count shrinks and cleans the scene on destroy", () => {
       const app = fakeApp()
       const scene = createGardenScene(app, { palette: TEST_PALETTE })
       scene.updateSnapshot({
         teams: [team("A", 1), team("B", 2), team("C", 3)],
       })
-      expect(
-        scene.layers.presenterHud.children.filter((c) =>
-          String(c.label).startsWith("team-hud-"),
-        ),
-      ).toHaveLength(3)
+      expect(scene.layers.actors.children).toHaveLength(3)
 
-      scene.updateSnapshot({
-        teams: [team("A", 4), team("B", 5)],
-      })
-      expect(
-        scene.layers.presenterHud.children.filter((c) =>
-          String(c.label).startsWith("team-hud-"),
-        ),
-      ).toHaveLength(2)
+      scene.updateSnapshot({ teams: [team("A", 4), team("B", 5)] })
+      expect(scene.layers.actors.children).toHaveLength(2)
 
       scene.destroy()
-      // Root (and presenterHud) destroyed — stage no longer holds the scene.
+      // Root destroyed — stage no longer holds the scene.
       expect(app.stage.children).not.toContain(scene.root)
-    })
-
-    it("repositions HUDs with anchors on cover-crop resize", () => {
-      const app = fakeApp(1920, 1080)
-      const scene = createGardenScene(app, { palette: TEST_PALETTE })
-      scene.updateLayout(1920, 1080)
-      scene.updateSnapshot({
-        teams: [team("A", 3), team("B", 3)],
-      })
-      const hud16 = scene.layers.presenterHud.children.find(
-        (c) => c.label === "team-hud-0",
-      )!
-      const x16 = hud16.position.x
-
-      scene.updateLayout(1024, 768)
-      const hud4 = scene.layers.presenterHud.children.find(
-        (c) => c.label === "team-hud-0",
-      )!
-      const anchors = scene.getPlotAnchors()
-      expect(hud4.position.x).toBe(anchors[0]!.x)
-      expect(hud4.position.y).toBe(anchors[0]!.y + TEAM_HUD_BELOW_ANCHOR_Y)
-      // On 4:3 the visible band crops left/right so anchors (and HUDs) move.
-      expect(hud4.position.x).not.toBe(x16)
-
-      scene.destroy()
     })
   })
 

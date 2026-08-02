@@ -48,10 +48,13 @@ const fixtureMarkup = renderToString(
 )
 
 describe("FlowerBattlePresenterHud visual screenshot coverage", () => {
-  it("keeps screenshot marker in static markup", () => {
+  it("keeps screenshot marker in static markup (FB-HUD4: no global team-meters)", () => {
     expect(fixtureMarkup).toContain('data-testid="flower-battle-presenter-hud"')
     expect(fixtureMarkup).toContain('data-testid="flower-battle-event-banner"')
-    expect(fixtureMarkup).toContain('data-testid="flower-battle-team-meters"')
+    // FB-HUD4: team-meters is gone — per-team cards live under each plant.
+    expect(fixtureMarkup).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(fixtureMarkup).toContain('data-testid="flower-battle-timer-slot"')
+    expect(fixtureMarkup).toContain('data-testid="flower-battle-answer-counter-slot"')
   })
 
   itIf("defers full matrix captures to Playwright e2e spec", () => {

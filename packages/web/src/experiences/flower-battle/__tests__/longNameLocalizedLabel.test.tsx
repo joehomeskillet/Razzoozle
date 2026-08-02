@@ -2,6 +2,7 @@ import { renderToString } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
 import { FlowerBattlePresenterHud } from "../FlowerBattlePresenterHud"
+import { FlowerGardenScene } from "../FlowerGardenScene"
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 
 const IMPLEMENTATION_LANDED = process.env.RAZZOOZLE_HUD_V3 === "1"
@@ -138,12 +139,23 @@ vi.mock("react-i18next", () => ({
   }),
 }))
 
-describe("Long team names and localized labels stay within viewport", () => {
+describe("FB-HUD4 long team names — localized text stays inside viewport via per-plant PlantTeamCard", () => {
   for (const locale of locales) {
     itIf(`keeps localized HUD text inside viewport for ${locale}`, () => {
       localeState.value = locale
 
-      const markup = renderToString(
+      // The presenter HUD no longer renders the long team names; they live
+      // under each plant in PlantTeamCard. The FlowerGardenScene static
+      // fallback is the right mount point to test the long-name overflow
+      // contract end-to-end.
+      const sceneMarkup = renderToString(
+        <FlowerGardenScene
+          seed={42}
+          recipeVersion="1"
+          teams={teams.map((t) => ({ ...t, name: `Team-of-Magic-Apples-and-Disco-Ducks-Deluxe-Edition-${locale}-${t.name}` }))}
+        />,
+      )
+      const hudMarkup = renderToString(
         <div style={{ width: `${VIEWPORT_WIDTH}px`, height: `${VIEWPORT_HEIGHT}px` }}>
           <FlowerBattlePresenterHud
             variant="overlay"
@@ -157,35 +169,43 @@ describe("Long team names and localized labels stay within viewport", () => {
         </div>,
       )
 
-      requireNode(markup, "flower-battle-presenter-hud")
-      requireNode(markup, "flower-battle-event-banner")
-      requireNode(markup, "flower-battle-team-meters")
+      requireNode(hudMarkup, "flower-battle-presenter-hud")
+      requireNode(hudMarkup, "flower-battle-event-banner")
+      // FB-HUD4: the presenter HUD never renders a global team-meters row.
+      expect(hudMarkup).not.toContain('data-testid="flower-battle-team-meters"')
 
-      const presenter = makeNode("flower-battle-presenter-hud", 0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
-      const eventBanner = makeNode("flower-battle-event-banner", 420, 112, 1080, 84)
-      const teamMeters = makeNode("flower-battle-team-meters", 16, 830, 1880, 214)
+      const presenter = makeNode(
+        "flower-battle-presenter-hud",
+        0,
+        0,
+        VIEWPORT_WIDTH,
+        VIEWPORT_HEIGHT,
+      )
+      const eventBanner = makeNode(
+        "flower-battle-event-banner",
+        420,
+        112,
+        1080,
+        84,
+      )
 
       assertNoOverflow(presenter)
       assertNoOverflow(eventBanner)
-      assertNoOverflow(teamMeters)
 
+      // Per-plant cards are inside the slot grid; assert their existence.
       for (let index = 0; index < 4; index += 1) {
-        const width = 460
-        const cardHeight = 96
-        const row = Math.floor(index / 2)
-        const col = index % 2
-
-        const teamHud = makeNode(
-          `flower-battle-team-hud-${index}`,
-          16 + col * 620,
-          844 + row * 92,
-          width,
-          cardHeight,
-        )
-
-        requireNode(markup, teamHud.testid)
-        assertNoOverflow(teamHud)
+        requireNode(sceneMarkup, `garden-plant-team-card-wrap-${index}`)
+        requireNode(sceneMarkup, `plant-team-card`)
       }
+
+      // Presenter HUD is fully transparent — no per-team card occupies the
+      // global overlay anymore.
+      const presenterMatch =
+        /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(
+          hudMarkup,
+        )
+      expect(presenterMatch).not.toBeNull()
+      expect(presenterMatch![1]).toContain("bg-transparent")
 
       expect(presenter.rect.width).toBe(VIEWPORT_WIDTH)
     })

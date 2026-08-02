@@ -10,6 +10,7 @@ import { createSeededRandom } from "../shared/random"
 import { GardenBackgroundLayer } from "./GardenBackgroundLayer"
 import { FlowerPlant } from "./FlowerPlant"
 import { FlowerPowerupEffects } from "./FlowerPowerupEffects"
+import { plantTeamCardPropsFromTeam, PlantTeamCard } from "./PlantTeamCard"
 import type { FlowerVariant, TeamColorKey } from "./flower-plant.constants"
 import {
   GARDEN_SCENE_ACTORS_ZONE_WIDTH_PERCENT,
@@ -156,6 +157,10 @@ export const FlowerGardenScene = ({
                 {slots.map((slot) => {
                   const team = visibleTeams[slot.index]
                   if (!team) return null
+                  const cardProps = plantTeamCardPropsFromTeam(
+                    team,
+                    slot.index,
+                  )
                   return (
                     <div
                       key={team.name}
@@ -171,7 +176,7 @@ export const FlowerGardenScene = ({
                       data-slot-y={slot.yPercent}
                       data-slot-w={slot.widthPercent}
                       data-slot-h={slot.heightPercent}
-                      className={`absolute flex items-end justify-center ${
+                      className={`plant-team-slot absolute isolate flex flex-col items-center justify-end ${
                         isSparseTeamLayout ? "max-w-[26cqw]" : ""
                       }`.trim()}
                       style={{
@@ -181,12 +186,23 @@ export const FlowerGardenScene = ({
                         height: `${slot.heightPercent}%`,
                       }}
                     >
-                      <FlowerPlant
-                        variant={variantForTeam(seed, slot.index)}
-                        teamColor={teamColorForIndex(slot.index)}
-                        growthStage={team.growthStage}
-                      />
-                      <FlowerPowerupEffects activeEffects={team.effects} />
+                      <div
+                        data-testid={`garden-plant-stage-${slot.index}`}
+                        className="plant-stage flex min-h-0 w-full flex-1 items-end justify-center"
+                      >
+                        <FlowerPlant
+                          variant={variantForTeam(seed, slot.index)}
+                          teamColor={teamColorForIndex(slot.index)}
+                          growthStage={team.growthStage}
+                        />
+                        <FlowerPowerupEffects activeEffects={team.effects} />
+                      </div>
+                      <div
+                        data-testid={`garden-plant-team-card-wrap-${slot.index}`}
+                        className="plant-team-card-wrap mt-2 w-full max-w-[clamp(168px,14vw,230px)]"
+                      >
+                        <PlantTeamCard {...cardProps} />
+                      </div>
                     </div>
                   )
                 })}

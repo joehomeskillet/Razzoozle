@@ -109,8 +109,11 @@ describe("FlowerBattleDisplay", () => {
     expect(html).toContain('data-testid="garden-battle-canvas-host"')
     expect(html).toContain('data-testid="garden-pixi-canvas"')
     expect(html).toContain('data-testid="flower-battle-presenter-hud"')
-    expect(html).toContain('data-testid="flower-battle-team-hud-0"')
-    expect(html).toContain('data-testid="flower-battle-team-hud-1"')
+    // FB-HUD4: per-team cards live in the scene (static fallback) or in the
+    // canvas (Pixi host), NOT as a global bottom HUD.
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-1"')
+    expect(html).not.toContain('data-testid="flower-battle-team-meters"')
     // Default quality path is canvas, not the DOM garden scene.
     expect(html).not.toContain('data-testid="flower-garden-scene"')
   })
@@ -239,9 +242,11 @@ describe("FlowerBattleDisplay", () => {
     expect(hudMatch![1]).toContain("inset-0")
     expect(hudMatch![1]).toContain("pointer-events-none")
 
-    // Overlay HUD variant exposes team meters + answer counter.
+    // Overlay HUD variant exposes timer + answer counter.
     expect(html).toContain('data-hud-variant="overlay"')
-    expect(html).toContain('data-testid="flower-battle-team-meters"')
+    // FB-HUD4: no global team-meters / team-hud testids in the presenter HUD.
+    expect(html).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(html).not.toContain('data-testid="flower-battle-team-hud-0"')
     expect(html).toContain('data-testid="hud-answer-counter"')
   })
 })

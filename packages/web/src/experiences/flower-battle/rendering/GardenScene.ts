@@ -68,11 +68,6 @@ import {
   resolveThemeTokenColor,
   type ThemeColorResolver,
 } from "./resolveThemeColor"
-import {
-  buildTeamHud,
-  resolveTeamHudPalette,
-  type TeamHudPalette,
-} from "./teamHud"
 
 export interface GardenSceneTeamSnapshot {
   name: string
@@ -259,8 +254,11 @@ export function createGardenScene(
   type PlantView = DummyPlantView | AssetPlantView
   const plants: PlantView[] = []
   const teamNames: string[] = []
-  /** Per-plot team HUD containers on `layers.presenterHud` (parallel to real teams). */
-  const teamHuds: Container[] = []
+  // FB-HUD4 (Gartenmodus-Korrektur): the per-plot Pixi team HUD
+  // (pill + segmented growth/sun meters) is gone. Per-team compact cards
+  // live UNDER each plant in the DOM (PlantTeamCard), not inside the canvas.
+  // `teamHuds` and its helper are removed; the `presenterHud` Pixi layer
+  // stays for any future overlay and remains empty.
   let teamTints: number[] = []
 
   function arePlantTransitionsSettled(): boolean {
@@ -273,21 +271,6 @@ export function createGardenScene(
     }
     return true
   }
-
-  /**
-   * Team-HUD palette: theme resolver when available; otherwise derive from the
-   * already-resolved garden palette so tests/offline never touch the DOM.
-   */
-  const teamHudPalette: TeamHudPalette = options.resolveColor
-    ? resolveTeamHudPalette(options.resolveColor)
-    : {
-        labelFill: palette.fence,
-        labelText: palette.teamMeterFrame,
-        meterFill: palette.fence,
-        meterTrack: palette.soilEdge,
-        chipFill: palette.fence,
-        chipText: palette.teamMeterFrame,
-      }
 
   function headTextureForIndex(index: number): Texture | undefined {
     if (!plantHeads) return undefined
@@ -330,64 +313,6 @@ export function createGardenScene(
     teamTints = resolveTeamPlotColors(count, resolveThemeTokenColor)
   }
 
-  function destroyTeamHud(hud: Container): void {
-    if (hud.parent) {
-      hud.parent.removeChild(hud)
-    }
-    hud.destroy({ children: true })
-  }
-
-  /**
-   * Build or replace the per-plot team HUD under the plant (presenterHud).
-   * Name + 0–10 segmented growth meter; sun meter stays 0 until host wires sun.
-   */
-  function setTeamHud(index: number, name: string, growthStage: number): void {
-    const anchor = anchors[index] ?? { x: 0, y: 0, index }
-    const tint = teamTints[index] ?? palette.plantPetal
-    const next = buildTeamHud({
-      anchor: { x: anchor.x, y: anchor.y },
-      teamName: name || `Team ${index + 1}`,
-      teamColor: tint,
-      palette: teamHudPalette,
-      growthCurrent: growthStage,
-      growthMax: 10,
-      sunCurrent: 0,
-      sunMax: 3,
-    })
-    next.label = `team-hud-${index}`
-
-    const old = teamHuds[index]
-    if (old?.parent) {
-      old.parent.addChildAt(next, old.parent.getChildIndex(old))
-      destroyTeamHud(old)
-    } else {
-      if (old) destroyTeamHud(old)
-      layers.presenterHud.addChild(next)
-    }
-    teamHuds[index] = next
-  }
-
-  /** Grow/shrink/update team HUDs to match the live roster (not layout padding). */
-  function syncTeamHuds(teams: readonly GardenSceneTeamSnapshot[]): void {
-    while (teamHuds.length > teams.length) {
-      const removed = teamHuds.pop()
-      if (removed) destroyTeamHud(removed)
-    }
-    for (let i = 0; i < teams.length; i += 1) {
-      const team = teams[i]!
-      setTeamHud(i, team.name, team.growthStage)
-    }
-  }
-
-  /** Reposition existing HUDs after anchor moves without changing roster data. */
-  function relayoutTeamHuds(): void {
-    const count = teamNames.length
-    for (let i = 0; i < count; i += 1) {
-      const growth = plants[i]?.getGrowthStage() ?? 0
-      setTeamHud(i, teamNames[i] ?? "", growth)
-    }
-  }
-
   function rebuildPlotsForCount(teamCount: number): void {
     const nextAnchors = computePlotAnchors(
       teamCount,
@@ -415,11 +340,6 @@ export function createGardenScene(
     }
     while (teamNames.length > teamCount) {
       teamNames.pop()
-    }
-    // Drop HUDs beyond the new layout count (updateSnapshot trims further).
-    while (teamHuds.length > teamCount) {
-      const removed = teamHuds.pop()
-      if (removed) destroyTeamHud(removed)
     }
     while (plants.length < teamCount) {
       const index = plants.length
@@ -493,7 +413,6 @@ export function createGardenScene(
         plants[i]!.root.position.set(anchor.x, anchor.y)
       }
     }
-    relayoutTeamHuds()
   }
 
   const scene: ProceduralGardenScene = {
@@ -651,9 +570,6 @@ export function createGardenScene(
       while (teamNames.length > teams.length) {
         teamNames.pop()
       }
-      // Team name + 0–10 growth meter under each plant (presenterHud).
-      // Rebuild HUD widgets only — plant actor instances stay stable.
-      syncTeamHuds(teams)
       // SDD §30 probe-v3: bump revision exactly once per applied snapshot,
       // even when the team count stays stable — the cross-check between
       // identity.revision and identity.teamNames depends on it.
@@ -671,10 +587,6 @@ export function createGardenScene(
       }
       plants.length = 0
       teamNames.length = 0
-      while (teamHuds.length > 0) {
-        const hud = teamHuds.pop()
-        if (hud) destroyTeamHud(hud)
-      }
       anchors = []
       lastTeamCount = 0
       if (root.parent) {

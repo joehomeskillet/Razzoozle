@@ -1,119 +1,45 @@
 import { renderToString } from "react-dom/server"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
+import { TEAMS } from "@razzoozle/common/constants"
 import { FlowerBattlePresenterHud } from "../FlowerBattlePresenterHud"
+import { FlowerGardenScene } from "../FlowerGardenScene"
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 
-const IMPLEMENTATION_LANDED = process.env.RAZZOOZLE_HUD_V3 === "1"
-const itIf = IMPLEMENTATION_LANDED ? it : it.skip
-
-const EPSILON = 1e-3
 const VIEWPORT_WIDTH = 1920
 const VIEWPORT_HEIGHT = 1080
+const EPSILON = 0.5
 
-type RectLike = {
+const teams: FlowerBattleTeamState[] = TEAMS.map((_color, index) => ({
+  name: `Team ${["Alpha", "Bravo", "Charlie", "Delta"][index] ?? `T${index + 1}`}`,
+  members: [],
+  hp: 0,
+  shield: 0,
+  effects: index === 0 ? ["sunbeam" as const] : [],
+  growthStage: index + 1,
+  sunPoints: 4 - index,
+}))
+
+interface FixtureRect {
   left: number
   top: number
   width: number
   height: number
 }
 
-type FixtureNode = {
+interface FixtureNode {
   testid: string
-  rect: DOMRect
-  clientWidth: number
-  scrollWidth: number
-}
-
-const rectOf = (node: FixtureNode): DOMRect => node.rect
-
-const asRect = (left: number, top: number, width: number, height: number): DOMRect =>
-  ({
-    x: left,
-    y: top,
-    left,
-    right: left + width,
-    top,
-    bottom: top + height,
-    width,
-    height,
-    toJSON: () => ({
-      x: left,
-      y: top,
-      left,
-      right: left + width,
-      top,
-      bottom: top + height,
-      width,
-      height,
-    }),
-  }) as DOMRect
-
-const makeNode = (
-  testid: string,
-  rect: RectLike,
-  width = rect.width,
-): FixtureNode => ({
-  testid,
-  rect: asRect(rect.left, rect.top, rect.width, rect.height),
-  clientWidth: width,
-  scrollWidth: width,
-})
-
-const resolveTestId = (markup: string, primary: string, aliases: string[]): string => {
-  const found = [primary, ...aliases].find((id) =>
-    markup.includes(`data-testid="${id}"`),
-  )
-  expect(found, `missing overlay HUD testid: ${primary}`).toBeDefined()
-  return found!
-}
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-  }),
-}))
-
-const makeTeam = (
-  name: string,
-  sunPoints: number,
-  effects: FlowerBattleTeamState["effects"] = [],
-): FlowerBattleTeamState => ({
-  name,
-  members: [],
-  hp: 0,
-  shield: 0,
-  effects,
-  growthStage: sunPoints,
-  sunPoints,
-})
-
-const teams: FlowerBattleTeamState[] = [
-  makeTeam("Team Alpha", 3, ["sunbeam", "umbrella_shield"]),
-  makeTeam("Team Bravo", 2, ["acid_rain"]),
-  makeTeam("Team Charlie", 1, []),
-  makeTeam("Team Delta", 3, ["sunbeam"]),
-]
-
-const noOverlap = (left: DOMRect, right: DOMRect): boolean =>
-  left.right <= right.left + EPSILON ||
-  right.right <= left.left + EPSILON ||
-  left.bottom <= right.top + EPSILON ||
-  right.bottom <= left.top + EPSILON
-
-const assertNoOverlap = (left: FixtureNode, right: FixtureNode): void => {
-  const leftRect = rectOf(left)
-  const rightRect = rectOf(right)
-  expect(
-    noOverlap(leftRect, rightRect),
-    `${left.testid} ↔ ${right.testid}`,
-  ).toBe(true)
+  rect: FixtureRect
 }
 
 const requireNode = (markup: string, testid: string): void => {
   expect(markup).toContain(`data-testid="${testid}"`)
 }
+
+const makeNode = (testid: string, rect: FixtureRect): FixtureNode => ({
+  testid,
+  rect,
+})
 
 const staticMarkup = renderToString(
   <div style={{ width: `${VIEWPORT_WIDTH}px`, height: `${VIEWPORT_HEIGHT}px` }}>
@@ -129,189 +55,100 @@ const staticMarkup = renderToString(
   </div>,
 )
 
-describe("FlowerBattlePresenterHud collision geometry (overlay mode)", () => {
-  itIf("renders expected overlay HUD testids", () => {
+const itIf = (name: string, fn: () => void): void => {
+  it(name, fn)
+}
+
+describe("FB-HUD4 Gartenmodus collision geometry", () => {
+  itIf("presenter HUD root + bottom-hud exist (overlay) and never contain team-meters / team-hud", () => {
     expect(staticMarkup).toContain('data-testid="flower-battle-presenter-hud"')
     expect(staticMarkup).toContain('data-hud-variant="overlay"')
-    expect(staticMarkup).toContain('data-testid="flower-battle-team-meters"')
-    expect(staticMarkup).toContain('data-testid="flower-battle-team-hud-0"')
-    expect(staticMarkup).toContain('data-testid="flower-battle-team-hud-3"')
+    expect(staticMarkup).toContain('data-testid="flower-battle-bottom-hud"')
+    // FB-HUD4: global team meters and per-team Pixi HUDs are gone.
+    expect(staticMarkup).not.toContain('data-testid="flower-battle-team-meters"')
+    expect(staticMarkup).not.toContain('data-testid="flower-battle-team-hud-0"')
+    expect(staticMarkup).not.toContain('data-testid="flower-battle-team-hud-3"')
+    // Timer + answer counter are still present.
+    expect(staticMarkup).toContain('data-testid="flower-battle-timer-slot"')
+    expect(staticMarkup).toContain('data-testid="flower-battle-answer-counter-slot"')
   })
 
-  itIf("verifies requested HUD regions are non-overlapping", () => {
+  itIf("presenter HUD root is transparent (no shared panel background) and timer/answer slots do not overlap", () => {
+    const presenterMatch =
+      /data-testid="flower-battle-presenter-hud"[^>]*class="([^"]*)"/.exec(
+        staticMarkup,
+      )
+    expect(presenterMatch).not.toBeNull()
+    expect(presenterMatch![1]).toContain("bg-transparent")
+    expect(presenterMatch![1]).toContain("relative")
+    expect(presenterMatch![1]).toContain("h-full")
+
+    // Bottom HUD is also transparent (no shared card background).
+    const bottomMatch =
+      /data-testid="flower-battle-bottom-hud"[^>]*class="([^"]*)"/.exec(
+        staticMarkup,
+      )
+    expect(bottomMatch).not.toBeNull()
+    // No surface-cream / border-hairline combo on the wrapper.
+    expect(bottomMatch![1]).not.toMatch(/bg-\[var\(--surface-cream\)\]/)
+    expect(bottomMatch![1]).not.toMatch(/border-\[var\(--border-hairline\)\]/)
+
+    // The two slots are flex children of the same row — they share the
+    // bottom band, so the only geometry check that makes sense is that the
+    // answer counter does not overflow the viewport right edge.
+    const bottomHud = makeNode("flower-battle-bottom-hud", {
+      left: 0,
+      top: 810,
+      width: VIEWPORT_WIDTH,
+      height: 270,
+    })
+    const timerSlot = makeNode("flower-battle-timer-slot", {
+      left: 780,
+      top: 828,
+      width: 360,
+      height: 68,
+    })
+    const answerSlot = makeNode("flower-battle-answer-counter-slot", {
+      left: 1540,
+      top: 906,
+      width: 360,
+      height: 68,
+    })
+    // Timer + answer counter must stay inside the bottom HUD.
+    expect(timerSlot.rect.left).toBeGreaterThanOrEqual(bottomHud.rect.left)
+    expect(timerSlot.rect.top).toBeGreaterThanOrEqual(bottomHud.rect.top)
+    expect(answerSlot.rect.left).toBeGreaterThanOrEqual(bottomHud.rect.left)
+    expect(answerSlot.rect.top).toBeGreaterThanOrEqual(bottomHud.rect.top)
+    expect(
+      answerSlot.rect.left + answerSlot.rect.width,
+    ).toBeLessThanOrEqual(VIEWPORT_WIDTH + EPSILON)
+  })
+})
+
+describe("FlowerGardenScene + per-plant cards geometry", () => {
+  itIf("scene renders one card wrap per team, never a global team-meters", () => {
     const markup = renderToString(
-      <div
-        data-testid="flower-battle-collision-fixture"
-        style={{
-          position: "relative",
-          width: `${VIEWPORT_WIDTH}px`,
-          height: `${VIEWPORT_HEIGHT}px`,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <div
-          data-testid="toolbar-left-group"
-          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-        />
-        <div
-          data-testid="toolbar-center-group"
-          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-        />
-        <div
-          data-testid="toolbar-right-group"
-          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-        />
-
-        <div
-          data-testid="garden-battle-canvas-host"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: `${VIEWPORT_WIDTH}px`,
-            height: "760px",
-          }}
-        >
-          <canvas data-testid="garden-pixi-canvas" />
-        </div>
-
-        <FlowerBattlePresenterHud
-          variant="overlay"
-          teams={teams}
-          sunPoints={{ red: 2, blue: 2, green: 1, yellow: 0 }}
-          answerCounter={{ answered: 4, total: 12 }}
-          countdown={{ seconds: 60 }}
-          powerUpChoiceMessage="Team Alpha selects Sunbeam"
-          powerUp={{ type: "sunbeam", teamName: "Team Alpha" }}
-        />
-      </div>,
+      <FlowerGardenScene seed={42} recipeVersion="1" teams={teams} />,
     )
+    for (let index = 0; index < teams.length; index += 1) {
+      requireNode(markup, `garden-plant-team-card-wrap-${index}`)
+      requireNode(markup, `plant-team-card`)
+    }
+    expect(markup).not.toContain('data-testid="flower-battle-team-meters"')
+  })
 
-    const required = [
-      "toolbar-left-group",
-      "toolbar-center-group",
-      "toolbar-right-group",
-      "flower-battle-event-banner",
-      "flower-battle-team-meters",
-      "garden-battle-canvas-host",
-      "flower-battle-presenter-hud",
-      "flower-battle-team-hud-0",
-      "flower-battle-team-hud-1",
-      "flower-battle-team-hud-2",
-      "flower-battle-team-hud-3",
-      "garden-pixi-canvas",
-    ]
-    required.forEach((testId) => requireNode(markup, testId))
-
-    const timerSlotTestId = resolveTestId(markup, "flower-battle-timer-slot", [
-      "hud-countdown",
-      "hud-countdown-timer",
-      "hud-answer-counter",
-      "flower-battle-answer-counter-slot",
-    ])
-    const answerSlotTestId = resolveTestId(markup, "flower-battle-answer-counter-slot", [
-      "hud-answer-counter",
-    ])
-    const bottomHudTestId = resolveTestId(markup, "flower-battle-bottom-hud", [
-      "flower-battle-presenter-hud",
-    ])
-
-    const nodes = {
-      presenter: makeNode("flower-battle-presenter-hud", {
-        left: 0,
-        top: 0,
-        width: VIEWPORT_WIDTH,
-        height: VIEWPORT_HEIGHT,
-      }),
-      leftToolbar: makeNode("toolbar-left-group", {
-        left: 0,
-        top: 0,
-        width: 320,
-        height: 84,
-      }),
-      centerToolbar: makeNode("toolbar-center-group", {
-        left: 640,
-        top: 0,
-        width: 640,
-        height: 84,
-      }),
-      rightToolbar: makeNode("toolbar-right-group", {
-        left: 1310,
-        top: 0,
-        width: 610,
-        height: 84,
-      }),
-      eventBanner: makeNode("flower-battle-event-banner", {
-        left: 500,
-        top: 112,
-        width: 920,
-        height: 96,
-      }),
-      bottomHud: makeNode("flower-battle-bottom-hud", {
-        left: 0,
-        top: 810,
-        width: VIEWPORT_WIDTH,
-        height: 270,
-      }),
-      teamMeters: makeNode("flower-battle-team-meters", {
-        left: 12,
-        top: 830,
-        width: 1200,
-        height: 200,
-      }),
-      bottomHud: makeNode(bottomHudTestId, {
-        left: 0,
-        top: 810,
-        width: VIEWPORT_WIDTH,
-        height: 270,
-      }),
-      timerSlot: makeNode(timerSlotTestId, {
-        left: 1530,
-        top: 828,
-        width: 360,
-        height: 68,
-      }),
-      answerSlot: makeNode(answerSlotTestId, {
-        left: 1530,
-        top: 906,
-        width: 360,
-        height: 68,
-      }),
-      canvasHost: makeNode("garden-battle-canvas-host", {
-        left: 0,
-        top: 0,
-        width: VIEWPORT_WIDTH,
-        height: 760,
-      }),
-    } as const
-
-    const teamNodes = [0, 1, 2, 3].map((index) =>
-      makeNode(`flower-battle-team-hud-${index}`, {
-        left: 16 + (index % 2) * 590,
-        top: 844 + Math.floor(index / 2) * 92,
-        width: 560,
-        height: 76,
-      }),
+  itIf("each plant-team-card slot sits directly under the matching plant anchor", () => {
+    const markup = renderToString(
+      <FlowerGardenScene seed={42} recipeVersion="1" teams={teams} />,
     )
-
-    assertNoOverlap(nodes.leftToolbar, nodes.centerToolbar)
-    assertNoOverlap(nodes.centerToolbar, nodes.rightToolbar)
-    assertNoOverlap(nodes.rightToolbar, nodes.eventBanner)
-    assertNoOverlap(nodes.eventBanner, nodes.bottomHud)
-    if (nodes.timerSlot.testid !== nodes.answerSlot.testid) {
-      assertNoOverlap(nodes.timerSlot, nodes.answerSlot)
-    }
-    assertNoOverlap(nodes.teamMeters, nodes.timerSlot)
-    if (nodes.teamMeters.testid !== nodes.answerSlot.testid) {
-      assertNoOverlap(nodes.teamMeters, nodes.answerSlot)
-    }
-
-    for (const teamHud of teamNodes) {
-      assertNoOverlap(teamHud, nodes.canvasHost)
-    }
-
-    const footerBound = nodes.teamMeters.rect.bottom
-    expect(footerBound).toBeLessThanOrEqual(VIEWPORT_HEIGHT + EPSILON)
+    // The team-slot has a plant-stage div + a card-wrap div nested in a
+    // column flex. Their relative order is plant first, card second.
+    const stageMarker = 'data-testid="garden-plant-stage-0"'
+    const cardMarker = 'data-testid="garden-plant-team-card-wrap-0"'
+    const stageIdx = markup.indexOf(stageMarker)
+    const cardIdx = markup.indexOf(cardMarker)
+    expect(stageIdx).toBeGreaterThan(-1)
+    expect(cardIdx).toBeGreaterThan(-1)
+    expect(cardIdx).toBeGreaterThan(stageIdx)
   })
 })

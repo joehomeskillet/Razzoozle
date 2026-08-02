@@ -69,7 +69,11 @@ const readSafeInset = (
 
 const HUD_PROBES: Record<string, string> = {
   toolbar: '[data-testid="presenter-toolbar"]',
-  teamMeters: '[data-testid="flower-battle-team-meters"]',
+  // FB-HUD4: per-team cards live under each plant in PlantTeamCard
+  // (DOM `plant-team-card`). The global `flower-battle-team-meters`
+  // selector is gone. We probe the per-plant card-wrap count to surface
+  // layout regressions for the new structure.
+  plantTeamCard: '[data-testid="garden-plant-team-card-wrap-0"]',
   answerCounter: '[data-testid="hud-answer-counter"]',
   statusBanner: '[data-testid="flower-battle-event-banner"]',
 }

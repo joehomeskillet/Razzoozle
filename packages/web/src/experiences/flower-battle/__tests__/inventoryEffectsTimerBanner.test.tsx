@@ -127,8 +127,8 @@ const teams: FlowerBattleTeamState[] = [
   },
 ]
 
-describe("Inventory, effects, timer, banner visibility and collision", () => {
-  itIf("keeps answer status, effects, countdown, and event banner together", () => {
+describe("FB-HUD4 inventory-free HUD: event banner + timer + answer counter only", () => {
+  itIf("keeps event banner, timer slot, and answer counter together; no team-meters / powerup-status-icons", () => {
     const markup = renderToString(
       <div
         data-testid="flower-battle-inventory-effects-fixture"
@@ -147,38 +147,34 @@ describe("Inventory, effects, timer, banner visibility and collision", () => {
     )
 
     const eventBanner = makeNode("flower-battle-event-banner", 500, 112, 920, 88)
-    const teamMeters = makeNode("flower-battle-team-meters", 14, 830, 1180, 214)
     const timerSlotTestId = resolveTestId(markup, "flower-battle-timer-slot", [
       "hud-countdown",
       "hud-countdown-timer",
       "hud-answer-counter",
       "flower-battle-answer-counter-slot",
     ])
-    const answerSlotTestId = resolveTestId(markup, "flower-battle-answer-counter-slot", [
-      "hud-answer-counter",
-    ])
+    const answerSlotTestId = resolveTestId(
+      markup,
+      "flower-battle-answer-counter-slot",
+      ["hud-answer-counter"],
+    )
     const timerSlot = makeNode(timerSlotTestId, 1530, 828, 340, 68)
     const answerSlot = makeNode(answerSlotTestId, 1530, 906, 340, 68)
-    const effects = makeNode("flower-powerup-status-icons", 1320, 828, 118, 80)
 
     assertVisibleNode(markup, eventBanner.testid)
-    assertVisibleNode(markup, teamMeters.testid)
     assertVisibleNode(markup, timerSlot.testid)
     assertVisibleNode(markup, answerSlot.testid)
-    assertVisibleNode(markup, effects.testid)
 
+    // FB-HUD4: no global team-meters, no per-team powerup icons in the HUD.
+    expect(markup).not.toContain('data-testid="flower-battle-team-meters"')
     for (let index = 0; index < 4; index += 1) {
-      const teamHud = makeNode(
-        `flower-battle-team-hud-${index}`,
-        16 + (index % 2) * 590,
-        844 + Math.floor(index / 2) * 92,
-        560,
-        74,
+      expect(markup).not.toContain(
+        `data-testid="flower-battle-team-hud-${index}"`,
       )
-      assertVisibleNode(markup, teamHud.testid)
     }
+    expect(markup).not.toContain('data-testid="flower-powerup-status-icons"')
 
-    for (const node of [eventBanner, teamMeters, timerSlot, answerSlot, effects]) {
+    for (const node of [eventBanner, timerSlot, answerSlot]) {
       assertWithinViewport(node)
     }
 
@@ -186,10 +182,6 @@ describe("Inventory, effects, timer, banner visibility and collision", () => {
     if (timerSlot.testid !== answerSlot.testid) {
       assertNoOverlap(timerSlot, answerSlot)
       assertNoOverlap(eventBanner, answerSlot)
-    }
-    assertNoOverlap(teamMeters, timerSlot)
-    if (teamMeters.testid !== answerSlot.testid) {
-      assertNoOverlap(teamMeters, answerSlot)
     }
   })
 })
