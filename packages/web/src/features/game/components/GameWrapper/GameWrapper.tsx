@@ -75,10 +75,6 @@ type Props = PropsWithChildren & {
   presenterLayout?: PresenterLayout
 }
 
-/** Glass chip shell for floating presenter controls over the game canvas. */
-const OVERLAY_CHIP =
-  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[color-mix(in_srgb,var(--surface)_90%,transparent)] shadow-md backdrop-blur-sm"
-
 const GameWrapper = ({
   children,
   statusName,
@@ -300,9 +296,9 @@ const GameWrapper = ({
                   className="flex w-full flex-wrap items-center justify-between gap-2 p-4"
                 >
                   {/* GROUP A: Progress + Auto-Mode */}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="hud-chip-cream flex shrink-0 items-center gap-2 p-1">
                     {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black">
+                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
@@ -342,7 +338,7 @@ const GameWrapper = ({
                   </div>
 
                   {/* GROUP B: Media/Display Controls (Icon Buttons) */}
-                  <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
+                  <div className="hud-chip-cream flex flex-1 flex-wrap items-center justify-center gap-2 p-1">
                     <AvToggles />
                     {statusName !== STATUS.FINISHED && lowLatencyEnabled && (
                       <LowLatencyHealth />
@@ -376,7 +372,7 @@ const GameWrapper = ({
                   </div>
 
                   {/* GROUP C: Phase Actions (Primary Next + Secondary Exit) */}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="hud-chip-cream flex shrink-0 items-center gap-2 p-1">
                     {statusName !== STATUS.FINISHED &&
                       statusName !== STATUS.SHOW_ROUND_RECAP &&
                       next && (
@@ -412,9 +408,9 @@ const GameWrapper = ({
               {/* Display mode fallback (manager && !controls): classic flow only */}
               {showFlowToolbar && !controls && (
                 <div className="flex w-full flex-wrap items-center justify-between gap-2 p-4">
-                  <div className="flex shrink-0 justify-start">
+                  <div className="hud-chip-cream flex shrink-0 justify-start p-1">
                     {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-white px-4 text-lg font-bold text-black">
+                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
@@ -477,12 +473,11 @@ const GameWrapper = ({
                 >
                   <div
                     className={clsx(
-                      "pointer-events-auto flex shrink-0 items-center gap-2 p-1",
-                      OVERLAY_CHIP,
+                      "hud-chip-cream pointer-events-auto flex shrink-0 items-center gap-2 p-1",
                     )}
                   >
                     {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-white/90 px-3 text-base font-bold text-black sm:px-4 sm:text-lg">
+                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-3 text-base font-bold text-ink sm:px-4 sm:text-lg">
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
@@ -523,8 +518,7 @@ const GameWrapper = ({
 
                   <div
                     className={clsx(
-                      "pointer-events-auto flex max-w-full flex-1 flex-wrap items-center justify-center gap-1.5 p-1 sm:gap-2",
-                      OVERLAY_CHIP,
+                      "hud-chip-cream pointer-events-auto flex max-w-full flex-1 flex-wrap items-center justify-center gap-1.5 p-1 sm:gap-2",
                     )}
                   >
                     <AvToggles />
@@ -561,8 +555,7 @@ const GameWrapper = ({
 
                   <div
                     className={clsx(
-                      "pointer-events-auto flex shrink-0 items-center gap-2 p-1",
-                      OVERLAY_CHIP,
+                      "hud-chip-cream pointer-events-auto flex shrink-0 items-center gap-2 p-1",
                     )}
                   >
                     {statusName !== STATUS.FINISHED &&
