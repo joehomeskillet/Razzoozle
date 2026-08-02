@@ -159,7 +159,7 @@ describe("targetRasterSize", () => {
       width: 160,
       height: 100,
     })
-    expect(size).toEqual({ width: 256, height: 512 })
+    expect(size).toEqual({ width: 512, height: 320 })
   })
 
   it("bumps leaves to 256×149 (smaller detail, aspect preserved)", () => {
