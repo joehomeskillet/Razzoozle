@@ -80,6 +80,10 @@ const DisplayPlayPage = () => {
       reconnectIfConnected: true,
     })
 
+  const isExperienceImmersive = Boolean(
+    experienceTransition && experienceTransition.mode !== "classic",
+  )
+
   // Idle screen between pairing and the first status push.
   if (!status) {
     return (
@@ -107,6 +111,9 @@ const DisplayPlayPage = () => {
           experienceTransition && experienceTransition.mode !== "classic"
             ? experienceTransition.mode
             : undefined
+        }
+        presenterLayout={
+          isExperienceImmersive ? "experience-immersive" : "normal"
         }
         manager
         controls={false}

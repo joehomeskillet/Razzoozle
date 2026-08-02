@@ -52,6 +52,7 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
           // contract (e.g. satellite without immersive presenterLayout).
           "--experience-safe-top": "4.75rem",
           "--experience-safe-bottom": "7.5rem",
+          "--experience-safe-bottom-pad": "var(--experience-safe-bottom, 0.75rem)",
           "--experience-safe-left": "0.75rem",
           "--experience-safe-right": "0.75rem",
         } as CSSProperties
