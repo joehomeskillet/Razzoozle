@@ -336,13 +336,19 @@ describe("FlowerBattleDisplay", () => {
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,
     )
 
-    // Immersive stage: relative box, full height, clipped — canvas is the
-    // background of the whole presenter surface, HUD floats on top.
+    // WP-G: full-bleed canvas behind the toolbar — the display root is
+    // absolute inset-0 of its closest positioned ancestor (the content area,
+    // which fills the section when `fullBleedCanvas` removes the toolbar-h
+    // padding) so the Pixi canvas paints behind the floating flow toolbar
+    // (no body cream / page bg strip behind it). Previously `relative h-full
+    // w-full` sized the root to the area below the 4rem padding and left the
+    // toolbar's vertical band empty.
     const rootMatch =
       /data-testid="flower-battle-display"[^>]*class="([^"]*)"/.exec(html)
     expect(rootMatch).not.toBeNull()
-    expect(rootMatch![1]).toContain("relative")
-    expect(rootMatch![1]).toContain("h-full")
+    expect(rootMatch![1]).toContain("absolute")
+    expect(rootMatch![1]).toContain("inset-0")
+    expect(rootMatch![1]).not.toContain("relative")
     expect(rootMatch![1]).toContain("overflow-hidden")
     expect(html).toContain('data-presenter-layout="experience-immersive"')
 

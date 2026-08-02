@@ -413,6 +413,72 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     }
   })
 
+  it("floats the flow toolbar over a full-bleed content shell in flower-battle (WP-G)", () => {
+    // WP-G: with `fullBleedCanvas=true` the flow toolbar sits at
+    // `absolute inset-x-0 top-0 z-20` above the canvas. The content shell
+    // (the wrapper around the toolbar + content area + footer) MUST NOT pad
+    // down by `--toolbar-h` any more — previously this left a 4rem strip
+    // behind the transparent toolbar where neither the canvas nor any
+    // opaque layer painted, so the body cream radial-gradient bled
+    // through. Now the Pixi host extends full-bleed (FlowerBattleDisplay's
+    // root is `absolute inset-0`) and the floating buttons reveal the
+    // scene through the gaps.
+    const fullBleedHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        fullBleedCanvas
+      >
+        <div>flower</div>
+      </GameWrapper>,
+    )
+    const classicHtml = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic</div>
+      </GameWrapper>,
+    )
+
+    const fullBleedContentClass = contentShellClassOf(fullBleedHtml)
+    // Toolbar height CSS var dropped from the section in WP-G — nothing
+    // references it any more (the content area is no longer padded down).
+    expect(fullBleedHtml).not.toContain("--toolbar-h")
+    // Content area has the fullBleed shell classes but NO toolbar-h
+    // padding-top (the previous bug left a strip behind the transparent
+    // toolbar where neither canvas nor opaque layer rendered).
+    expect(fullBleedContentClass).toContain("relative")
+    expect(fullBleedContentClass).toContain("overflow-hidden")
+    expect(fullBleedContentClass).toContain("min-h-0")
+    expect(fullBleedContentClass).not.toMatch(/\bpt-\[/)
+
+    const flowClass = toolbarClassOf(fullBleedHtml, "flow")
+    // Toolbar is absolute above the canvas, transparent in fullBleedCanvas
+    // mode (the canvas reads through), and z-20 so it stays above the
+    // Pixi host (z-0) but below the bottom-hud presenter chrome (also z-20
+    // — same stacking context, document order wins so the bottom-hud
+    // chips never get obscured by the toolbar buttons).
+    expect(flowClass).toContain("absolute")
+    expect(flowClass).toContain("inset-x-0")
+    expect(flowClass).toContain("top-0")
+    expect(flowClass).toContain("z-20")
+    expect(flowClass).not.toContain("bg-surface")
+    expect(flowClass).toContain("p-2")
+
+    // Classic mode keeps its normal padded, opaque flow toolbar — the
+    // padding lives on the content area shell, not the toolbar.
+    const classicContentClass = contentShellClassOf(classicHtml)
+    expect(classicContentClass).toContain("justify-center")
+    expect(classicContentClass).toContain("overflow-y-auto")
+    expect(classicContentClass).toContain("px-4")
+    expect(classicContentClass).toContain("pt-2")
+    expect(classicContentClass).toContain("pb-4")
+
+    const classicFlowClass = toolbarClassOf(classicHtml, "flow")
+    expect(classicFlowClass).toContain("bg-surface")
+    expect(classicFlowClass).not.toContain("absolute")
+    expect(classicFlowClass).toContain("p-4")
+  })
+
   it("experience-immersive keeps floating overlay toolbar and full-bleed content", () => {
     const html = renderToStaticMarkup(
       <GameWrapper

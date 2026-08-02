@@ -59,7 +59,7 @@ export function FlowerBattleDisplay({ data }: FlowerBattleDisplayProps) {
       data-flower-battle-phase={state?.phase}
       data-phase-duration-ms={data.phaseDurationMs}
       data-presenter-layout="experience-immersive"
-      className="display-stage relative h-full w-full overflow-hidden"
+      className="display-stage absolute inset-0 overflow-hidden"
       style={
         {
           // Defaults when parent shell has not set the experience safe-area

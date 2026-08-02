@@ -217,11 +217,6 @@ const GameWrapper = ({
         style={
           {
             "--game-fg": "#0E1120",
-            // FB-HUD5: toolbar height CSS var consumed by the content area's
-            // `padding-top` when `fullBleedCanvas` floats the toolbar out of
-            // the flex flow. Keeps the canvas flush under the buttons without
-            // depending on JS measurement.
-            ...(fullBleedCanvas ? { "--toolbar-h": "4rem" } : null),
             // Experience safe-area contract (React HUD ↔ Pixi content).
             ...(isExperienceImmersive
               ? {
@@ -329,11 +324,15 @@ const GameWrapper = ({
                     // cream visual identity belongs to the lobby content
                     // (Room / Wait), not the toolbar.
                     fullBleedCanvas ? null : "bg-surface",
-                    // FB-HUD5: float the toolbar out of the flex flow so the
+                    // FB-HUD5 (WP-G): float the toolbar out of the flex flow so the
                     // content area takes the full section height and the
-                    // canvas paints full-bleed behind the buttons. The
-                    // matching `pt-[var(--toolbar-h)]` on the content area
-                    // below keeps the scene clear of the buttons.
+                    // canvas paints full-bleed behind the buttons. The scene
+                    // reads through the toolbar's transparent band (no
+                    // `pt-[var(--toolbar-h)]` push-down on the content area
+                    // any more — FlowerBattleDisplay's `absolute inset-0`
+                    // root owns the full section height, so the canvas
+                    // extends behind the buttons without needing a
+                    // padding-top to keep the scene clear of them).
                     fullBleedCanvas && "absolute inset-x-0 top-0 z-20",
                   )}
                 >
@@ -669,12 +668,16 @@ const GameWrapper = ({
                   isContentFullBleed
                     ? "relative w-full overflow-hidden"
                     : "justify-center overflow-y-auto px-4 pt-2 pb-4",
-                  // FB-HUD5: the toolbar is `absolute inset-x-0 top-0` so the
-                  // content area gets the full section height — push it down
-                  // by `--toolbar-h` so the scene never sits behind the
-                  // buttons. Cream-chip-wrapper bg stays off in this branch
-                  // (see Group A/B/C below), so the canvas reads through.
-                  fullBleedCanvas && "pt-[var(--toolbar-h)]",
+                  // FB-HUD5 (WP-G): the toolbar is `absolute inset-x-0 top-0`
+                  // AND the canvas now extends full-bleed behind it
+                  // (FlowerBattleDisplay's root is `absolute inset-0`, no
+                  // longer `h-full` of the content area), so the content area
+                  // does NOT need a `pt-[var(--toolbar-h)]` push-down any more
+                  // — the floating buttons reveal the scene through the gaps
+                  // and the toolbar's vertical strip shows actual scene
+                  // pixels instead of the body cream radial-gradient.
+                  // Cream-chip-wrapper bg stays off in this branch (see Group
+                  // A/B/C below), so the canvas reads through.
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
                   // pb-24 pad that cleared it is gone — manager and player share
