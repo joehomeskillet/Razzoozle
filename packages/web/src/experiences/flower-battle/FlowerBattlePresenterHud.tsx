@@ -1,6 +1,6 @@
 import { TEAMS } from "@razzoozle/common/constants"
 import type { Team } from "@razzoozle/common/constants"
-import { Sprout } from "lucide-react"
+import { Sprout, Sun } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -14,7 +14,10 @@ import {
   type ExperienceHudProps,
 } from "../shared/hud/ExperienceHud"
 import { AnswerCounter } from "../shared/hud/AnswerCounter"
-import { PhaseIndicator } from "../shared/hud/PhaseIndicator"
+import {
+  CountdownDisplay,
+  type CountdownDisplayProps,
+} from "../shared/hud/CountdownDisplay"
 import { RoundProgress } from "../shared/hud/RoundProgress"
 import { StatusBanner } from "../shared/hud/StatusBanner"
 import { FlowerPowerupStatusIcons } from "./FlowerPowerupStatusIcons"
@@ -34,9 +37,11 @@ const POWERUP_LABEL_KEYS: Record<PowerupType, string> = {
   acid_rain: "flowerBattlePresenter.powerUp.acidRain",
 }
 
-/** Glass surface for floating HUD cards over the garden canvas. */
-const OVERLAY_SURFACE =
-  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] shadow-md backdrop-blur-sm"
+/** Bottom HUD surface for all safe-zone cards (team, timer, answer). */
+const BOTTOM_HUD_SURFACE =
+  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface-cream)] text-ink shadow-[var(--shadow-flat)]"
+
+type FlowerBattleCountdownProps = CountdownDisplayProps
 
 export interface FlowerBattlePresenterHudProps extends Omit<
   ExperienceHudProps,
@@ -57,6 +62,7 @@ export interface FlowerBattlePresenterHudProps extends Omit<
    * `flow` — stacked flex column (legacy / tests that assert flow layout).
    */
   variant?: "overlay" | "flow"
+  countdown?: FlowerBattleCountdownProps
 }
 
 const teamKeyForIndex = (index: number): Team => TEAMS[index] ?? TEAMS[0]
@@ -94,6 +100,7 @@ export const FlowerBattlePresenterHud = ({
   statusBanner,
   variant = "overlay",
   answerCounter,
+  countdown,
   ...experienceHudProps
 }: FlowerBattlePresenterHudProps) => {
   const { t } = useTranslation("experience_hud")
@@ -130,13 +137,23 @@ export const FlowerBattlePresenterHud = ({
       <section
         key={`${team.name}-${index}`}
         data-testid={`flower-battle-team-hud-${index}`}
-        className={`flex min-w-0 flex-col gap-1.5 p-2 sm:gap-2 sm:p-2.5 ${OVERLAY_SURFACE} ${colors.bg}`}
+        className={`flex min-w-0 flex-1 basis-36 flex-col gap-1.5 p-2.5 sm:gap-2 ${BOTTOM_HUD_SURFACE} max-w-56`}
       >
-        <PhaseIndicator
-          current={points}
-          total={MAX_SUN_POINTS}
-          label={team.name}
-        />
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={`h-2.5 w-2.5 shrink-0 rounded-full ${colors.bar}`}
+          />
+          <span
+            className={`min-w-0 flex-1 truncate text-sm font-semibold ${colors.text}`}
+          >
+            {team.name}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold [font-variant-numeric:tabular-nums_slashed-zero]">
+            <Sun aria-hidden className="size-3.5" />
+            {`${points}/${MAX_SUN_POINTS}`}
+          </span>
+        </div>
 
         <RoundProgress
           value={sunPointsToPercent(points)}
@@ -184,17 +201,30 @@ export const FlowerBattlePresenterHud = ({
         ) : null}
 
         <div
-          data-testid="flower-battle-team-meters"
-          className="pointer-events-auto absolute bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 flex max-w-[min(52rem,68%)] flex-row flex-wrap gap-2"
+          data-testid="flower-battle-bottom-hud"
+          className="pointer-events-none absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] left-[var(--experience-safe-left,0.75rem)] z-20 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 sm:gap-3"
         >
-          {teamCards}
-        </div>
-
-        {answerCounter ? (
-          <div className="pointer-events-auto absolute right-[var(--experience-safe-right,0.75rem)] bottom-[var(--experience-safe-bottom-pad,0.75rem)] z-20">
-            <AnswerCounter {...answerCounter} />
+          <div
+            data-testid="flower-battle-team-meters"
+            className="pointer-events-auto flex min-w-0 flex-wrap items-end gap-2"
+          >
+            {teamCards}
           </div>
-        ) : null}
+
+          <div
+            data-testid="flower-battle-timer-slot"
+            className="pointer-events-auto flex items-end justify-center"
+          >
+            {countdown ? <CountdownDisplay {...countdown} /> : null}
+          </div>
+
+          <div
+            data-testid="flower-battle-answer-counter-slot"
+            className="pointer-events-auto flex items-end justify-end"
+          >
+            {answerCounter ? <AnswerCounter {...answerCounter} /> : null}
+          </div>
+        </div>
       </div>
     )
   }
@@ -209,6 +239,7 @@ export const FlowerBattlePresenterHud = ({
       <ExperienceHud
         {...experienceHudProps}
         answerCounter={answerCounter}
+        countdown={countdown}
         statusBanner={mergedStatusBanner}
         className="shrink-0"
       />

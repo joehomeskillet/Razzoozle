@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
+import type { ReactNode } from "react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 // --- Render-contract mocks (route height chain, WP-958D) -------------------
@@ -19,7 +20,7 @@ vi.mock("react-hot-toast", () => ({
 }))
 
 vi.mock("motion/react", () => ({
-  AnimatePresence: ({ children }: { children?: React.ReactNode }) => (
+  AnimatePresence: ({ children }: { children?: ReactNode }) => (
     <>{children}</>
   ),
   motion: {
@@ -30,7 +31,7 @@ vi.mock("motion/react", () => ({
       className,
       ...rest
     }: {
-      children?: React.ReactNode
+      children?: ReactNode
       className?: string
       [key: string]: unknown
     }) => (
@@ -81,7 +82,19 @@ vi.mock("@razzoozle/web/features/game/utils/firstCorrectSound", () => ({
 vi.mock("@razzoozle/web/components/Button", () => ({
   // Buttons are irrelevant to the section-class height contract; rendering
   // nothing keeps the governance audit free of raw-button mock noise.
-  default: () => null,
+  default: ({
+    children,
+    "data-testid": dataTestId,
+    ...props
+  }: {
+    children?: unknown
+    "data-testid"?: string
+    [key: string]: unknown
+  }) => (
+    <button data-testid={dataTestId} {...(props as Record<string, unknown>)}>
+      {children}
+    </button>
+  ),
 }))
 
 vi.mock("@razzoozle/web/components/Loader", () => ({
@@ -100,7 +113,9 @@ vi.mock("@razzoozle/web/features/manager/components/SimControl", () => ({
 vi.mock("@razzoozle/web/features/game/components/LowLatencyHealth", () => ({
   default: () => null,
 }))
-vi.mock("./AvToggles", () => ({ default: () => null }))
+vi.mock("./AvToggles", () => ({
+  default: () => <div data-testid="av-toggles-button" />,
+}))
 vi.mock("./RejoinQrDialog", () => ({ default: () => null }))
 vi.mock("./GameControlPanel", () => ({ default: () => null }))
 
@@ -258,6 +273,21 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     return match![1]
   }
 
+  const toolbarClassOf = (html: string, variant: "flow" | "overlay") => {
+    const match = new RegExp(
+      `<div[^>]*data-testid="presenter-toolbar"[^>]*data-toolbar-variant="${variant}"[^>]*class="([^\"]*)"`,
+    ).exec(html)
+    expect(match).not.toBeNull()
+    return match![1]
+  }
+
+  const expectNoShellSurface = (className: string) => {
+    expect(className).not.toMatch(/(^|\s)bg-[^\s]+(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)border[^\s]*[^-]?(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)shadow[^\s]*(\s|$)/)
+    expect(className).not.toMatch(/(^|\s)backdrop-blur-[^\s]+(\s|$)/)
+  }
+
   it.each([true, false])(
     "suppresses manager chrome and removes content padding when controls=$controls",
     (controls) => {
@@ -287,6 +317,27 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
       expect(contentShellClass).not.toContain("pb-4")
     },
   )
+
+  it("keeps flow/overlay presenter toolbar shells transparent (no bg/border/shadow/backdrop classes)", () => {
+    const flowHtml = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic presenter</div>
+      </GameWrapper>,
+    )
+    const overlayHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        presenterLayout="experience-immersive"
+      >
+        <div>immersive presenter</div>
+      </GameWrapper>,
+    )
+
+    expectNoShellSurface(toolbarClassOf(flowHtml, "flow"))
+    expectNoShellSurface(toolbarClassOf(overlayHtml, "overlay"))
+  })
 
   it("experience-immersive keeps floating overlay toolbar and full-bleed content", () => {
     const html = renderToStaticMarkup(
@@ -324,6 +375,33 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     expect(html).toContain('data-presenter-layout="normal"')
     expect(html).toContain("cream-field")
     expect(html).toContain('data-toolbar-variant="flow"')
+  })
+
+  it("keeps flow toolbar controls in normal presenter layout", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName="SHOW_RESPONSES"
+        manager
+        controls
+        presenterLayout="normal"
+      >
+        <div>classic question content</div>
+      </GameWrapper>,
+    )
+
+    // questionStates comes from useQuestionStore and is updated by the
+    // UPDATE_QUESTION socket event; in a renderToStaticMarkup test there is
+    // no event, so the question-states chip is conditionally absent. The
+    // exit button (common:exit) renders only when `onBack` is supplied.
+    // The remaining flow toolbar controls are unconditional when controls=true.
+    expect(html).toContain('data-testid="presenter-toolbar"')
+    expect(html).toContain('data-testid="av-toggles-button"')
+    expect(html).toContain('data-toolbar-variant="flow"')
+    expect(html).toContain("game:controls.autoMode")
+    expect(html).toContain("game:controls.autoOff")
+    expect(html).toContain("game:controls.fullscreen")
+    expect(html).toContain("common:next")
+    expect(html).toContain('data-testid="next-btn"')
   })
 
   it.each([true, false])(

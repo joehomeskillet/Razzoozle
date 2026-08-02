@@ -515,6 +515,44 @@ describe("attachGardenPixiApplication", () => {
     expect(browser.resizeObserver.disconnect).toHaveBeenCalledTimes(1)
   })
 
+  it("preserves fractional canvas clientWidth/clientHeight without rounding (WP3 / FB-HUD-WP3)", async () => {
+    // WP3 (FB-HUD-WP3): rounding clientWidth/clientHeight to integers would
+    // place the canvas on a sub-pixel slot inside its flex/grid parent, and
+    // the compositor would then bilinear-resample the canvas bitmap → blur.
+    // The renderer must receive the exact fractional size so Pixi sets
+    // `canvas.style.{width,height}` to the layout's true dimensions.
+    const browser = createBrowserFake()
+    const { app, resize } = createAppFake()
+    const { scene, updateLayout } = createSceneFake()
+    const canvas = createCanvasFake(1600.5, 900.5)
+
+    const createApplication: CreateGardenPixiApplication = vi.fn(
+      async () => app,
+    )
+
+    const { dispose } = await attachGardenPixiApplication(
+      canvas,
+      {
+        createApplication,
+        createScene: () => scene,
+        background: TEST_CANVAS_BACKGROUND,
+      },
+      browser.environment,
+    )
+
+    expect(createApplication).toHaveBeenCalledWith(
+      expect.objectContaining({ width: 1600.5, height: 900.5 }),
+    )
+    expect(updateLayout).toHaveBeenCalledWith(1600.5, 900.5)
+
+    Object.assign(canvas, { clientWidth: 1920.25, clientHeight: 1080.75 })
+    browser.notifyResize()
+    expect(resize).toHaveBeenCalledWith(1920.25, 1080.75)
+    expect(updateLayout).toHaveBeenCalledWith(1920.25, 1080.75)
+
+    dispose()
+  })
+
   it("attaches Page Visibility listener and pauses/resumes the ticker", async () => {
     const browser = createBrowserFake()
     const { app, start, stop } = createAppFake()
@@ -591,7 +629,11 @@ describe("attachGardenPixiApplication", () => {
     dispose()
   })
 
-  it("clamps devicePixelRatio to 2", async () => {
+  it("passes the actual devicePixelRatio through as resolution (WP3 / FB-HUD-WP3)", async () => {
+    // WP3 (FB-HUD-WP3): DPR is no longer clamped to 2. The backing store must
+    // match the device pixel grid (DPR 1/2/3+) so the browser compositor does
+    // not bilinear-upscale the canvas and re-introduce blur on high-DPR
+    // beamers / phones.
     const browser = createBrowserFake({ devicePixelRatio: 3 })
     const createApplication = vi.fn(async () => createAppFake().app)
 
@@ -606,7 +648,28 @@ describe("attachGardenPixiApplication", () => {
     )
 
     expect(createApplication).toHaveBeenCalledWith(
-      expect.objectContaining({ resolution: 2 }),
+      expect.objectContaining({ resolution: 3 }),
+    )
+    dispose()
+  })
+
+  it("falls back to resolution 1 when devicePixelRatio is missing (WP3 / FB-HUD-WP3)", async () => {
+    const browser = createBrowserFake()
+    browser.environment.devicePixelRatio = 0
+    const createApplication = vi.fn(async () => createAppFake().app)
+
+    const { dispose } = await attachGardenPixiApplication(
+      createCanvasFake(),
+      {
+        createApplication,
+        createScene: () => createEmptyGardenScene(),
+        background: TEST_CANVAS_BACKGROUND,
+      },
+      browser.environment,
+    )
+
+    expect(createApplication).toHaveBeenCalledWith(
+      expect.objectContaining({ resolution: 1 }),
     )
     dispose()
   })

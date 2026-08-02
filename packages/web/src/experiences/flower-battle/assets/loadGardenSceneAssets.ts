@@ -220,7 +220,28 @@ export function targetRasterSize(
 ): { width: number; height: number } {
   const isHead = alias.startsWith("plant_head_") || alias.startsWith("face_")
   if (isHead) {
-    return { width: 256, height: 256 }
+    return { width: 512, height: 512 }
+  }
+
+  // Stems + pots: high-DPI rasters at minimum 256×512 (WP-7). Slight aspect
+  // stretch is acceptable — the source SVG is vector and the rasterization
+  // runs at full canvas pixel resolution. Leaves are smaller details;
+  // preserve aspect, floor short side at 256, cap long side at 512.
+  if (alias === "plant_stem_01" || alias === "plant_pot_01") {
+    return { width: 256, height: 512 }
+  }
+  if (alias === "plant_leaf_01") {
+    const minShortSide = 256
+    const maxLongSide = 512
+    const targetWidth = Math.min(maxLongSide, Math.max(minShortSide, vb.width))
+    const targetHeight = Math.round((vb.height / vb.width) * targetWidth)
+    if (targetHeight > maxLongSide) {
+      return { width: minShortSide, height: minShortSide }
+    }
+    return {
+      width: targetWidth,
+      height: Math.max(targetHeight, 1),
+    }
   }
 
   // Wide stage strips (sky/hills/fence/lawn/trees): keep design pixels.

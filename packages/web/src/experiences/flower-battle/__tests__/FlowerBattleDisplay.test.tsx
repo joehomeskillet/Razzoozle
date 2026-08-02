@@ -135,6 +135,14 @@ describe("FlowerBattleDisplay", () => {
     expect(html).toContain("4/8")
   })
 
+  it("threads phaseDurationMs into the presenter HUD countdown timer", () => {
+    const html = renderToStaticMarkup(<FlowerBattleDisplay data={flowerBattleEnvelope()} />)
+
+    expect(html).toContain('data-testid="flower-battle-timer-slot"')
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain("20")
+  })
+
   it("exposes phase + phaseDurationMs as data attributes, never question text", () => {
     const html = renderToStaticMarkup(
       <FlowerBattleDisplay data={flowerBattleEnvelope()} />,

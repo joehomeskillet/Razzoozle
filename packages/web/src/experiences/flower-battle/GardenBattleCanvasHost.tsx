@@ -518,6 +518,17 @@ export function GardenBattleCanvasHost({
             staticNode
           ) : (
             <>
+              {/*
+                WP3 (FB-HUD-WP3) — Canvas-HUD render-path hygiene:
+                `block h-full w-full` only — no `transform`, no `filter`, no
+                `backdrop-filter`, no `will-change: transform`. Anything that
+                promotes the canvas into a compositor layer with a sub-pixel
+                transform re-samples the WebGL bitmap bilinearly and re-introduces
+                the blur the renderer fix (fractional canvas size + DPR-conformant
+                resolution) just removed. Size comes from CSS box layout; Pixi
+                keeps the canvas pixel-aligned via the values it sets on
+                `canvas.style.{width,height}`.
+              */}
               <canvas
                 ref={canvasRef}
                 data-testid="garden-pixi-canvas"
