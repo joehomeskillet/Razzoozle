@@ -318,7 +318,12 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     },
   )
 
-  it("keeps flow/overlay presenter toolbar shells transparent (no bg/border/shadow/backdrop classes)", () => {
+  it("keeps overlay presenter toolbar shell transparent and gives the flow toolbar an opaque surface", () => {
+    // WP-F: the overlay toolbar floats above the canvas so the wrapper
+    // stays transparent (canvas reads through the gaps). The flow toolbar
+    // in classic mode owns an opaque `bg-surface` instead of a cream chip
+    // so the body cream field never bleeds through the gaps between
+    // buttons.
     const flowHtml = renderToStaticMarkup(
       <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
         <div>classic presenter</div>
@@ -335,8 +340,77 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
       </GameWrapper>,
     )
 
-    expectNoShellSurface(toolbarClassOf(flowHtml, "flow"))
     expectNoShellSurface(toolbarClassOf(overlayHtml, "overlay"))
+
+    const flowClass = toolbarClassOf(flowHtml, "flow")
+    expect(flowClass).toContain("bg-surface")
+    // No cream chip wrapper survived in the classic flow toolbar.
+    expect(flowClass).not.toContain("hud-chip-cream")
+  })
+
+  it("drops cream chip wrappers and the cream Progress chip in BOTH classic and full-bleed flow toolbars", () => {
+    // WP-F: previously the cream chip wrapper and the cream Progress chip
+    // were only dropped when `fullBleedCanvas=true`, so classic mode still
+    // showed a cream block around the buttons. Both modes now render the
+    // toolbar without `hud-chip-cream` and the Progress chip without
+    // `bg-surface-cream` so the toolbar is cream-free.
+    const classicHtml = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic</div>
+      </GameWrapper>,
+    )
+    const fullBleedHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        fullBleedCanvas
+      >
+        <div>flower</div>
+      </GameWrapper>,
+    )
+
+    for (const html of [classicHtml, fullBleedHtml]) {
+      expect(html).not.toContain("hud-chip-cream")
+      expect(html).not.toContain("bg-surface-cream")
+    }
+  })
+
+  it("drops the cream-field underlay in classic mode and the immersive branch", () => {
+    // WP-F: the legacy `.cream-field` DOM placeholder (CSS: `background:
+    // transparent`) is no longer rendered by the manager GameWrapper. The
+    // class itself stays defined for the display kiosk + submission pages
+    // that still use it intentionally. Verify the manager view never emits
+    // it, so the toolbar owns its own surface.
+    const classicHtml = renderToStaticMarkup(
+      <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
+        <div>classic</div>
+      </GameWrapper>,
+    )
+    const immersiveHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        presenterLayout="experience-immersive"
+      >
+        <div>immersive</div>
+      </GameWrapper>,
+    )
+    const fullBleedHtml = renderToStaticMarkup(
+      <GameWrapper
+        statusName={STATUS.SHOW_QUESTION}
+        manager
+        controls
+        fullBleedCanvas
+      >
+        <div>full</div>
+      </GameWrapper>,
+    )
+
+    for (const html of [classicHtml, immersiveHtml, fullBleedHtml]) {
+      expect(html).not.toContain("cream-field")
+    }
   })
 
   it("experience-immersive keeps floating overlay toolbar and full-bleed content", () => {
@@ -365,7 +439,11 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     expect(contentShellClass).not.toContain("overflow-y-auto")
   })
 
-  it("normal presenterLayout keeps cream field and flow toolbar", () => {
+  it("normal presenterLayout keeps opaque toolbar and flow toolbar", () => {
+    // WP-F: the manager view no longer renders the `.cream-field` underlay
+    // (it was a transparent DOM placeholder for the body cream bleed) and
+    // the toolbar now owns an opaque `bg-surface` so the body cream field
+    // never shows between buttons in classic mode.
     const html = renderToStaticMarkup(
       <GameWrapper statusName={STATUS.SHOW_QUESTION} manager controls>
         <div>classic content</div>
@@ -373,8 +451,14 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     )
 
     expect(html).toContain('data-presenter-layout="normal"')
-    expect(html).toContain("cream-field")
+    expect(html).not.toContain("cream-field")
     expect(html).toContain('data-toolbar-variant="flow"')
+    const flowMatch = /data-toolbar-variant="flow"[^>]*class="([^"]*)"/.exec(
+      html,
+    )
+    expect(flowMatch).not.toBeNull()
+    expect(flowMatch![1]).toContain("bg-surface")
+    expect(flowMatch![1]).not.toContain("hud-chip-cream")
   })
 
   it("keeps flow toolbar controls in normal presenter layout", () => {

@@ -238,16 +238,15 @@ const GameWrapper = ({
           isExperienceImmersive ? "experience-immersive" : "normal"
         }
       >
-        {/* Body cream gradient is the app-wide field. Immersive experience owns
-            the full viewport with its canvas — skip the cream-field underlay so
-            nothing peeks between canvas edges and the shell. FB-HUD5: also
-            skip it in full-bleed flower-battle, where the canvas paints
-            full-bleed under the absolute toolbar (no gap for cream to bleed
-            through). The class is already `background: transparent`, so this
-            is a hygiene / clarity change, not a paint change. */}
-        {!isExperienceImmersive && !fullBleedCanvas && (
-          <div className="cream-field pointer-events-none fixed inset-0" />
-        )}
+        {/* WP-F: the body radial-gradient is the app-wide cream field. On the
+            manager presenter toolbar it bleeds through the gaps between
+            buttons as a cream/grey wash (visible in classic mode AND on the
+            lobby screen). The toolbar now owns its own opaque surface
+            (`bg-surface`) so the cream is never visible in the toolbar band,
+            and the legacy `.cream-field` underlay is removed here for
+            consistency with the immersive / full-bleed branches that already
+            skip it. The class itself stays defined for the display kiosk and
+            submission pages that still render it intentionally. */}
 
         <div
           className={clsx(
@@ -321,6 +320,15 @@ const GameWrapper = ({
                     // the canvas (no cream margin between them). The chips
                     // still carry their own p-1 inside.
                     fullBleedCanvas ? "p-2" : "p-4",
+                    // WP-F: classic mode owns an opaque `bg-surface` so the
+                    // body cream never bleeds through the gaps between
+                    // buttons. fullBleedCanvas keeps the toolbar transparent
+                    // so the canvas shows through; the cream chip wrappers
+                    // (hud-chip-cream) and the cream Progress chip
+                    // (bg-surface-cream) are dropped in both modes — the
+                    // cream visual identity belongs to the lobby content
+                    // (Room / Wait), not the toolbar.
+                    fullBleedCanvas ? null : "bg-surface",
                     // FB-HUD5: float the toolbar out of the flex flow so the
                     // content area takes the full section height and the
                     // canvas paints full-bleed behind the buttons. The
@@ -332,15 +340,11 @@ const GameWrapper = ({
                   {/* GROUP A: Progress + Auto-Mode */}
                   <div
                     className={clsx(
-                      "flex shrink-0 items-center gap-2",
-                      // FB-HUD4: fullBleedCanvas drops the cream chip wrapper
-                      // so only the buttons themselves sit on the canvas —
-                      // no cream/gray bg behind the buttons.
-                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                      "flex shrink-0 items-center gap-2 p-0",
                     )}
                   >
                     {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
+                      <div className="flex min-h-11 items-center rounded-lg bg-surface px-4 text-lg font-bold text-ink">
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
@@ -382,8 +386,7 @@ const GameWrapper = ({
                   {/* GROUP B: Media/Display Controls (Icon Buttons) */}
                   <div
                     className={clsx(
-                      "flex flex-1 flex-wrap items-center justify-center gap-2",
-                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                      "flex flex-1 flex-wrap items-center justify-center gap-2 p-0",
                     )}
                   >
                     <AvToggles />
@@ -421,8 +424,7 @@ const GameWrapper = ({
                   {/* GROUP C: Phase Actions (Primary Next + Secondary Exit) */}
                   <div
                     className={clsx(
-                      "flex shrink-0 items-center gap-2",
-                      fullBleedCanvas ? "p-0" : "hud-chip-cream p-1",
+                      "flex shrink-0 items-center gap-2 p-0",
                     )}
                   >
                     {statusName !== STATUS.FINISHED &&
@@ -464,15 +466,19 @@ const GameWrapper = ({
                   data-toolbar-variant="flow"
                   className={clsx(
                     "flex w-full flex-wrap items-center justify-between gap-2 p-4",
+                    // WP-F: same opaque surface as the controls branch so the
+                    // body cream never bleeds through the gaps between
+                    // buttons in the display fallback either.
+                    fullBleedCanvas ? null : "bg-surface",
                     // FB-HUD5: mirror the controls branch so the display
                     // fallback also floats above the canvas when the route
                     // is in fullBleedCanvas mode.
                     fullBleedCanvas && "absolute inset-x-0 top-0 z-20",
                   )}
                 >
-                  <div className="hud-chip-cream flex shrink-0 justify-start p-1">
+                  <div className="flex shrink-0 justify-start p-0">
                     {questionStates && (
-                      <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
+                      <div className="flex min-h-11 items-center rounded-lg bg-surface px-4 text-lg font-bold text-ink">
                         {`${questionStates.current} / ${questionStates.total}`}
                       </div>
                     )}
@@ -535,16 +541,13 @@ const GameWrapper = ({
                 >
                   <div
                     className={clsx(
-                      "hud-chip-cream pointer-events-auto flex shrink-0 items-center gap-2 p-1",
+                      "pointer-events-auto flex shrink-0 items-center gap-2 p-0",
                     )}
                   >
 {questionStates && (
                       <div
                         className={clsx(
                           "flex min-h-11 items-center rounded-lg px-4 text-lg font-bold text-ink",
-                          // FB-HUD4: fullBleedCanvas strips the cream
-                          // background — text floats on the canvas.
-                          fullBleedCanvas ? "" : "bg-surface-cream",
                         )}
                       >
                         {`${questionStates.current} / ${questionStates.total}`}
@@ -587,7 +590,7 @@ const GameWrapper = ({
 
                   <div
                     className={clsx(
-                      "hud-chip-cream pointer-events-auto flex max-w-full flex-1 flex-wrap items-center justify-center gap-1.5 p-1 sm:gap-2",
+                      "pointer-events-auto flex max-w-full flex-1 flex-wrap items-center justify-center gap-1.5 p-0 sm:gap-2",
                     )}
                   >
                     <AvToggles />
@@ -624,7 +627,7 @@ const GameWrapper = ({
 
                   <div
                     className={clsx(
-                      "hud-chip-cream pointer-events-auto flex shrink-0 items-center gap-2 p-1",
+                      "pointer-events-auto flex shrink-0 items-center gap-2 p-0",
                     )}
                   >
                     {statusName !== STATUS.FINISHED &&
