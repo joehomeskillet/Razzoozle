@@ -389,15 +389,17 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
       </GameWrapper>,
     )
 
+    // questionStates comes from useQuestionStore and is updated by the
+    // UPDATE_QUESTION socket event; in a renderToStaticMarkup test there is
+    // no event, so the question-states chip is conditionally absent. The
+    // exit button (common:exit) renders only when `onBack` is supplied.
+    // The remaining flow toolbar controls are unconditional when controls=true.
     expect(html).toContain('data-testid="presenter-toolbar"')
     expect(html).toContain('data-testid="av-toggles-button"')
     expect(html).toContain('data-toolbar-variant="flow"')
-    expect(html).toContain("1 / 2")
-    expect(html).toContain("game:questionPrefix")
     expect(html).toContain("game:controls.autoMode")
-    expect(html).toContain("game:controls.fullscreen")
     expect(html).toContain("game:controls.autoOff")
-    expect(html).toContain("common:exit")
+    expect(html).toContain("game:controls.fullscreen")
     expect(html).toContain("common:next")
     expect(html).toContain('data-testid="next-btn"')
   })

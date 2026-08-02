@@ -39,8 +39,7 @@ const POWERUP_LABEL_KEYS: Record<PowerupType, string> = {
 
 /** Bottom HUD surface for all safe-zone cards (team, timer, answer). */
 const BOTTOM_HUD_SURFACE =
-  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--color-field-cream)] text-[var(--game-fg)] shadow-[var(--shadow-flat)]"
-// TBD: replace with bg-[var(--surface-cream)] when WP-1 lands
+  "rounded-[var(--radius-theme)] border border-[var(--border-hairline)] bg-[var(--surface-cream)] text-ink shadow-[var(--shadow-flat)]"
 
 type FlowerBattleCountdownProps = CountdownDisplayProps
 
