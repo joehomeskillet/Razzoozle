@@ -219,6 +219,11 @@ type DomElement = {
   clientWidth?: number
   clientHeight?: number
   className: string
+  style: {
+    [key: string]: string | number
+    setProperty: (propertyName: string, value: string) => void
+    getPropertyValue: (propertyName: string) => string
+  }
   appendChild: (child: unknown) => unknown
   removeChild: (child: unknown) => unknown
   addEventListener: (event: string, listener: () => void) => void
@@ -281,6 +286,18 @@ function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
   const children: unknown[] = []
   const eventListeners = new Map<string, Set<() => void>>()
   const attributes = new Map<string, string>()
+  const style: {
+    [key: string]: string | number
+    setProperty: (propertyName: string, value: string) => void
+    getPropertyValue: (propertyName: string) => string
+  } = {
+    setProperty(propertyName: string, value: string) {
+      style[propertyName] = value
+    },
+    getPropertyValue(propertyName: string) {
+      return String(style[propertyName] ?? "")
+    },
+  }
   const element: DomElement = {
     nodeType: 1,
     nodeName: tag.toUpperCase(),
@@ -288,6 +305,7 @@ function createDomElement(tag: string, ownerDocument: DomDocument): DomElement {
     parentNode: null,
     ownerDocument,
     children,
+    style,
     className: "",
     appendChild(child: unknown) {
       if (
