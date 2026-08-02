@@ -116,6 +116,7 @@ const DisplayPlayPage = () => {
           isExperienceImmersive ? "experience-immersive" : "normal"
         }
         manager
+        managerKioskFullBleed
         controls={false}
       >
         {experienceTransition ? (
