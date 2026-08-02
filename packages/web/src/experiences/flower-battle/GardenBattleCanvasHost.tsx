@@ -43,6 +43,7 @@ import {
   type FlowerEventBubbleEvent,
 } from "./FlowerEventBubble"
 import { FlowerGardenScene } from "./FlowerGardenScene"
+import { GardenTeamOverlay } from "./GardenTeamOverlay"
 import type {
   GardenBattleCanvasHostProps,
   GardenE2EProbeHandle,
@@ -317,11 +318,19 @@ export function GardenBattleCanvasHost({
   environment,
 }: GardenBattleCanvasHostInternalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const hostRef = useRef<HTMLDivElement | null>(null)
   const disposeRef = useRef<(() => void) | undefined>(undefined)
   const [app, setApp] = useState<Application | null>(null)
   const [scene, setScene] = useState<GardenScene | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  // FB-HUD4: live viewport size for the team-card overlay. Re-measured on
+  // mount + every resize via ResizeObserver so card positions track the
+  // canvas during fullscreen / window resize.
+  const [overlayViewport, setOverlayViewport] = useState<{
+    width: number
+    height: number
+  }>({ width: 0, height: 0 })
   // WP-D-2: transient presenter event surfaced as a comic speech bubble
   // (SDD §20.5). Replaced on every POWERUP_APPLIED, cleared on auto-dismiss.
   const [currentEvent, setCurrentEvent] = useState<FlowerEventBubbleEvent | null>(null)
@@ -365,6 +374,29 @@ export function GardenBattleCanvasHost({
     },
     [],
   )
+
+  // FB-HUD4: track host size for the per-plant overlay positioning.
+  useEffect(() => {
+    const host = hostRef.current
+    if (!host) return
+    const update = () => {
+      const rect =
+        typeof host.getBoundingClientRect === "function"
+          ? host.getBoundingClientRect()
+          : ({ width: 0, height: 0 } as DOMRect)
+      setOverlayViewport({
+        width: Math.round(rect.width ?? 0),
+        height: Math.round(rect.height ?? 0),
+      })
+    }
+    update()
+    let ro: ResizeObserver | undefined
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(update)
+      ro.observe(host)
+    }
+    return () => ro?.disconnect()
+  }, [isReady])
 
   useEffect(() => {
     if (effectiveQuality === "static") {
@@ -512,6 +544,7 @@ export function GardenBattleCanvasHost({
           data-seed={seed ?? 0}
           data-recipe-version={recipeVersion ?? CURRENT_GARDEN_RECIPE_VERSION}
           data-phase={phase ?? ""}
+          ref={hostRef}
           className={`relative h-full min-h-0 w-full overflow-hidden ${className}`.trim()}
         >
           {useStatic ? (
@@ -545,6 +578,10 @@ export function GardenBattleCanvasHost({
               >
                 {isReady ? "Garden scene ready" : "Garden scene loading"}
               </div>
+              {/* FB-HUD4: DOM overlay of PlantTeamCards anchored over the
+                  canvas. Renders only when teams exist; static-fallback path
+                  already covers the cards via FlowerGardenScene. */}
+              <GardenTeamOverlay teams={teams} viewport={overlayViewport} />
               {/* WP-D-2: transient comic speech bubble for power-up events
                   (SDD §20.5). Sits in the top safe area so it never covers a
                   plant or the presenter HUD shell. */}
