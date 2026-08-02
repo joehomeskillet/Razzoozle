@@ -227,6 +227,17 @@ function GardenStaticFallback({
         aria-live="polite"
         aria-atomic="true"
         className="sr-only"
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
       >
         {reason === "error"
           ? `Garden scene unavailable${errorMessage ? `: ${errorMessage}` : ""}`
@@ -575,6 +586,17 @@ export function GardenBattleCanvasHost({
                 aria-live="polite"
                 aria-atomic="true"
                 className="sr-only"
+                style={{
+                  position: "absolute",
+                  width: "1px",
+                  height: "1px",
+                  padding: 0,
+                  margin: "-1px",
+                  overflow: "hidden",
+                  clip: "rect(0,0,0,0)",
+                  whiteSpace: "nowrap",
+                  border: 0,
+                }}
               >
                 {isReady ? "Garden scene ready" : "Garden scene loading"}
               </div>
