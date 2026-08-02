@@ -145,11 +145,13 @@ const ManagerGamePage = () => {
   const autoAdvanceMs = (status.data as { autoAdvanceMs?: number })
     ?.autoAdvanceMs
 
-  // Real experience state (not URL/CSS): non-classic envelope ⇒ immersive
-  // full-bleed game with floating controls. Classic / null stays normal flow.
-  const isExperienceImmersive = Boolean(
-    experienceTransition && experienceTransition.mode !== "classic",
-  )
+  // Real experience state (not URL/CSS): non-classic envelope → FLOW
+  // toolbar (matches the classic manager screen) instead of the floating
+  // overlay toolbar. The flower-battle canvas already paints full-bleed via
+  // the host's absolute inset-0 canvas inside its own `.display-stage`
+  // container, so the FLOW toolbar pushes no extra space below — it sits
+  // above the canvas via its own flex item, not via letterbox math.
+  const isExperienceImmersive = false
 
   return (
     // WP-958D: this route mounts no display-kiosk-style ancestor (unlike
