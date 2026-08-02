@@ -348,6 +348,14 @@
         "description": "Custom CSS for the animated background. Saving applies the current theme.",
         "placeholder": "/* CSS here */",
         "title": "Animated CSS"
+      },
+      "iconCount": "Icons",
+      "intensity": "Intensity",
+      "speed": "Speed",
+      "slot": {
+        "auth": "Start / join",
+        "managerGame": "Host screen",
+        "playerGame": "Player phone"
       }
     },
     "animation": {
