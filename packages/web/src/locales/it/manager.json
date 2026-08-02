@@ -281,12 +281,22 @@
     }
   },
   "theme": {
-    "sounds": {
+"sounds": {
       "slots": {
-        "flowerFertilizer": "Suono Fertilizzante (Battaglia Floreale)",
-        "flowerSunbeam": "Suono Raggio Solare (Battaglia Floreale)",
-        "flowerAcidRain": "Suono Pioggia Acida (Battaglia Floreale)"
-      }
+        "flowerFertilizer": "Suono Fertilizzante (Battaglia dei Fiori)",
+        "flowerSunbeam": "Suono Raggio di Sole (Battaglia dei Fiori)",
+        "flowerAcidRain": "Suono Pioggia Acida (Battaglia dei Fiori)"
+      },
+      "custom": "Custom sound",
+      "default": "Default",
+      "description": "Sound slots for game events.",
+      "reset": "Reset",
+      "test": "Test",
+      "title": "Sounds",
+      "toast": {
+        "uploaded": "Sound uploaded"
+      },
+      "upload": "Upload"
     },
     "title": "Theme",
     "intro": "Customize the look and feel of your quiz.",
@@ -306,11 +316,51 @@
     "contrastNote": "Contrast automatically adjusts for readability.",
     "showFooter": "Show footer",
     "preview": {
-      "openWindow": "Open preview window"
+      "openWindow": "Open preview window",
+      "join": "Join",
+      "leaderboard": "Leaderboard",
+      "question": "Question",
+      "title": "Preview"
     },
     "templates": {
-      "delete": "Delete template"
-    }
+      "delete": "Delete template",
+      "apply": "Apply",
+      "edit": "Edit",
+      "emptyHeadline": "No templates yet",
+      "export": "Export",
+      "import": "Import",
+      "namePrompt": "Template name",
+      "none": "No templates available",
+      "save": "Save",
+      "title": "Templates",
+      "saved": "Template saved"
+    },
+    "animatedBg": {
+      "color": "Background color",
+      "mode": {
+        "animated": "Animated",
+        "wallpaper": "Wallpaper"
+      },
+      "title": "Animated background",
+      "toggle": "Toggle animation",
+      "wallpaper": "Wallpaper image",
+      "css": {
+        "description": "Custom CSS for the animated background. Saving applies the current theme.",
+        "placeholder": "/* CSS here */",
+        "title": "Animated CSS"
+      }
+    },
+    "animation": {
+      "description": "Animation settings for the player display.",
+      "previewLabel": "Preview",
+      "replay": "Replay",
+      "title": "Animation"
+    },
+    "toast": {
+      "imageUploaded": "Image uploaded",
+      "saved": "Theme saved"
+    },
+    "upload": "Upload"
   },
   "submissions": {
     "empty": "Nessuna proposta in sospeso.",
