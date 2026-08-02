@@ -476,6 +476,29 @@
         "flowerSunbeam": "阳光束声效（花卉战役）",
         "flowerAcidRain": "酸雨声效（花卉战役）"
       }
+    },
+    "title": "Theme",
+    "intro": "Customize the look and feel of your quiz.",
+    "default": "Default",
+    "branding": "Branding",
+    "appTitle": "App title",
+    "logo": "Logo",
+    "backgrounds": "Backgrounds",
+    "uiColors": "UI colors",
+    "colors": {
+      "primary": "Primary",
+      "background": "Background",
+      "accent": "Accent",
+      "text": "Text"
+    },
+    "answerColors": "Answer colors",
+    "contrastNote": "Contrast automatically adjusts for readability.",
+    "showFooter": "Show footer",
+    "preview": {
+      "openWindow": "Open preview window"
+    },
+    "templates": {
+      "delete": "Delete template"
     }
   },
   "submissions": {
