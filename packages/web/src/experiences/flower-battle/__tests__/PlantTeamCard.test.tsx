@@ -15,6 +15,7 @@ import {
   plantTeamCardPropsFromTeam,
   PLANT_TEAM_CARD_MAX_GROWTH,
   PLANT_TEAM_CARD_MAX_SUN,
+  teamKeyFromName,
 } from "../PlantTeamCard"
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 
@@ -125,20 +126,62 @@ describe("PlantTeamCard", () => {
   })
 })
 
+describe("teamKeyFromName (FB-HUD5: identity-first colour mapping)", () => {
+  it("matches English colour keywords", () => {
+    expect(teamKeyFromName("blue")).toBe("blue")
+    expect(teamKeyFromName("Red")).toBe("red")
+    expect(teamKeyFromName("Green Goblin")).toBe("green")
+    expect(teamKeyFromName("Sunny Yellow")).toBe("yellow")
+  })
+
+  it("matches German colour keywords", () => {
+    expect(teamKeyFromName("Blau")).toBe("blue")
+    expect(teamKeyFromName("Team Rot")).toBe("red")
+    expect(teamKeyFromName("Grüne Drachen")).toBe("green")
+    expect(teamKeyFromName("Gelbe Sonne")).toBe("yellow")
+  })
+
+  it("uses the first matching keyword when multiple are present", () => {
+    expect(teamKeyFromName("Blueberries")).toBe("blue")
+    expect(teamKeyFromName("Reddish")).toBe("red")
+  })
+
+  it("falls back to a stable hash for unknown names (same name → same colour)", () => {
+    const first = teamKeyFromName("Team Quokka")
+    const second = teamKeyFromName("Team Quokka")
+    expect(first).toBe(second)
+    expect(["red", "blue", "green", "yellow"]).toContain(first)
+  })
+
+  it("returns TEAMS[0] for empty / non-string names without throwing", () => {
+    expect(teamKeyFromName("")).toBe("red")
+  })
+})
+
 describe("plantTeamCardPropsFromTeam", () => {
-  it("maps a FlowerBattleTeamState into PlantTeamCardProps", () => {
-    const team = makeTeam("Blau", 3, 1)
-    const props = plantTeamCardPropsFromTeam(team, 1)
-    expect(props).toEqual({
-      teamName: "Blau",
+  it("derives teamKey from the team's name (keyword match), not from the slot index", () => {
+    // FB-HUD5 regression: previously a team named "Blue" at index 0 was
+    // mapped to "red" via TEAMS[index]. The colour must come from the
+    // team's identity (the name).
+    const blueAtZero = plantTeamCardPropsFromTeam(makeTeam("Blue", 3, 1), 0)
+    expect(blueAtZero.teamKey).toBe("blue")
+    expect(blueAtZero).toEqual({
+      teamName: "Blue",
       teamKey: "blue",
       growthStage: 3,
       sunPoints: 1,
     })
   })
 
-  it("uses TEAMS[0] for unknown / out-of-range indices without throwing", () => {
-    const props = plantTeamCardPropsFromTeam(makeTeam("X", 0, 0), 99)
-    expect(props.teamKey).toBe("red")
+  it("derives teamKey from a localized keyword (German) regardless of index", () => {
+    const rotAtThree = plantTeamCardPropsFromTeam(makeTeam("Rot", 0, 0), 3)
+    expect(rotAtThree.teamKey).toBe("red")
+  })
+
+  it("falls back to a stable hash for unknown names (same name → same colour)", () => {
+    const a = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 99)
+    const b = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 99)
+    expect(a.teamKey).toBe(b.teamKey)
+    expect(["red", "blue", "green", "yellow"]).toContain(a.teamKey)
   })
 })

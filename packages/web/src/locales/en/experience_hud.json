@@ -30,6 +30,10 @@
     "sunPoints": {
       "label": "Sun points"
     },
+    "plantCard": {
+      "ariaLabel": "Team {{name}} — stage {{stage}} of {{target}}, sun points {{percent}} percent",
+      "progressAria": "Growth {{stage}} of {{target}}, sun points {{percent}} percent"
+    },
     "powerUpChoice": "Team {{teamName}} chose {{powerUp}}",
     "powerUp": {
       "fertilizer": "Fertilizer",

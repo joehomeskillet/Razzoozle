@@ -41,6 +41,46 @@ const resolveTeamKey = (teamKey: string): Team => {
   return TEAMS[0]
 }
 
+/**
+ * Maps a free-form team name to one of the fixed team colour keys.
+ * Identity-first (never the team-array index) so a team named "Blue"
+ * always paints the blue dot, even if it sits at array position 0.
+ *
+ *  1. If `name` contains a keyword (English "red/blue/green/yellow"
+ *     or German "rot/blau/grün/gelb") → that colour.
+ *  2. Otherwise: stable FNV-style 32-bit hash of `name` → index in
+ *     `TEAMS`. Same name ⇒ same colour across renders.
+ *
+ * Exported for unit tests; pure / no DOM / no i18n.
+ */
+const NAME_TO_TEAM_KEYWORD: Record<string, Team> = {
+  red: "red",
+  blue: "blue",
+  green: "green",
+  yellow: "yellow",
+  rot: "red",
+  blau: "blue",
+  grün: "green",
+  gelb: "yellow",
+}
+
+export const teamKeyFromName = (name: string): Team => {
+  if (typeof name === "string" && name.length > 0) {
+    const lower = name.toLowerCase()
+    for (const [keyword, colour] of Object.entries(NAME_TO_TEAM_KEYWORD)) {
+      if (lower.includes(keyword)) return colour
+    }
+    // Stable hash fallback — identical name yields identical colour.
+    let hash = 0
+    for (let i = 0; i < name.length; i += 1) {
+      hash = (hash * 31 + name.charCodeAt(i)) | 0
+    }
+    const idx = Math.abs(hash) % TEAMS.length
+    return TEAMS[idx]!
+  }
+  return TEAMS[0]
+}
+
 const clampToRange = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) return min
   return Math.min(max, Math.max(min, value))
@@ -105,6 +145,10 @@ export const PlantTeamCard = ({
       data-team-name={displayName}
       role="group"
       aria-label={t("flowerBattlePresenter.plantCard.ariaLabel", {
+        name: displayName,
+        stage: safeStage,
+        target: safeStageTarget,
+        percent: safePercent,
         defaultValue: `Team ${displayName} — ${safeStage} von ${safeStageTarget} Fortschritt, ${safePercent} Prozent Sonnenpunkte`,
       })}
       className="plant-team-card relative isolate w-full min-w-0 rounded-[14px] bg-[var(--surface-cream)] px-3 py-2.5 text-ink"
@@ -146,6 +190,9 @@ export const PlantTeamCard = ({
         aria-valuemax={safeStageTarget}
         aria-valuenow={safeStage}
         aria-valuetext={t("flowerBattlePresenter.plantCard.progressAria", {
+          stage: safeStage,
+          target: safeStageTarget,
+          percent: safePercent,
           defaultValue: `Wachstum ${safeStage} von ${safeStageTarget}, Sonnenpunkte ${safePercent} Prozent`,
         })}
         data-testid="plant-team-card-progress"
@@ -168,12 +215,17 @@ export const PlantTeamCard = ({
  * `FlowerBattleTeamState` ab, ohne dass der Aufrufer Mapping-Code wiederholen
  * muss. Bleibt rein (kein Store-Zugriff, keine Side-Effects) und ist daher
  * trivial in Unit-Tests einsetzbar.
+ *
+ * `teamKey` is derived from `team.name` (keyword match + stable hash
+ * fallback) so the colour always reflects the team's identity, never
+ * its array position. The `index` argument is kept for API stability
+ * with call sites that already pass a slot index.
  */
 export const plantTeamCardPropsFromTeam = (
   team: FlowerBattleTeamState,
-  index: number,
+  _index: number,
 ): PlantTeamCardProps => {
-  const teamKey = (TEAMS as readonly string[])[index] ?? TEAMS[0]
+  const teamKey = teamKeyFromName(team.name)
   return {
     teamName: team.name,
     teamKey,

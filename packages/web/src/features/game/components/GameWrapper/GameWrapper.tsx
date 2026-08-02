@@ -217,6 +217,11 @@ const GameWrapper = ({
         style={
           {
             "--game-fg": "#0E1120",
+            // FB-HUD5: toolbar height CSS var consumed by the content area's
+            // `padding-top` when `fullBleedCanvas` floats the toolbar out of
+            // the flex flow. Keeps the canvas flush under the buttons without
+            // depending on JS measurement.
+            ...(fullBleedCanvas ? { "--toolbar-h": "4rem" } : null),
             // Experience safe-area contract (React HUD ↔ Pixi content).
             ...(isExperienceImmersive
               ? {
@@ -235,8 +240,12 @@ const GameWrapper = ({
       >
         {/* Body cream gradient is the app-wide field. Immersive experience owns
             the full viewport with its canvas — skip the cream-field underlay so
-            nothing peeks between canvas edges and the shell. */}
-        {!isExperienceImmersive && (
+            nothing peeks between canvas edges and the shell. FB-HUD5: also
+            skip it in full-bleed flower-battle, where the canvas paints
+            full-bleed under the absolute toolbar (no gap for cream to bleed
+            through). The class is already `background: transparent`, so this
+            is a hygiene / clarity change, not a paint change. */}
+        {!isExperienceImmersive && !fullBleedCanvas && (
           <div className="cream-field pointer-events-none fixed inset-0" />
         )}
 
@@ -312,6 +321,12 @@ const GameWrapper = ({
                     // the canvas (no cream margin between them). The chips
                     // still carry their own p-1 inside.
                     fullBleedCanvas ? "p-2" : "p-4",
+                    // FB-HUD5: float the toolbar out of the flex flow so the
+                    // content area takes the full section height and the
+                    // canvas paints full-bleed behind the buttons. The
+                    // matching `pt-[var(--toolbar-h)]` on the content area
+                    // below keeps the scene clear of the buttons.
+                    fullBleedCanvas && "absolute inset-x-0 top-0 z-20",
                   )}
                 >
                   {/* GROUP A: Progress + Auto-Mode */}
@@ -444,7 +459,17 @@ const GameWrapper = ({
 
               {/* Display mode fallback (manager && !controls): classic flow only */}
               {showFlowToolbar && !controls && (
-                <div className="flex w-full flex-wrap items-center justify-between gap-2 p-4">
+                <div
+                  data-testid="presenter-toolbar"
+                  data-toolbar-variant="flow"
+                  className={clsx(
+                    "flex w-full flex-wrap items-center justify-between gap-2 p-4",
+                    // FB-HUD5: mirror the controls branch so the display
+                    // fallback also floats above the canvas when the route
+                    // is in fullBleedCanvas mode.
+                    fullBleedCanvas && "absolute inset-x-0 top-0 z-20",
+                  )}
+                >
                   <div className="hud-chip-cream flex shrink-0 justify-start p-1">
                     {questionStates && (
                       <div className="flex min-h-11 items-center rounded-lg bg-surface-cream px-4 text-lg font-bold text-ink">
@@ -641,6 +666,12 @@ const GameWrapper = ({
                   isContentFullBleed
                     ? "relative w-full overflow-hidden"
                     : "justify-center overflow-y-auto px-4 pt-2 pb-4",
+                  // FB-HUD5: the toolbar is `absolute inset-x-0 top-0` so the
+                  // content area gets the full section height — push it down
+                  // by `--toolbar-h` so the scene never sits behind the
+                  // buttons. Cream-chip-wrapper bg stays off in this branch
+                  // (see Group A/B/C below), so the canvas reads through.
+                  fullBleedCanvas && "pt-[var(--toolbar-h)]",
                   // The rejoin QR now lives inline in the top host-icon row (no
                   // longer a fixed bottom-left badge), so the old manager-only
                   // pb-24 pad that cleared it is gone — manager and player share
