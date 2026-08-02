@@ -16,9 +16,8 @@ import {
   type RowState,
 } from "@razzoozle/web/features/manager/components/configurations/ConfigAchievements/types"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
-import { ActionFooter } from "@razzoozle/web/components/ui"
-import Button from "@razzoozle/web/components/Button"
-import { Award, RotateCcw } from "lucide-react"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
+import { Award } from "lucide-react"
 import { AnimatePresence, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
@@ -143,6 +142,10 @@ const ConfigAchievements = () => {
     )
   }
 
+  const saveLabel = saved
+    ? t("manager:achievementsConfig.saved")
+    : t("manager:achievementsConfig.save")
+
   return (
     <>
       <div className="mb-4 flex shrink-0 flex-col gap-3">
@@ -228,27 +231,33 @@ const ConfigAchievements = () => {
       </SectionCard>
       </div>
 
-      <ActionFooter dirty={isDirty}>
-        <Button
-          variant="secondary"
-          type="button"
-          onClick={handleReset}
-          className="rounded-[var(--radius-theme)]"
-        >
-          <RotateCcw className="size-4" aria-hidden />
-          {t("manager:achievementsConfig.reset")}
-        </Button>
-        <Button
-          variant="primary"
-          type="button"
-          className="flex-1 rounded-[var(--radius-theme)] sm:flex-none"
-          onClick={handleSave}
-        >
-          {saved
-            ? t("manager:achievementsConfig.saved")
-            : t("manager:achievementsConfig.save")}
-        </Button>
-      </ActionFooter>
+      <ActionFooterCompact
+        instanceId="achievements"
+        actions={[
+          {
+            key: "achievements-reset",
+            iconName: "Reset",
+            intent: "secondary",
+            testId: "achievements-reset-btn",
+            label: t("manager:achievementsConfig.reset"),
+            onClick: handleReset,
+          },
+          {
+            key: "achievements-save",
+            iconName: "Save",
+            intent: "primary",
+            testId: "achievements-save-btn",
+            label: saveLabel,
+            onClick: handleSave,
+            disabled: !isDirty,
+            disabledReason: !isDirty
+              ? t("manager:achievementsConfig.saved", {
+                  defaultValue: "Saved",
+                })
+              : undefined,
+          },
+        ]}
+      />
     </>
   )
 }

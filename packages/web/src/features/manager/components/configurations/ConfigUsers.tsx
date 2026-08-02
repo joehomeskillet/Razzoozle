@@ -3,10 +3,9 @@ import Button from "@razzoozle/web/components/Button"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
-import { ActionFooter } from "@razzoozle/web/components/ui"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import { useManagerStore } from "@razzoozle/web/features/game/stores/manager"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import { UserPlus } from "lucide-react"
 import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
@@ -247,10 +246,17 @@ const ConfigUsers = () => {
     setIsCreateDialogOpen(true)
   }
 
+  const handleOpenCreateDialog = () => {
+    setCopySourceId(null)
+    setUsername("")
+    setPassword("")
+    setRole("user")
+    setIsCreateDialogOpen(true)
+  }
+
   return (
     <>
-    {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
-    <div className="flex flex-1 flex-col gap-4 pb-20">
+    <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={t("manager:users.title")}
         subtitle={t("manager:users.intro")}
@@ -398,24 +404,19 @@ const ConfigUsers = () => {
       />
     </div>
 
-    <ActionFooter>
-      <Button
-        data-testid="users-create-btn"
-        variant="primary"
-        size="lg"
-        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-        onClick={() => {
-          setCopySourceId(null)
-          setUsername("")
-          setPassword("")
-          setRole("user")
-          setIsCreateDialogOpen(true)
-        }}
-      >
-        <UserPlus className="mr-2 h-4 w-4" />
-        {t("manager:users.create")}
-      </Button>
-    </ActionFooter>
+    <ActionFooterCompact
+      instanceId="users"
+      actions={[
+        {
+          key: "create",
+          iconName: "Create",
+          intent: "primary",
+          label: t("manager:users.create"),
+          onClick: handleOpenCreateDialog,
+          testId: "users-create-btn",
+        },
+      ]}
+    />
     </>
   )
 }

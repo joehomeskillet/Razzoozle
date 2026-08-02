@@ -15,18 +15,24 @@
  * check them in a single call rather than relying on canvas existence.
  */
 
-import { Container, Texture } from "pixi.js"
+import { Container, Sprite, Texture } from "pixi.js"
 
 import type {
   GardenAssetDiagnostics,
   PlantBodyTextures,
   PlantHeadTextures,
+  PlantVariantTextures,
 } from "../assets/loadGardenSceneAssets"
 import type {
   GardenE2EIdentity,
   GardenPixiApplicationHandle,
   GardenScene,
 } from "../garden-pixi.types"
+import {
+  gardenAssetAliasForTexture,
+  TEAM_PLANT_KEYS,
+} from "../assets/loadGardenSceneAssets"
+import { AssetPlantView } from "./AssetPlantView"
 import {
   defaultPlantColors,
   DummyPlantView,
@@ -115,6 +121,8 @@ export interface ProceduralGardenScene extends GardenScene {
   /** Visible logical band after cover-crop (null before first layout). */
   getVisibleRect(): LogicalRect | null
   getLayoutDiagnostics(): GardenLayoutDiagnostics
+  /** True when every visible asset plant has completed its stage transition. */
+  arePlantTransitionsSettled(): boolean
 }
 
 export interface CreateGardenSceneOptions {
@@ -133,6 +141,17 @@ export interface CreateGardenSceneOptions {
   plantHeads?: Partial<PlantHeadTextures>
   /** Preloaded stem / leaf / pot body textures for asset-built flowers. */
   plantBody?: PlantBodyTextures
+  /**
+   * Full-color Fluent production plant stage textures per species. When
+   * present for a species, high-quality `AssetPlantView` is used for that
+   * species. Missing species fall back independently to DummyPlantView.
+   */
+  plantVariants?: PlantVariantTextures | null
+  /**
+   * Honours `prefers-reduced-motion`: disables the stage transition
+   * (AssetPlantView). Forwarded from the attach path.
+   */
+  prefersReducedMotion?: boolean
   /** Diagnostics snapshot for E2E / window probe. */
   assetDiagnostics?: GardenAssetDiagnostics | null
 }
@@ -154,7 +173,36 @@ export function createGardenScene(
   const layerAssets = options.layerAssets
   const plantHeads = options.plantHeads
   const plantBody = options.plantBody
+  const plantVariants = options.plantVariants ?? null
+  const prefersReducedMotion = options.prefersReducedMotion ?? false
   const assetDiagnostics = options.assetDiagnostics ?? null
+  const usedAliasSet = new Set<string>()
+  if (assetDiagnostics) {
+    // Loading says what is available; scene traversal below is the sole source
+    // of truth for what production actually selected into a visible Sprite.
+    assetDiagnostics.usedSpriteAliases.length = 0
+  }
+
+  function recordUsedSpriteAliases(
+    container: Container,
+    ancestorsVisible = true,
+  ): void {
+    if (!assetDiagnostics || !ancestorsVisible) return
+    for (const child of container.children) {
+      const visible = ancestorsVisible && child.visible
+      if (!visible) continue
+      if (child instanceof Sprite) {
+        const alias = gardenAssetAliasForTexture(child.texture)
+        if (alias && !usedAliasSet.has(alias)) {
+          usedAliasSet.add(alias)
+          assetDiagnostics.usedSpriteAliases.push(alias)
+        }
+      }
+      if (child instanceof Container && child.children.length > 0) {
+        recordUsedSpriteAliases(child, visible)
+      }
+    }
+  }
 
   const root = new Container()
   root.label = "garden-root"
@@ -163,6 +211,7 @@ export function createGardenScene(
   for (const layer of layers.ordered) {
     root.addChild(layer)
   }
+  recordUsedSpriteAliases(root)
 
   const attach = options.attachToStage !== false
   const stageHost = app as StageHost
@@ -187,6 +236,12 @@ export function createGardenScene(
       const speed = far ? 0.35 : 0.7
       spr.x = cloudBaseX[i]! + Math.sin(parallaxT * speed + i) * amp
     }
+    // Drive per-plant stage transitions (AssetPlantView only; no-op otherwise).
+    for (const plant of plants) {
+      if (plant instanceof AssetPlantView) {
+        plant.update(ticker.deltaTime)
+      }
+    }
   }
   if (typeof stageHost.ticker?.add === "function") {
     stageHost.ticker.add(onTick)
@@ -200,11 +255,24 @@ export function createGardenScene(
   let lastTeamCount = 0
   // SDD §30 probe-v3: monotonic normalized-state revision counter.
   let revision = 0
-  const plants: DummyPlantView[] = []
+  // Union: AssetPlantView when Fluent variants are available, else DummyPlantView.
+  type PlantView = DummyPlantView | AssetPlantView
+  const plants: PlantView[] = []
   const teamNames: string[] = []
   /** Per-plot team HUD containers on `layers.presenterHud` (parallel to real teams). */
   const teamHuds: Container[] = []
   let teamTints: number[] = []
+
+  function arePlantTransitionsSettled(): boolean {
+    for (const plant of plants) {
+      if (!(plant instanceof AssetPlantView)) continue
+      const sprite = plant.root.getChildByLabel("plant-sprite")
+      if (sprite instanceof Sprite && sprite.visible && sprite.alpha < 1) {
+        return false
+      }
+    }
+    return true
+  }
 
   /**
    * Team-HUD palette: theme resolver when available; otherwise derive from the
@@ -300,9 +368,7 @@ export function createGardenScene(
   }
 
   /** Grow/shrink/update team HUDs to match the live roster (not layout padding). */
-  function syncTeamHuds(
-    teams: readonly GardenSceneTeamSnapshot[],
-  ): void {
+  function syncTeamHuds(teams: readonly GardenSceneTeamSnapshot[]): void {
     while (teamHuds.length > teams.length) {
       const removed = teamHuds.pop()
       if (removed) destroyTeamHud(removed)
@@ -358,19 +424,32 @@ export function createGardenScene(
     while (plants.length < teamCount) {
       const index = plants.length
       const tint = teamTints[index] ?? palette.plantPetal
-      // Full asset plant: pot + stem + leaves + head (Graphics only if missing).
-      // Heads already bake eyes/smile — no face-emote overlay.
-      const plant = new DummyPlantView({
-        colors: {
-          ...defaultPlantColors(palette),
-          petal: tint,
-        },
-        label: `actor-plant-${index}`,
-        headTexture: headTextureForIndex(index),
-        stemTexture: plantBody?.stem,
-        leafTexture: plantBody?.leaf,
-        potTexture: plantBody?.pot,
-      })
+      // High-quality production path: Fluent-derived species per slot, no
+      // global team tint on the plant. Falls back to the legacy asset-built
+      // DummyPlantView when plantVariants are unavailable.
+      const speciesKey = TEAM_PLANT_KEYS[index % TEAM_PLANT_KEYS.length]!
+      const variants = plantVariants?.[speciesKey]
+      let plant: PlantView
+      if (variants) {
+        plant = new AssetPlantView({
+          label: `actor-plant-${index}`,
+          stages: variants,
+          potTexture: plantBody?.pot,
+          reducedMotion: prefersReducedMotion,
+        })
+      } else {
+        plant = new DummyPlantView({
+          colors: {
+            ...defaultPlantColors(palette),
+            petal: tint,
+          },
+          label: `actor-plant-${index}`,
+          headTexture: headTextureForIndex(index),
+          stemTexture: plantBody?.stem,
+          leafTexture: plantBody?.leaf,
+          potTexture: plantBody?.pot,
+        })
+      }
       plants.push(plant)
       // SDD §30 probe-v3: per-plant team name parallel to the actorPlants
       // array; defaults to "" until the next updateSnapshot applies a name.
@@ -494,6 +573,8 @@ export function createGardenScene(
       }
     },
 
+    arePlantTransitionsSettled,
+
     getE2EIdentity(): GardenE2EIdentity {
       // SDD §30 probe-v3: every per-plant parallel array is sliced to the
       // teamNames length (= the snapshot team count, NOT the layout-padded
@@ -563,6 +644,7 @@ export function createGardenScene(
           plant.root.position.set(anchor.x, anchor.y)
         }
       }
+      recordUsedSpriteAliases(layers.actors)
       // SDD §30 probe-v3: drop padded slots beyond the snapshot team
       // count so teamNames.length === teams.length even when layout pads
       // to a minimum of 2 anchors for visual stability.

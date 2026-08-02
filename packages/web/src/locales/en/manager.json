@@ -16,7 +16,15 @@
   "aria": {
     "openNav": "Open navigation",
     "navTitle": "Navigation",
-    "exportQuestionsCsv": "Export question answers as CSV"
+    "actionFooterCompact": "Compact game controls",
+    "exportQuestionsCsv": "Export question answers as CSV",
+    "actions": {
+      "autoToggle": "Toggle auto-advance",
+      "skipQuestion": "Skip question",
+      "revealAnswer": "Reveal answer",
+      "subtractTime": "Subtract 10 seconds",
+      "addTime": "Add 10 seconds"
+    }
   },
   "kickPlayer": {
     "aria": "Remove {{name}} from the game",
@@ -467,8 +475,89 @@
         "flowerFertilizer": "Fertilizer Sound (Flower Battle)",
         "flowerSunbeam": "Sunbeam Sound (Flower Battle)",
         "flowerAcidRain": "Acid Rain Sound (Flower Battle)"
+      },
+      "custom": "Custom sound",
+      "default": "Default",
+      "description": "Sound slots for game events.",
+      "reset": "Reset",
+      "test": "Test",
+      "title": "Sounds",
+      "toast": {
+        "uploaded": "Sound uploaded"
+      },
+      "upload": "Upload"
+    },
+    "title": "Theme",
+    "intro": "Customize the look and feel of your quiz.",
+    "default": "Default",
+    "branding": "Branding",
+    "appTitle": "App title",
+    "logo": "Logo",
+    "backgrounds": "Backgrounds",
+    "uiColors": "UI colors",
+    "colors": {
+      "primary": "Primary",
+      "background": "Background",
+      "accent": "Accent",
+      "text": "Text"
+    },
+    "answerColors": "Answer colors",
+    "contrastNote": "Contrast automatically adjusts for readability.",
+    "showFooter": "Show footer",
+    "preview": {
+      "openWindow": "Open preview window",
+      "join": "Join",
+      "leaderboard": "Leaderboard",
+      "question": "Question",
+      "title": "Preview"
+    },
+    "templates": {
+      "delete": "Delete template",
+      "apply": "Apply",
+      "edit": "Edit",
+      "emptyHeadline": "No templates yet",
+      "export": "Export",
+      "import": "Import",
+      "namePrompt": "Template name",
+      "none": "No templates available",
+      "save": "Save",
+      "title": "Templates",
+      "saved": "Template saved"
+    },
+    "animatedBg": {
+      "color": "Background color",
+      "mode": {
+        "animated": "Animated",
+        "wallpaper": "Wallpaper"
+      },
+      "title": "Animated background",
+      "toggle": "Toggle animation",
+      "wallpaper": "Wallpaper image",
+      "css": {
+        "description": "Custom CSS for the animated background. Saving applies the current theme.",
+        "placeholder": "/* CSS here */",
+        "title": "Animated CSS"
+      },
+      "iconCount": "Icons",
+      "intensity": "Intensity",
+      "speed": "Speed",
+      "slot": {
+        "auth": "Start / join",
+        "managerGame": "Host screen",
+        "playerGame": "Player phone"
       }
-    }
+    },
+    "animation": {
+      "description": "Animation settings for the player display.",
+      "previewLabel": "Preview",
+      "replay": "Replay",
+      "title": "Animation"
+    },
+    "toast": {
+      "imageUploaded": "Image uploaded",
+      "saved": "Theme saved"
+    },
+    "upload": "Upload"
   },
   "submissions": {
     "empty": "No pending suggestions.",

@@ -40,7 +40,22 @@ import flowerHeadTulipUrl from "../../../assets/experiences/flower-battle/optimi
 import faceHappyUrl from "../../../assets/experiences/flower-battle/optimized/fixed/face-emotes-face-emote-happy-01.svg?url"
 import plantStemUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-stem-01.svg?url"
 import plantLeafUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-leaf-01.svg?url"
-import plantPotUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-pot-01.svg?url"
+// Fluent-derived production plant stages (full source colors preserved).
+import plantSharedSeedlingUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/seedling.svg?url"
+import plantSharedSproutUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/sprout.svg?url"
+import plantPotUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/pot.svg?url"
+import plantVioletBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/bud.svg?url"
+import plantVioletHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/half-bloom.svg?url"
+import plantVioletFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/full-bloom.svg?url"
+import plantBlueBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/blue-tulip/bud.svg?url"
+import plantBlueHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/blue-tulip/half-bloom.svg?url"
+import plantBlueFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/blue-tulip/full-bloom.svg?url"
+import plantOrangeBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/orange-sunflower/bud.svg?url"
+import plantOrangeHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/orange-sunflower/half-bloom.svg?url"
+import plantOrangeFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/orange-sunflower/full-bloom.svg?url"
+import plantGreenBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/bud.svg?url"
+import plantGreenHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/half-bloom.svg?url"
+import plantGreenFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/full-bloom.svg?url"
 
 /** Stable Pixi / diagnostics alias → Vite-hashed asset URL. */
 export const GARDEN_SCENE_ASSET_URLS = {
@@ -73,10 +88,26 @@ export const GARDEN_SCENE_ASSET_URLS = {
   plant_head_sun: flowerHeadSunUrl,
   plant_head_tulip: flowerHeadTulipUrl,
   face_emote_happy: faceHappyUrl,
-  /** Tintable stem / leaf / pot body for asset-built team flowers. */
+  /** Tintable stem / leaf body for the legacy fallback plant. */
   plant_stem_01: plantStemUrl,
   plant_leaf_01: plantLeafUrl,
+  /** Full-color Fluent pot shared by every HQ plant. */
   plant_pot_01: plantPotUrl,
+  // Fluent-derived production plant stages (full source colors preserved).
+  plant_shared_seedling: plantSharedSeedlingUrl,
+  plant_shared_sprout: plantSharedSproutUrl,
+  plant_violet_bud: plantVioletBudUrl,
+  plant_violet_half: plantVioletHalfUrl,
+  plant_violet_full: plantVioletFullUrl,
+  plant_blue_bud: plantBlueBudUrl,
+  plant_blue_half: plantBlueHalfUrl,
+  plant_blue_full: plantBlueFullUrl,
+  plant_orange_bud: plantOrangeBudUrl,
+  plant_orange_half: plantOrangeHalfUrl,
+  plant_orange_full: plantOrangeFullUrl,
+  plant_green_bud: plantGreenBudUrl,
+  plant_green_half: plantGreenHalfUrl,
+  plant_green_full: plantGreenFullUrl,
 } as const
 
 export type GardenSceneAssetAlias = keyof typeof GARDEN_SCENE_ASSET_URLS
@@ -105,6 +136,21 @@ export const GARDEN_SCENE_REQUIRED_ALIASES = [
   "plant_stem_01",
   "plant_leaf_01",
   "plant_pot_01",
+  // Fluent-derived production plant stages (full source colors preserved).
+  "plant_shared_seedling",
+  "plant_shared_sprout",
+  "plant_violet_bud",
+  "plant_violet_half",
+  "plant_violet_full",
+  "plant_blue_bud",
+  "plant_blue_half",
+  "plant_blue_full",
+  "plant_orange_bud",
+  "plant_orange_half",
+  "plant_orange_full",
+  "plant_green_bud",
+  "plant_green_half",
+  "plant_green_full",
 ] as const satisfies readonly GardenSceneAssetAlias[]
 
 export type GardenSceneRequiredAlias =

@@ -4,12 +4,14 @@
 import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
 import {
+  ACTION_FOOTER_GRADIENT_CLASS,
   ActionFooterHostProvider,
   ActionFooterHostSlot,
   createActionFooterRegistry,
   setRequiredFooterEnforcement,
   REQUIRED_FOOTER_ENFORCEMENT,
 } from "@razzoozle/web/features/manager/contexts/action-footer-host-context"
+import ConsoleShell from "@razzoozle/web/features/manager/components/console/ConsoleShell"
 
 describe("createActionFooterRegistry", () => {
   it("register returns cleanup and tracks count", () => {
@@ -42,7 +44,9 @@ describe("createActionFooterRegistry", () => {
     const reg = createActionFooterRegistry({ strict: false, onError })
     reg.register("a")
     reg.register("b")
-    expect(onError).toHaveBeenCalledWith(expect.stringMatching(/only one footer/))
+    expect(onError).toHaveBeenCalledWith(
+      expect.stringMatching(/only one footer/),
+    )
   })
 
   it("assertPolicy none + registered throws when strict", () => {
@@ -84,17 +88,59 @@ describe("createActionFooterRegistry", () => {
 
 describe("ActionFooterHostSlot (SSR markup)", () => {
   it("renders host footer with data-testid inside provider", () => {
-    // registrationCount starts at 0 → hidden attribute present
+    // registrationCount starts at 0; Lead-Decision 2026-08-02: footer slot
+    // ALWAYS renders — no `:empty` collapse anymore.
     const html = renderToStaticMarkup(
-      <ActionFooterHostProvider activeKey="play" footerPolicy="optional" strict={false}>
+      <ActionFooterHostProvider
+        activeKey="play"
+        footerPolicy="optional"
+        strict={false}
+      >
         <div className="console-shell">
           <ActionFooterHostSlot />
         </div>
       </ActionFooterHostProvider>,
     )
     expect(html).toContain('data-testid="console-action-footer-host"')
-    expect(html).toContain("empty:h-0")  // collapse when no portal children
+    expect(html).not.toContain("empty:h-0")
     expect(html).toContain('data-registered="0"')
+  })
+
+  it("uses the exact header gradient while preserving shell chrome", () => {
+    const footerHtml = renderToStaticMarkup(
+      <ActionFooterHostProvider activeKey="play" strict={false}>
+        <ActionFooterHostSlot />
+      </ActionFooterHostProvider>,
+    )
+    const shellHtml = renderToStaticMarkup(
+      <ConsoleShell
+        brand={<span>Razzoozle</span>}
+        title="Manager"
+        nav={[]}
+        activeKey="play"
+        onSelect={() => {}}
+      >
+        <div>Content</div>
+      </ConsoleShell>,
+    )
+    const headerClass = /<header[^>]*class="([^"]+)"/.exec(shellHtml)?.[1]
+
+    expect(ACTION_FOOTER_GRADIENT_CLASS).toBe(
+      "bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]",
+    )
+    expect(footerHtml).toContain(ACTION_FOOTER_GRADIENT_CLASS)
+    expect(headerClass).toContain(ACTION_FOOTER_GRADIENT_CLASS)
+    expect(footerHtml).toContain("border-t")
+    expect(footerHtml).toContain("border-[var(--line)]")
+    expect(footerHtml).toContain("shadow-[var(--shadow-flat)]")
+    expect(footerHtml).toContain("env(safe-area-inset-bottom)")
+    // Lead-Decision 2026-08-02: footer band stays reserved even when empty
+    expect(footerHtml).not.toContain("empty:h-0")
+    expect(footerHtml).not.toContain("empty:border-0")
+    expect(footerHtml).not.toContain("empty:p-0")
+    expect(footerHtml).not.toContain("empty:shadow-none")
+    // min-h guarantees the empty band keeps a stable footprint
+    expect(footerHtml).toContain("min-h-[3.5rem]")
   })
 
   it("host is a footer landmark with accessible name", () => {

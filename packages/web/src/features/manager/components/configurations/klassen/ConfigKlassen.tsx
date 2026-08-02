@@ -4,11 +4,10 @@ import Button from "@razzoozle/web/components/Button"
 import DateInput from "@razzoozle/web/components/DateInput"
 import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
-import { ActionFooter } from "@razzoozle/web/components/ui"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolbar"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
-import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useRef, useState } from "react"
 import { EVENTS } from "@razzoozle/common/constants"
@@ -197,8 +196,9 @@ const ConfigKlassen = () => {
 
   return (
     <>
-    {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
-    <div className="flex flex-1 flex-col pb-20">
+    {/* Compact footer is portal-rendered by the host shell; no bottom
+        padding required (AF07 — see ActionFooter.compact.tsx). */}
+    <div className="flex flex-1 flex-col">
       <div className="mb-4 flex shrink-0 flex-col gap-3">
         <PageHeader
           title={t("manager:tabs.klassen")}
@@ -323,6 +323,8 @@ const ConfigKlassen = () => {
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         titleId="create-class-dialog-title"
+        contentId="create-class-dialog"
+        contentTestId="create-class-dialog"
         title={t("manager:classes.createTitle")}
       >
         <p className="mt-2 text-sm text-[var(--ink-subtle)]">
@@ -529,18 +531,24 @@ const ConfigKlassen = () => {
       />
     </div>
 
-    <ActionFooter>
-      <Button
-        data-testid="klassen-create-btn"
-        variant="primary"
-        size="lg"
-        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-        onClick={handleOpenCreateDialog}
-      >
-        <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-        <span>{t("manager:classes.create")}</span>
-      </Button>
-    </ActionFooter>
+    <ActionFooterCompact
+      instanceId="classes"
+      actions={[
+        {
+          key: "classes-create",
+          iconName: "Plus",
+          intent: "primary",
+          testId: "klassen-create-btn",
+          label: t("manager:classes.create"),
+          onClick: handleOpenCreateDialog,
+          popup: {
+            hasPopup: "dialog",
+            controls: "create-class-dialog",
+            expanded: isCreateDialogOpen,
+          },
+        },
+      ]}
+    />
     </>
   )
 }

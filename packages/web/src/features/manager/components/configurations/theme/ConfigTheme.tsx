@@ -4,9 +4,9 @@ import AlertDialog from "@razzoozle/web/components/AlertDialog"
 import Button from "@razzoozle/web/components/Button"
 import Checkbox from "@razzoozle/web/components/Checkbox"
 import Input from "@razzoozle/web/components/Input"
-import ActionFooter from "@razzoozle/web/components/ui/ActionFooter"
 import ColorPickerField from "@razzoozle/web/components/ui/ColorPickerField"
 import FormSection from "@razzoozle/web/components/ui/FormSection"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import LabelRow from "@razzoozle/web/components/ui/LabelRow"
 import {
   AssetPreview,
@@ -18,7 +18,7 @@ import AnimatedBackgroundControls from "@razzoozle/web/features/manager/componen
 import SoundControls from "@razzoozle/web/features/manager/components/configurations/SoundControls"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import ThemePreviewPanel from "@razzoozle/web/features/manager/components/configurations/theme-preview/ThemePreviewPanel"
-import { Image as ImageIcon, Palette, RotateCcw, Sparkles } from "lucide-react"
+import { Image as ImageIcon, Palette, Sparkles } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import { useTranslation } from "react-i18next"
 import ThemeTemplatesCard from "./ThemeTemplatesCard"
@@ -359,24 +359,41 @@ const ConfigTheme = () => {
         </div>
       </motion.div>
 
-      <ActionFooter>
-        <Button
-          variant="secondary"
-          type="button"
-          onClick={handleReset}
-          className="rounded-[var(--radius-theme)]"
-        >
-          <RotateCcw className="size-4" aria-hidden />
-          {t("manager:theme.reset")}
-        </Button>
-        <Button
-          variant="primary"
-          className="flex-1 rounded-[var(--radius-theme)] sm:flex-none"
-          onClick={handleSave}
-        >
-          {t("manager:theme.save")}
-        </Button>
-      </ActionFooter>
+      {/*
+        AF-compact WP-b-6: replaces the Wave-1 `ActionFooter` (text-button
+        reset + save) with the icon-only `ActionFooterCompact` pattern from
+        PR #1045. The shell-local `ActionFooterHost` portal target sits
+        outside the tabpanel scroller so the icon bar is always visible;
+        `pb-20` on the inner column still keeps the last form field above
+        the host band on tall content. `instanceId="design"` matches the
+        tab key in BUILTIN_TABS (single-instance registry contract AF04).
+      */}
+      <ActionFooterCompact
+        instanceId="design"
+        actions={[
+          // manager:theme.reset / manager:theme.save do NOT exist in any locale's
+          // manager.json (verified WP-1..WP-8, 2026-08-02). Per Handoff §2.B
+          // (no new keys), reuse the closest existing config-save/reset pair
+          // from achievementsConfig — same semantic role (config panel reset +
+          // save), identical key shape, all 6 locales ship them.
+          {
+            key: "design-reset",
+            iconName: "Reset",
+            intent: "secondary",
+            testId: "design-reset-btn",
+            label: t("manager:achievementsConfig.reset"),
+            onClick: handleReset,
+          },
+          {
+            key: "design-save",
+            iconName: "Save",
+            intent: "primary",
+            testId: "design-save-btn",
+            label: t("manager:achievementsConfig.save"),
+            onClick: handleSave,
+          },
+        ]}
+      />
 
       <AlertDialog
         open={pendingDeleteId !== null}

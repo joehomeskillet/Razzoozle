@@ -11,15 +11,29 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 import clsx from "clsx"
+import type { ActionFooterVariant } from "@razzoozle/web/components/ui/ActionFooter.compact.types"
+
+// Re-export for downstream WPs (1.2 ActionFooterCompact, 2.1 ConsoleShell)
+// so they only need to import from this context module.
+export type { ActionFooterVariant }
+
+export const ACTION_FOOTER_GRADIENT_CLASS =
+  "bg-gradient-to-r from-[var(--accent-tint)] to-[var(--surface)]"
 
 /**
- * AF-15 mode only (reason strings live on TabDef). AF03 host contract #1009.
+ * AF-15 mode only (reason strings live on TabDef). AF03 host contract issue 1009.
  */
 export type ActionFooterPolicyMode = "required" | "optional" | "none"
 
 /**
  * Shell-local portal host API (Master-WP §3.3 / AF03).
  * Tabs keep state; ActionFooter portals into `target` (AF04).
+ *
+ * `variant` (Wave-0 contract-freeze, AF-compact WP-0.2) tells ActionFooter
+ * which host render-mode is active for the current shell. Defaults to
+ * `"default"` (full-width text-action footer); ConsoleShell flips it to
+ * `"compact"` for tabs that opted in via `TabDef.actionFooterVariant`.
+ * Read-only here — the source of truth lives in TabDef + ConsoleShell.
  */
 export interface ConsoleActionFooterHost {
   /** DOM node inside `.console-shell` for createPortal. Null until mounted. */
@@ -34,6 +48,14 @@ export interface ConsoleActionFooterHost {
   registrationCount: number
   /** Callback ref for the host `<footer>` (must sit inside `.console-shell`). */
   setTarget: (node: HTMLElement | null) => void
+  /**
+   * AF-compact WP-0.2: which footer render-mode the host should use.
+   * `"default"` = full-width text-action footer (legacy).
+   * `"compact"` = icon-only `CompactIconBar` (44×44 touch-targets).
+   * Read-only from ActionFooter; ConsoleShell (WP-2.1) will thread a
+   * `variant` prop on the Provider to flip this for opt-in tabs.
+   */
+  variant: ActionFooterVariant
 }
 
 export interface ActionFooterRegistry {
@@ -143,6 +165,15 @@ export interface ActionFooterHostProviderProps {
   footerPolicy?: ActionFooterPolicyMode
   /** Override strictness (tests). Default: DEV or vitest. */
   strict?: boolean
+  /**
+   * AF-compact WP-2.1: which footer render-mode the host should use.
+   * "default" = full-width text-action footer (legacy).
+   * "compact" = icon-only `CompactIconBar` (44x44 touch-targets).
+   * Defaults to "default" so existing callers stay byte-identical.
+   * Sourced from `TabDef.actionFooterVariant` (ConsoleShell computes the
+   * active tab's variant and forwards here).
+   */
+  variant?: ActionFooterVariant
 }
 
 /**
@@ -155,6 +186,7 @@ export function ActionFooterHostProvider({
   activeKey,
   footerPolicy,
   strict,
+  variant: variantProp,
 }: ActionFooterHostProviderProps) {
   const registryRef = useRef<ActionFooterRegistry | null>(null)
   if (!registryRef.current) {
@@ -164,6 +196,10 @@ export function ActionFooterHostProvider({
 
   const [target, setTargetState] = useState<HTMLElement | null>(null)
   const [registrationCount, setRegistrationCount] = useState(0)
+  // AF-compact WP-2.1: ConsoleShell forwards the active tab's
+  // `TabDef.actionFooterVariant` here; absent/undefined keeps the legacy
+  // default footer (no breaking change for existing tabs).
+  const variant: ActionFooterVariant = variantProp ?? "default"
   // Keep a ref so the context API object stays stable across count updates
   // (ActionFooter only depends on register/target — not registrationCount).
   // Subscribe in layout phase. IMPORTANT: child ActionFooter may register in
@@ -210,8 +246,9 @@ export function ActionFooterHostProvider({
       register,
       registrationCount,
       setTarget,
+      variant,
     }),
-    [target, register, registrationCount, setTarget],
+    [target, register, registrationCount, setTarget, variant],
   )
 
   return (
@@ -225,10 +262,14 @@ export function ActionFooterHostProvider({
  * Visible shell footer band. Mount as last child of `.console-shell`
  * (sibling of BodyGrid — NOT inside the tabpanel). AF-02 / AF-03.
  *
- * Visibility is driven by CSS `:empty` (portal injects element children).
- * Do not gate only on React `registrationCount` — child layout effects can
- * register before the parent subscription, leaving count at 0 while content
- * is already portaled (clipped by h-0). AF-14: no decorative empty bar.
+ * Lead-Decision 2026-08-02 (AF-Mandatory / PR #1055): the action footer slot
+ * ALWAYS renders, even when no action footer instance has registered for the
+ * active tab. Type-level `actionFooter: "required"` policy guarantees every
+ * BUILTIN_TABS entry opts in, so an empty slot is a real UX state — e.g. the
+ * AI tab has no actions today — and the layout must stay consistent across
+ * tabs. Previously this slot collapsed to `h-0` on `:empty` (AF-14); that
+ * collapse is gone so the chrome band stays reserved below the tabpanel.
+ *
  * No sticky / fixed / negative margins (AF-17).
  */
 export function ActionFooterHostSlot({ className }: { className?: string }) {
@@ -244,12 +285,13 @@ export function ActionFooterHostSlot({ className }: { className?: string }) {
         defaultValue: "Page actions",
       })}
       className={clsx(
-        "shrink-0 bg-[var(--surface)]",
-        // Default = visible chrome when portal has children
+        "shrink-0 min-h-[3.5rem]",
+        ACTION_FOOTER_GRADIENT_CLASS,
+        // Always-visible chrome — Lead-Decision 2026-08-02: footer slot must
+        // keep its reserved band even when no actions are portaled in, so the
+        // layout is identical across tabs (e.g. AI tab has zero actions today).
         "border-t border-[var(--line)] shadow-[var(--shadow-flat)]",
         "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-        // Collapse only when truly empty (no portaled nodes)
-        "empty:h-0 empty:overflow-hidden empty:border-0 empty:p-0 empty:shadow-none",
         className,
       )}
     />

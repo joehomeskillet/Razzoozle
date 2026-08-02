@@ -1,0 +1,83 @@
+/**
+ * AF-compact (WP-0 contract). Canonical name lives here and on
+ * `TabDef.actionFooterVariant` in `features/manager/components/configurations/index.tsx`.
+ * Keep both definitions byte-identical — downstream WPs import from either side.
+ */
+export type ActionFooterVariant = "default" | "compact"
+
+export type CompactActionIntent = "primary" | "secondary" | "danger" | "ghost"
+
+export type CompactIconName =
+  | "Play"
+  | "Pause"
+  | "SkipForward"
+  | "Eye"
+  | "Minus"
+  | "Plus"
+  | "Copy"
+  | "Create"
+  | "Save"
+  | "Upload"
+  | "Reset"
+  | "Import"
+  | "Template"
+  | "Delete"
+  | "Overflow"
+  | "SlidersHorizontal"
+
+/**
+ * Single icon-only action rendered by `CompactIconBar`. 44×44 touch target,
+ * token-only coloring, aria-label required for i18n parity.
+ */
+export interface CompactIconBarAction {
+  /** Stable identity — also used for `data-action-key` and aria-controls. */
+  key: string
+  /** Lucide icon name, resolved by the bar without a React type dependency. */
+  iconName: CompactIconName
+  /** Pre-translated label rendered into `aria-label` (i18n parity). */
+  label: string
+  /** Visual hierarchy. Omitted keeps the legacy Users icon-button styling. */
+  intent?: CompactActionIntent
+  /** Optional stable selector for focused integration tests. */
+  testId?: string
+  /** When true, `active` reflects the toggled-on state and the bar styles it as pressed. */
+  toggle?: boolean
+  /** Pressed-state hint (only meaningful when `toggle` is true). */
+  active?: boolean
+  /** Click handler. Bar suppresses click when `disabled` is true. */
+  onClick: () => void
+  /** Disabled state — bar keeps the slot visible but non-interactive. */
+  disabled?: boolean
+  /** Accessible explanation announced when the action is disabled. */
+  disabledReason?: string
+  /**
+   * Optional popup contract when this action opens a popover/dialog panel.
+   * `aria-haspopup` + expanded state + `aria-controls` are projected as-is.
+   */
+  popup?: {
+    /** Token from ARIA for `aria-haspopup`. */
+    hasPopup: "dialog" | "menu" | "listbox" | "tree" | "grid"
+    /** `aria-controls` target id for the popup region. */
+    controls: string
+    /** Controlled expansion state for `aria-expanded`. */
+    expanded?: boolean
+  }
+}
+
+/**
+ * CompactIconBar — icon-only footer for tabs that opted into
+ * `actionFooterVariant: "compact"`. Renders as a horizontal 44px-tall bar
+ * with N action slots. Honors `prefers-reduced-motion` for state transitions.
+ */
+export interface CompactIconBarProps {
+  /** Ordered actions. Order = visual and keyboard order. */
+  actions: readonly CompactIconBarAction[]
+  /** Extra className applied to the outer bar. */
+  className?: string
+  /**
+   * Unique instance id. Required so the host registry can detect
+   * double-registration (AF04 contract). Tabs derive this from their `key`
+   * + a stable suffix.
+   */
+  instanceId: string
+}

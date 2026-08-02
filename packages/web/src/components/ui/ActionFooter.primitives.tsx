@@ -1,11 +1,30 @@
 import clsx from "clsx"
-import { ChevronDown } from "lucide-react"
 import {
-  Children,
-  type ReactNode,
-  useId,
-} from "react"
+  ChevronDown,
+  SlidersHorizontal,
+  Copy,
+  Ellipsis,
+  Eye,
+  Import as ImportIcon,
+  LayoutTemplate,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Save,
+  SkipForward,
+  Trash2,
+  Upload,
+  type LucideIcon,
+} from "lucide-react"
+import { Children, type ReactNode, useId } from "react"
 import { useTranslation } from "react-i18next"
+import type {
+  CompactActionIntent,
+  CompactIconBarAction,
+  CompactIconName,
+} from "./ActionFooter.compact.types"
 
 /**
  * AF05 #1011 — typed zone primitives for ActionFooter.
@@ -31,11 +50,9 @@ export function ActionFooterSummary({
       data-testid="action-footer-summary"
       className={clsx("min-w-0 flex-1 sm:mr-auto", className)}
     >
-      <div className="truncate text-sm font-semibold text-[var(--ink)]">
-        {title}
-      </div>
+      <div className="text-ink truncate text-sm font-semibold">{title}</div>
       {meta != null && meta !== false && (
-        <div className="truncate text-xs text-[var(--ink-muted)]">{meta}</div>
+        <div className="text-ink-muted truncate text-xs">{meta}</div>
       )}
     </div>
   )
@@ -46,6 +63,14 @@ export interface ActionFooterFieldProps {
   label: ReactNode
   /** Optional id linkage for the control. */
   htmlFor?: string
+  /**
+   * Field density.
+   * `stacked` (default) — label above the control; current AF05 layout.
+   * `inline` — label and control on one 44px-aligned row, visibly labelled
+   *   (AF-11), `for`/`id` link preserved. Stable htmlFor/id association.
+   *   Min-width safety + no horizontal scroll from the primitive itself.
+   */
+  density?: "stacked" | "inline"
   children: ReactNode
   className?: string
 }
@@ -54,28 +79,29 @@ export interface ActionFooterFieldProps {
 export function ActionFooterField({
   label,
   htmlFor,
+  density = "stacked",
   children,
   className,
 }: ActionFooterFieldProps) {
   const autoId = useId()
   const labelId = `${autoId}-label`
+  const isInline = density === "inline"
   return (
     <div
       data-testid="action-footer-field"
-      className={clsx("flex min-w-0 flex-col gap-1", className)}
+      data-density={density}
+      className={clsx(
+        "flex min-w-0",
+        isInline ? "min-h-11 items-center gap-2" : "flex-col gap-1",
+        className,
+      )}
     >
       {htmlFor ? (
-        <label
-          htmlFor={htmlFor}
-          className="text-xs font-medium text-[var(--ink-muted)]"
-        >
+        <label htmlFor={htmlFor} className="text-ink-muted text-xs font-medium">
           {label}
         </label>
       ) : (
-        <span
-          id={labelId}
-          className="text-xs font-medium text-[var(--ink-muted)]"
-        >
+        <span id={labelId} className="text-ink-muted text-xs font-medium">
           {label}
         </span>
       )}
@@ -103,10 +129,7 @@ export function ActionFooterControls({
   return (
     <div
       data-testid="action-footer-controls"
-      className={clsx(
-        "flex min-w-0 flex-wrap items-end gap-3",
-        className,
-      )}
+      className={clsx("flex min-w-0 flex-wrap items-end gap-3", className)}
     >
       {children}
     </div>
@@ -195,8 +218,7 @@ export function ActionFooterOptionsDisclosure({
 }: ActionFooterOptionsDisclosureProps) {
   const { t } = useTranslation("manager")
   const resolvedLabel =
-    label ??
-    t("actionFooter.options", { defaultValue: "Options" })
+    label ?? t("actionFooter.options", { defaultValue: "Options" })
 
   return (
     <details
@@ -219,7 +241,7 @@ export function ActionFooterOptionsDisclosure({
           {changedCount != null && changedCount > 0 && (
             <span
               data-testid="action-footer-options-changed"
-              className="rounded-full bg-[var(--accent-tint)] px-2 py-0.5 text-xs font-semibold text-[var(--accent-contrast)]"
+              className="bg-accent-tint text-accent-contrast rounded-full px-2 py-0.5 text-xs font-semibold"
             >
               {changedCount}
             </span>
@@ -232,5 +254,142 @@ export function ActionFooterOptionsDisclosure({
       </summary>
       <div className="border-t border-[var(--line)] px-3 py-3">{children}</div>
     </details>
+  )
+}
+
+/**
+ * AF07 — CompactIconBar atom + dock. 44×44 icon button + row container
+ * (`role="group"`). Token-only coloring, motion-reduce aware, focus-visible outline.
+ */
+
+const ICON_BAR_ICON_MAP: Record<CompactIconName, LucideIcon> = {
+  Play,
+  Pause,
+  SkipForward,
+  Eye,
+  Minus,
+  Plus,
+  Copy,
+  Create: Plus,
+  Save,
+  Upload,
+  Reset: RotateCcw,
+  Import: ImportIcon,
+  Template: LayoutTemplate,
+  Delete: Trash2,
+  Overflow: Ellipsis,
+  SlidersHorizontal,
+}
+
+const ICON_BAR_INTENT_CLASSES: Record<CompactActionIntent, string> = {
+  primary:
+    "bg-[var(--color-primary)] text-[var(--surface)] shadow-[var(--shadow-flat)] hover:brightness-110 active:brightness-95",
+  secondary:
+    "border border-[var(--border-hairline)] bg-[var(--surface)] text-[var(--ink-muted)] shadow-sm hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)]",
+  danger:
+    "bg-transparent text-[var(--state-wrong)] hover:bg-[var(--state-wrong-soft)] active:bg-[var(--state-wrong-soft)]",
+  ghost: "hover:bg-accent-tint focus-visible:bg-accent-tint text-[var(--ink)]",
+}
+
+export interface IconBarButtonProps {
+  action: CompactIconBarAction
+  className?: string
+}
+
+/** Single icon button — 44×44 touch target, token-driven active state. */
+export function IconBarButton({ action, className }: IconBarButtonProps) {
+  const Icon = ICON_BAR_ICON_MAP[action.iconName]
+  const intent = action.intent ?? "ghost"
+  const disabledDescriptionId = `${useId()}-disabled-reason`
+  const popupTriggerId = action.popup?.controls
+    ? `${action.popup.controls}-trigger`
+    : undefined
+  const describedBy =
+    action.disabled && action.disabledReason ? disabledDescriptionId : undefined
+
+  return (
+    <button
+      type="button"
+      id={popupTriggerId}
+      onClick={action.disabled ? undefined : action.onClick}
+      aria-label={action.label}
+      aria-pressed={action.toggle ? action.active : undefined}
+      aria-disabled={action.disabled || undefined}
+      aria-haspopup={action.popup?.hasPopup}
+      aria-controls={action.popup?.controls}
+      aria-expanded={action.popup?.expanded}
+      aria-describedby={describedBy}
+      title={
+        action.disabled && action.disabledReason
+          ? action.disabledReason
+          : action.label
+      }
+      data-action-key={action.key}
+      data-testid={action.testId ?? `icon-bar-button-${action.key}`}
+      className={clsx(
+        "group relative inline-flex h-11 w-11 items-center justify-center rounded-lg",
+        "transition-colors motion-reduce:transition-none",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+        action.disabled
+          ? "cursor-not-allowed text-[var(--ink-muted)] opacity-50"
+          : action.active
+            ? "bg-[var(--accent-contrast)] text-[var(--surface)]"
+            : ICON_BAR_INTENT_CLASSES[intent],
+        className,
+      )}
+    >
+      <Icon className="size-5" aria-hidden strokeWidth={2} />
+      <span
+        aria-hidden="true"
+        className={clsx(
+          "pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2",
+          "invisible z-10 rounded-[var(--radius-theme)] whitespace-nowrap",
+          "border border-[var(--line)] bg-[var(--surface-2)] px-2 py-1 text-xs",
+          "text-[var(--ink)] opacity-0 transition-opacity motion-reduce:transition-none",
+          "group-hover:visible group-hover:opacity-100",
+          "group-focus-visible:visible group-focus-visible:opacity-100",
+        )}
+      >
+        {action.label}
+      </span>
+      {describedBy && (
+        <span id={describedBy} className="sr-only">
+          {action.disabledReason}
+        </span>
+      )}
+    </button>
+  )
+}
+
+export interface IconBarDockProps {
+  actions: readonly CompactIconBarAction[]
+  ariaLabel?: string
+  className?: string
+}
+
+/** Row of IconBarButtons — `role="group"` for landmark semantics. */
+export function IconBarDock({
+  actions,
+  ariaLabel,
+  className,
+}: IconBarDockProps) {
+  const primaryCount = actions.filter(
+    (action) => action.intent === "primary",
+  ).length
+
+  if (primaryCount > 1) {
+    throw new Error("IconBarDock: at most one primary action is allowed")
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className={clsx("flex items-center gap-1", className)}
+    >
+      {actions.map((a) => (
+        <IconBarButton key={a.key} action={a} />
+      ))}
+    </div>
   )
 }

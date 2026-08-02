@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-08-01T08:55:54.364131+00:00",
+  "sourceRepository": "https://github.com/microsoft/fluentui-emoji",
+  "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+  "license": {
+    "spdx": "MIT",
+    "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/LICENSE",
+    "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/third-party-licenses/Microsoft-Fluent-Emoji-MIT.txt",
+    "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+  },
+  "assets": [
+    {
+      "id": "team-violet-hibiscus",
+      "team": "violet",
+      "species": "Hibiscus",
+      "role": "final-flower-source",
+      "sourcePath": "assets/Hibiscus/Color/hibiscus_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Hibiscus/Color/hibiscus_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "340a42f7ae900a462eb1dc91b8cdfa7f6f73000e",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/hibiscus_color.svg",
+      "bytes": 26554,
+      "sha256": "72687002598d1a68b4dcfa31079a8ed9a8cdff775efb1f140bfa2713da022b28"
+    },
+    {
+      "id": "team-blue-tulip",
+      "team": "blue",
+      "species": "Tulip",
+      "role": "final-flower-source",
+      "sourcePath": "assets/Tulip/Color/tulip_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Tulip/Color/tulip_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "a6d1c1654e85a80e8b644924aed0a3caafd732de",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/tulip_color.svg",
+      "bytes": 18923,
+      "sha256": "cee824984f5822e15b377a8184e39b5f82065a927f96dd1e5066cbdc572e4a18"
+    },
+    {
+      "id": "team-orange-sunflower",
+      "team": "orange",
+      "species": "Sunflower",
+      "role": "final-flower-source",
+      "sourcePath": "assets/Sunflower/Color/sunflower_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Sunflower/Color/sunflower_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "468d2386b57c663911d79496cbbf883c5a952696",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/sunflower_color.svg",
+      "bytes": 22972,
+      "sha256": "31a8f9452c3b55055de2d7364d62daa1325034f0f8de10d0685bde9268ba23d3"
+    },
+    {
+      "id": "team-green-blossom",
+      "team": "green",
+      "species": "Blossom",
+      "role": "final-flower-source",
+      "sourcePath": "assets/Blossom/Color/blossom_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Blossom/Color/blossom_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "24a8bc8ef7f774423493de14b094f3178aece426",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/blossom_color.svg",
+      "bytes": 20374,
+      "sha256": "6d309fe874e62f6ccb36b314a023c1a91cae4d4a50e19d41fb5d13db4f8c44a3"
+    },
+    {
+      "id": "shared-seedling",
+      "team": null,
+      "species": "Seedling",
+      "role": "early-growth-reference",
+      "sourcePath": "assets/Seedling/Color/seedling_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Seedling/Color/seedling_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "a959b7408631165443736a9f1f2b9f30b44371b4",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/seedling_color.svg",
+      "bytes": 11269,
+      "sha256": "0d45f7f42154c900500579fe1816dfd35776b7b5e843b15476c0b3f2dd7353ac"
+    },
+    {
+      "id": "shared-potted-plant",
+      "team": null,
+      "species": "Potted plant",
+      "role": "stem-leaf-pot-reference",
+      "sourcePath": "assets/Potted plant/Color/potted_plant_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/62ecdc0d7ca5c6df32148c169556bc8d3782fca4/assets/Potted%20plant/Color/potted_plant_color.svg",
+      "sourceCommit": "62ecdc0d7ca5c6df32148c169556bc8d3782fca4",
+      "gitBlobSha": "bfafaf27db93044d0125717d76cdb93889552786",
+      "localFile": "packages/web/src/assets/experiences/flower-battle/source/external/fluent-emoji/potted_plant_color.svg",
+      "bytes": 26515,
+      "sha256": "7c70a7674ebb2a47f7ab0b29be8e2669fcdfaca07576dbc3bddd07c501e055ce"
+    }
+  ]
+}

@@ -78,4 +78,13 @@ export type {
   GardenSceneLoadedAssets,
   PlantBodyTextures,
   PlantHeadTextures,
+  PlantMacroStage,
+  PlantStageTextures,
+  PlantVariantTextures,
+  TeamPlantKey,
+} from "./loadGardenSceneAssets"
+
+export {
+  plantMacroStageForGrowth,
+  TEAM_PLANT_KEYS,
 } from "./loadGardenSceneAssets"

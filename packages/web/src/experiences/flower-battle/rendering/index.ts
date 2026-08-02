@@ -43,6 +43,8 @@ export {
   type ThemeColorResolver,
 } from "./resolveThemeColor"
 
+export { AssetPlantView } from "./AssetPlantView"
+
 export { DummyPlantView } from "./DummyPlantView"
 
 export {

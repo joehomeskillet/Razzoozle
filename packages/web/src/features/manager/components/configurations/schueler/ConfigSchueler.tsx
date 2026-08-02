@@ -7,9 +7,8 @@ import DialogPanel from "@razzoozle/web/components/manager/DialogPanel"
 import FilterPill from "@razzoozle/web/components/manager/FilterPill"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
-import { ActionFooter } from "@razzoozle/web/components/ui"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
 import { useEntitySelection } from "@razzoozle/web/features/manager/hooks/useEntitySelection"
-import { Plus } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -226,7 +225,7 @@ const ConfigSchueler = () => {
   return (
     <>
     {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
-    <div className="flex flex-1 flex-col gap-4 pb-20">
+    <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={t("manager:schueler.title")}
         subtitle={t("manager:schueler.description")}
@@ -546,17 +545,24 @@ const ConfigSchueler = () => {
       </DialogPanel>
     </div>
 
-    <ActionFooter>
-      <Button
-        variant="primary"
-        size="lg"
-        className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-        onClick={() => setIsCreateDialogOpen(true)}
-      >
-        <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-        <span>{t("manager:schueler.create")}</span>
-      </Button>
-    </ActionFooter>
+    <ActionFooterCompact
+      instanceId="schueler"
+      actions={[
+        {
+          key: "schueler-create",
+          iconName: "Create",
+          intent: "primary",
+          testId: "schueler-create-btn",
+          label: t("manager:schueler.create"),
+          onClick: () => setIsCreateDialogOpen(true),
+          popup: {
+            hasPopup: "dialog",
+            controls: "create-student-dialog-title",
+            expanded: isCreateDialogOpen,
+          },
+        },
+      ]}
+    />
     </>
   )
 }

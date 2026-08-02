@@ -6,8 +6,8 @@ import BulkActionToolbar from "@razzoozle/web/components/manager/BulkActionToolb
 import Select from "@razzoozle/web/components/Select"
 import SelectAllControl from "@razzoozle/web/components/manager/SelectAllControl"
 import LabelFilterPills from "@razzoozle/web/components/labels/LabelFilterPills"
-import { ActionFooter } from "@razzoozle/web/components/ui"
-import { Plus, Trash2, Upload, LayoutTemplate } from "lucide-react"
+import { ActionFooterCompact } from "@razzoozle/web/components/ui"
+import { Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useMemo, useState } from "react"
 
@@ -99,7 +99,7 @@ const ConfigManageQuizz = () => {
   return (
     <>
       {/* No min-h-0 here: it breaks sticky ActionFooter (sibling) — see ActionFooter.tsx */}
-      <div className="flex flex-1 flex-col pb-20">
+      <div className="flex flex-1 flex-col">
         <div className="mb-4 flex shrink-0 flex-col gap-3">
           <PageHeader
             title={t("manager:tabs.quizz")}
@@ -112,6 +112,7 @@ const ConfigManageQuizz = () => {
           type="file"
           accept=".json"
           className="hidden"
+          data-testid="quizz-file-input"
           onChange={handleImport}
         />
 
@@ -232,40 +233,35 @@ const ConfigManageQuizz = () => {
         />
       </div>
 
-      <ActionFooter>
-        <Button
-          data-testid="quizz-create-btn"
-          variant="primary"
-          size="lg"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => navigate({ to: "/manager/quizz" })}
-        >
-          <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-          <span>{t("manager:quizz.create")}</span>
-        </Button>
-        <Button
-          data-testid="quizz-import-btn"
-          variant="secondary"
-          size="lg"
-          type="button"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="size-5" aria-hidden />
-          <span>{t("manager:quizz.import")}</span>
-        </Button>
-        <Button
-          data-testid="quizz-template-btn"
-          variant="secondary"
-          size="lg"
-          type="button"
-          className="w-full rounded-[var(--radius-theme)] sm:w-auto"
-          onClick={() => setTemplatePickerOpen(true)}
-        >
-          <LayoutTemplate className="size-5" aria-hidden />
-          <span>{t("manager:templates.open")}</span>
-        </Button>
-      </ActionFooter>
+      <ActionFooterCompact
+        instanceId="quiz"
+        actions={[
+          {
+            key: "quizz-template",
+            iconName: "Template",
+            intent: "secondary",
+            testId: "quizz-template-btn",
+            label: t("manager:templates.open"),
+            onClick: () => setTemplatePickerOpen(true),
+          },
+          {
+            key: "quizz-import",
+            iconName: "Import",
+            intent: "secondary",
+            testId: "quizz-import-btn",
+            label: t("manager:quizz.import"),
+            onClick: () => fileInputRef.current?.click(),
+          },
+          {
+            key: "quizz-create",
+            iconName: "Create",
+            intent: "primary",
+            testId: "quizz-create-btn",
+            label: t("manager:quizz.create"),
+            onClick: () => navigate({ to: "/manager/quizz" }),
+          },
+        ]}
+      />
 
       <TemplatePickerDialog
         open={templatePickerOpen}

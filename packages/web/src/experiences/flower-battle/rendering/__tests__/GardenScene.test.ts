@@ -3,9 +3,14 @@
  * Node env + real Pixi Containers/Graphics (no WebGL Application required).
  */
 
-import { Container, Texture } from "pixi.js"
+import { Container, Graphics, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
+import {
+  registerGardenTextureAlias,
+  type GardenAssetDiagnostics,
+  type PlantVariantTextures,
+} from "../../assets/loadGardenSceneAssets"
 import type { GardenPixiApplicationHandle } from "../../garden-pixi.types"
 import { createGardenScene, LAYER_LABELS } from "../GardenScene"
 import { TEAM_HUD_BELOW_ANCHOR_Y } from "../teamHud"
@@ -636,16 +641,18 @@ describe("SDD §30 probe-v3 contract on procedural scene", () => {
         )
         expect(clouds.length, label).toBeGreaterThan(0)
         for (const cloud of clouds) {
-          expect(cloud.position.x, `${label} ${cloud.label}`).toBeGreaterThanOrEqual(
-            visible.x,
-          )
+          expect(
+            cloud.position.x,
+            `${label} ${cloud.label}`,
+          ).toBeGreaterThanOrEqual(visible.x)
           expect(
             cloud.position.x,
             `${label} ${cloud.label}`,
           ).toBeLessThanOrEqual(visible.x + visible.width)
-          expect(cloud.position.y, `${label} ${cloud.label}`).toBeGreaterThanOrEqual(
-            visible.y,
-          )
+          expect(
+            cloud.position.y,
+            `${label} ${cloud.label}`,
+          ).toBeGreaterThanOrEqual(visible.y)
           expect(
             cloud.position.y,
             `${label} ${cloud.label}`,
@@ -693,6 +700,436 @@ describe("SDD §30 probe-v3 contract on procedural scene", () => {
       expect(diag.plotAnchors).toEqual([])
       expect(diag.allAnchorsInsideVisibleRect).toBe(true)
       scene.destroy()
+    })
+  })
+
+  describe("Fluent AssetPlantView production path", () => {
+    function makeStageTexture(label: string): Texture {
+      return new Texture({ source: Texture.WHITE.source, label })
+    }
+
+    function makeSpeciesStages(species: string) {
+      return {
+        seedling: makeStageTexture(`${species}-seedling`),
+        sprout: makeStageTexture(`${species}-sprout`),
+        bud: makeStageTexture(`${species}-bud`),
+        halfBloom: makeStageTexture(`${species}-half-bloom`),
+        fullBloom: makeStageTexture(`${species}-full-bloom`),
+      }
+    }
+
+    function makeVariants() {
+      return {
+        violet: makeSpeciesStages("violet"),
+        blue: makeSpeciesStages("blue"),
+        orange: makeSpeciesStages("orange"),
+        green: makeSpeciesStages("green"),
+      }
+    }
+
+    const FLUENT_PLANT_ALIASES = [
+      "plant_shared_seedling",
+      "plant_shared_sprout",
+      "plant_violet_bud",
+      "plant_violet_half",
+      "plant_violet_full",
+      "plant_blue_bud",
+      "plant_blue_half",
+      "plant_blue_full",
+      "plant_orange_bud",
+      "plant_orange_half",
+      "plant_orange_full",
+      "plant_green_bud",
+      "plant_green_half",
+      "plant_green_full",
+    ] as const
+
+    function makeRegisteredVariants(): PlantVariantTextures {
+      const seedling = makeStageTexture("shared-seedling")
+      const sprout = makeStageTexture("shared-sprout")
+      registerGardenTextureAlias("plant_shared_seedling", seedling)
+      registerGardenTextureAlias("plant_shared_sprout", sprout)
+
+      const species = (key: "violet" | "blue" | "orange" | "green") => {
+        const bud = makeStageTexture(`${key}-bud`)
+        const halfBloom = makeStageTexture(`${key}-half`)
+        const fullBloom = makeStageTexture(`${key}-full`)
+        registerGardenTextureAlias(`plant_${key}_bud`, bud)
+        registerGardenTextureAlias(`plant_${key}_half`, halfBloom)
+        registerGardenTextureAlias(`plant_${key}_full`, fullBloom)
+        return { seedling, sprout, bud, halfBloom, fullBloom }
+      }
+
+      return {
+        violet: species("violet"),
+        blue: species("blue"),
+        orange: species("orange"),
+        green: species("green"),
+      }
+    }
+
+    function makeAssetDiagnostics(): GardenAssetDiagnostics {
+      return {
+        requiredAliases: [...FLUENT_PLANT_ALIASES],
+        loadedAliases: [...FLUENT_PLANT_ALIASES],
+        missingAliases: [],
+        failedUrls: [],
+        fallbackAliases: [],
+        usedSpriteAliases: [],
+      }
+    }
+
+    function makeCompositionAssets() {
+      const variants = makeRegisteredVariants()
+      const pot = makeStageTexture("shared-pot")
+      const face = makeStageTexture("legacy-face")
+      registerGardenTextureAlias("plant_pot_01", pot)
+      registerGardenTextureAlias("face_emote_happy", face)
+      const loadedAliases = [
+        ...FLUENT_PLANT_ALIASES,
+        "plant_pot_01",
+        "face_emote_happy",
+      ]
+      const diagnostics: GardenAssetDiagnostics = {
+        requiredAliases: loadedAliases,
+        loadedAliases: [...loadedAliases],
+        missingAliases: [],
+        failedUrls: [],
+        fallbackAliases: [],
+        usedSpriteAliases: [],
+      }
+      return { diagnostics, face, pot, variants }
+    }
+
+    it("uses AssetPlantView (no Graphics flower) when plantVariants are provided", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: makeVariants(),
+      })
+      scene.updateSnapshot({
+        teams: [team("A", 5), team("B", 6), team("C", 7), team("D", 8)],
+      })
+      const identity = scene.getE2EIdentity()
+      expect(identity.actorPlants).toHaveLength(4)
+      // AssetPlantView roots use full-colour Sprites, never procedural flowers.
+      for (const plantRoot of identity.actorPlants) {
+        const container = plantRoot as Container
+        const labels = container.children.map((c) => c.label)
+        expect(labels).toContain("plant-sprite")
+        expect(labels).not.toContain("plant-head-graphics")
+        expect(labels).not.toContain("plant-stem-graphics")
+      }
+      scene.destroy()
+    })
+
+    describe("HQ pot composition wiring", () => {
+      it("mounts pot and body Sprites without face or procedural plant parts", () => {
+        const app = fakeApp()
+        const { diagnostics, face, pot, variants } = makeCompositionAssets()
+        const scene = createGardenScene(app, {
+          palette: TEST_PALETTE,
+          plantBody: { pot },
+          plantHeads: { faceHappy: face },
+          plantVariants: variants,
+          assetDiagnostics: diagnostics,
+        })
+        scene.updateSnapshot({
+          teams: [team("A", 5), team("B", 5), team("C", 5), team("D", 5)],
+        })
+
+        for (const plantRoot of scene.getE2EIdentity().actorPlants) {
+          const root = plantRoot as Container
+          const potSprite = root.getChildByLabel("plant-pot-sprite")
+          const bodySprite = root.getChildByLabel("plant-sprite")
+          const spriteLabels = root.children
+            .filter((child): child is Sprite => child instanceof Sprite)
+            .map((child) => child.label)
+
+          expect(spriteLabels).toEqual(["plant-pot-sprite", "plant-sprite"])
+          expect(potSprite).toBeInstanceOf(Sprite)
+          expect(bodySprite).toBeInstanceOf(Sprite)
+          expect((potSprite as Sprite).texture).toBe(pot)
+          expect(potSprite?.visible).toBe(true)
+          expect(root.children.indexOf(potSprite!)).toBeLessThan(
+            root.children.indexOf(bodySprite!),
+          )
+          expect(root.children.some((child) => child instanceof Graphics)).toBe(
+            false,
+          )
+          expect(root.getChildByLabel(/face/i, true)).toBeNull()
+          expect(root.getChildByLabel("plant-head-graphics", true)).toBeNull()
+          expect(root.getChildByLabel("plant-stem-graphics", true)).toBeNull()
+          expect(root.getChildByLabel("plant-pot-graphics", true)).toBeNull()
+        }
+        scene.destroy()
+      })
+
+      it("keeps pot identity and plot anchors stable while the body grows", () => {
+        const app = fakeApp()
+        const { face, pot, variants } = makeCompositionAssets()
+        const scene = createGardenScene(app, {
+          palette: TEST_PALETTE,
+          plantBody: { pot },
+          plantHeads: { faceHappy: face },
+          plantVariants: variants,
+        })
+        scene.updateSnapshot({ teams: [team("A", 1), team("B", 1)] })
+
+        const rootsBefore = scene.getE2EIdentity().actorPlants.slice()
+        const anchorsBefore = scene.getPlotAnchors().map((anchor) => ({
+          x: anchor.x,
+          y: anchor.y,
+        }))
+        const potSprites = rootsBefore.map((plantRoot) =>
+          (plantRoot as Container).getChildByLabel("plant-pot-sprite"),
+        )
+        expect(potSprites.every((sprite) => sprite instanceof Sprite)).toBe(
+          true,
+        )
+        const stablePots = potSprites.filter(
+          (sprite): sprite is Sprite => sprite instanceof Sprite,
+        )
+        const potTransforms = stablePots.map((sprite) => ({
+          alpha: sprite.alpha,
+          scaleX: sprite.scale.x,
+          scaleY: sprite.scale.y,
+          visible: sprite.visible,
+          x: sprite.position.x,
+          y: sprite.position.y,
+        }))
+        const bodyScalesBefore = rootsBefore.map((plantRoot) => {
+          const sprite = (plantRoot as Container).getChildByLabel(
+            "plant-sprite",
+          ) as Sprite
+          return { x: sprite.scale.x, y: sprite.scale.y }
+        })
+
+        for (const stage of [5, 8, 10]) {
+          scene.updateSnapshot({
+            teams: [team("A", stage), team("B", stage)],
+          })
+        }
+
+        const rootsAfter = scene.getE2EIdentity().actorPlants
+        expect(rootsAfter).toEqual(rootsBefore)
+        expect(
+          scene.getPlotAnchors().map((anchor) => ({
+            x: anchor.x,
+            y: anchor.y,
+          })),
+        ).toEqual(anchorsBefore)
+        for (let index = 0; index < rootsAfter.length; index += 1) {
+          const root = rootsAfter[index]! as Container
+          const stablePot = stablePots[index]!
+          const body = root.getChildByLabel("plant-sprite") as Sprite
+          expect(root.position.x).toBe(anchorsBefore[index]!.x)
+          expect(root.position.y).toBe(anchorsBefore[index]!.y)
+          expect(root.getChildByLabel("plant-pot-sprite")).toBe(stablePot)
+          expect({
+            alpha: stablePot.alpha,
+            scaleX: stablePot.scale.x,
+            scaleY: stablePot.scale.y,
+            visible: stablePot.visible,
+            x: stablePot.position.x,
+            y: stablePot.position.y,
+          }).toEqual(potTransforms[index])
+          expect({ x: body.scale.x, y: body.scale.y }).not.toEqual(
+            bodyScalesBefore[index],
+          )
+        }
+        scene.destroy()
+      })
+
+      it("records the visible pot alias once and never records the face alias", () => {
+        const app = fakeApp()
+        const { diagnostics, face, pot, variants } = makeCompositionAssets()
+        const scene = createGardenScene(app, {
+          palette: TEST_PALETTE,
+          plantBody: { pot },
+          plantHeads: { faceHappy: face },
+          plantVariants: variants,
+          assetDiagnostics: diagnostics,
+        })
+        scene.updateSnapshot({
+          teams: [team("A", 10), team("B", 10), team("C", 10), team("D", 10)],
+        })
+
+        expect(
+          diagnostics.usedSpriteAliases.filter(
+            (alias) => alias === "plant_pot_01",
+          ),
+        ).toHaveLength(1)
+        expect(diagnostics.usedSpriteAliases).not.toContain("face_emote_happy")
+        scene.destroy()
+      })
+    })
+
+    it("maps team slots 0-3 to violet/blue/orange/green species deterministically", () => {
+      const app = fakeApp()
+      const variants = makeVariants()
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: variants,
+      })
+      scene.updateSnapshot({
+        teams: [team("A", 10), team("B", 10), team("C", 10), team("D", 10)],
+      })
+      const identity = scene.getE2EIdentity()
+      expect(identity.actorPlants).toHaveLength(4)
+      expect(identity.growthStages).toEqual([10, 10, 10, 10])
+      const actualTextures = identity.actorPlants.map((plantRoot) => {
+        const container = plantRoot as Container
+        const sprite = container.children.find(
+          (child) => child.label === "plant-sprite",
+        ) as Sprite
+        return sprite.texture
+      })
+      expect(actualTextures).toEqual([
+        variants.violet.fullBloom,
+        variants.blue.fullBloom,
+        variants.orange.fullBloom,
+        variants.green.fullBloom,
+      ])
+      scene.destroy()
+    })
+
+    it("keeps plant root identity stable across stage changes", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: makeVariants(),
+      })
+      scene.updateSnapshot({ teams: [team("A", 1), team("B", 2)] })
+      const before = scene.getE2EIdentity().actorPlants.slice()
+      scene.updateSnapshot({ teams: [team("A", 5), team("B", 9)] })
+      scene.updateSnapshot({ teams: [team("A", 10), team("B", 10)] })
+      const after = scene.getE2EIdentity().actorPlants.slice()
+      expect(after).toEqual(before)
+      scene.destroy()
+    })
+
+    it("2-team and 4-team layouts keep stable plot anchors", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: makeVariants(),
+      })
+      scene.updateSnapshot({ teams: [team("A", 10), team("B", 10)] })
+      const twoAnchors = scene.getPlotAnchors().map((a) => ({ x: a.x, y: a.y }))
+      expect(twoAnchors).toHaveLength(2)
+
+      scene.updateSnapshot({
+        teams: [team("A", 10), team("B", 10), team("C", 10), team("D", 10)],
+      })
+      const fourAnchors = scene
+        .getPlotAnchors()
+        .map((a) => ({ x: a.x, y: a.y }))
+      expect(fourAnchors).toHaveLength(4)
+      scene.destroy()
+    })
+
+    it("falls back to DummyPlantView when plantVariants are absent", () => {
+      const app = fakeApp()
+      const scene = createGardenScene(app, { palette: TEST_PALETTE })
+      scene.updateSnapshot({ teams: [team("A", 5), team("B", 6)] })
+      const identity = scene.getE2EIdentity()
+      // DummyPlantView roots carry the graphics labels.
+      const first = identity.actorPlants[0] as Container
+      const labels = first.children.map((c) => c.label)
+      expect(labels).toContain("plant-stem-graphics")
+      scene.destroy()
+    })
+
+    it("falls back only the incomplete species while preserving complete variants", () => {
+      const app = fakeApp()
+      const variants = makeRegisteredVariants()
+      delete variants.green
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: variants,
+      })
+      scene.updateSnapshot({
+        teams: [team("A", 10), team("B", 10), team("C", 10), team("D", 10)],
+      })
+
+      const roots = scene.getE2EIdentity().actorPlants as Container[]
+      for (const root of roots.slice(0, 3)) {
+        expect(root.children.map((child) => child.label)).toContain(
+          "plant-sprite",
+        )
+      }
+      expect(roots[3]!.children.map((child) => child.label)).toContain(
+        "plant-stem-graphics",
+      )
+      scene.destroy()
+    })
+
+    it("separates loaded aliases from visible runtime use and accumulates all 14", () => {
+      const app = fakeApp()
+      const diagnostics = makeAssetDiagnostics()
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: makeRegisteredVariants(),
+        assetDiagnostics: diagnostics,
+      })
+
+      expect(diagnostics.loadedAliases).toHaveLength(14)
+      expect(diagnostics.usedSpriteAliases).toEqual([])
+
+      // 1→5→8→10 genuinely selects 13 assets. Sprout is not used by those
+      // stages, so truthful diagnostics must not claim it yet.
+      for (const stage of [1, 5, 8, 10]) {
+        scene.updateSnapshot({
+          teams: [
+            team("A", stage),
+            team("B", stage),
+            team("C", stage),
+            team("D", stage),
+          ],
+        })
+      }
+      expect(diagnostics.usedSpriteAliases).not.toContain("plant_shared_sprout")
+      expect(diagnostics.usedSpriteAliases).toHaveLength(13)
+
+      // Stage 2 is required to select the shared sprout and complete all 14.
+      scene.updateSnapshot({
+        teams: [team("A", 2), team("B", 2), team("C", 2), team("D", 2)],
+      })
+      expect(new Set(diagnostics.usedSpriteAliases)).toEqual(
+        new Set(FLUENT_PLANT_ALIASES),
+      )
+      expect(diagnostics.usedSpriteAliases).not.toContain("plant_head_round")
+      expect(diagnostics.usedSpriteAliases).not.toContain("plant_stem_01")
+      scene.destroy()
+    })
+
+    it("reports transition readiness from actual visible sprite state", () => {
+      const app = fakeApp()
+      const ticks: Array<(ticker: { deltaTime: number }) => void> = []
+      Object.assign(app.ticker, {
+        add: (fn: (ticker: { deltaTime: number }) => void) => ticks.push(fn),
+        remove: (fn: (ticker: { deltaTime: number }) => void) => {
+          const index = ticks.indexOf(fn)
+          if (index >= 0) ticks.splice(index, 1)
+        },
+      })
+      const scene = createGardenScene(app, {
+        palette: TEST_PALETTE,
+        plantVariants: makeRegisteredVariants(),
+      })
+      scene.updateSnapshot({ teams: [team("A", 5), team("B", 5)] })
+      expect(scene.arePlantTransitionsSettled()).toBe(false)
+
+      let frames = 0
+      while (!scene.arePlantTransitionsSettled() && frames < 30) {
+        ticks[0]!({ deltaTime: 1 })
+        frames += 1
+      }
+      expect(frames).toBeGreaterThan(7)
+      expect(scene.arePlantTransitionsSettled()).toBe(true)
+      scene.destroy()
+      expect(ticks).toHaveLength(0)
     })
   })
 })
