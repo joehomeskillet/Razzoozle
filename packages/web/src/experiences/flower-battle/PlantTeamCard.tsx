@@ -14,7 +14,7 @@
 import { useTranslation } from "react-i18next"
 
 import { TEAMS, type Team } from "@razzoozle/common/constants"
-import { teamDot } from "@razzoozle/web/features/game/utils/teams"
+import { teamDot, teamKeyFromName } from "@razzoozle/web/features/game/utils/teams"
 
 import type { FlowerBattleTeamState } from "./flower-battle-scene.types"
 
@@ -37,46 +37,6 @@ export interface PlantTeamCardProps {
 const resolveTeamKey = (teamKey: string): Team => {
   if ((TEAMS as readonly string[]).includes(teamKey)) {
     return teamKey as Team
-  }
-  return TEAMS[0]
-}
-
-/**
- * Maps a free-form team name to one of the fixed team colour keys.
- * Identity-first (never the team-array index) so a team named "Blue"
- * always paints the blue dot, even if it sits at array position 0.
- *
- *  1. If `name` contains a keyword (English "red/blue/green/yellow"
- *     or German "rot/blau/grün/gelb") → that colour.
- *  2. Otherwise: stable FNV-style 32-bit hash of `name` → index in
- *     `TEAMS`. Same name ⇒ same colour across renders.
- *
- * Exported for unit tests; pure / no DOM / no i18n.
- */
-const NAME_TO_TEAM_KEYWORD: Record<string, Team> = {
-  red: "red",
-  blue: "blue",
-  green: "green",
-  yellow: "yellow",
-  rot: "red",
-  blau: "blue",
-  grün: "green",
-  gelb: "yellow",
-}
-
-export const teamKeyFromName = (name: string): Team => {
-  if (typeof name === "string" && name.length > 0) {
-    const lower = name.toLowerCase()
-    for (const [keyword, colour] of Object.entries(NAME_TO_TEAM_KEYWORD)) {
-      if (lower.includes(keyword)) return colour
-    }
-    // Stable hash fallback — identical name yields identical colour.
-    let hash = 0
-    for (let i = 0; i < name.length; i += 1) {
-      hash = (hash * 31 + name.charCodeAt(i)) | 0
-    }
-    const idx = Math.abs(hash) % TEAMS.length
-    return TEAMS[idx]!
   }
   return TEAMS[0]
 }

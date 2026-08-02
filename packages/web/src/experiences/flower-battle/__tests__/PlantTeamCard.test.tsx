@@ -15,8 +15,8 @@ import {
   plantTeamCardPropsFromTeam,
   PLANT_TEAM_CARD_MAX_GROWTH,
   PLANT_TEAM_CARD_MAX_SUN,
-  teamKeyFromName,
 } from "../PlantTeamCard"
+import { teamKeyFromName } from "../../../features/game/utils/teams"
 import type { FlowerBattleTeamState } from "../flower-battle-scene.types"
 
 const makeTeam = (
@@ -141,7 +141,7 @@ describe("teamKeyFromName (FB-HUD5: identity-first colour mapping)", () => {
     expect(teamKeyFromName("Gelbe Sonne")).toBe("yellow")
   })
 
-  it("uses the first matching keyword when multiple are present", () => {
+  it("matches colour keywords within longer names", () => {
     expect(teamKeyFromName("Blueberries")).toBe("blue")
     expect(teamKeyFromName("Reddish")).toBe("red")
   })
@@ -153,24 +153,25 @@ describe("teamKeyFromName (FB-HUD5: identity-first colour mapping)", () => {
     expect(["red", "blue", "green", "yellow"]).toContain(first)
   })
 
-  it("returns TEAMS[0] for empty / non-string names without throwing", () => {
+  it("returns TEAMS[0] for an empty name", () => {
     expect(teamKeyFromName("")).toBe("red")
   })
 })
 
 describe("plantTeamCardPropsFromTeam", () => {
-  it("derives teamKey from the team's name (keyword match), not from the slot index", () => {
-    // FB-HUD5 regression: previously a team named "Blue" at index 0 was
-    // mapped to "red" via TEAMS[index]. The colour must come from the
-    // team's identity (the name).
-    const blueAtZero = plantTeamCardPropsFromTeam(makeTeam("Blue", 3, 1), 0)
-    expect(blueAtZero.teamKey).toBe("blue")
-    expect(blueAtZero).toEqual({
-      teamName: "Blue",
-      teamKey: "blue",
-      growthStage: 3,
-      sunPoints: 1,
-    })
+  it("derives English team colors from names, not slot indexes", () => {
+    const cases = [
+      ["blue", 0, "blue"],
+      ["red", 1, "red"],
+      ["green", 3, "green"],
+      ["yellow", 2, "yellow"],
+    ] as const
+
+    for (const [name, index, expected] of cases) {
+      expect(
+        plantTeamCardPropsFromTeam(makeTeam(name, 3, 1), index).teamKey,
+      ).toBe(expected)
+    }
   })
 
   it("derives teamKey from a localized keyword (German) regardless of index", () => {
@@ -178,9 +179,9 @@ describe("plantTeamCardPropsFromTeam", () => {
     expect(rotAtThree.teamKey).toBe("red")
   })
 
-  it("falls back to a stable hash for unknown names (same name → same colour)", () => {
-    const a = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 99)
-    const b = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 99)
+  it("falls back to a stable hash for unknown names regardless of index", () => {
+    const a = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 0)
+    const b = plantTeamCardPropsFromTeam(makeTeam("Team Quokka", 0, 0), 3)
     expect(a.teamKey).toBe(b.teamKey)
     expect(["red", "blue", "green", "yellow"]).toContain(a.teamKey)
   })

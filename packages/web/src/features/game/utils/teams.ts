@@ -13,6 +13,32 @@ import type { Team } from "@razzoozle/common/constants"
 
 const isTeam = (t: string): t is Team => (TEAMS as readonly string[]).includes(t)
 
+const NAME_TO_TEAM_KEYWORD: Record<string, Team> = {
+  red: "red",
+  blue: "blue",
+  green: "green",
+  yellow: "yellow",
+  rot: "red",
+  blau: "blue",
+  grün: "green",
+  gelb: "yellow",
+}
+
+export const teamKeyFromName = (name: string): Team => {
+  if (name.length === 0) return TEAMS[0]
+
+  const lower = name.toLowerCase()
+  for (const [keyword, team] of Object.entries(NAME_TO_TEAM_KEYWORD)) {
+    if (lower.includes(keyword)) return team
+  }
+
+  let hash = 0
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) | 0
+  }
+  return TEAMS[Math.abs(hash) % TEAMS.length]!
+}
+
 // Picker swatch (Wait.tsx): solid fill + ring + dark label text.
 const SWATCH: Record<Team, { bg: string; ring: string; label: string }> = {
   red: {
