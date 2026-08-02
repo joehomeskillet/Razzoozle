@@ -264,9 +264,13 @@ export function targetRasterSize(
   alias: GardenSceneAssetAlias,
   vb: SvgViewBox,
 ): { width: number; height: number } {
-  // Fluent-derived production plants: high-resolution, square contain-fit.
+  // Fluent-derived production plants: max-side 512 while preserving aspect.
   if (isFluentPlantAlias(alias)) {
-    return { width: 512, height: 512 }
+    const scale = 512 / Math.max(vb.width, vb.height)
+    return {
+      width: Math.round(vb.width * scale),
+      height: Math.round(vb.height * scale),
+    }
   }
 
   const isHead = alias.startsWith("plant_head_") || alias.startsWith("face_")
@@ -435,7 +439,7 @@ export async function rasterizeSvgToTexture(
   ctx.imageSmoothingQuality = "high"
   ctx.clearRect(0, 0, target.width, target.height)
 
-  // Heads: contain-fit into square. Fluent plants also contain-fit (512x512).
+  // Heads: contain-fit into square. Fluent plants use aspect-preserving targets.
   // Everything else: stretch to target (target already matches aspect of viewBox).
   if (
     alias.startsWith("plant_head_") ||
@@ -470,6 +474,7 @@ export async function rasterizeSvgToTexture(
 
 function isFluentPlantAlias(alias: GardenSceneAssetAlias): boolean {
   return (
+    alias === "plant_pot_01" ||
     alias === "plant_shared_seedling" ||
     alias === "plant_shared_sprout" ||
     alias.startsWith("plant_violet_") ||
@@ -533,12 +538,8 @@ function paletteFillForAlias(
       accent: hexToCssColor(0xfff3c8),
     }
   }
-  // Stem / leaf / pot: white body for runtime tint; pot soil lip = accent.
-  if (
-    alias === "plant_stem_01" ||
-    alias === "plant_leaf_01" ||
-    alias === "plant_pot_01"
-  ) {
+  // Legacy stem / leaf: white body for runtime team tint.
+  if (alias === "plant_stem_01" || alias === "plant_leaf_01") {
     return {
       fill: hexToCssColor(0xffffff),
       ink: hexToCssColor(palette.teamMeterFrame),

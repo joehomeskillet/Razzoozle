@@ -5,15 +5,15 @@
  *
  * Quellen:  ../source/external/fluent-emoji/*_color.svg
  *           (microsoft/fluentui-emoji @ 62ecdc0d7ca5c6df32148c169556bc8d3782fca4)
- * Ausgaben: ../optimized/plants/** (14 SVGs, viewBox 0 0 32 32)
+ * Ausgaben: ../optimized/plants/** (15 SVGs; Pflanzen 32x32, Topf 16x12)
  *
  * Technik:
  * - Top-Level-Element-Split pro Quell-SVG (Indices verifiziert, Count-Assert)
  * - ID-Praefixe pro Quelle (kollisionsfreie Komposition)
  * - Farb-Regeln per exaktem Hex -> HSL-Rotation (nur Petal-/Zentrum-Familien;
  *   Gruentoene von Stiel/Blaettern werden nicht erfasst)
- * - Komposition: Stiel-Leaf-Rig + skalierter Art-Kopf am Stiel-Top
- * - bud = Kopf 0.5x + gruener Kelch; half = Kopf 0.78x; full = Kopf 1x + Face
+ * - Komposition: Stiel-Leaf-Rig + skalierter Art-Kopf mit fester Ueberlappung
+ * - bud = Kopf 0.5x + gruener Kelch; half = Kopf 0.78x; full = Kopf 1x
  *
  * Aufruf: node scripts/derive-fluent-plants.mjs  (Cwd beliebig)
  */
@@ -139,8 +139,6 @@ function applyColorRules(text, rules) {
 /* ---------------- Arten-Konfiguration ---------------- */
 /* Indices via Struktur-Analyse der gepinnten Quell-SVGs und Count-Assertions. */
 
-const FACE_FILL = "#2B2118"
-
 const SPECIES = {
   violet: {
     dir: "violet-hibiscus",
@@ -151,7 +149,6 @@ const SPECIES = {
     stemFrom: "tulip",
     headAnchor: [16.2, 27.9],
     fullScale: 0.52,
-    faceSource: [16.2, 15.2],
     colors: [
       // Pink-Petale -> Violet (Hue ~325 -> ~270); gelber Stempel bleibt
       {
@@ -182,7 +179,6 @@ const SPECIES = {
     stemFrom: "tulip",
     headAnchor: [16, 19.7],
     fullScale: 0.78,
-    faceSource: [16, 10.5],
     colors: [
       // Magenta -> Blau (Hue ~325 -> ~215); Hell/Dunkel-Verteilung bleibt
       {
@@ -202,7 +198,6 @@ const SPECIES = {
     stemFrom: "sunflower",
     headAnchor: [16, 19],
     fullScale: 0.8,
-    faceSource: [16, 13.1],
     colors: [
       // Gelb -> Orange-Gold (Hue ~50 -> ~28)
       {
@@ -237,7 +232,6 @@ const SPECIES = {
     stemFrom: "blossom",
     headAnchor: [16, 19.6],
     fullScale: 0.78,
-    faceSource: [16, 13],
     colors: [
       // Orange-Mitte -> gediegenes Gruen (Hue ~11-32 -> ~95, deutlich entsaettigt)
       {
@@ -299,6 +293,7 @@ function range(a, b) {
 /* ---------------- Komposition ---------------- */
 
 const CALYX_DEF = `<linearGradient id="fbCalyxGrad" x1="0" y1="0" x2="0" y2="-9" gradientUnits="userSpaceOnUse"><stop stop-color="#7CB342"/><stop offset="1" stop-color="#4D9055"/></linearGradient>`
+const HEAD_STEM_OVERLAP_Y = 0.5
 
 function calyxGroup([x, y]) {
   return (
@@ -310,18 +305,10 @@ function calyxGroup([x, y]) {
   )
 }
 
-function faceGroup([fx, fy]) {
-  return (
-    `<g fill="${FACE_FILL}">` +
-    `<ellipse cx="${(fx - 2.6).toFixed(2)}" cy="${fy.toFixed(2)}" rx="1.05" ry="1.45"/>` +
-    `<ellipse cx="${(fx + 2.6).toFixed(2)}" cy="${fy.toFixed(2)}" rx="1.05" ry="1.45"/>` +
-    `<path d="M${(fx - 2.2).toFixed(2)} ${(fy + 2.6).toFixed(2)}Q${fx.toFixed(2)} ${(fy + 4.6).toFixed(2)} ${(fx + 2.2).toFixed(2)} ${(fy + 2.6).toFixed(2)}" stroke="${FACE_FILL}" stroke-width="0.9" fill="none" stroke-linecap="round"/>` +
-    `</g>`
-  )
-}
-
-function svgDoc(inner, defs) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">${defs}${inner}</svg>\n`
+function svgDoc(inner, defs, options = {}) {
+  const viewBox = options.viewBox ?? "0 0 32 32"
+  const attributes = options.attributes ? ` ${options.attributes}` : ""
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" fill="none"${attributes}>${defs}${inner}</svg>\n`
 }
 
 /**
@@ -477,7 +464,7 @@ function composeSpeciesStage(key, stage) {
 
   const [ax, ay] = spec.headAnchor
   const [sx, sy] = stemSpec.top
-  const headT = `translate(${sx} ${sy}) scale(${scale.toFixed(3)}) translate(${-ax} ${-ay})`
+  const headT = `translate(${sx} ${sy + HEAD_STEM_OVERLAP_Y}) scale(${scale.toFixed(3)}) translate(${-ax} ${-ay})`
 
   let stem
   let head
@@ -523,15 +510,15 @@ function composeSpeciesStage(key, stage) {
   let inner = stem
   if (stage === "bud") inner += calyxGroup([sx, sy])
   inner += `<g transform="${headT}">${head}</g>`
-  if (stage === "full") {
-    const [fax, fay] = spec.faceSource
-    const fx = sx + (fax - ax) * scale
-    const fy = sy + (fay - ay) * scale
-    inner += faceGroup([fx, fy])
-  }
 
   if (stage === "bud") defsOut = `<defs>${CALYX_DEF}</defs>${defsOut}`
-  return svgDoc(inner, defsOut)
+  return svgDoc(inner, defsOut, {
+    attributes:
+      `data-fb-stage="${stage}" ` +
+      `data-fb-stem-tip="${sx},${sy}" ` +
+      `data-fb-bloom-base="${sx},${sy}" ` +
+      `data-fb-overlap="${HEAD_STEM_OVERLAP_Y}"`,
+  })
 }
 
 /* ---------------- Shared: seedling + sprout ---------------- */
@@ -562,6 +549,24 @@ function composeSprout() {
   return svgDoc(`<g transform="translate(0 11)">${body}</g>`, src.defs)
 }
 
+function composePot() {
+  const src = getSource("potted_plant_color.svg", "pot")
+  if (src.count !== 37)
+    throw new Error(`potted_plant: ${src.count} Elemente, 37 erwartet`)
+
+  // [18] = Erde; [25..33] = Topfkoerper, Rand und Highlights.
+  // [34..36] gehoeren zur Pflanze und bleiben bewusst ausgeschlossen.
+  const body = pick(src.elements, [18, ...range(25, 34)]).join("")
+  return svgDoc(
+    `<g transform="translate(-8.00745 -17.9963)">${body}</g>`,
+    src.defs,
+    {
+      viewBox: "0 0 16 12",
+      attributes: 'data-fb-pot-version="1"',
+    },
+  )
+}
+
 /* ---------------- Main ---------------- */
 
 function main() {
@@ -575,6 +580,7 @@ function main() {
 
   put("shared/seedling.svg", composeSeedling())
   put("shared/sprout.svg", composeSprout())
+  put("shared/pot.svg", composePot())
   for (const key of Object.keys(SPECIES)) {
     put(`${SPECIES[key].dir}/bud.svg`, composeSpeciesStage(key, "bud"))
     put(`${SPECIES[key].dir}/half-bloom.svg`, composeSpeciesStage(key, "half"))

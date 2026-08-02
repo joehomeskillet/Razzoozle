@@ -434,6 +434,7 @@ export function createGardenScene(
         plant = new AssetPlantView({
           label: `actor-plant-${index}`,
           stages: variants,
+          potTexture: plantBody?.pot,
           reducedMotion: prefersReducedMotion,
         })
       } else {

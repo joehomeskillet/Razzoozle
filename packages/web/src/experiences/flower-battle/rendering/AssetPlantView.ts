@@ -15,7 +15,7 @@
  *   9–10    → fullBloom
  */
 
-import { Container, Sprite } from "pixi.js"
+import { Container, Sprite, type Texture } from "pixi.js"
 
 import {
   plantMacroStageForGrowth,
@@ -27,6 +27,13 @@ const MAX_GROWTH = 10
 
 /** Total plant height in logical px at full bloom (matches §10 target ~335). */
 const FULL_HEIGHT_PX = 335
+
+const PLANT_VIEWBOX_SIZE = 32
+const PLANT_STEM_BASE_Y = 30
+const POT_VISIBLE_WIDTH_PX = 112
+const POT_OPENING_FROM_BOTTOM_PX = 70
+const POT_STEM_INSERTION_PX = 4
+const PLANT_STEM_TARGET_Y = -POT_OPENING_FROM_BOTTOM_PX + POT_STEM_INSERTION_PX
 
 /** Per-stage scale factors relative to full bloom. */
 const STAGE_SCALE: Record<PlantMacroStage, number> = {
@@ -60,6 +67,8 @@ export interface AssetPlantViewOptions {
   label?: string
   /** Complete stage texture set for this team slot's species. */
   stages: PlantStageTextures
+  /** Optional shared full-colour pot texture for the production composition. */
+  potTexture?: Texture
   /**
    * When true, disables the short scale/alpha transition on stage change
    * (prefers-reduced-motion). Default false.
@@ -69,6 +78,7 @@ export interface AssetPlantViewOptions {
 
 export class AssetPlantView {
   readonly root: Container
+  private readonly pot?: Sprite
   private readonly sprite: Sprite
   private readonly stages: PlantStageTextures
   private readonly reducedMotion: boolean
@@ -84,6 +94,18 @@ export class AssetPlantView {
     this.reducedMotion = options.reducedMotion ?? false
     this.root = new Container()
     this.root.label = options.label ?? "asset-plant"
+
+    if (options.potTexture) {
+      this.pot = new Sprite(options.potTexture)
+      this.pot.label = "plant-pot-sprite"
+      this.pot.anchor.set(0.5, 1)
+      this.pot.tint = 0xffffff
+      const potScale =
+        POT_VISIBLE_WIDTH_PX / Math.max(1, options.potTexture.width)
+      this.pot.scale.set(potScale)
+      this.pot.visible = false
+      this.root.addChild(this.pot)
+    }
 
     this.sprite = new Sprite(this.stages.seedling)
     this.sprite.label = "plant-sprite"
@@ -139,9 +161,11 @@ export class AssetPlantView {
   /** Swap texture + visibility for the current stage; scale applied in applyVisual. */
   private applyStage(stage: number, immediate: boolean): void {
     if (stage === 0) {
+      if (this.pot) this.pot.visible = false
       this.sprite.visible = false
       return
     }
+    if (this.pot) this.pot.visible = true
     const tex = this.stages[this.macro]
     if (this.sprite.texture !== tex) {
       this.sprite.texture = tex
@@ -162,6 +186,11 @@ export class AssetPlantView {
     const s =
       (FULL_HEIGHT_PX / this.textureSize) * scaleFactor * (0.85 + 0.15 * ease)
     this.sprite.scale.set(s, s)
+    const frameSize = this.textureSize * s
+    this.sprite.y =
+      PLANT_STEM_TARGET_Y +
+      (PLANT_VIEWBOX_SIZE - PLANT_STEM_BASE_Y) *
+        (frameSize / PLANT_VIEWBOX_SIZE)
     this.sprite.alpha = 0.5 + 0.5 * ease
   }
 }

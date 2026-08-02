@@ -40,10 +40,10 @@ import flowerHeadTulipUrl from "../../../assets/experiences/flower-battle/optimi
 import faceHappyUrl from "../../../assets/experiences/flower-battle/optimized/fixed/face-emotes-face-emote-happy-01.svg?url"
 import plantStemUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-stem-01.svg?url"
 import plantLeafUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-leaf-01.svg?url"
-import plantPotUrl from "../../../assets/experiences/flower-battle/optimized/fixed/plant-pot-01.svg?url"
 // Fluent-derived production plant stages (full source colors preserved).
 import plantSharedSeedlingUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/seedling.svg?url"
 import plantSharedSproutUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/sprout.svg?url"
+import plantPotUrl from "../../../assets/experiences/flower-battle/optimized/plants/shared/pot.svg?url"
 import plantVioletBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/bud.svg?url"
 import plantVioletHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/half-bloom.svg?url"
 import plantVioletFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/violet-hibiscus/full-bloom.svg?url"
@@ -88,9 +88,10 @@ export const GARDEN_SCENE_ASSET_URLS = {
   plant_head_sun: flowerHeadSunUrl,
   plant_head_tulip: flowerHeadTulipUrl,
   face_emote_happy: faceHappyUrl,
-  /** Tintable stem / leaf / pot body for asset-built team flowers. */
+  /** Tintable stem / leaf body for the legacy fallback plant. */
   plant_stem_01: plantStemUrl,
   plant_leaf_01: plantLeafUrl,
+  /** Full-color Fluent pot shared by every HQ plant. */
   plant_pot_01: plantPotUrl,
   // Fluent-derived production plant stages (full source colors preserved).
   plant_shared_seedling: plantSharedSeedlingUrl,

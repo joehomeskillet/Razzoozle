@@ -357,4 +357,18 @@ describe("GARDEN_SCENE_ASSET_URLS", () => {
     })
     expect(size).toEqual({ width: 512, height: 512 })
   })
+
+  it("uses the full-color Fluent pot at a crisp 4:3 raster size", () => {
+    expect(GARDEN_SCENE_ASSET_URLS.plant_pot_01).toMatch(
+      /optimized\/plants\/shared\/pot\.svg/,
+    )
+
+    const size = targetRasterSize("plant_pot_01", {
+      minX: 0,
+      minY: 0,
+      width: 16,
+      height: 12,
+    })
+    expect(size).toEqual({ width: 512, height: 384 })
+  })
 })
