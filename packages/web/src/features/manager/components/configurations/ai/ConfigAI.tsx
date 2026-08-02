@@ -15,13 +15,30 @@ import {
 } from "@razzoozle/web/features/game/contexts/socket-context"
 import { ActionFooter } from "@razzoozle/web/components/ui"
 import { Sparkles } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
 import TextProviderSection from "./TextProviderSection"
 import ImageSection from "./ImageSection"
 import PageHeader from "@razzoozle/web/components/manager/PageHeader"
 import QuizGenSection from "./QuizGenSection"
+
+// Serialize only the user-editable fields so the dirty snapshot excludes
+// server-only state (e.g. `keyConfigured`) and provider ordering noise.
+const savableForm = (s: AISettingsPublic) => ({
+  text: {
+    activeProvider: s.text.activeProvider,
+    providers: s.text.providers.map((p) => ({
+      id: p.id,
+      label: p.label,
+      kind: p.kind,
+      baseUrl: p.baseUrl,
+      model: p.model,
+      temperature: p.temperature,
+    })),
+  },
+  image: JSON.parse(JSON.stringify(s.image)),
+})
 
 const ConfigAI = () => {
   const { socket } = useSocket()
@@ -35,6 +52,12 @@ const ConfigAI = () => {
   const [count, setCount] = useState(5)
   const [generating, setGenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
+  // JSON snapshot of the last server-confirmed savable form. Null until the
+  // first SETTINGS event arrives — used to compute the Save button's dirty
+  // state without coupling to React effect order.
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const settingsRef = useRef(settings)
+  settingsRef.current = settings
 
   useEffect(() => {
     socket.emit(EVENTS.AI.GET_SETTINGS)
@@ -48,7 +71,12 @@ const ConfigAI = () => {
 
   useEvent(
     EVENTS.AI.SETTINGS,
-    useCallback((s: AISettingsPublic) => setSettings(s), []),
+    useCallback((s: AISettingsPublic) => {
+      setSettings(s)
+      // Seed the dirty baseline on first load; a subsequent server push
+      // treats the incoming state as the new truth (no in-flight edits).
+      setSavedSnapshot((prev) => prev ?? JSON.stringify(savableForm(s)))
+    }, []),
   )
 
   useEvent(
@@ -71,6 +99,14 @@ const ConfigAI = () => {
   useEvent(
     EVENTS.AI.SET_SETTINGS_SUCCESS,
     useCallback(() => {
+      // Pin the just-saved snapshot so the Save button disables until the
+      // next edit. settingsRef reads the latest settings without making the
+      // listener depend on `settings` (which would re-subscribe on every
+      // keystroke).
+      const current = settingsRef.current
+      if (current) {
+        setSavedSnapshot(JSON.stringify(savableForm(current)))
+      }
       toast.success(t("manager:ai.saved"))
     }, [t]),
   )
@@ -176,6 +212,16 @@ const ConfigAI = () => {
 
     socket.emit(EVENTS.AI.SET_SETTINGS, payload)
   }
+
+  // Save button reflects a dirty diff against the last server-confirmed
+  // snapshot. No snapshot yet → treat as clean (the initial GET_SETTINGS is
+  // still in flight; Save stays disabled until the user actually edits).
+  const isDirty = useMemo(() => {
+    if (!settings || savedSnapshot === null) {
+      return false
+    }
+    return JSON.stringify(savableForm(settings)) !== savedSnapshot
+  }, [settings, savedSnapshot])
 
   const saveKey = (providerId: string) => {
     socket.emit(EVENTS.AI.SET_KEY, { providerId, key: keyInput })
@@ -327,12 +373,14 @@ const ConfigAI = () => {
       </div>
 
       {/* ── Sticky save footer ──────────────────────────────────── */}
-      <ActionFooter>
+      <ActionFooter dirty={isDirty}>
         <Button
           variant="primary"
           type="button"
           className="flex-1 rounded-[var(--radius-theme)] sm:flex-none"
           onClick={saveSettings}
+          disabled={!isDirty}
+          data-testid="config-ai-save-btn"
         >
           {t("manager:ai.save")}
         </Button>
