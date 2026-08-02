@@ -88,7 +88,8 @@ describe("createActionFooterRegistry", () => {
 
 describe("ActionFooterHostSlot (SSR markup)", () => {
   it("renders host footer with data-testid inside provider", () => {
-    // registrationCount starts at 0 → hidden attribute present
+    // registrationCount starts at 0; Lead-Decision 2026-08-02: footer slot
+    // ALWAYS renders — no `:empty` collapse anymore.
     const html = renderToStaticMarkup(
       <ActionFooterHostProvider
         activeKey="play"
@@ -101,7 +102,7 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
       </ActionFooterHostProvider>,
     )
     expect(html).toContain('data-testid="console-action-footer-host"')
-    expect(html).toContain("empty:h-0") // collapse when no portal children
+    expect(html).not.toContain("empty:h-0")
     expect(html).toContain('data-registered="0"')
   })
 
@@ -133,10 +134,13 @@ describe("ActionFooterHostSlot (SSR markup)", () => {
     expect(footerHtml).toContain("border-[var(--line)]")
     expect(footerHtml).toContain("shadow-[var(--shadow-flat)]")
     expect(footerHtml).toContain("env(safe-area-inset-bottom)")
-    expect(footerHtml).toContain("empty:h-0")
-    expect(footerHtml).toContain("empty:border-0")
-    expect(footerHtml).toContain("empty:p-0")
-    expect(footerHtml).toContain("empty:shadow-none")
+    // Lead-Decision 2026-08-02: footer band stays reserved even when empty
+    expect(footerHtml).not.toContain("empty:h-0")
+    expect(footerHtml).not.toContain("empty:border-0")
+    expect(footerHtml).not.toContain("empty:p-0")
+    expect(footerHtml).not.toContain("empty:shadow-none")
+    // min-h guarantees the empty band keeps a stable footprint
+    expect(footerHtml).toContain("min-h-[3.5rem]")
   })
 
   it("host is a footer landmark with accessible name", () => {

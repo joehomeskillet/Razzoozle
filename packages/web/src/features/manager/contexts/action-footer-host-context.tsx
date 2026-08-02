@@ -262,10 +262,14 @@ export function ActionFooterHostProvider({
  * Visible shell footer band. Mount as last child of `.console-shell`
  * (sibling of BodyGrid — NOT inside the tabpanel). AF-02 / AF-03.
  *
- * Visibility is driven by CSS `:empty` (portal injects element children).
- * Do not gate only on React `registrationCount` — child layout effects can
- * register before the parent subscription, leaving count at 0 while content
- * is already portaled (clipped by h-0). AF-14: no decorative empty bar.
+ * Lead-Decision 2026-08-02 (AF-Mandatory / PR #1055): the action footer slot
+ * ALWAYS renders, even when no action footer instance has registered for the
+ * active tab. Type-level `actionFooter: "required"` policy guarantees every
+ * BUILTIN_TABS entry opts in, so an empty slot is a real UX state — e.g. the
+ * AI tab has no actions today — and the layout must stay consistent across
+ * tabs. Previously this slot collapsed to `h-0` on `:empty` (AF-14); that
+ * collapse is gone so the chrome band stays reserved below the tabpanel.
+ *
  * No sticky / fixed / negative margins (AF-17).
  */
 export function ActionFooterHostSlot({ className }: { className?: string }) {
@@ -281,13 +285,13 @@ export function ActionFooterHostSlot({ className }: { className?: string }) {
         defaultValue: "Page actions",
       })}
       className={clsx(
-        "shrink-0",
+        "shrink-0 min-h-[3.5rem]",
         ACTION_FOOTER_GRADIENT_CLASS,
-        // Default = visible chrome when portal has children
+        // Always-visible chrome — Lead-Decision 2026-08-02: footer slot must
+        // keep its reserved band even when no actions are portaled in, so the
+        // layout is identical across tabs (e.g. AI tab has zero actions today).
         "border-t border-[var(--line)] shadow-[var(--shadow-flat)]",
         "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6",
-        // Collapse only when truly empty (no portaled nodes)
-        "empty:h-0 empty:overflow-hidden empty:border-0 empty:p-0 empty:shadow-none",
         className,
       )}
     />
