@@ -40,7 +40,7 @@ const baseTeams: FlowerBattleTeamState[] = [
 ]
 
 describe("FlowerBattlePresenterHud", () => {
-  it("renders presenter HUD root and team meter grid (overlay default)", () => {
+  it("renders presenter HUD root and bottom-hud slots (overlay default)", () => {
     const html = renderToStaticMarkup(
       <FlowerBattlePresenterHud
         teams={baseTeams}
@@ -50,11 +50,16 @@ describe("FlowerBattlePresenterHud", () => {
 
     expect(html).toContain('data-testid="flower-battle-presenter-hud"')
     expect(html).toContain('data-hud-variant="overlay"')
+    expect(html).toContain('data-testid="flower-battle-bottom-hud"')
     // Overlay composes primitives directly — no ExperienceHud shell.
     expect(html).not.toContain('data-testid="experience-hud"')
     expect(html).toContain('data-testid="flower-battle-team-meters"')
+    expect(html).toContain('data-testid="flower-battle-timer-slot"')
+    expect(html).toContain('data-testid="flower-battle-answer-counter-slot"')
     expect(html).toContain('data-testid="flower-battle-team-hud-0"')
     expect(html).toContain('data-testid="flower-battle-team-hud-1"')
+    // WP-2 replaces nested phase chip with in-card dot/name header.
+    expect(html).not.toContain('data-testid="hud-phase-indicator"')
   })
 
   it("flow variant keeps ExperienceHud shell and natural height (WP-994)", () => {
@@ -96,6 +101,32 @@ describe("FlowerBattlePresenterHud", () => {
     expect(rootMatch![1]).toContain("h-full")
     expect(html).toContain('data-testid="hud-answer-counter"')
     expect(html).toContain("3/10")
+  })
+
+  it("renders the bottom-hud grid with three explicit slots", () => {
+    const html = renderToStaticMarkup(
+      <FlowerBattlePresenterHud
+        teams={baseTeams}
+        sunPoints={{ red: 2, blue: 1 }}
+        countdown={{ seconds: 30 }}
+        answerCounter={{ answered: 1, total: 4 }}
+      />,
+    )
+
+    const bottomHudMatch =
+      /data-testid="flower-battle-bottom-hud"[^>]*class="([^"]*)"/.exec(html)
+    expect(bottomHudMatch).not.toBeNull()
+    expect(bottomHudMatch![1]).toContain(
+      "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
+    )
+
+    expect(html).toContain('data-testid="flower-battle-timer-slot"')
+    expect(html).toContain('data-testid="hud-countdown-display"')
+    expect(html).toContain("30")
+    expect(html).toContain("countdown.secondsLabel")
+    expect(html).toContain('data-testid="flower-battle-answer-counter-slot"')
+    expect(html).toContain('data-testid="hud-answer-counter"')
+    expect(html).toContain("1/4")
   })
 
   it("shows sun-point meters via RoundProgress primitives", () => {
