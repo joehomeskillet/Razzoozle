@@ -232,6 +232,10 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigTheme,
     roleGate: "admin",
     actionFooter: "required",
+    // WP wp-b-6 — design tab joined the AF-compact rollout (PR #1045
+    // landed play/users/catalog). Reset + Save collapse into the icon bar;
+    // the host stays the gradient band so the wave-1 chrome is unchanged.
+    actionFooterVariant: "compact",
   },
   {
     key: "labels",
