@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
+import type { ReactNode } from "react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 // --- Render-contract mocks (route height chain, WP-958D) -------------------
@@ -19,7 +20,7 @@ vi.mock("react-hot-toast", () => ({
 }))
 
 vi.mock("motion/react", () => ({
-  AnimatePresence: ({ children }: { children?: React.ReactNode }) => (
+  AnimatePresence: ({ children }: { children?: ReactNode }) => (
     <>{children}</>
   ),
   motion: {
@@ -30,7 +31,7 @@ vi.mock("motion/react", () => ({
       className,
       ...rest
     }: {
-      children?: React.ReactNode
+      children?: ReactNode
       className?: string
       [key: string]: unknown
     }) => (
@@ -81,7 +82,19 @@ vi.mock("@razzoozle/web/features/game/utils/firstCorrectSound", () => ({
 vi.mock("@razzoozle/web/components/Button", () => ({
   // Buttons are irrelevant to the section-class height contract; rendering
   // nothing keeps the governance audit free of raw-button mock noise.
-  default: () => null,
+  default: ({
+    children,
+    "data-testid": dataTestId,
+    ...props
+  }: {
+    children?: unknown
+    "data-testid"?: string
+    [key: string]: unknown
+  }) => (
+    <button data-testid={dataTestId} {...(props as Record<string, unknown>)}>
+      {children}
+    </button>
+  ),
 }))
 
 vi.mock("@razzoozle/web/components/Loader", () => ({
@@ -100,7 +113,9 @@ vi.mock("@razzoozle/web/features/manager/components/SimControl", () => ({
 vi.mock("@razzoozle/web/features/game/components/LowLatencyHealth", () => ({
   default: () => null,
 }))
-vi.mock("./AvToggles", () => ({ default: () => null }))
+vi.mock("./AvToggles", () => ({
+  default: () => <div data-testid="av-toggles-button" />,
+}))
 vi.mock("./RejoinQrDialog", () => ({ default: () => null }))
 vi.mock("./GameControlPanel", () => ({ default: () => null }))
 
@@ -360,6 +375,31 @@ describe("GameWrapper manager kiosk full-bleed chrome", () => {
     expect(html).toContain('data-presenter-layout="normal"')
     expect(html).toContain("cream-field")
     expect(html).toContain('data-toolbar-variant="flow"')
+  })
+
+  it("keeps flow toolbar controls in normal presenter layout", () => {
+    const html = renderToStaticMarkup(
+      <GameWrapper
+        statusName="SHOW_RESPONSES"
+        manager
+        controls
+        presenterLayout="normal"
+      >
+        <div>classic question content</div>
+      </GameWrapper>,
+    )
+
+    expect(html).toContain('data-testid="presenter-toolbar"')
+    expect(html).toContain('data-testid="av-toggles-button"')
+    expect(html).toContain('data-toolbar-variant="flow"')
+    expect(html).toContain("1 / 2")
+    expect(html).toContain("game:questionPrefix")
+    expect(html).toContain("game:controls.autoMode")
+    expect(html).toContain("game:controls.fullscreen")
+    expect(html).toContain("game:controls.autoOff")
+    expect(html).toContain("common:exit")
+    expect(html).toContain("common:next")
+    expect(html).toContain('data-testid="next-btn"')
   })
 
   it.each([true, false])(
