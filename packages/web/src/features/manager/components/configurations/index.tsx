@@ -200,6 +200,7 @@ export const BUILTIN_TABS: TabDef[] = [
     component: ConfigAchievements,
     roleGate: "admin",
     actionFooter: "required",
+    actionFooterVariant: "compact",
   },
   {
     key: "running",
