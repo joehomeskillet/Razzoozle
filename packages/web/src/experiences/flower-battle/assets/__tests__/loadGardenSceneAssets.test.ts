@@ -96,7 +96,47 @@ describe("targetRasterSize", () => {
       width: 80,
       height: 80,
     })
-    expect(size).toEqual({ width: 256, height: 256 })
+    expect(size).toEqual({ width: 512, height: 512 })
+  })
+
+  it("rasterizes faces at 512 square", () => {
+    const size = targetRasterSize("face_emote_happy", {
+      minX: 0,
+      minY: 0,
+      width: 36,
+      height: 36,
+    })
+    expect(size).toEqual({ width: 512, height: 512 })
+  })
+
+  it("rasterizes stems at 256×512 (high-DPI floor, slight stretch)", () => {
+    const size = targetRasterSize("plant_stem_01", {
+      minX: 0,
+      minY: 0,
+      width: 48,
+      height: 256,
+    })
+    expect(size).toEqual({ width: 256, height: 512 })
+  })
+
+  it("rasterizes pots at 256×512 (high-DPI floor, slight stretch)", () => {
+    const size = targetRasterSize("plant_pot_01", {
+      minX: 0,
+      minY: 0,
+      width: 160,
+      height: 100,
+    })
+    expect(size).toEqual({ width: 256, height: 512 })
+  })
+
+  it("bumps leaves to 256×149 (smaller detail, aspect preserved)", () => {
+    const size = targetRasterSize("plant_leaf_01", {
+      minX: 0,
+      minY: 0,
+      width: 96,
+      height: 56,
+    })
+    expect(size).toEqual({ width: 256, height: 149 })
   })
 })
 
