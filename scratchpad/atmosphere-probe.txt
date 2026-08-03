@@ -1,126 +1,23 @@
 ================================================================================
- GARDEN ATMOSPHERE HEADLESS PROBE
- Razzoozle Flower Battle — Task 4 visual-evidence substitute
+ GARDEN ATMOSPHERE HEADLESS PROBE — run via node shim
+ worktree: /nvmetank1/projects/Razzoozle/source/.claude/worktrees/agent_wt-garden-atmos-task1
+ packages/web: /nvmetank1/projects/Razzoozle/source/.claude/worktrees/agent_wt-garden-atmos-task1/packages/web
+ vitest exit code: 0
+ reporter: default (vitest 4.x no longer ships 'basic'; equivalent verbosity)
 ================================================================================
- Engine: vitest 4.x under packages/web (node env)
- Pixi:   pixi.js 8.x, real Container / Sprite / Graphics nodes
- Ticks:  3600 × 16.67 ms = 60.00 s simulated
- Seed:   0xC0FFEE (deterministic wind)
- Palette: TEST_PALETTE (inject, no theme-token resolution)
- Assets:  Texture.WHITE everywhere (sprite path exercised)
-================================================================================
+../../../../../../../../../tmp/opencode/vitest-probe.config.ts (1:262) [UNRESOLVED_IMPORT] Could not resolve 'vitest/config' in ../../../../../../../../../tmp/opencode/vitest-probe.config.ts
+   ╭─[ ../../../../../../../../../tmp/opencode/vitest-probe.config.ts:1:263 ]
+   │
+ 1 │ const __vite_injected_original_dirname = "/tmp/opencode";const __vite_injected_original_filename = "/tmp/opencode/vitest-probe.config.ts";const __vite_injected_original_import_meta_url = "file:///tmp/opencode/vitest-probe.config.ts";import { defineConfig } from "vitest/config"
+   │                                                                                                                                                                                                                                                                       ───────┬───────
+   │                                                                                                                                                                                                                                                                              ╰───────── Module not found, treating it as an external dependency
+───╯
 
-── scenario 01_high ── quality=high reducedMotion=false
-  root.children stable: 17 -> 17
-  far-trees: 9/9 alpha=1
-  mid-trees: 4/4 alpha=1
-  near-trees: 10/10 alpha=1
-  foreground-bushes: 4/4 alpha=1
-  layer-sky-life children: 2
-  layer-ambient children: 14
-  layer-weather children: 0
-  final wind sample: -0.0591
-  final elapsed seconds: 60.00
-  birdCount/activeBirdCount/moteCount/gustLeafCapacity: 2/2/11/2
-  destroy detached root: true
-  destroy idempotent: true
-  pass=true  root=17->17  trees(f/m/n)=9/9 4/4 10/10  bushes=4/4  sky=2  ambient=14  weather=0  wind=-0.0591
+ RUN  v4.1.9 /nvmetank1/projects/Razzoozle/source/.claude/worktrees/agent_wt-garden-atmos-task1/packages/web
 
-── scenario 02_medium ── quality=medium reducedMotion=false
-  root.children stable: 17 -> 17
-  far-trees: 9/9 alpha=1
-  mid-trees: 4/4 alpha=1
-  near-trees: 10/10 alpha=1
-  foreground-bushes: 4/4 alpha=1
-  layer-sky-life children: 1
-  layer-ambient children: 9
-  layer-weather children: 0
-  final wind sample: -0.0591
-  final elapsed seconds: 60.00
-  birdCount/activeBirdCount/moteCount/gustLeafCapacity: 1/1/7/1
-  destroy detached root: true
-  destroy idempotent: true
-  pass=true  root=17->17  trees(f/m/n)=9/9 4/4 10/10  bushes=4/4  sky=1  ambient=9  weather=0  wind=-0.0591
-
-── scenario 03_low ── quality=low reducedMotion=false
-  root.children stable: 17 -> 17
-  far-trees: 9/9 alpha=1
-  mid-trees: 4/4 alpha=1
-  near-trees: 10/10 alpha=1
-  foreground-bushes: 4/4 alpha=1
-  layer-sky-life children: 0
-  layer-ambient children: 5
-  layer-weather children: 0
-  final wind sample: -0.0591
-  final elapsed seconds: 60.00
-  birdCount/activeBirdCount/moteCount/gustLeafCapacity: 0/0/4/0
-  destroy detached root: true
-  destroy idempotent: true
-  pass=true  root=17->17  trees(f/m/n)=9/9 4/4 10/10  bushes=4/4  sky=0  ambient=5  weather=0  wind=-0.0591
-
-── scenario 04_reducedMotion ── quality=high reducedMotion=true
-  root.children stable: 17 -> 17
-  far-trees: 9/9 alpha=1
-  mid-trees: 4/4 alpha=1
-  near-trees: 10/10 alpha=1
-  foreground-bushes: 4/4 alpha=1
-  layer-sky-life children: 0
-  layer-ambient children: 14
-  layer-weather children: 0
-  final wind sample: -0.0591
-  final elapsed seconds: 60.00
-  birdCount/activeBirdCount/moteCount/gustLeafCapacity: 2/2/11/2
-  destroy detached root: true
-  destroy idempotent: true
-  pass=true  root=17->17  trees(f/m/n)=9/9 4/4 10/10  bushes=4/4  sky=0  ambient=14  weather=0  wind=-0.0591
-
-── scene-graph dump (high, after 60 s simulated) ──
-  layer-sky-life first 2 children:
-    bird-0@(1512,342)
-    bird-1@(0,0)
-  layer-ambient first 14 children:
-    ambient-particles@(0,0)
-    atmosphere-mote-0@(834,369)
-    atmosphere-mote-1@(801,553)
-    atmosphere-mote-2@(849,627)
-    atmosphere-mote-3@(1896,692)
-    atmosphere-mote-4@(1933,430)
-    atmosphere-mote-5@(1316,816)
-    atmosphere-mote-6@(337,574)
-    atmosphere-mote-7@(1491,740)
-    atmosphere-mote-8@(789,688)
-    atmosphere-mote-9@(1264,695)
-    atmosphere-mote-10@(1503,603)
-    gust-leaf-0@(1739,334)
-    gust-leaf-1@(1663,492)
-  layer-weather first 0 children:
-
-── summary ──
-  01_high: pass=true rootStable=true trees(f/m/n)=9/9|4/4|10/10 bushes=4/4 sky=2 ambient=14 weather=0 wind=-0.0591 destroy=true/idempotent=true
-  02_medium: pass=true rootStable=true trees(f/m/n)=9/9|4/4|10/10 bushes=4/4 sky=1 ambient=9 weather=0 wind=-0.0591 destroy=true/idempotent=true
-  03_low: pass=true rootStable=true trees(f/m/n)=9/9|4/4|10/10 bushes=4/4 sky=0 ambient=5 weather=0 wind=-0.0591 destroy=true/idempotent=true
-  04_reducedMotion: pass=true rootStable=true trees(f/m/n)=9/9|4/4|10/10 bushes=4/4 sky=0 ambient=14 weather=0 wind=-0.0591 destroy=true/idempotent=true
-
-ALL_SCENARIOS_PASS=true
-SCENARIO_COUNT=4
-PROBE_OK=OK
-
-─────────────────────────────────────────────────────────────────────────────
- HUMAN-READABLE SUMMARY (added by FU-E; distils the 4 scenarios above)
-─────────────────────────────────────────────────────────────────────────────
- | Scenario          | Sky | Ambient | Weather | Trees α (f/m/n) | Bushes α | Wind    | Pass |
- | 01_high           |  2  |   14    |    0    |   9 / 4 / 10    |   4/4    | -0.0591 |  ✓   |
- | 02_medium         |  1  |    9    |    0    |   9 / 4 / 10    |   4/4    | -0.0591 |  ✓   |
- | 03_low            |  0  |    5    |    0    |   9 / 4 / 10    |   4/4    | -0.0591 |  ✓   |
- | 04_reducedMotion  |  0  |   14    |    0    |   9 / 4 / 10    |   4/4    | -0.0591 |  ✓   |
- Counts = layer child totals at t=60 s. Trees α counts far/mid/near trees with alpha=1.
- 04_reducedMotion mirrors 01_high on ambient=14 (pool mounted, controller.update() is no-op);
- mirrors 03_low on sky=0 (no birds enter flight under prefersReducedMotion).
-─────────────────────────────────────────────────────────────────────────────
-
- ✓ ../../scratchpad/atmosphere-headless-probe.test.ts > garden atmosphere headless probe (Task 4 visual-evidence substitute) > captures all scenarios and writes scratchpad/atmosphere-probe.txt 54ms
+ ✓ ../../scratchpad/atmosphere-headless-probe.test.ts (1 test) 100ms
 
  Test Files  1 passed (1)
       Tests  1 passed (1)
-   Start at  10:08:23
-   Duration  469ms (transform 140ms, setup 0ms, import 315ms, tests 77ms, environment 0ms)
+   Start at  11:57:00
+   Duration  570ms (transform 205ms, setup 0ms, import 391ms, tests 100ms, environment 0ms)

@@ -28,6 +28,7 @@ import {
   type CreateGardenScene,
   type GardenPixiApplicationHandle,
   type GardenPixiInitOptions,
+  type GardenRenderQuality,
   type GardenScene,
 } from "./garden-pixi.types"
 import { createGardenScene } from "./rendering/GardenScene"
@@ -83,6 +84,14 @@ export interface AttachGardenPixiOptions {
    * bundle before createGardenScene. Injected test createScene skips loading.
    */
   loadAssets?: boolean
+  /**
+   * Render quality tier forwarded to the scene's atmosphere input. When
+   * omitted the scene falls back to 'high' (matches `atmosInput.quality ??
+   * 'high'` in GardenScene.ts). `static` short-circuits the atmosphere
+   * bind, so the option is forwarded verbatim and the scene decides what
+   * to do with it.
+   */
+  quality?: GardenRenderQuality
 }
 
 export interface AttachGardenPixiResult {
@@ -318,15 +327,15 @@ export async function attachGardenPixiApplication(
         plantHeads,
         plantBody,
         plantVariants,
-        // Task 3: production wiring feeds the loaded bird / wind-leaf / mote
-        // textures into the atmosphere controllers. `quality` is not exposed
-        // on this attach surface yet — the controllers default to 'high' for
-        // production hosts (matches GardenScene.ts `quality: atmosInput.quality
-        // ?? 'high'`). A future host can extend AttachGardenPixiOptions with
-        // a `quality` knob and forward it here.
+        // Task 3 + FU-D: production wiring feeds the loaded bird / wind-leaf /
+        // mote textures into the atmosphere controllers, and the host's
+        // `quality` knob is forwarded verbatim. The scene already falls back
+        // to 'high' via `atmosInput.quality ?? 'high'` when the option is
+        // omitted, so pre-FU-D callers (no `quality` set) keep their default.
         atmosphere: {
           prefersReducedMotion,
           atmosphereTextures,
+          quality: options.quality,
         },
         assetDiagnostics,
       })
