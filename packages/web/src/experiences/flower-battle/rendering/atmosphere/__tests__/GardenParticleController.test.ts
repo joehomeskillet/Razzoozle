@@ -246,4 +246,59 @@ describe("GardenParticleController", () => {
     expect(after).toEqual(before)
     controller.destroy()
   })
+
+  it("does not allocate any gust-leaf sprites in ambient when reducedMotion is true", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
+      reducedMotion: true,
+    })
+    const leafSprites = ambient.children.filter(
+      (c) => typeof c.label === "string" && c.label.startsWith("gust-leaf-"),
+    )
+    expect(leafSprites).toHaveLength(0)
+    expect(controller.getGustLeafCapacity()).toBe(0)
+    controller.destroy()
+  })
+
+  it("restores grass tuft rotations on destroy so re-binding reads the original baseline", () => {
+    const grass = new Container()
+    const tex = Texture.WHITE
+    const baseRotations = [0, 0.1, -0.2, 0.3, 0.05]
+    for (let i = 0; i < baseRotations.length; i += 1) {
+      const tuft = new Sprite(tex)
+      tuft.label = `grass-detail-${i}-0.8`
+      tuft.anchor.set(0.5, 1)
+      tuft.rotation = baseRotations[i]!
+      grass.addChild(tuft)
+    }
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient: new Container(),
+      grass,
+      moteTexture: makeMoteTexture(),
+    })
+    controller.update(100, 0.8)
+    controller.update(100, 0.8)
+    const drifted = grass.children.map((c) => (c as Sprite).rotation)
+    expect(drifted.some((rot, i) => rot !== baseRotations[i])).toBe(true)
+    controller.destroy()
+    for (let i = 0; i < baseRotations.length; i += 1) {
+      expect(grass.children[i]!.rotation).toBeCloseTo(baseRotations[i]!)
+    }
+    const controller2 = new GardenParticleController({
+      quality: "high",
+      ambient: new Container(),
+      grass,
+      moteTexture: makeMoteTexture(),
+    })
+    controller2.destroy()
+    for (let i = 0; i < baseRotations.length; i += 1) {
+      expect(grass.children[i]!.rotation).toBeCloseTo(baseRotations[i]!)
+    }
+  })
 })

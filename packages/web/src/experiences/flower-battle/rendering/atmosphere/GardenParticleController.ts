@@ -141,6 +141,9 @@ export class GardenParticleController {
       slot.sprite.destroy()
     }
     this.gustLeaves.length = 0
+    for (let i = 0; i < this.grassTufts.length; i += 1) {
+      this.grassTufts[i]!.rotation = this.grassBaseRotations[i]!
+    }
     this.grassTufts.length = 0
     this.grassPhases.length = 0
     this.grassBaseRotations.length = 0
@@ -217,9 +220,10 @@ export class GardenParticleController {
   }
 
   private initGustLeaves(): void {
+    if (this.reducedMotion) return
+    if (this.quality === "low" || this.quality === "static") return
     const count = GUST_LEAF_MID_COUNT[this.quality]
     if (count === 0) return
-    if (this.quality === "low" || this.quality === "static") return
     if (this.windLeafTextures.length === 0) return
     for (let i = 0; i < count; i += 1) {
       const tex = this.windLeafTextures[i % this.windLeafTextures.length]!
