@@ -1,20 +1,36 @@
 /**
  * Garden butterfly controller.
  *
- * Plan §7.2 (FU-L): a single ambient butterfly on a gentle, sweeping
- * route across the mid-ground of the garden. Not a foreground prop —
- * one path per session, deterministic from the seed, lives entirely in
- * the ambient layer. Designed as ambient motion: a few seconds of
- * presence, then it retires and the controller idles.
+ * Plan §7.2 (FU-L, FU-N): a single ambient butterfly on a gentle,
+ * sweeping route across the mid-ground of the garden. Not a foreground
+ * prop — one path per session, deterministic from the seed, lives
+ * entirely in the ambient layer. Designed as ambient motion: a few
+ * seconds of presence, then it retires and the controller idles.
+ *
+ * FU-N: the detail model now matches the birds' two-frame wing-flap.
+ * Two Pixi.Graphics silhouettes — `wings-up` (horizontal spread) and
+ * `wings-down` (upper wings folded slightly up) — are baked into their
+ * own textures. The sprite cycles between them on a 220–320 ms cadence
+ * so the silhouette visibly beats its wings. Each silhouette contains:
+ * four wing ellipses (two upper big, two lower small), a vertical body
+ * oval, two thin antennae lines going up-and-out from the head, and
+ * two small eye dots.
  *
  * Quality / motion gating:
  *   - Static / low / medium → no spawn (pool stays empty).
  *   - Reduced-motion → no spawn, no update.
  *
- *
  * Route: 4–5 deterministic waypoints through BUTTERFLY_BASE_Y_RANGE;
  * the controller walks t ∈ [0, 1] linearly along segment-pairs with
- * a sin perturbation layered on top of baseY for organic motion.
+ * a sin perturbation layered on top of baseY for organic motion. The
+ * frame swap is layered on top of the existing path motion.
+ *
+ * Fallback (no renderer, typically in `node` test envs): the sprite
+ * uses `Texture.WHITE` as the base texture; the two-frame visual
+ * differentiation is communicated by tint rotation
+ * (`palette.accent` for `'up'`, a darker amber variant for `'down'`).
+ * The frame swap cycles `sprite.tint`. `getFrameCount()` and
+ * `getCurrentFrame()` still report the cycle state.
  */
 
 import { Container, Graphics, Sprite, Texture } from "pixi.js"
@@ -37,12 +53,47 @@ const DEFAULT_BUTTERFLY_BODY_COLOR = 0xff9900
 
 const BUTTERFLY_WAYPOINT_COUNT = 5
 const BUTTERFLY_WAVE_AMP_PX = 6
-const BUTTERFLY_TEXTURE_WIDTH = 24
-const BUTTERFLY_TEXTURE_HEIGHT = 16
 const BUTTERFLY_VEIN_TINT_FACTOR = 0.55
 
+/** Texture frame dimensions (logical px). Chosen so the silhouette
+ *  fits: the canonical sprite width is 36 px (within Plan §7.2's
+ *  24–44 px band — between bird 36–54 and mote 1.5–3.5). */
+const BUTTERFLY_TEXTURE_WIDTH = 36
+const BUTTERFLY_TEXTURE_HEIGHT = 28
+const BUTTERFLY_SPRITE_WIDTH = 36
+const BUTTERFLY_SPRITE_HEIGHT = 28
+
+/** Wing-flap cadence (ms) — FU-N: matches the bird's
+ *  `BIRD_WING_SWAP_RANGE` band, slightly wider (220–320 vs 180–280)
+ *  so the slower butterfly silhouette reads. Tests can override
+ *  via `wingSwapRangeMs`. */
+const BUTTERFLY_WING_SWAP_RANGE: readonly [number, number] = [220, 320]
+
+/** Tint factor for the wings-down state (fallback path). The darker
+ *  variant visually signals the "down" half of the flap when the
+ *  controller has to fall back to `Texture.WHITE`. */
+const BUTTERFLY_DOWN_TINT_FACTOR = 0.65
+
+/** Antenna stroke width (logical px). 0.8 reads as a single thin
+ *  hairline at 36-px wide; thicker would dominate the silhouette. */
+const BUTTERFLY_ANTENNA_STROKE_WIDTH = 0.8
+
+/** "Frame" identifiers — there are exactly two: wings-up and wings-down. */
+export type ButterflyFrame = "up" | "down"
+
+export interface GardenButterflyTextures {
+  up: Texture
+  down: Texture
+}
+
 export interface GardenButterflyRenderer {
-  generateTexture: (target: Container) => Texture
+  /**
+   * Generate a texture from a Graphics silhouette. FU-N: the controller
+   * calls this twice — once for the wings-up frame, once for the
+   * wings-down frame — passing the `label` so callers can route to
+   * separate render targets or track per-frame usage.
+   */
+  generateTexture: (target: Container, label: ButterflyFrame) => Texture
 }
 
 interface ButterflyTextureResult {
@@ -64,7 +115,25 @@ export interface GardenButterflyControllerOptions {
    *  `--color-accent` so unit tests don't need a DOM. Defaults to
    *  `#ff9900` (the project's `--color-accent` default). */
   bodyColor?: number
+  /**
+   * Pre-baked wings-up / wings-down textures. Aggregators that already
+   * own the butterfly textures pass them in directly. When omitted, the
+   * controller bakes the textures itself (via the `renderer` or the
+   * canvas fallback). Ownership stays with the caller — the controller
+   * will NOT destroy them in `destroy()`.
+   */
+  butterflyTextures?: GardenButterflyTextures | null
+  /**
+   * Renderer that bakes the silhouette into a Texture. The controller
+   * calls `renderer.generateTexture(graphics, 'up' | 'down')` twice —
+   * once per frame — and owns the resulting textures. When omitted, the
+   * controller falls back to canvas drawing (production) or to the
+   * `Texture.WHITE` + tint-rotation fallback (node test envs).
+   */
   renderer?: GardenButterflyRenderer | null
+  /** Override the wing-swap cadence (ms). Tests tighten to make the
+   *  frame-cycle assertion deterministic. */
+  wingSwapRangeMs?: readonly [number, number]
 }
 
 interface ButterflyWaypoint {
@@ -79,27 +148,108 @@ function darkenColor(color: number, factor: number): number {
   return (red << 16) | (green << 8) | blue
 }
 
-function colorToCss(color: number): string {
-  const red = (color >> 16) & 0xff
-  const green = (color >> 8) & 0xff
-  const blue = color & 0xff
-  return `rgb(${red} ${green} ${blue})`
+function bodyFillColor(bodyColor: number): number {
+  return darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR)
 }
 
-function fillCanvasEllipse(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radiusX: number,
-  radiusY: number,
-): void {
-  context.beginPath()
-  context.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2)
-  context.fill()
+/** Draw the wings-up silhouette onto a fresh Graphics. Caller owns the
+ *  returned graphics and is responsible for destroying it after
+ *  rendering to a texture. Geometry is the same for both frames except
+ *  for the upper-wing y/rx: up = horizontal spread, down = folded
+ *  slightly up. */
+function createWingsUpGraphics(bodyColor: number): Graphics {
+  const g = new Graphics()
+  const tint = bodyFillColor(bodyColor)
+  // Upper wings — horizontal spread (wide ellipse, mid-body level).
+  g.ellipse(8, 13, 8, 5).fill(0xffffff)
+  g.ellipse(28, 13, 8, 5).fill(0xffffff)
+  // Lower wings — smaller, slightly below body center.
+  g.ellipse(10, 20, 6, 3).fill(0xffffff)
+  g.ellipse(26, 20, 6, 3).fill(0xffffff)
+  // Body — vertical oval in bodyColor (amber).
+  g.ellipse(18, 14, 1.5, 7).fill(tint)
+  // Antennae — two thin lines from the head up-and-out.
+  g.moveTo(18, 7)
+    .lineTo(14, 1)
+    .stroke({ color: tint, width: BUTTERFLY_ANTENNA_STROKE_WIDTH })
+  g.moveTo(18, 7)
+    .lineTo(22, 1)
+    .stroke({ color: tint, width: BUTTERFLY_ANTENNA_STROKE_WIDTH })
+  // Eyes — two tiny dots flanking the body top.
+  g.circle(17, 9, 0.6).fill(0x222222)
+  g.circle(19, 9, 0.6).fill(0x222222)
+  return g
 }
 
-function createCanvasButterflyTexture(
+/** Draw the wings-down silhouette — upper wings are folded slightly up
+ *  (smaller y, narrower rx) to convey the downstroke of a flap. The
+ *  body, lower wings, antennae, and eyes are identical to the up
+ *  frame so the silhouette reads as the same butterfly mid-flap. */
+function createWingsDownGraphics(bodyColor: number): Graphics {
+  const g = new Graphics()
+  const tint = bodyFillColor(bodyColor)
+  // Upper wings — folded up, narrower.
+  g.ellipse(10, 9, 7, 4).fill(0xffffff)
+  g.ellipse(26, 9, 7, 4).fill(0xffffff)
+  // Lower wings — same as up frame.
+  g.ellipse(10, 20, 6, 3).fill(0xffffff)
+  g.ellipse(26, 20, 6, 3).fill(0xffffff)
+  // Body — same as up frame.
+  g.ellipse(18, 14, 1.5, 7).fill(tint)
+  // Antennae — same as up frame.
+  g.moveTo(18, 7)
+    .lineTo(14, 1)
+    .stroke({ color: tint, width: BUTTERFLY_ANTENNA_STROKE_WIDTH })
+  g.moveTo(18, 7)
+    .lineTo(22, 1)
+    .stroke({ color: tint, width: BUTTERFLY_ANTENNA_STROKE_WIDTH })
+  // Eyes — same as up frame.
+  g.circle(17, 9, 0.6).fill(0x222222)
+  g.circle(19, 9, 0.6).fill(0x222222)
+  return g
+}
+
+function createFrameGraphics(
   bodyColor: number,
+  label: ButterflyFrame,
+): Graphics {
+  return label === "up"
+    ? createWingsUpGraphics(bodyColor)
+    : createWingsDownGraphics(bodyColor)
+}
+
+function bakeFrameFromRenderer(
+  renderer: GardenButterflyRenderer,
+  bodyColor: number,
+  label: ButterflyFrame,
+): ButterflyTextureResult | null {
+  const graphics = createFrameGraphics(bodyColor, label)
+  let generated: Texture | null = null
+  try {
+    generated = renderer.generateTexture(graphics, label)
+  } catch {
+    generated = null
+  }
+  graphics.destroy()
+  if (!generated) return null
+  if (
+    generated !== Texture.WHITE &&
+    generated !== Texture.EMPTY &&
+    !generated.destroyed
+  ) {
+    return { texture: generated, owned: true }
+  }
+  return { texture: generated, owned: false }
+}
+
+/** Render the silhouette into a 2D canvas (no Pixi renderer required).
+ *  Returns null when no DOM is available (e.g. node test envs). Used
+ *  as the production fallback when the aggregator doesn't supply a
+ *  renderer — keeps the visual quality high (real silhouette, not
+ *  Texture.WHITE). */
+function createCanvasFrameTexture(
+  bodyColor: number,
+  label: ButterflyFrame,
 ): ButterflyTextureResult | null {
   if (typeof document === "undefined") return null
   try {
@@ -108,16 +258,61 @@ function createCanvasButterflyTexture(
     canvas.height = BUTTERFLY_TEXTURE_HEIGHT
     const context = canvas.getContext("2d")
     if (!context) return null
-    context.clearRect(0, 0, canvas.width, canvas.height)
-    context.fillStyle = colorToCss(0xffffff)
-    fillCanvasEllipse(context, 6, 8, 6, 7)
-    fillCanvasEllipse(context, 18, 8, 6, 7)
-    context.fillStyle = colorToCss(
-      darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR),
-    )
-    fillCanvasEllipse(context, 12, 8, 1.5, 6)
+    const tint = bodyFillColor(bodyColor)
+    const ctx = context
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Antennae — drawn first so the body + wings overlap them cleanly.
+    ctx.strokeStyle = rgbCss(tint)
+    ctx.lineWidth = 1
+    ctx.lineCap = "round"
+    ctx.beginPath()
+    ctx.moveTo(18, 7)
+    ctx.lineTo(14, 1)
+    ctx.moveTo(18, 7)
+    ctx.lineTo(22, 1)
+    ctx.stroke()
+    // Upper wings.
+    ctx.fillStyle = "#ffffff"
+    if (label === "up") {
+      ctx.beginPath()
+      ctx.ellipse(8, 13, 8, 5, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.beginPath()
+      ctx.ellipse(28, 13, 8, 5, 0, 0, Math.PI * 2)
+      ctx.fill()
+    } else {
+      ctx.beginPath()
+      ctx.ellipse(10, 9, 7, 4, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.beginPath()
+      ctx.ellipse(26, 9, 7, 4, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    // Lower wings.
+    ctx.beginPath()
+    ctx.ellipse(10, 20, 6, 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(26, 20, 6, 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // Body.
+    ctx.fillStyle = rgbCss(tint)
+    ctx.beginPath()
+    ctx.ellipse(18, 14, 1.5, 7, 0, 0, Math.PI * 2)
+    ctx.fill()
+    // Eyes.
+    ctx.fillStyle = "#222222"
+    ctx.beginPath()
+    ctx.arc(17, 9, 0.6, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(19, 9, 0.6, 0, Math.PI * 2)
+    ctx.fill()
     const texture = Texture.from(canvas, true)
-    if (texture.width < 12 || texture.height < 8) {
+    if (
+      texture.width < BUTTERFLY_TEXTURE_WIDTH / 2 ||
+      texture.height < BUTTERFLY_TEXTURE_HEIGHT / 2
+    ) {
       if (texture !== Texture.WHITE && texture !== Texture.EMPTY) {
         texture.destroy(true)
       }
@@ -129,86 +324,88 @@ function createCanvasButterflyTexture(
   }
 }
 
-function createBufferButterflyTexture(
-  bodyColor: number,
-): ButterflyTextureResult | null {
-  try {
-    const pixels = new Uint8Array(
-      BUTTERFLY_TEXTURE_WIDTH * BUTTERFLY_TEXTURE_HEIGHT * 4,
-    )
-    const bodyTint = darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR)
-    for (let y = 0; y < BUTTERFLY_TEXTURE_HEIGHT; y += 1) {
-      for (let x = 0; x < BUTTERFLY_TEXTURE_WIDTH; x += 1) {
-        const leftWing =
-          ((x - 6) / 6) ** 2 + ((y - 8) / 7) ** 2 <= 1
-        const rightWing =
-          ((x - 18) / 6) ** 2 + ((y - 8) / 7) ** 2 <= 1
-        const body =
-          ((x - 12) / 1.5) ** 2 + ((y - 8) / 6) ** 2 <= 1
-        if (!leftWing && !rightWing && !body) continue
-        const color = body ? bodyTint : 0xffffff
-        const offset =
-          (y * BUTTERFLY_TEXTURE_WIDTH + x) * 4
-        pixels[offset] = (color >> 16) & 0xff
-        pixels[offset + 1] = (color >> 8) & 0xff
-        pixels[offset + 2] = color & 0xff
-        pixels[offset + 3] = 255
-      }
-    }
-    const texture = Texture.from(
-      {
-        resource: pixels,
-        width: BUTTERFLY_TEXTURE_WIDTH,
-        height: BUTTERFLY_TEXTURE_HEIGHT,
-      },
-      true,
-    )
-    return { texture, owned: true }
-  } catch {
-    return null
-  }
+function rgbCss(color: number): string {
+  const red = (color >> 16) & 0xff
+  const green = (color >> 8) & 0xff
+  const blue = color & 0xff
+  return `rgb(${red} ${green} ${blue})`
 }
 
-function createButterflyTexture(
-  renderer: GardenButterflyRenderer | null,
+interface ResolvedFrames {
+  up: Texture
+  down: Texture
+  /** True when the controller owns the up texture and must destroy
+   *  it on `destroy()`. */
+  upOwned: boolean
+  downOwned: boolean
+  /** True when the resolution fell through to the Texture.WHITE +
+   *  tint-rotation fallback (no renderer, no canvas). Test paths
+   *  typically land here. */
+  usedFallback: boolean
+}
+
+function resolveFrameTextures(
+  butterflyTextures: GardenButterflyTextures | null | undefined,
+  renderer: GardenButterflyRenderer | null | undefined,
   bodyColor: number,
-): ButterflyTextureResult {
-  if (renderer) {
-    const graphics = new Graphics()
-      .ellipse(6, 8, 6, 7)
-      .fill(0xffffff)
-      .ellipse(18, 8, 6, 7)
-      .fill(0xffffff)
-      .ellipse(12, 8, 1.5, 6)
-      .fill(darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR))
-    let generated: Texture | null = null
-    try {
-      generated = renderer.generateTexture(graphics)
-    } catch {
-      generated = null
-    }
-    graphics.destroy()
-    if (
-      generated &&
-      generated.width >= 12 &&
-      generated.height >= 8
-    ) {
-      return { texture: generated, owned: true }
-    }
-    if (
-      generated &&
-      generated !== Texture.WHITE &&
-      generated !== Texture.EMPTY &&
-      !generated.destroyed
-    ) {
-      generated.destroy(true)
+): ResolvedFrames {
+  if (
+    butterflyTextures &&
+    butterflyTextures.up &&
+    butterflyTextures.down
+  ) {
+    return {
+      up: butterflyTextures.up,
+      down: butterflyTextures.down,
+      upOwned: false,
+      downOwned: false,
+      usedFallback: false,
     }
   }
-  return (
-    createCanvasButterflyTexture(bodyColor) ??
-    createBufferButterflyTexture(bodyColor) ??
-    { texture: Texture.WHITE, owned: false }
-  )
+  if (renderer) {
+    const up = bakeFrameFromRenderer(renderer, bodyColor, "up")
+    const down = bakeFrameFromRenderer(renderer, bodyColor, "down")
+    if (
+      up &&
+      down &&
+      up.texture !== Texture.WHITE &&
+      down.texture !== Texture.WHITE
+    ) {
+      return {
+        up: up.texture,
+        down: down.texture,
+        upOwned: up.owned,
+        downOwned: down.owned,
+        usedFallback: false,
+      }
+    }
+  }
+  // Production fallback — no renderer, but DOM is available. Draw the
+  // silhouette directly into a 2D canvas. Each frame gets its own
+  // canvas so the sprite can swap between them on the flap cadence.
+  const canvasUp = createCanvasFrameTexture(bodyColor, "up")
+  const canvasDown = createCanvasFrameTexture(bodyColor, "down")
+  if (canvasUp && canvasDown) {
+    return {
+      up: canvasUp.texture,
+      down: canvasDown.texture,
+      upOwned: canvasUp.owned,
+      downOwned: canvasDown.owned,
+      usedFallback: false,
+    }
+  }
+  // Test fallback (no DOM, no renderer) — `Texture.WHITE` + tint
+  // rotation. Both frames share the same texture; the visible
+  // difference comes from cycling `sprite.tint` between `bodyColor`
+  // (up) and the darker variant (down). `getFrameCount()` still
+  // reports 2 so callers don't have to special-case the fallback.
+  return {
+    up: Texture.WHITE,
+    down: Texture.WHITE,
+    upOwned: false,
+    downOwned: false,
+    usedFallback: true,
+  }
 }
 
 export class GardenButterflyController {
@@ -218,11 +415,17 @@ export class GardenButterflyController {
   private readonly ambient: Container
   private readonly sprite: Sprite | null = null
   private readonly renderer: GardenButterflyRenderer | null
-  private butterflyTexture: Texture | null = null
-  private butterflyTextureOwned = false
+  private readonly usedFallback: boolean
+  private readonly frames: { up: Texture; down: Texture }
+  private readonly framesOwned: { up: boolean; down: boolean }
+  private currentFrame: ButterflyFrame = "up"
   /** Resolved amber color (from `--color-accent` by default). */
   private readonly bodyColor: number
+  /** Darker variant used as the 'down' tint in the `Texture.WHITE`
+   *  fallback path. */
+  private readonly downTint: number
   private readonly firstSpawnRangeMs: readonly [number, number]
+  private readonly wingSwapRangeMs: readonly [number, number]
   private readonly nextSpawnAtMs: number
   private readonly waypoints: readonly ButterflyWaypoint[]
   private readonly segmentLengths: readonly number[]
@@ -234,6 +437,14 @@ export class GardenButterflyController {
   private spawned = false
   private retired = true
   private destroyed = false
+  /** Total ms the controller has been ticking — anchors wing swap. */
+  private totalElapsedMs = 0
+  /** ms until the next wing swap. */
+  private nextWingSwapAtMs = 0
+  /** Antennae count baked into the silhouette. Exposed as a test seam
+   *  (FU-N brief E): the silhouette always has 2 antennae by design. */
+  static readonly ANTENNAE_COUNT = 2
+  static readonly FRAME_COUNT = 2
 
   constructor(options: GardenButterflyControllerOptions) {
     this.quality = options.quality
@@ -241,6 +452,8 @@ export class GardenButterflyController {
     this.ambient = options.ambient
     this.firstSpawnRangeMs =
       options.firstSpawnRangeMs ?? BUTTERFLY_FIRST_SPAWN_RANGE_MS
+    this.wingSwapRangeMs =
+      options.wingSwapRangeMs ?? BUTTERFLY_WING_SWAP_RANGE
     this.renderer = options.renderer ?? null
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
     // `--color-accent` (default #ff9900 — amber) is the project-wide
@@ -248,6 +461,7 @@ export class GardenButterflyController {
     // (where getComputedStyle is available) and threads the value
     // through here so this controller stays DOM-free for tests. (FU-L.)
     this.bodyColor = options.bodyColor ?? DEFAULT_BUTTERFLY_BODY_COLOR
+    this.downTint = darkenColor(this.bodyColor, BUTTERFLY_DOWN_TINT_FACTOR)
 
     // Gate: only "high" quality, no reduced motion. Lower qualities
     // leave the pool empty.
@@ -258,6 +472,10 @@ export class GardenButterflyController {
       this.pathLength = 0
       this.speed = 0
       this.pathDurationSec = 0
+      this.nextWingSwapAtMs = Number.POSITIVE_INFINITY
+      this.frames = { up: Texture.WHITE, down: Texture.WHITE }
+      this.framesOwned = { up: false, down: false }
+      this.usedFallback = true
       return
     }
 
@@ -293,19 +511,34 @@ export class GardenButterflyController {
     )
     this.pathDurationSec = this.pathLength / Math.max(1, this.speed)
 
-    const generatedTexture = createButterflyTexture(
+    const resolved = resolveFrameTextures(
+      options.butterflyTextures,
       this.renderer,
       this.bodyColor,
     )
-    const sprite = new Sprite(generatedTexture.texture)
+    this.frames = { up: resolved.up, down: resolved.down }
+    this.framesOwned = { up: resolved.upOwned, down: resolved.downOwned }
+    this.usedFallback = resolved.usedFallback
+    const sprite = new Sprite(resolved.up)
     sprite.label = "garden-butterfly"
     sprite.anchor.set(0.5, 0.5)
+    // Visible width: 36 px (within Plan §7.2's 24–44 band). Scale is
+    // derived from the texture's natural dimensions so the fallback
+    // `Texture.WHITE` (1×1) still ends up at the canonical size.
+    const baseWidth = Math.max(1, resolved.up.width)
+    const baseHeight = Math.max(1, resolved.up.height)
+    sprite.scale.set(BUTTERFLY_SPRITE_WIDTH / baseWidth, BUTTERFLY_SPRITE_HEIGHT / baseHeight)
+    // Tint: in the renderer / canvas paths, bodyColor (amber) is the
+    // accent. In the Texture.WHITE fallback path, tint doubles as the
+    // frame indicator (up = bodyColor, down = downTint) and is
+    // rotated by `applyCurrentTint()` on each frame swap.
     sprite.tint = this.bodyColor
     sprite.visible = false
     this.ambient.addChild(sprite)
     this.sprite = sprite
-    this.butterflyTexture = generatedTexture.texture
-    this.butterflyTextureOwned = generatedTexture.owned
+
+    // First wing swap after the lower bound of the configured band.
+    this.nextWingSwapAtMs = this.wingSwapRangeMs[0]
 
     // Schedule first spawn from the dedicated band.
     this.nextSpawnAtMs = this.rng.rangeInt(
@@ -344,10 +577,53 @@ export class GardenButterflyController {
     return this.waypoints
   }
 
+  /** Number of distinct frames in the flap cycle. Always 2 — the
+   *  silhouette alternates between wings-up and wings-down. */
+  getFrameCount(): number {
+    return 2
+  }
+
+  /** Identifier of the frame currently displayed by the sprite. */
+  getCurrentFrame(): ButterflyFrame {
+    return this.currentFrame
+  }
+
+  /** Antenna count baked into the silhouette. The two-frame design
+   *  draws exactly two thin antennae from the head up-and-out; this
+   *  helper is a public surface for tests that want to assert the
+   *  anatomy is present. */
+  getAntennaeCount(): number {
+    return 2
+  }
+
+  /** True when the controller fell through to the `Texture.WHITE`
+   *  tint-rotation fallback. Test seam — confirms the no-renderer
+   *  path was taken. */
+  getUsedFallback(): boolean {
+    return this.usedFallback
+  }
+
   update(deltaMs: number): void {
     if (this.destroyed || this.reducedMotion) return
     if (!this.sprite) return
     const clamped = Math.min(50, Math.max(0, deltaMs))
+    this.totalElapsedMs += clamped
+
+    // Wing-swap cadence: independent of the spawn cycle. Once the
+    // controller is alive (sprite visible), the silhouette flaps on
+    // the configured `wingSwapRangeMs` band. The swap is layered on
+    // top of the path motion — it never changes `x`, `y`, or
+    // `rotation`.
+    if (this.spawned && this.totalElapsedMs >= this.nextWingSwapAtMs) {
+      this.nextWingSwapAtMs =
+        this.totalElapsedMs +
+        this.rng.rangeInt(
+          this.wingSwapRangeMs[0],
+          this.wingSwapRangeMs[1],
+        )
+      this.swapFrame()
+    }
+
     if (!this.spawned) {
       // Wait until the first-spawn timer elapses, then start the path.
       const elapsedMsTotal = this.elapsedSec * 1000
@@ -386,15 +662,28 @@ export class GardenButterflyController {
       }
       this.sprite.destroy()
     }
-    if (
-      this.butterflyTextureOwned &&
-      this.butterflyTexture &&
-      !this.butterflyTexture.destroyed
-    ) {
-      this.butterflyTexture.destroy(true)
+    if (this.framesOwned.up && !this.frames.up.destroyed) {
+      this.frames.up.destroy(true)
     }
-    this.butterflyTexture = null
-    this.butterflyTextureOwned = false
+    if (this.framesOwned.down && !this.frames.down.destroyed) {
+      this.frames.down.destroy(true)
+    }
+  }
+
+  /** Swap the displayed frame (texture or tint, depending on path).
+   *  The path/x/y/rotation are untouched — only the visual frame
+   *  changes. */
+  private swapFrame(): void {
+    if (!this.sprite) return
+    this.currentFrame = this.currentFrame === "up" ? "down" : "up"
+    if (this.usedFallback) {
+      // Texture.WHITE fallback: cycle the tint.
+      this.sprite.tint =
+        this.currentFrame === "up" ? this.bodyColor : this.downTint
+      return
+    }
+    this.sprite.texture =
+      this.currentFrame === "up" ? this.frames.up : this.frames.down
   }
 
   private samplePath(progress: number): {

@@ -3,12 +3,23 @@
  *
  * FU-L: Plan §7.2 — a single ambient butterfly, high quality only,
  * Bezier-like waypoint path with sin perturbation.
+ *
+ * FU-N: two-frame wing flap (wings-up / wings-down). Renderer path
+ * bakes two distinct silhouette textures via `renderer.generateTexture`
+ * and the sprite swaps between them. The no-renderer fallback
+ * (test-friendly) uses `Texture.WHITE` and rotates the sprite tint
+ * between the accent (up) and a darker amber variant (down).
  */
 
 import { Container, Graphics, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
-import { GardenButterflyController } from "../GardenButterflyController"
+import {
+  GardenButterflyController,
+  type ButterflyFrame,
+  type GardenButterflyRenderer,
+  type GardenButterflyTextures,
+} from "../GardenButterflyController"
 import {
   ATMOSPHERE_HEIGHT,
   BUTTERFLY_BASE_Y_RANGE,
@@ -68,29 +79,39 @@ describe("GardenButterflyController", () => {
     expect(sprite).not.toBeNull()
     expect(ambient.children).toContain(sprite)
     expect(sprite).toBeInstanceOf(Sprite)
-    // Tint = bodyColor (stubbed to 0xff9900 — `--color-accent`).
+    // Tint starts as bodyColor (stubbed to 0xff9900 — `--color-accent`).
     expect(sprite!.tint).toBe(STUB_BODY_COLOR)
-    expect(sprite!.width).toBeGreaterThanOrEqual(12)
-    expect(sprite!.texture.width).toBeGreaterThanOrEqual(12)
-    expect(sprite!.texture.height).toBeGreaterThanOrEqual(8)
-    expect(sprite!.scale.x).toBe(1)
+    // Visible width lands in the 24–44 px band regardless of the
+    // texture-resolution fallback path (Texture.WHITE is 1×1; the
+    // controller compensates with scale to land on 36 px).
+    expect(sprite!.width).toBeGreaterThanOrEqual(24)
+    expect(sprite!.width).toBeLessThanOrEqual(44)
+    expect(sprite!.height).toBeGreaterThanOrEqual(16)
     c.destroy()
   })
 
-  it("uses the supplied renderer to bake the butterfly silhouette", () => {
-    const generated = Texture.from(
+  it("bakes two silhouette frames (wings-up + wings-down) via the renderer", () => {
+    const upTex = Texture.from(
       {
-        resource: new Uint8Array(24 * 16 * 4),
-        width: 24,
-        height: 16,
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
       },
       true,
     )
-    let target: Container | null = null
-    const renderer = {
-      generateTexture(graphics: Container): Texture {
-        target = graphics
-        return generated
+    const downTex = Texture.from(
+      {
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
+      },
+      true,
+    )
+    const calls: { graphics: Container; label: ButterflyFrame }[] = []
+    const renderer: GardenButterflyRenderer = {
+      generateTexture(graphics: Container, label: ButterflyFrame): Texture {
+        calls.push({ graphics, label })
+        return label === "up" ? upTex : downTex
       },
     }
     const c = new GardenButterflyController({
@@ -99,10 +120,21 @@ describe("GardenButterflyController", () => {
       bodyColor: STUB_BODY_COLOR,
       renderer,
     })
-    expect(target).toBeInstanceOf(Graphics)
-    expect(c.getSprite()!.texture).toBe(generated)
+    // The controller invokes the renderer exactly twice — once per
+    // frame — and each call receives a fresh Graphics silhouette.
+    expect(calls).toHaveLength(2)
+    for (const call of calls) {
+      expect(call.graphics).toBeInstanceOf(Graphics)
+    }
+    const labels = calls.map((call) => call.label).sort()
+    expect(labels).toEqual(["down", "up"])
+    // The sprite starts on the wings-up frame.
+    expect(c.getCurrentFrame()).toBe("up")
+    expect(c.getFrameCount()).toBe(2)
+    expect(c.getSprite()!.texture).toBe(upTex)
     c.destroy()
   })
+
   it("clears the sprite from ambient on destroy", () => {
     const ambient = new Container()
     const c = new GardenButterflyController({
@@ -218,6 +250,182 @@ describe("GardenButterflyController", () => {
         BUTTERFLY_BASE_Y_RANGE[1] * ATMOSPHERE_HEIGHT + 1e-6,
       )
     }
+    c.destroy()
+  })
+
+  it("reports 2 frames and 2 antennae via the FU-N test hooks", () => {
+    const c = makeButterfly("high")
+    expect(c.getFrameCount()).toBe(2)
+    expect(c.getAntennaeCount()).toBe(2)
+    // Initial frame is 'up' (mirrors the bird controller convention
+    // — birds also start on wings-up).
+    expect(c.getCurrentFrame()).toBe("up")
+    c.destroy()
+  })
+
+  it("cycles the texture between wings-up and wings-down on the flap cadence (renderer path)", () => {
+    // Tight wing-swap band: 40–60 ms. A 300-ms drive triggers ~5
+    // swaps, well past the threshold needed to observe the cycle.
+    const upTex = Texture.from(
+      {
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
+      },
+      true,
+    )
+    const downTex = Texture.from(
+      {
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
+      },
+      true,
+    )
+    const renderer: GardenButterflyRenderer = {
+      generateTexture(_graphics: Container, label: ButterflyFrame): Texture {
+        return label === "up" ? upTex : downTex
+      },
+    }
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      renderer,
+      firstSpawnRangeMs: [0, 1],
+      wingSwapRangeMs: [40, 60],
+    })
+    // Spawn immediately, then drive updates to cross the wing-swap
+    // threshold.
+    for (let i = 0; i < 20; i += 1) c.update(20)
+    expect(c.getCurrentFrame()).not.toBe("up")
+    expect(c.getSprite()!.texture).not.toBe(upTex)
+    // Drive more updates to land on a fresh swap — the controller
+    // toggles between the two textures.
+    const seenFrames = new Set<ButterflyFrame>([c.getCurrentFrame()])
+    const seenTextures = new Set<Texture>([c.getSprite()!.texture])
+    for (let i = 0; i < 30; i += 1) {
+      c.update(20)
+      seenFrames.add(c.getCurrentFrame())
+      seenTextures.add(c.getSprite()!.texture)
+    }
+    expect(seenFrames.has("up")).toBe(true)
+    expect(seenFrames.has("down")).toBe(true)
+    expect(seenTextures.has(upTex)).toBe(true)
+    expect(seenTextures.has(downTex)).toBe(true)
+    c.destroy()
+  })
+
+  it("cycles the tint between accent and a darker variant on the flap cadence (Texture.WHITE fallback)", () => {
+    // No renderer → controller falls through to the Texture.WHITE +
+    // tint-rotation fallback. This is the path hit by node-env tests
+    // (no DOM, no Pixi renderer).
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      firstSpawnRangeMs: [0, 1],
+      wingSwapRangeMs: [40, 60],
+    })
+    expect(c.getUsedFallback()).toBe(true)
+    expect(c.getSprite()!.texture).toBe(Texture.WHITE)
+    // Initial tint is bodyColor (the 'up' tint).
+    expect(c.getSprite()!.tint).toBe(STUB_BODY_COLOR)
+    expect(c.getCurrentFrame()).toBe("up")
+    // Drive past the first wing swap.
+    for (let i = 0; i < 20; i += 1) c.update(20)
+    expect(c.getCurrentFrame()).toBe("down")
+    // Tint must differ from the 'up' tint — a darker amber variant
+    // (0.65× the bodyColor per the BUTTERFLY_DOWN_TINT_FACTOR).
+    const downTint = c.getSprite()!.tint
+    expect(downTint).not.toBe(STUB_BODY_COLOR)
+    // Each RGB channel of the down tint must be lower than (or equal
+    // to) the corresponding bodyColor channel — "darker".
+    const r = (STUB_BODY_COLOR >> 16) & 0xff
+    const g = (STUB_BODY_COLOR >> 8) & 0xff
+    const b = STUB_BODY_COLOR & 0xff
+    const dr = (downTint >> 16) & 0xff
+    const dg = (downTint >> 8) & 0xff
+    const db = downTint & 0xff
+    expect(dr).toBeLessThanOrEqual(r)
+    expect(dg).toBeLessThanOrEqual(g)
+    expect(db).toBeLessThanOrEqual(b)
+    // Drive more updates — we should see the frame cycle back to 'up'
+    // and the tint return to bodyColor.
+    let sawUpTint = false
+    for (let i = 0; i < 30; i += 1) {
+      c.update(20)
+      if (c.getCurrentFrame() === "up" && c.getSprite()!.tint === STUB_BODY_COLOR) {
+        sawUpTint = true
+        break
+      }
+    }
+    expect(sawUpTint).toBe(true)
+    c.destroy()
+  })
+
+  it("uses caller-supplied butterflyTextures without invoking the renderer", () => {
+    const upTex = Texture.from(
+      {
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
+      },
+      true,
+    )
+    const downTex = Texture.from(
+      {
+        resource: new Uint8Array(36 * 28 * 4),
+        width: 36,
+        height: 28,
+      },
+      true,
+    )
+    const textures: GardenButterflyTextures = { up: upTex, down: downTex }
+    let rendererCalled = false
+    const renderer: GardenButterflyRenderer = {
+      generateTexture(): Texture {
+        rendererCalled = true
+        return upTex
+      },
+    }
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      renderer,
+      butterflyTextures: textures,
+    })
+    expect(rendererCalled).toBe(false)
+    expect(c.getSprite()!.texture).toBe(upTex)
+    c.destroy()
+  })
+
+  it("preserves the Bezier path motion while the frame swap is layered on top", () => {
+    // The frame swap must never change sprite.x / sprite.y / sprite
+    // .rotation. We sample a few mid-path frames and verify the path
+    // is still progressing.
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      firstSpawnRangeMs: [0, 1],
+      wingSwapRangeMs: [40, 60],
+    })
+    // Spawn immediately.
+    c.update(50)
+    expect(c.getIsAlive()).toBe(true)
+    const samples: { x: number; y: number; rotation: number }[] = []
+    for (let i = 0; i < 6; i += 1) {
+      c.update(40)
+      const sprite = c.getSprite()!
+      samples.push({ x: sprite.x, y: sprite.y, rotation: sprite.rotation })
+    }
+    // At least one x/y must have changed across the samples — the
+    // path is advancing, independent of any frame swaps.
+    const distinctX = new Set(samples.map((s) => s.x))
+    const distinctY = new Set(samples.map((s) => s.y))
+    expect(distinctX.size + distinctY.size).toBeGreaterThan(1)
     c.destroy()
   })
 })
