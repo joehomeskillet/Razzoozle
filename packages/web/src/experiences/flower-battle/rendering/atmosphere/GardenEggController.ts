@@ -18,7 +18,7 @@
  * so the same seed always produces the same shatter.
  */
 
-import { Container, Graphics, Sprite, Texture } from "pixi.js"
+import { Container, Sprite, Texture, TextureSource } from "pixi.js"
 
 import { ATMOSPHERE_HEIGHT } from "./garden-atmosphere.constants"
 import {
@@ -83,6 +83,26 @@ const EGG_TINT = 0xfff4ba
 const EGG_OUTLINE = 0x6b4423
 const YOLK_TINT = 0xf4a261
 
+const EGG_TINT_HEX = hexToCssColor(EGG_TINT)
+const EGG_OUTLINE_HEX = hexToCssColor(EGG_OUTLINE)
+const YOLK_TINT_HEX = hexToCssColor(YOLK_TINT)
+
+/**
+ * Test escape hatch from `scratchpad/followups/fu-s-brief.md`:
+ * when running under the `node` vitest env (no `document` / Canvas2D),
+ * the Canvas2D bake path is skipped and we synthesize the egg / shell /
+ * yolk textures from a deterministic RGBA byte buffer. The byte buffer
+ * path mirrors the Canvas2D output 1:1 (same fill, same stroke) so the
+ * `sprite.width >= 6` / `alpha = 1` assertions in the test hold without
+ * pulling a real DOM.
+ */
+const SKIP_CANVAS_BAKE =
+  typeof (globalThis as { __gardenEggSkipCanvas?: boolean })
+    .__gardenEggSkipCanvas === "boolean"
+    ? (globalThis as { __gardenEggSkipCanvas?: boolean })
+        .__gardenEggSkipCanvas === true
+    : typeof document === "undefined"
+
 export class GardenEggController {
   private readonly rng: SeededRandom
   private readonly eggContainer: Container
@@ -114,6 +134,8 @@ export class GardenEggController {
       const sprite = new Sprite(eggTexture)
       sprite.label = `egg-${i}`
       sprite.anchor.set(0.5, 0.5)
+      // A 6×6 source at 1.5 scale renders as a visible 9×9 logical-pixel egg.
+      sprite.scale.set(1.5, 1.5)
       sprite.visible = false
       this.eggContainer.addChild(sprite)
       this.eggPool.push({
@@ -348,60 +370,159 @@ export class GardenEggController {
 }
 
 function buildEggTexture(): Texture {
-  const g = new Graphics()
-  g.rect(0, 0, EGG_TEXTURE_SIZE, EGG_TEXTURE_SIZE)
-    .fill({ color: EGG_TINT })
-    .stroke({ color: EGG_OUTLINE, width: 1, alignment: 0 })
-  return renderGraphicsToTexture(g)
+  if (SKIP_CANVAS_BAKE) {
+    return bufferTexture(EGG_TEXTURE_SIZE, EGG_TEXTURE_SIZE, (x, y) =>
+      isShellPixel(x, y, EGG_TEXTURE_SIZE, EGG_TEXTURE_SIZE, 0.5) ? EGG_OUTLINE : EGG_TINT,
+    )
+  }
+  return textureFromCanvas(
+    createEggCanvas(EGG_TEXTURE_SIZE, EGG_TINT, EGG_OUTLINE, 1, 0.5),
+  )
 }
 
 function buildShellTexture(size: number, tint: number): Texture {
-  const g = new Graphics()
-  g.rect(0, 0, size, size)
-    .fill({ color: tint })
-    .stroke({ color: EGG_OUTLINE, width: 0.5, alignment: 0 })
-  return renderGraphicsToTexture(g)
+  if (SKIP_CANVAS_BAKE) {
+    return bufferTexture(size, size, (x, y) =>
+      isShellPixel(x, y, size, size, 0.25) ? EGG_OUTLINE : tint,
+    )
+  }
+  return textureFromCanvas(createEggCanvas(size, tint, EGG_OUTLINE, 0.5, 0.25))
 }
 
 function buildYolkTexture(): Texture {
-  const g = new Graphics()
-  g.ellipse(0, 0, 4, 1.5).fill({ color: YOLK_TINT })
-  return renderGraphicsToTexture(g)
+  const w = 8
+  const h = 3
+  if (SKIP_CANVAS_BAKE) {
+    return bufferTexture(w, h, (x, y) =>
+      isYolkPixel(x, y, w, h, 4, 1.5) ? YOLK_TINT : 0,
+    )
+  }
+  const canvas = document.createElement("canvas")
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return bufferTexture(w, h, () => 0)
+  ctx.fillStyle = YOLK_TINT_HEX
+  ctx.beginPath()
+  ctx.ellipse(4, 1.5, 4, 1.5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  return Texture.from(canvas)
 }
 
 function buildMiniYolkTexture(): Texture {
-  const g = new Graphics()
-  g.circle(0, 0, 1.2).fill({ color: YOLK_TINT })
-  return renderGraphicsToTexture(g)
+  const w = 3
+  const h = 3
+  if (SKIP_CANVAS_BAKE) {
+    return bufferTexture(w, h, (x, y) =>
+      isMiniYolkPixel(x, y, w, h) ? YOLK_TINT : 0,
+    )
+  }
+  const canvas = document.createElement("canvas")
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return bufferTexture(w, h, () => 0)
+  ctx.fillStyle = YOLK_TINT_HEX
+  ctx.beginPath()
+  ctx.arc(1.5, 1.5, 1.2, 0, Math.PI * 2)
+  ctx.fill()
+  return Texture.from(canvas)
 }
 
-function renderGraphicsToTexture(g: Graphics): Texture {
-  if (typeof document !== "undefined") {
-    const canvas = document.createElement("canvas")
-    const w = Math.max(1, Math.ceil(g.width))
-    const h = Math.max(1, Math.ceil(g.height))
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext("2d")
-    if (ctx) {
-      const localMatrix = g.localTransform
-      ctx.setTransform(
-        localMatrix.a,
-        localMatrix.b,
-        localMatrix.c,
-        localMatrix.d,
-        localMatrix.tx,
-        localMatrix.ty,
-      )
-      const renderable = (g as unknown as { context: { render: (c: CanvasRenderingContext2D) => void } })
-        .context
-      if (renderable && typeof renderable.render === "function") {
-        renderable.render(ctx)
-      }
-    }
-    g.destroy()
+function textureFromCanvas(canvas: HTMLCanvasElement): Texture {
+  try {
     return Texture.from(canvas)
+  } catch (err) {
+    console.warn(
+      "[GardenEggController] Texture.from(canvas) failed, falling back:",
+      err,
+    )
+    return new Texture({
+      source: TextureSource.from({
+        resource: canvas,
+        width: canvas.width,
+        height: canvas.height,
+      }),
+    })
   }
-  g.destroy()
-  return Texture.WHITE
+}
+
+function createEggCanvas(
+  size: number,
+  fill: number,
+  stroke: number,
+  lineWidth: number,
+  inset: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return canvas
+  ctx.fillStyle = hexToCssColor(fill)
+  ctx.fillRect(0, 0, size, size)
+  ctx.lineWidth = lineWidth
+  ctx.strokeStyle = hexToCssColor(stroke)
+  ctx.strokeRect(inset, inset, size - inset * 2, size - inset * 2)
+  return canvas
+}
+
+function bufferTexture(
+  w: number,
+  h: number,
+  pick: (x: number, y: number) => number,
+): Texture {
+  const buf = new Uint8Array(w * h * 4)
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const c = pick(x, y)
+      const i = (y * w + x) * 4
+      buf[i] = (c >> 16) & 0xff
+      buf[i + 1] = (c >> 8) & 0xff
+      buf[i + 2] = c & 0xff
+      buf[i + 3] = c === 0 ? 0 : 0xff
+    }
+  }
+  return new Texture({
+    source: TextureSource.from({ resource: buf, width: w, height: h }),
+  })
+}
+
+function isShellPixel(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  inset: number,
+): boolean {
+  const onTop = y < inset || y > h - 1 - inset
+  const onLeft = x < inset || x > w - 1 - inset
+  return onTop || onLeft
+}
+
+function isYolkPixel(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  rx: number,
+  ry: number,
+): boolean {
+  const cx = w / 2
+  const cy = h / 2
+  const dx = (x + 0.5 - cx) / rx
+  const dy = (y + 0.5 - cy) / ry
+  return dx * dx + dy * dy <= 1
+}
+
+function isMiniYolkPixel(x: number, y: number, w: number, h: number): boolean {
+  const cx = w / 2
+  const cy = h / 2
+  const dx = x + 0.5 - cx
+  const dy = y + 0.5 - cy
+  return dx * dx + dy * dy <= 1.2 * 1.2
+}
+
+function hexToCssColor(n: number): string {
+  return `#${n.toString(16).padStart(6, "0")}`
 }

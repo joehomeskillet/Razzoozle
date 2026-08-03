@@ -38,6 +38,7 @@ function makeEggController(seed = 0xe99) {
 describe("GardenEggController", () => {
   it("constructor populates all three pools and mounts their sprites", () => {
     const { c, egg, shatter, yolk } = makeEggController()
+    expect(egg.children.length).toBeGreaterThan(0)
     expect(egg.children.length).toBe(EGG_POOL_SIZE)
     expect(shatter.children.length).toBe(EGG_SHATTER_POOL_SIZE)
     expect(yolk.children.length).toBe(EGG_YOLK_POOL_SIZE)
@@ -51,6 +52,9 @@ describe("GardenEggController", () => {
     expect(stats.activeEggs).toBe(1)
     const visible = egg.children.filter((s) => s.visible)
     expect(visible.length).toBe(1)
+    expect(visible[0]!.visible).toBe(true)
+    expect(visible[0]!.alpha).toBe(1)
+    expect(visible[0]!.width).toBeGreaterThanOrEqual(6)
     expect(visible[0]!.x).toBe(120)
     expect(visible[0]!.y).toBe(50)
     c.destroy()
