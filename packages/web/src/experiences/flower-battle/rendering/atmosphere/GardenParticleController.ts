@@ -6,6 +6,10 @@
  *     dx/dy on top of the base velocity. Lifetime 5–10 s, recycled.
  *   - Gust leaves: short-lived bursts during a positive gust window
  *     (wind sample ≥ activation threshold). Quality ≥ medium only.
+ *     FU-O: each leaf now follows a ballistic motion model — linear
+ *     drag on vy, rotation-driven lift factor, angular drag, and a
+ *     stuck-detection that retires leaves that have fallen past 55 %
+ *     of the canvas height for ≥ 2 s.
  *   - Grass tufts: sweeps `layer-grass` looking for `grass-detail-*`
  *     sprites and applies a wind-driven rotation around the bottom anchor.
  *
@@ -21,14 +25,21 @@ import {
   GUST_LEAF_EDGE_INSET,
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_MID_COUNT,
-  GUST_LEAF_ROTATION_RANGE,
   GUST_LEAF_SCALE_RANGE,
-  GUST_LEAF_SPEED_RANGE,
   GUST_LEAF_VEIN_SCALE_RATIO,
   GUST_LEAF_VEIN_TINT_FACTOR,
-  GUST_LEAF_VY_RANGE,
   GRASS_TUFT_COUNTS,
   GRASS_WIND_SWEEP_RANGE,
+  LEAF_DRAG_K,
+  LEAF_FLIGHT_ANG_VEL_RANGE,
+  LEAF_FLIGHT_BASE_V_RANGE,
+  LEAF_FLIGHT_BASE_VY_RANGE,
+  LEAF_FLIGHT_SPAWN_BASE_Y_RANGE,
+  LEAF_FLIGHT_STUCK_DURATION,
+  LEAF_FLIGHT_STUCK_THRESHOLD,
+  LEAF_GRAVITY,
+  LEAF_ROT_DRAG_K,
+  LEAF_ROTATION_LIFT,
   MOTE_BASE_SPEED_RANGE,
   MOTE_LIFETIME_RANGE,
   MOTE_MID_COUNT,
@@ -68,19 +79,28 @@ interface MoteSlot {
 
 interface GustLeafSlot {
   sprite: Container
-  rotationSpeed: number
-  vy: number
+  /** Constant horizontal velocity (px/s) for the lifetime of the leaf. */
   vx: number
-  /** Y anchor around which the vertical wave oscillates. */
+  /** Vertical velocity (px/s). Decays under drag and grows under
+   *  gravity modulated by the spin-driven lift factor. */
+  vy: number
+  /** Angular velocity (rad/s). Decays under angular drag. */
+  angVel: number
+  /** Y anchor — the leaf's starting currentY inside the spawn band. */
   baseY: number
-  /** Vertical wave amplitude (px) — cloud-style ±6 px. */
-  waveAmp: number
-  /** Vertical wave phase (radians). */
-  wavePhase: number
-  /** Travel direction (-1 = left, +1 = right). Drives retirement. */
+  /** Travel direction (-1 = left, +1 = right). Drives vx sign. */
   direction: 1 | -1
+  /** Live horizontal position (px). */
+  currentX: number
+  /** Live vertical position (px). */
+  currentY: number
+  /** Live rotation (rad). */
+  currentRotation: number
   ageSec: number
   lifetimeSec: number
+  /** Seconds spent above the stuck threshold. Resets when currentY
+   *  drops back below it. FU-O. */
+  stuckSec: number
   active: boolean
 }
 
@@ -372,15 +392,17 @@ export class GardenParticleController {
       this.ambient.addChild(container)
       this.gustLeaves.push({
         sprite: container,
-        rotationSpeed: 0,
-        vy: 0,
         vx: 0,
+        vy: 0,
+        angVel: 0,
         baseY: 0,
-        waveAmp: 0,
-        wavePhase: 0,
         direction: 1,
+        currentX: 0,
+        currentY: 0,
+        currentRotation: 0,
         ageSec: 0,
         lifetimeSec: 0,
+        stuckSec: 0,
         active: false,
       })
     }
@@ -391,67 +413,96 @@ export class GardenParticleController {
     const activeGust = windSample >= GUST_LEAF_ACTIVATION_THRESHOLD
     for (const slot of this.gustLeaves) {
       if (slot.active) {
+        // FU-O ballistic integration:
+        //   dragFactor = exp(-LEAF_DRAG_K * dt)
+        //   liftFactor = clamp(1 - |angVel| * LEAF_ROTATION_LIFT, 0.05, 1)
+        //   vy = vy * dragFactor + LEAF_GRAVITY * liftFactor * dt
+        //   angVel *= exp(-LEAF_ROT_DRAG_K * dt)
+        //   currentX += vx * dt; currentY += vy * dt
+        //   currentRotation += angVel * dt
+        const dragFactor = Math.exp(-LEAF_DRAG_K * dt)
+        const liftFactor = Math.min(
+          1,
+          Math.max(0.05, 1 - Math.abs(slot.angVel) * LEAF_ROTATION_LIFT),
+        )
+        slot.vy =
+          slot.vy * dragFactor + LEAF_GRAVITY * liftFactor * dt
+        slot.angVel = slot.angVel * Math.exp(-LEAF_ROT_DRAG_K * dt)
+        slot.currentX += slot.vx * dt
+        slot.currentY += slot.vy * dt
+        slot.currentRotation += slot.angVel * dt
         slot.ageSec += dt
-        // Cloud-style horizontal dance: steady horizontal velocity +
-        // gentle vertical drop + small rotation drift + a ±6 px
-        // vertical sin wave (≈2 Hz) layered on top of the base Y.
-        // (FU-H.)
-        slot.sprite.x += slot.vx * dt
-        slot.sprite.y =
-          slot.baseY +
-          Math.sin(slot.ageSec * 2 + slot.wavePhase) * slot.waveAmp
-        slot.sprite.rotation += slot.rotationSpeed * dt
+
+        // Mirror state onto the sprite.
+        slot.sprite.x = slot.currentX
+        slot.sprite.y = slot.currentY
+        slot.sprite.rotation = slot.currentRotation
+        slot.sprite.visible = true
+
+        // Stuck detection: a leaf whose currentY has been above the
+        // threshold for ≥ LEAF_FLIGHT_STUCK_DURATION seconds is
+        // retired so the pool can spawn a fresh crossing.
+        const stuckY = LEAF_FLIGHT_STUCK_THRESHOLD * ATMOSPHERE_HEIGHT
+        if (slot.currentY > stuckY) {
+          slot.stuckSec += dt
+        } else {
+          slot.stuckSec = 0
+        }
+
         // Retire when the leaf has cleared the canvas horizontally
-        // (with 60 px margin) OR its lifetime has elapsed.
+        // (with 60 px margin), its lifetime has elapsed, or the
+        // stuck detector has fired.
         const margin = 60
         const offRight =
-          slot.direction === 1 && slot.sprite.x > ATMOSPHERE_WIDTH + margin
+          slot.direction === 1 && slot.currentX > ATMOSPHERE_WIDTH + margin
         const offLeft =
-          slot.direction === -1 && slot.sprite.x < -margin
+          slot.direction === -1 && slot.currentX < -margin
         if (
           slot.ageSec >= slot.lifetimeSec ||
           offRight ||
-          offLeft
+          offLeft ||
+          slot.stuckSec >= LEAF_FLIGHT_STUCK_DURATION
         ) {
           slot.active = false
           slot.sprite.visible = false
         }
       } else if (activeGust) {
-        // FU-J: startX always at a screen edge so the leaf spans the
-        // full canvas width (no premature disappearance mid-screen).
-        // 50/50 left vs right — the choice sets the travel direction
-        // and vx sign.
+        // FU-O spawn: startX at screen edge, vx sign follows direction,
+        // vy / angVel / baseY / currentRotation sampled from the new
+        // ballistic ranges.
         const fromLeft = this.rng.next() < 0.5
         const startX = fromLeft
           ? -GUST_LEAF_EDGE_INSET
           : ATMOSPHERE_WIDTH + GUST_LEAF_EDGE_INSET
         slot.direction = fromLeft ? 1 : -1
         const speed = this.rng.range(
-          GUST_LEAF_SPEED_RANGE[0],
-          GUST_LEAF_SPEED_RANGE[1],
+          LEAF_FLIGHT_BASE_V_RANGE[0],
+          LEAF_FLIGHT_BASE_V_RANGE[1],
         )
         slot.vx = speed * slot.direction
         slot.vy = this.rng.range(
-          GUST_LEAF_VY_RANGE[0],
-          GUST_LEAF_VY_RANGE[1],
+          LEAF_FLIGHT_BASE_VY_RANGE[0],
+          LEAF_FLIGHT_BASE_VY_RANGE[1],
         )
-        slot.rotationSpeed = this.rng.range(
-          GUST_LEAF_ROTATION_RANGE[0],
-          GUST_LEAF_ROTATION_RANGE[1],
+        slot.angVel = this.rng.range(
+          LEAF_FLIGHT_ANG_VEL_RANGE[0],
+          LEAF_FLIGHT_ANG_VEL_RANGE[1],
         )
-        slot.waveAmp = 6
-        slot.wavePhase = this.rng.range(0, Math.PI * 2)
+        const baseYFrac = this.rng.range(
+          LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[0],
+          LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[1],
+        )
+        slot.baseY = baseYFrac * ATMOSPHERE_HEIGHT
         slot.lifetimeSec = this.rng.range(
           GUST_LEAF_LIFETIME_RANGE[0],
           GUST_LEAF_LIFETIME_RANGE[1],
         )
         slot.ageSec = 0
-        const baseY = this.rng.range(
-          ATMOSPHERE_HEIGHT * 0.18,
-          ATMOSPHERE_HEIGHT * 0.55,
-        )
-        slot.baseY = baseY
-        slot.sprite.position.set(startX, baseY)
+        slot.stuckSec = 0
+        slot.currentX = startX
+        slot.currentY = slot.baseY
+        slot.currentRotation = 0
+        slot.sprite.position.set(slot.currentX, slot.currentY)
         slot.sprite.rotation = 0
         slot.sprite.visible = true
         slot.active = true

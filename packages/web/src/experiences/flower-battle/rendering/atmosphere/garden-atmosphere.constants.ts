@@ -256,3 +256,92 @@ export const BUTTERFLY_FIRST_SPAWN_RANGE_MS: readonly [number, number] = [
  * (FU-L.)
  */
 export const BUTTERFLY_SPEED_RANGE: readonly [number, number] = [40, 80]
+
+/**
+ * Butterfly Bezier-segment lifetime range (seconds). Each segment is a
+ * single cubic Bezier through C0..C3; on `t >= 1` the controller
+ * spawns the next segment (G1 continuous). FU-O physics redesign.
+ */
+export const BUTTERFLY_SEGMENT_DURATION_RANGE: readonly [number, number] = [
+  4, 7,
+]
+
+/**
+ * Wing-flap frequency multiplier on tangent speed
+ * (flapFreq = clamp(speed * BUTTERFLY_FLAP_SPEED_MULT, 1.5, 5.0)).
+ * The bob sinusoid rides at `flapFreq * 2/3`. FU-O physics redesign.
+ */
+export const BUTTERFLY_FLAP_SPEED_MULT = 2.0
+
+/**
+ * Vertical bob amplitude (px) layered on top of the Bezier position.
+ * FU-O physics redesign.
+ */
+export const BUTTERFLY_BOB_AMP = 12.0
+
+/**
+ * Gust-leaf linear drag coefficient (1/s). Applied as
+ * `vy = vy * exp(-LEAF_DRAG_K * dt) + LEAF_GRAVITY * liftFactor * dt`
+ * for the ballistic integration. FU-O physics redesign.
+ */
+export const LEAF_DRAG_K = 0.8
+
+/**
+ * Gust-leaf gravity (px/s²). FU-O physics redesign.
+ */
+export const LEAF_GRAVITY = 9.81
+
+/**
+ * Per-rad/s-of-spin reduction in the gravity lift factor
+ * (liftFactor = clamp(1 - |angVel| * LEAF_ROTATION_LIFT, 0.05, 1)).
+ * Higher angular velocity → less effective gravity → leaf falls slower.
+ * FU-O physics redesign.
+ */
+export const LEAF_ROTATION_LIFT = 0.05
+
+/**
+ * Angular drag coefficient (1/s) — `angVel *= exp(-LEAF_ROT_DRAG_K * dt)`.
+ * FU-O physics redesign.
+ */
+export const LEAF_ROT_DRAG_K = 0.2
+
+/**
+ * Initial horizontal speed range (px/s) for a freshly spawned gust
+ * leaf. The leaf crosses the canvas in `(ATMOSPHERE_WIDTH + 2 * inset)
+ * / speed` seconds. FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_BASE_V_RANGE: readonly [number, number] = [55, 100]
+
+/**
+ * Initial vertical speed range (px/s) for a freshly spawned gust leaf.
+ * Sign is +ve (downward) per FU-O. FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_BASE_VY_RANGE: readonly [number, number] = [40, 80]
+
+/**
+ * Initial angular velocity range (rad/s). FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_ANG_VEL_RANGE: readonly [number, number] = [
+  -2.5, 2.5,
+]
+
+/**
+ * Spawn Y band (fraction of `ATMOSPHERE_HEIGHT`). The leaf appears
+ * somewhere inside this band and drifts down. FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_SPAWN_BASE_Y_RANGE: readonly [number, number] = [
+  0.18, 0.55,
+]
+
+/**
+ * Stuck threshold (fraction of `ATMOSPHERE_HEIGHT`). Once a leaf's
+ * currentY exceeds this and stays above it for the configured
+ * duration, the controller retires the slot. FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_STUCK_THRESHOLD = 0.55
+
+/**
+ * Stuck duration (seconds). A leaf whose currentY exceeds the
+ * threshold for at least this long is retired. FU-O physics redesign.
+ */
+export const LEAF_FLIGHT_STUCK_DURATION = 2.0

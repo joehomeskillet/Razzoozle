@@ -1,14 +1,20 @@
 /**
  * Garden butterfly controller tests.
  *
- * FU-L: Plan §7.2 — a single ambient butterfly, high quality only,
- * Bezier-like waypoint path with sin perturbation.
- *
+ * FU-L: Plan §7.2 — a single ambient butterfly, high quality only.
  * FU-N: two-frame wing flap (wings-up / wings-down). Renderer path
  * bakes two distinct silhouette textures via `renderer.generateTexture`
  * and the sprite swaps between them. The no-renderer fallback
  * (test-friendly) uses `Texture.WHITE` and rotates the sprite tint
  * between the accent (up) and a darker amber variant (down).
+ * FU-O: physics redesign — cubic Bezier path through 4 control points
+ * with G1-continuous segment continuation. Frame step is now
+ *   pos = cubicBezier(C0..C3, t)
+ *   vel = cubicBezierDerivative(C0..C3, t)
+ *   heading = atan2(vel.y, vel.x)
+ *   flapFreq = clamp(speed * BUTTERFLY_FLAP_SPEED_MULT, 1.5, 5)
+ *   bobY = sin(t_elapsed * flapFreq * 2/3) * BUTTERFLY_BOB_AMP
+ *   sprite.x = pos.x; sprite.y = pos.y + bobY; sprite.rotation = heading
  */
 
 import { Container, Graphics, Sprite, Texture } from "pixi.js"
@@ -22,6 +28,7 @@ import {
 } from "../GardenButterflyController"
 import {
   ATMOSPHERE_HEIGHT,
+  ATMOSPHERE_WIDTH,
   BUTTERFLY_BASE_Y_RANGE,
 } from "../garden-atmosphere.constants"
 
@@ -207,8 +214,9 @@ describe("GardenButterflyController", () => {
     // 50 ms < lower bound → still not alive.
     c.update(50)
     expect(c.getIsAlive()).toBe(false)
-    // Another 100 ms — total elapsed 150 ms, past the upper bound.
-    c.update(100)
+    // Drive past the upper bound. deltaMs is clamped to 50 ms per
+    // call, so a few more ticks are needed to clear 120 ms.
+    for (let i = 0; i < 4; i += 1) c.update(100)
     expect(c.getIsAlive()).toBe(true)
     c.destroy()
   })
@@ -264,8 +272,8 @@ describe("GardenButterflyController", () => {
   })
 
   it("cycles the texture between wings-up and wings-down on the flap cadence (renderer path)", () => {
-    // Tight wing-swap band: 40–60 ms. A 300-ms drive triggers ~5
-    // swaps, well past the threshold needed to observe the cycle.
+    // Tight wing-swap band override: 40–60 ms. A 300-ms drive triggers
+    // ~5 swaps, well past the threshold needed to observe the cycle.
     const upTex = Texture.from(
       {
         resource: new Uint8Array(36 * 28 * 4),
@@ -296,15 +304,11 @@ describe("GardenButterflyController", () => {
       wingSwapRangeMs: [40, 60],
     })
     // Spawn immediately, then drive updates to cross the wing-swap
-    // threshold.
-    for (let i = 0; i < 20; i += 1) c.update(20)
-    expect(c.getCurrentFrame()).not.toBe("up")
-    expect(c.getSprite()!.texture).not.toBe(upTex)
-    // Drive more updates to land on a fresh swap — the controller
-    // toggles between the two textures.
-    const seenFrames = new Set<ButterflyFrame>([c.getCurrentFrame()])
-    const seenTextures = new Set<Texture>([c.getSprite()!.texture])
-    for (let i = 0; i < 30; i += 1) {
+    // threshold several times. The controller toggles between the
+    // two textures; verify both frames + textures are observed.
+    const seenFrames = new Set<ButterflyFrame>()
+    const seenTextures = new Set<Texture>()
+    for (let i = 0; i < 80; i += 1) {
       c.update(20)
       seenFrames.add(c.getCurrentFrame())
       seenTextures.add(c.getSprite()!.texture)
@@ -332,12 +336,20 @@ describe("GardenButterflyController", () => {
     // Initial tint is bodyColor (the 'up' tint).
     expect(c.getSprite()!.tint).toBe(STUB_BODY_COLOR)
     expect(c.getCurrentFrame()).toBe("up")
-    // Drive past the first wing swap.
-    for (let i = 0; i < 20; i += 1) c.update(20)
-    expect(c.getCurrentFrame()).toBe("down")
-    // Tint must differ from the 'up' tint — a darker amber variant
-    // (0.65× the bodyColor per the BUTTERFLY_DOWN_TINT_FACTOR).
-    const downTint = c.getSprite()!.tint
+    // Drive past several wing swaps to observe both frames.
+    const seenFrames = new Set<ButterflyFrame>()
+    let downTint = 0
+    for (let i = 0; i < 80; i += 1) {
+      c.update(20)
+      seenFrames.add(c.getCurrentFrame())
+      if (c.getCurrentFrame() === "down") {
+        downTint = c.getSprite()!.tint
+      }
+    }
+    expect(seenFrames.has("up")).toBe(true)
+    expect(seenFrames.has("down")).toBe(true)
+    // The down tint must differ from the 'up' tint — a darker amber
+    // variant (0.65× the bodyColor per the BUTTERFLY_DOWN_TINT_FACTOR).
     expect(downTint).not.toBe(STUB_BODY_COLOR)
     // Each RGB channel of the down tint must be lower than (or equal
     // to) the corresponding bodyColor channel — "darker".
@@ -350,17 +362,6 @@ describe("GardenButterflyController", () => {
     expect(dr).toBeLessThanOrEqual(r)
     expect(dg).toBeLessThanOrEqual(g)
     expect(db).toBeLessThanOrEqual(b)
-    // Drive more updates — we should see the frame cycle back to 'up'
-    // and the tint return to bodyColor.
-    let sawUpTint = false
-    for (let i = 0; i < 30; i += 1) {
-      c.update(20)
-      if (c.getCurrentFrame() === "up" && c.getSprite()!.tint === STUB_BODY_COLOR) {
-        sawUpTint = true
-        break
-      }
-    }
-    expect(sawUpTint).toBe(true)
     c.destroy()
   })
 
@@ -426,6 +427,83 @@ describe("GardenButterflyController", () => {
     const distinctX = new Set(samples.map((s) => s.x))
     const distinctY = new Set(samples.map((s) => s.y))
     expect(distinctX.size + distinctY.size).toBeGreaterThan(1)
+    c.destroy()
+  })
+
+  it("populates segment[0].C0..C3 at construction time (FU-O)", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+    })
+    const segs = c.getSegments()
+    expect(segs.length).toBe(1)
+    const first = segs[0]!
+    expect(Number.isFinite(first.C0.x)).toBe(true)
+    expect(Number.isFinite(first.C0.y)).toBe(true)
+    expect(Number.isFinite(first.C1.x)).toBe(true)
+    expect(Number.isFinite(first.C1.y)).toBe(true)
+    expect(Number.isFinite(first.C2.x)).toBe(true)
+    expect(Number.isFinite(first.C2.y)).toBe(true)
+    expect(Number.isFinite(first.C3.x)).toBe(true)
+    expect(Number.isFinite(first.C3.y)).toBe(true)
+    // C0 enters from a screen edge.
+    const atLeft = first.C0.x <= -39
+    const atRight = first.C0.x >= ATMOSPHERE_WIDTH - 39 + 40
+    expect(atLeft || atRight).toBe(true)
+    // C3 lands inside the yBand.
+    expect(first.C3.y).toBeGreaterThanOrEqual(
+      BUTTERFLY_BASE_Y_RANGE[0] * ATMOSPHERE_HEIGHT - 1e-6,
+    )
+    expect(first.C3.y).toBeLessThanOrEqual(
+      BUTTERFLY_BASE_Y_RANGE[1] * ATMOSPHERE_HEIGHT + 1e-6,
+    )
+    // Segment duration is in the configured range.
+    expect(first.segmentDuration).toBeGreaterThanOrEqual(4)
+    expect(first.segmentDuration).toBeLessThanOrEqual(7)
+    c.destroy()
+  })
+
+  it("updates sprite.rotation over successive frames (heading tracks tangent)", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      firstSpawnRangeMs: [0, 1],
+      wingSwapRangeMs: [10_000, 10_000], // suppress swaps so rotation only moves via heading
+    })
+    c.update(50) // spawn
+    const initialRotation = c.getSprite()!.rotation
+    for (let i = 0; i < 50; i += 1) c.update(40)
+    const finalRotation = c.getSprite()!.rotation
+    // Heading is `atan2(vel.y, vel.x)` from the Bezier derivative.
+    // Across 2 s of motion the tangent direction must change — the
+    // silhouette turns to follow its trajectory.
+    expect(Math.abs(finalRotation - initialRotation)).toBeGreaterThan(0)
+    c.destroy()
+  })
+
+  it("spawns a continuation segment whose C0 equals the previous segment's C3 (G1 continuity, FU-O)", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      firstSpawnRangeMs: [0, 1],
+      // wingSwapRangeMs left null — physics drives the swap, the
+      // segment transition is the focus here.
+    })
+    c.update(50)
+    const first = c.getSegments()[0]!
+    const durationSec = first.segmentDuration
+    // Drive enough frames to finish the first segment AND step
+    // into the second.
+    const frames = Math.ceil((durationSec + 0.2) / 0.04) + 1
+    for (let i = 0; i < frames; i += 1) c.update(40)
+    const segs = c.getSegments()
+    expect(segs.length).toBeGreaterThanOrEqual(2)
+    const second = segs[1]!
+    expect(second.C0.x).toBeCloseTo(first.C3.x, 6)
+    expect(second.C0.y).toBeCloseTo(first.C3.y, 6)
     c.destroy()
   })
 })

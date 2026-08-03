@@ -1,5 +1,10 @@
 /**
  * Garden particle controller tests (motes + gust leaves + grass sweep).
+ *
+ * FU-O (this task): the gust-leaf pool now follows a ballistic motion
+ * model — linear drag on vy, rotation-driven lift factor, angular
+ * drag, and a stuck-detection that retires leaves that have fallen
+ * past 55 % of the canvas height for ≥ 2 s.
  */
 
 import { Container, Sprite, Texture } from "pixi.js"
@@ -10,6 +15,13 @@ import {
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_SCALE_RANGE,
   GUST_LEAF_VEIN_SCALE_RATIO,
+  LEAF_DRAG_K,
+  LEAF_FLIGHT_BASE_VY_RANGE,
+  LEAF_FLIGHT_STUCK_DURATION,
+  LEAF_FLIGHT_STUCK_THRESHOLD,
+  LEAF_GRAVITY,
+  LEAF_ROT_DRAG_K,
+  LEAF_ROTATION_LIFT,
 } from "../garden-atmosphere.constants"
 import type { GardenPalette } from "../../gardenPalette"
 
@@ -397,6 +409,7 @@ describe("GardenParticleController", () => {
       quality: "high",
       ambient,
       grass: new Container(),
+      moteTexture: makeMoteTexture(),
       windLeafTextures: [makeLeafTexture()],
       palette: TEST_PALETTE,
     })
@@ -417,7 +430,7 @@ describe("GardenParticleController", () => {
     controller.destroy()
   })
 
-  it("spawns gust leaves with vy in [3, 7] and vx in [55, 100] along a single direction (FU-J/L)", () => {
+  it("spawns gust leaves with vy in LEAF_FLIGHT_BASE_VY_RANGE and |vx| in LEAF_FLIGHT_BASE_V_RANGE (FU-O)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -439,11 +452,12 @@ describe("GardenParticleController", () => {
     const active = internals.gustLeaves.filter((s) => s.active)
     expect(active.length).toBeGreaterThan(0)
     for (const slot of active) {
-      expect(slot.vy).toBeGreaterThanOrEqual(3)
-      expect(slot.vy).toBeLessThanOrEqual(7)
+      // FU-O: initial vertical velocity is sampled from
+      // LEAF_FLIGHT_BASE_VY_RANGE = [40, 80] (downward).
+      expect(slot.vy).toBeGreaterThanOrEqual(LEAF_FLIGHT_BASE_VY_RANGE[0])
+      expect(slot.vy).toBeLessThanOrEqual(LEAF_FLIGHT_BASE_VY_RANGE[1])
       const speed = Math.abs(slot.vx)
-      // FU-L: lowered to [55, 100] px/s so the longer lifetime reads
-      // as a deliberate canvas crossing rather than a blur.
+      // |vx| from LEAF_FLIGHT_BASE_V_RANGE = [55, 100].
       expect(speed).toBeGreaterThanOrEqual(55)
       expect(speed).toBeLessThanOrEqual(100)
       // Direction must be consistent: vx carries the sign of `direction`.
@@ -555,7 +569,7 @@ describe("GardenParticleController", () => {
     expect(observedCount).toBeGreaterThan(0)
   })
 
-  it("oscillates each gust leaf vertically by ±6 px around its baseY (FU-H)", () => {
+  it("retires leaves whose currentY exceeds the stuck threshold for ≥ STUCK_DURATION (FU-O)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -565,36 +579,192 @@ describe("GardenParticleController", () => {
       windLeafTextures: [makeLeafTexture()],
       palette: TEST_PALETTE,
     })
-    controller.update(50, 1) // activates gust envelope, spawns at least one leaf
+    controller.update(50, 1)
     const internals = controller as unknown as {
       gustLeaves: Array<{
         active: boolean
+        currentY: number
+        stuckSec: number
         sprite: Container
-        baseY: number
-        waveAmp: number
-        wavePhase: number
-        ageSec: number
-        lifetimeSec: number
       }>
     }
     const slot = internals.gustLeaves.find((s) => s.active)
     expect(slot).toBeDefined()
-    // FU-M: lifetime widened to 25-45 s so leaves remain visible for a full crossing.
-    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(GUST_LEAF_LIFETIME_RANGE[0])
-    expect(slot!.lifetimeSec).toBeLessThanOrEqual(GUST_LEAF_LIFETIME_RANGE[1])
-    let honorsAmplitude = false
-    for (let i = 0; i < 10; i += 1) {
-      controller.update(50, 1)
-      const expectedY =
-        slot!.baseY +
-        Math.sin(slot!.ageSec * 2 + slot!.wavePhase) * slot!.waveAmp
-      expect(slot!.sprite.y).toBeCloseTo(expectedY, 6)
-      expect(slot!.waveAmp).toBe(6)
-      if (Math.abs(slot!.sprite.y - slot!.baseY) > 0.1) {
-        honorsAmplitude = true
-      }
+    // Force the leaf into the stuck band: currentY above the
+    // threshold leaves it "stuck". Drive enough frames past the
+    // configured duration to retire the slot. Drive with windSample
+    // = 0 so the gust does NOT re-spawn the slot once retired.
+    const stuckY = LEAF_FLIGHT_STUCK_THRESHOLD * 1080 + 10
+    slot!.currentY = stuckY
+    slot!.sprite.y = stuckY
+    const framesNeeded =
+      Math.ceil((LEAF_FLIGHT_STUCK_DURATION + 0.2) / 0.05) + 5
+    for (let i = 0; i < framesNeeded; i += 1) controller.update(50, 0)
+    expect(slot!.active).toBe(false)
+    controller.destroy()
+  })
+
+  it("does not retire leaves that briefly cross the stuck threshold (FU-O)", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1)
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        currentY: number
+        stuckSec: number
+        sprite: Container
+      }>
     }
-    expect(honorsAmplitude).toBe(true)
+    const slot = internals.gustLeaves.find((s) => s.active)
+    expect(slot).toBeDefined()
+    const stuckY = LEAF_FLIGHT_STUCK_THRESHOLD * 1080 + 10
+    // Dip into the stuck band for less than STUCK_DURATION; the
+    // slot must still be active afterwards. Drive with windSample
+    // = 0 so the slot is not re-spawned while we probe state.
+    slot!.currentY = stuckY
+    slot!.sprite.y = stuckY
+    const halfStuck = Math.max(
+      1,
+      Math.floor((LEAF_FLIGHT_STUCK_DURATION * 0.5) / 0.05),
+    )
+    for (let i = 0; i < halfStuck; i += 1) controller.update(50, 0)
+    // Drop back below the threshold.
+    slot!.currentY = 100
+    slot!.sprite.y = 100
+    for (let i = 0; i < halfStuck; i += 1) controller.update(50, 0)
+    expect(slot!.active).toBe(true)
+    controller.destroy()
+  })
+
+  it("decays vy under linear drag and grows it back under gravity (FU-O)", () => {
+    // The brief: vy_after = vy * exp(-k*dt) + g * liftFactor * dt,
+    // where liftFactor = clamp(1 - |angVel| * LEAF_ROTATION_LIFT,
+    // 0.05, 1). With angVel = 0 → liftFactor = 1. We integrate 60
+    // frames of dt=16.67 ms (~1 s) and assert vy drops from 80 toward
+    // a terminal value (drag asymptote + gravity equilibrium) and
+    // lands in [40, 60].
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1)
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        vx: number
+        vy: number
+        angVel: number
+        currentX: number
+        currentY: number
+        currentRotation: number
+        sprite: Container
+        stuckSec: number
+      }>
+    }
+    const slot = internals.gustLeaves.find((s) => s.active)
+    expect(slot).toBeDefined()
+    slot!.vx = 0
+    slot!.vy = 80
+    slot!.angVel = 0
+    slot!.currentX = 500
+    slot!.currentY = 100
+    slot!.currentRotation = 0
+    slot!.sprite.position.set(500, 100)
+    slot!.sprite.rotation = 0
+    slot!.stuckSec = 0
+    const dtMs = 50 / 3 // ≈ 16.67 ms → 60 frames ≈ 1 s
+    for (let i = 0; i < 60; i += 1) controller.update(dtMs, 1)
+    // Hand-rolled check: with k = LEAF_DRAG_K, the analytical
+    // terminal-velocity asymptote for `vy(t) = vy_0 * exp(-k*t) +
+    // (g/k) * (1 - exp(-k*t))` is `g/k`. After 1 s the integral is
+    // dominated by the drag term, so vy should be well below the
+    // initial 80 and trending toward the terminal velocity.
+    expect(slot!.vy).toBeGreaterThan(40)
+    expect(slot!.vy).toBeLessThan(60)
+    controller.destroy()
+  })
+
+  it("rotational lift (|angVel|) makes vy decay further toward a lower terminal velocity (FU-O)", () => {
+    // The ballistic model: vy_after = vy * exp(-k * dt) + g * liftFactor * dt.
+    // With angVel = 0, liftFactor = 1 → strongest gravity → highest
+    // terminal velocity (g/k ≈ 12.3). With angVel = 2.0, liftFactor = 0.9
+    // → reduced effective gravity → lower terminal velocity (0.9*g/k).
+    // The leaf with spin therefore falls slower: its vy_after is
+    // smaller (numerically lower) than the no-spin case.
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1)
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        vx: number
+        vy: number
+        angVel: number
+        currentX: number
+        currentY: number
+        currentRotation: number
+        sprite: Container
+        stuckSec: number
+      }>
+    }
+    const slot = internals.gustLeaves.find((s) => s.active)
+    expect(slot).toBeDefined()
+    slot!.vx = 0
+    slot!.currentX = 500
+    slot!.currentY = 100
+    slot!.currentRotation = 0
+    slot!.sprite.position.set(500, 100)
+    slot!.sprite.rotation = 0
+    slot!.stuckSec = 0
+    // First run: angVel = 0 → full gravity.
+    slot!.angVel = 0
+    slot!.vy = 80
+    for (let i = 0; i < 60; i += 1) controller.update(50 / 3, 0)
+    const vyNoSpin = slot!.vy
+    // Reset.
+    slot!.vy = 80
+    slot!.angVel = 2.0
+    for (let i = 0; i < 60; i += 1) controller.update(50 / 3, 0)
+    const vySpin = slot!.vy
+    // Spin reduces the effective gravity, so vy_after is lower — the
+    // leaf falls slower.
+    expect(vySpin).toBeLessThan(vyNoSpin)
+    // Sanity: confirm the lift formula matches the constants.
+    const expectedLiftNoSpin = Math.min(
+      1,
+      Math.max(0.05, 1 - 0 * LEAF_ROTATION_LIFT),
+    )
+    const expectedLiftSpin = Math.min(
+      1,
+      Math.max(0.05, 1 - 2.0 * LEAF_ROTATION_LIFT),
+    )
+    expect(expectedLiftNoSpin).toBe(1)
+    expect(expectedLiftSpin).toBeLessThan(1)
+    expect(expectedLiftSpin).toBeGreaterThan(0.05)
+    // Drag constants sanity.
+    expect(LEAF_DRAG_K).toBeGreaterThan(0)
+    expect(LEAF_GRAVITY).toBeGreaterThan(0)
+    expect(LEAF_ROT_DRAG_K).toBeGreaterThan(0)
     controller.destroy()
   })
 })
