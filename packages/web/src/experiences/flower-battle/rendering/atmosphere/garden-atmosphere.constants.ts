@@ -112,15 +112,30 @@ export const BIRD_WING_SWAP_RANGE: readonly [number, number] = [180, 280]
 /**
  * Number of birds in a single flock spawn wave (FU-J). The leader picks
  * a safe destination; followers share direction + baseY with a small
- * vertical offset (±15 px) and a wingPhase offset for visual variety.
- * When the pool doesn't have enough free slots, the controller fills
- * what is available.
+ * vertical offset and a wingPhase offset for visual variety. When the
+ * pool doesn't have enough free slots, the controller fills what is
+ * available.
  */
 export const BIRD_GROUP_SIZE_RANGE: readonly [number, number] = [2, 3]
 
-/** Follower vertical offset range (px) — keeps the flock compact. */
-export const BIRD_FOLLOWER_OFFSET_RANGE: readonly [number, number] = [
-  -15, 15,
+/**
+ * Per-follower vertical offset range (px) — controls the vertical spread
+ * of the V-formation. (FU-L: widened from the pre-FU-L ±15 px band so the
+ * birds read as separate silhouettes rather than a compact flock blob.
+ * Sign is chosen per-follower by `(i % 2 === 0 ? 1 : -1)` to alternate
+ * above/below the leader.)
+ */
+export const BIRD_GROUP_VERTICAL_OFFSET_RANGE: readonly [number, number] = [
+  20, 40,
+]
+
+/**
+ * Per-follower horizontal stagger range (px) — multiplied by `(i + 1)`
+ * so deeper followers drift further along the travel axis, breaking the
+ * pure-line look. (FU-L.)
+ */
+export const BIRD_GROUP_HORIZONTAL_OFFSET_RANGE: readonly [number, number] = [
+  10, 18,
 ]
 
 /** Off-canvas margin (px) where gust leaves enter the canvas. (FU-J.) */
@@ -128,14 +143,19 @@ export const GUST_LEAF_EDGE_INSET = 40
 
 /**
  * Gust-leaf base horizontal speed (px/s). The leaf travels the full
- * canvas width: startX at one edge, retire at the opposite edge, so
- * the speed band is wider than the pre-FU-J cloud-style dance. (FU-J.)
+ * canvas width: startX at one edge, retire at the opposite edge.
+ * FU-L: lowered from the pre-FU-L 70–130 px/s band to 55–100 px/s so
+ * the longer lifetime (5–9 s) reads as a deliberate crossing rather
+ * than a blur.
  */
-export const GUST_LEAF_SPEED_RANGE: readonly [number, number] = [70, 130]
+export const GUST_LEAF_SPEED_RANGE: readonly [number, number] = [55, 100]
 
-/** Gust-leaf lifetime (s). (FU-J: 4-7 s, longer than the pre-FU-J 3-5 s
- *  because the leaf now spans the full canvas width.) */
-export const GUST_LEAF_LIFETIME_RANGE: readonly [number, number] = [4.0, 7.0]
+/**
+ * Gust-leaf lifetime (s). FU-L: widened from the pre-FU-L 4–7 s band to
+ * 5–9 s so the leaves reliably reach (and cross) the centre of the
+ * canvas instead of retiring mid-frame.
+ */
+export const GUST_LEAF_LIFETIME_RANGE: readonly [number, number] = [5.0, 9.0]
 
 /** Gust-leaf vertical drop (px/s) — small but visible. (FU-J.) */
 export const GUST_LEAF_VY_RANGE: readonly [number, number] = [3, 7]
@@ -170,14 +190,15 @@ export const MOTE_ALPHA_RANGE: readonly [number, number] = [0.15, 0.42]
 export const MOTE_SCALE_RANGE: readonly [number, number] = [0.003, 0.007]
 
 /**
- * Gust-leaf scale (sprite scale). Source frames are 106.7×137.55
- * (wind-leaf-01) and 128×120 (wind-leaf-02), so 0.06 → ~7.7 px wide
- * (height ~8 px) and 0.10 → ~12.8 px wide (height ~12 px) — small,
- * unassertive flying leaves that read as wind debris rather than
- * foreground props. (FU-H: was sampled at the much larger BIRD_SCALE
- * range, producing oversized leaves.)
+ * Gust-leaf scale (sprite scale). Source frames span 22.6×128 (linden)
+ * to 128×137.55 (ivy), so 0.16 → ~17.6 px wide (height ~36 px) and
+ * 0.28 → ~30.8 px wide (height ~38 px) — large enough for the leaf
+ * shape to be legible at runtime, small enough to avoid colliding
+ * with the foreground vegetation. (FU-K: was [0.06, 0.10]; bumped so
+ * the new 6-variant palette is visible as actual leaves, not green
+ * dots.)
  */
-export const GUST_LEAF_SCALE_RANGE: readonly [number, number] = [0.06, 0.10]
+export const GUST_LEAF_SCALE_RANGE: readonly [number, number] = [0.16, 0.28]
 
 /** Gust default schedule (ms). */
 export const GUST_PERIOD_RANGE: readonly [number, number] = [9_000, 18_000]
@@ -211,3 +232,25 @@ export const WIND_GUST_AMP = 0.75
  *  reference independent of the host's renderer size. */
 export const ATMOSPHERE_WIDTH = GARDEN_LOGICAL_WIDTH
 export const ATMOSPHERE_HEIGHT = GARDEN_LOGICAL_HEIGHT
+
+/**
+ * Butterfly base Y range as a fraction of ATMOSPHERE_HEIGHT — Plan §7.2
+ * "sanft geschwungene Route im Gartenmittelgrund". (FU-L.)
+ */
+export const BUTTERFLY_BASE_Y_RANGE: readonly [number, number] = [0.35, 0.65]
+
+/**
+ * First butterfly spawn delay (ms) — single shot after this band elapses.
+ * Picked at bind from the seeded RNG so the route is deterministic per
+ * seed. (FU-L.)
+ */
+export const BUTTERFLY_FIRST_SPAWN_RANGE_MS: readonly [number, number] = [
+  8_000, 15_000,
+]
+
+/**
+ * Butterfly path speed (px/s) — slower than the bird flock so the
+ * silhouette reads as ambient motion rather than a passing flock.
+ * (FU-L.)
+ */
+export const BUTTERFLY_SPEED_RANGE: readonly [number, number] = [40, 80]

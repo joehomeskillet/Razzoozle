@@ -342,7 +342,7 @@ describe("GardenParticleController", () => {
     }
   })
 
-  it("initializes every gust leaf at a scale inside GUST_LEAF_SCALE_RANGE (FU-H)", () => {
+  it("initializes every gust leaf at a scale inside GUST_LEAF_SCALE_RANGE (FU-K)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -361,17 +361,19 @@ describe("GardenParticleController", () => {
     expect(leafSprites.length).toBe(controller.getGustLeafCapacity())
     expect(leafSprites.length).toBeGreaterThan(0)
     for (const sprite of leafSprites) {
-      // sprite.scale.x is set in initGustLeaves from the GUST_LEAF band;
-      // it must be inside [0.06, 0.10] and never near the BIRD scale.
+      // FU-K: scale sampled from [0.16, 0.28] — bumped up from the
+      // pre-FU-K [0.06, 0.10] so the new 6-variant leaf set is large
+      // enough to read as actual leaves, not green dots.
+      expect(sprite.scale.x).toBeGreaterThanOrEqual(0.16)
+      expect(sprite.scale.x).toBeLessThanOrEqual(0.28)
       expect(sprite.scale.x).toBeGreaterThanOrEqual(GUST_LEAF_SCALE_RANGE[0])
       expect(sprite.scale.x).toBeLessThanOrEqual(GUST_LEAF_SCALE_RANGE[1])
-      expect(sprite.scale.x).toBeLessThan(0.14)
       expect(sprite.scale.y).toBe(sprite.scale.x)
     }
     controller.destroy()
   })
 
-  it("spawns gust leaves with vy in [3, 7] and vx in [70, 130] along a single direction (FU-J)", () => {
+  it("spawns gust leaves with vy in [3, 7] and vx in [55, 100] along a single direction (FU-J/L)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -396,8 +398,10 @@ describe("GardenParticleController", () => {
       expect(slot.vy).toBeGreaterThanOrEqual(3)
       expect(slot.vy).toBeLessThanOrEqual(7)
       const speed = Math.abs(slot.vx)
-      expect(speed).toBeGreaterThanOrEqual(70)
-      expect(speed).toBeLessThanOrEqual(130)
+      // FU-L: lowered to [55, 100] px/s so the longer lifetime reads
+      // as a deliberate canvas crossing rather than a blur.
+      expect(speed).toBeGreaterThanOrEqual(55)
+      expect(speed).toBeLessThanOrEqual(100)
       // Direction must be consistent: vx carries the sign of `direction`.
       expect(Math.sign(slot.vx)).toBe(slot.direction)
     }
@@ -437,28 +441,34 @@ describe("GardenParticleController", () => {
     controller.destroy()
   })
 
-  it("assigns every gust leaf a tint from the multi-green palette (FU-J)", () => {
-    // Use a multi-distinct palette so we can assert that the
-    // multi-green wiring actually fires. Walk a handful of seeds
-    // so the property is observed on at least one (the full pool
-    // is only 2 leaves at high quality, so a single seed could
-    // happen to draw the foreground tint twice — the 4-channel
-    // sweep makes that < 1 in 16 with 2 leaves, and walking 4
-    // seeds gives near-zero flake).
+  it("assigns every gust leaf a tint from the natural green spectrum (FU-K)", () => {
+    // FU-K: tint array grew from 4 to 6 entries — palette.foreground,
+    // midground, plantLeaf, grass, bushBack, hillMid. Use a multi-distinct
+    // palette so we can assert that the multi-green wiring actually fires.
+    // Walk a handful of seeds so the property is observed on at least one
+    // (the pool is 2 leaves at high quality, so a single seed could
+    // happen to draw the foreground tint twice — the 6-channel sweep
+    // makes that < 1 in 36 with 2 leaves, and walking 4 seeds gives
+    // near-zero flake).
     const palette: GardenPalette = {
       ...TEST_PALETTE,
       foreground: 0x112233,
       midground: 0x445566,
       plantLeaf: 0x778899,
       grass: 0xaabbcc,
+      bushBack: 0xccccaa,
+      hillMid: 0x99aabb,
     }
     const allowed = new Set([
       palette.foreground,
       palette.midground,
       palette.plantLeaf,
       palette.grass,
+      palette.bushBack,
+      palette.hillMid,
     ])
     let observedNonForeground = false
+    let observedCount = 0
     for (const seed of [0xc0ffee, 1, 7, 42]) {
       const ambient = new Container()
       const controller = new GardenParticleController({
@@ -479,6 +489,7 @@ describe("GardenParticleController", () => {
       expect(leafSprites.length).toBeGreaterThan(0)
       for (const sprite of leafSprites) {
         expect(allowed.has(sprite.tint)).toBe(true)
+        observedCount += 1
       }
       const observed = new Set(leafSprites.map((s) => s.tint))
       const nonForeground = [...observed].filter(
@@ -490,6 +501,8 @@ describe("GardenParticleController", () => {
     // Across the seed sweep, at least one leaf must use a tint other
     // than foreground — proves the multi-green wiring actually fires.
     expect(observedNonForeground).toBe(true)
+    // Sanity check: every observed leaf was one of the 6 allowed tints.
+    expect(observedCount).toBeGreaterThan(0)
   })
 
   it("oscillates each gust leaf vertically by ±6 px around its baseY (FU-H)", () => {
@@ -516,9 +529,11 @@ describe("GardenParticleController", () => {
     }
     const slot = internals.gustLeaves.find((s) => s.active)
     expect(slot).toBeDefined()
-    // FU-J: lifetime widened to 4-7 s (was 3-5 s in FU-H).
-    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(4.0)
-    expect(slot!.lifetimeSec).toBeLessThanOrEqual(7.0)
+    // FU-L: lifetime widened to 5-9 s so the leaves reliably reach
+    // (and cross) the centre of the canvas instead of retiring
+    // mid-frame (was 4-7 s in FU-J).
+    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(5.0)
+    expect(slot!.lifetimeSec).toBeLessThanOrEqual(9.0)
     let honorsAmplitude = false
     for (let i = 0; i < 10; i += 1) {
       controller.update(50, 1)

@@ -253,12 +253,17 @@ export class GardenParticleController {
     // gust reads as natural foliage rather than a single hue. The
     // tints come from the resolved GardenPalette channels; null
     // channels fall back to foreground so the pool never renders
-    // un-tinted.
+    // un-tinted. (FU-K: expanded to 6 channels — palette.foreground,
+    // midground, plantLeaf, grass, bushBack, hillMid — so the larger
+    // 6-variant leaf set reads as a natural spectrum rather than a
+    // single hue band.)
     const tints: number[] = [
       this.palette.foreground,
       this.palette.midground,
       this.palette.plantLeaf,
       this.palette.grass,
+      this.palette.bushBack,
+      this.palette.hillMid,
     ]
     for (let i = 0; i < count; i += 1) {
       const tex = this.windLeafTextures[i % this.windLeafTextures.length]!

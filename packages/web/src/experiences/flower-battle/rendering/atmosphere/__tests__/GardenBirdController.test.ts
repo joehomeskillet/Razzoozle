@@ -12,7 +12,11 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenBirdController } from "../GardenBirdController"
-import { BIRD_FIRST_SPAWN_RANGE_MS } from "../garden-atmosphere.constants"
+import {
+  BIRD_FIRST_SPAWN_RANGE_MS,
+  BIRD_GROUP_HORIZONTAL_OFFSET_RANGE,
+  BIRD_GROUP_VERTICAL_OFFSET_RANGE,
+} from "../garden-atmosphere.constants"
 import type { SeededRandom } from "../seededRandom"
 
 function makeBirdTextures(): { up: Texture; down: Texture } {
@@ -362,8 +366,9 @@ describe("FU-J: GardenBirdController flock behaviour", () => {
 
     // Try several seeds to exercise both flock sizes (2 and 3) and
     // both directions. We assert the invariant: every active bird in
-    // a single wave shares direction and stays within ±30 px of the
-    // leader's baseY.
+    // a single wave shares direction. FU-L widened the per-follower
+    // vertical spread to BIRD_GROUP_VERTICAL_OFFSET_RANGE = [20, 40],
+    // so the leader-vs-follower distance is bounded by that range.
     let sawFlockOf2 = false
     let sawFlockOf3 = false
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -396,7 +401,11 @@ describe("FU-J: GardenBirdController flock behaviour", () => {
       const leaderBaseY = active[0]!.baseY
       for (const slot of active) {
         expect(slot.direction).toBe(dir)
-        expect(Math.abs(slot.baseY - leaderBaseY)).toBeLessThanOrEqual(30)
+      }
+      for (let k = 1; k < active.length; k += 1) {
+        const vOff = Math.abs(active[k]!.baseY - leaderBaseY)
+        expect(vOff).toBeGreaterThanOrEqual(BIRD_GROUP_VERTICAL_OFFSET_RANGE[0])
+        expect(vOff).toBeLessThanOrEqual(BIRD_GROUP_VERTICAL_OFFSET_RANGE[1])
       }
       seeded.destroy()
     }
@@ -431,6 +440,161 @@ describe("FU-J: GardenBirdController flock behaviour", () => {
     // that the spawn happened at all.
     const lastActive = internals.pool.find((s) => s.active && s.baseY !== 0) ?? internals.pool[4]!
     expect(lastActive.active).toBe(true)
+    birds.destroy()
+  })
+})
+
+describe("FU-L: GardenBirdController per-follower offsets", () => {
+  it("places each follower verticalOffset inside BIRD_GROUP_VERTICAL_OFFSET_RANGE and horizontalOffset inside BIRD_GROUP_HORIZONTAL_OFFSET_RANGE * (i+1) * 0.5", () => {
+    // FU-L: V-formation spread widened from the pre-FU-L ±15 px band.
+    // Vertical = (i % 2 === 0 ? 1 : -1) * rng.range(20, 40)
+    // Horizontal = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(10, 18) * (i+1) * 0.5
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        sprite: Sprite
+        baseY: number
+        direction: 1 | -1
+      }>
+      trySpawn: () => void
+    }
+    // Walk a handful of seeds so we exercise both flock sizes and
+    // observe at least one 3-bird flock (which has 2 followers).
+    for (const seed of [0xc0ffee, 1, 2, 42, 1234, 0xdeadbeef]) {
+      birds.destroy()
+      const seeded = new GardenBirdController({
+        quality: "high",
+        skyLifeForeground: new Container(),
+        birdTextures: makeBirdTextures(),
+        seed,
+        spawnIntervalRangeMs: [1, 2],
+        firstSpawnRangeMs: [1, 2],
+      })
+      const i = seeded as unknown as {
+        pool: Array<{
+          active: boolean
+          sprite: Sprite
+          baseY: number
+          direction: 1 | -1
+        }>
+        trySpawn: () => void
+      }
+      i.trySpawn()
+      const active = i.pool.filter((s) => s.active)
+      const leaderBaseY = active[0]!.baseY
+      // Leader has no per-follower offset; the followers' offsets
+      // must satisfy the new ranges.
+      for (let k = 1; k < active.length; k += 1) {
+        const vOff = Math.abs(active[k]!.baseY - leaderBaseY)
+        // FU-L: verticalOffset in [20, 40].
+        expect(vOff).toBeGreaterThanOrEqual(20)
+        expect(vOff).toBeLessThanOrEqual(40)
+      }
+      seeded.destroy()
+    }
+    birds.destroy()
+  })
+
+  it("applies a per-follower speed variation in [leaderSpeed * 0.95, leaderSpeed * 1.05]", () => {
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+      seed: 17,
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        speed: number
+      }>
+      trySpawn: () => void
+    }
+    internals.trySpawn()
+    const active = internals.pool.filter((s) => s.active)
+    const leaderSpeed = active[0]!.speed
+    for (let k = 1; k < active.length; k += 1) {
+      expect(active[k]!.speed).toBeGreaterThanOrEqual(leaderSpeed * 0.95 - 1e-6)
+      expect(active[k]!.speed).toBeLessThanOrEqual(leaderSpeed * 1.05 + 1e-6)
+    }
+    birds.destroy()
+  })
+
+  it("offsets each follower's startX from the leader's by a staggered horizontal amount", () => {
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+      seed: 11,
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        sprite: Sprite
+        baseY: number
+        direction: 1 | -1
+      }>
+      trySpawn: () => void
+    }
+    internals.trySpawn()
+    const active = internals.pool.filter((s) => s.active)
+    const leaderStartX = active[0]!.sprite.x
+    // FU-L: horizontalOffset = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(10, 18) * (i+1) * 0.5
+    // For a 3-bird flock: follower[1] (i=1) → ((1+1)%2 === 0 ? 1 : -1) = 1, magnitude = rng(10,18) * 2 * 0.5 = [10, 18].
+    // For follower[2] (i=2) → ((2+1)%2 === 0 ? 1 : -1) = -1, magnitude = rng(10,18) * 3 * 0.5 = [15, 27].
+    for (let k = 1; k < active.length; k += 1) {
+      const hOff = Math.abs(active[k]!.sprite.x - leaderStartX)
+      // Lower bound: smallest possible magnitude across both flock sizes.
+      expect(hOff).toBeGreaterThanOrEqual(10 - 1e-6)
+      // Upper bound: largest possible magnitude across both flock sizes
+      // (follower index 2 in a 3-bird flock: 27 px).
+      expect(hOff).toBeLessThanOrEqual(27 + 1e-6)
+    }
+    birds.destroy()
+  })
+
+  it("places follower baseY at the leader baseY plus a signed vertical offset", () => {
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+      seed: 91,
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        baseY: number
+      }>
+      trySpawn: () => void
+    }
+    internals.trySpawn()
+    const active = internals.pool.filter((s) => s.active)
+    const leaderBaseY = active[0]!.baseY
+    // The followers' baseY must differ from the leader's by at least
+    // 20 px (FU-L lower bound) and at most 40 px (FU-L upper bound).
+    // This proves the new V-formation spread is applied — not the
+    // pre-FU-L ±15 px tight pack.
+    for (let k = 1; k < active.length; k += 1) {
+      const diff = Math.abs(active[k]!.baseY - leaderBaseY)
+      expect(diff).toBeGreaterThanOrEqual(20 - 1e-6)
+      expect(diff).toBeLessThanOrEqual(40 + 1e-6)
+    }
     birds.destroy()
   })
 })

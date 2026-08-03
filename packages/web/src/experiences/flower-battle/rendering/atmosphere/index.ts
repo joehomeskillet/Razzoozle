@@ -1,10 +1,12 @@
 /**
  * Garden atmosphere — public surface.
  *
- * The atmosphere is a single aggregator that owns three sub-controllers:
+ * The atmosphere is a single aggregator that owns four sub-controllers:
  *   - wind: deterministic sine signal + gust scheduler
  *   - birds: Pixi sprite pool in the sky-life layer
  *   - particles: motes + gust leaves + grass-wind sweeps
+ *   - butterfly (FU-L): a single ambient butterfly on a Bezier-like
+ *     route through the mid-ground (Plan §7.2)
  *
  * All randomness routes through the seeded Mulberry32 PRNG; same seed →
  * same sequence. Quality tiering (high / medium / low / static) gates
@@ -35,6 +37,11 @@ export {
 } from "./GardenParticleController"
 
 export {
+  GardenButterflyController,
+  type GardenButterflyControllerOptions,
+} from "./GardenButterflyController"
+
+export {
   GardenWindController,
   computeGustEnvelope,
   computeWindSample,
@@ -54,9 +61,16 @@ export {
   BIRD_COUNTS,
   BIRD_MID_COUNT,
   BIRD_SPAWN_INTERVAL_RANGE,
+  BIRD_GROUP_VERTICAL_OFFSET_RANGE,
+  BIRD_GROUP_HORIZONTAL_OFFSET_RANGE,
   BIRD_Y_BAND,
+  BUTTERFLY_BASE_Y_RANGE,
+  BUTTERFLY_FIRST_SPAWN_RANGE_MS,
+  BUTTERFLY_SPEED_RANGE,
   GUST_LEAF_COUNTS,
   GUST_LEAF_MID_COUNT,
+  GUST_LEAF_LIFETIME_RANGE,
+  GUST_LEAF_SPEED_RANGE,
   GUST_PERIOD_RANGE,
   GUST_RAMP_RANGE,
   GUST_DECAY_RANGE,

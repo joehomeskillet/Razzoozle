@@ -18,8 +18,9 @@ import { ATMOSPHERE_HEIGHT, ATMOSPHERE_WIDTH } from "./garden-atmosphere.constan
 import {
   BIRD_COUNTS,
   BIRD_FIRST_SPAWN_RANGE_MS,
-  BIRD_FOLLOWER_OFFSET_RANGE,
+  BIRD_GROUP_HORIZONTAL_OFFSET_RANGE,
   BIRD_GROUP_SIZE_RANGE,
+  BIRD_GROUP_VERTICAL_OFFSET_RANGE,
   BIRD_SCALE_RANGE,
   BIRD_SPAWN_INTERVAL_RANGE_MS,
   BIRD_SPEED_RANGE,
@@ -260,9 +261,8 @@ export class GardenBirdController {
 
   private trySpawn(): void {
     // FU-J: spawn a flock of 2-3 birds per wave. Leader picks a safe
-    // destination; followers trail the leader with a small vertical
-    // offset (±15 px), the same direction, and a wingPhase offset
-    // for visual variety. If the pool has fewer free slots than the
+    // destination; followers trail the leader with the per-axis offsets
+    // described below. If the pool has fewer free slots than the
     // chosen group size, fill what is available — never block on
     // a partial group.
     const groupSize = this.rng.rangeInt(
@@ -277,10 +277,10 @@ export class GardenBirdController {
     const destination = this.pickSafeDestination()
     if (!destination) return
     const dir: 1 | -1 = destination.x < ATMOSPHERE_WIDTH / 2 ? 1 : -1
-    const startX = dir === 1 ? -40 : ATMOSPHERE_WIDTH + 40
+    const leaderStartX = dir === 1 ? -40 : ATMOSPHERE_WIDTH + 40
     // Shared flight parameters — every bird in the flock flies the
     // same path (leader's), so they read as a single V-formation.
-    const flockSpeed = this.rng.range(
+    const leaderSpeed = this.rng.range(
       BIRD_SPEED_RANGE[0],
       BIRD_SPEED_RANGE[1],
     )
@@ -292,7 +292,7 @@ export class GardenBirdController {
     // Worst-case time to cross the canvas; ensures birds always retire
     // even if the speed cell glitches to 0.
     const flockRetireAtMs =
-      this.elapsedMs + (ATMOSPHERE_WIDTH / Math.max(1, flockSpeed)) * 1000 * 2
+      this.elapsedMs + (ATMOSPHERE_WIDTH / Math.max(1, leaderSpeed)) * 1000 * 2
     const flockWingSwapAtMs =
       this.elapsedMs +
       this.rng.rangeInt(
@@ -303,23 +303,46 @@ export class GardenBirdController {
     for (let i = 0; i < spawnCount; i += 1) {
       const slot = freeSlots[i]!
       const isLeader = i === 0
-      // Follower offset: vertical only, ±15 px around the leader's
-      // baseY. Leader's baseY is the chosen safe destination; the
-      // leader itself does not get any extra offset.
-      const yOffset = isLeader
-        ? 0
-        : this.rng.range(
-            BIRD_FOLLOWER_OFFSET_RANGE[0],
-            BIRD_FOLLOWER_OFFSET_RANGE[1],
+      // FU-L: per-follower offsets.
+      //   vertical = (i % 2 === 0 ? 1 : -1) * rng.range(VVOR) — alternate
+      //     above/below the leader so the V reads as two distinct rows.
+      //   horizontal = ((i + 1) % 2 === 0 ? 1 : -1)
+      //              * rng.range(HOR) * (i + 1) * 0.5 — stagger deeper
+      //     followers along the travel axis to break the pure-line look.
+      //   speed = leaderSpeed * rng.range(0.95, 1.05) — slight per-bird
+      //     variation so the formation doesn't lock-step.
+      //   wingPhase = leader.wingPhase + rng.range(-0.5, 0.5) — desync
+      //     wing beats visually.
+      let verticalOffset = 0
+      let horizontalOffset = 0
+      let speed = leaderSpeed
+      let wingPhase = flockLeaderPhase
+      if (!isLeader) {
+        verticalOffset =
+          (i % 2 === 0 ? 1 : -1) *
+          this.rng.range(
+            BIRD_GROUP_VERTICAL_OFFSET_RANGE[0],
+            BIRD_GROUP_VERTICAL_OFFSET_RANGE[1],
           )
-      // Follower wingPhase offset for visual variety in wing beats.
-      const phaseOffset = isLeader ? 0 : this.rng.range(-0.5, 0.5)
-      slot.baseY = destination.y + yOffset
+        horizontalOffset =
+          ((i + 1) % 2 === 0 ? 1 : -1) *
+          this.rng.range(
+            BIRD_GROUP_HORIZONTAL_OFFSET_RANGE[0],
+            BIRD_GROUP_HORIZONTAL_OFFSET_RANGE[1],
+          ) *
+          (i + 1) *
+          0.5
+        speed = leaderSpeed * this.rng.range(0.95, 1.05)
+        wingPhase = flockLeaderPhase + this.rng.range(-0.5, 0.5)
+      }
+      const baseY = destination.y + verticalOffset
+      const startX = leaderStartX + horizontalOffset
+      slot.baseY = baseY
       slot.sprite.position.set(startX, slot.baseY)
       slot.direction = dir
-      slot.speed = flockSpeed
+      slot.speed = speed
       slot.waveAmp = flockWaveAmp
-      slot.wavePhase = flockLeaderPhase + phaseOffset
+      slot.wavePhase = wingPhase
       slot.elapsedSec = 0
       slot.wingSwapAtMs = flockWingSwapAtMs
       slot.retireAtMs = flockRetireAtMs

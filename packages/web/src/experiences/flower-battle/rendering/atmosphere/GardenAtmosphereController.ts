@@ -26,6 +26,13 @@ import {
 import {
   GardenWindController,
 } from "./GardenWindController"
+import {
+  GardenButterflyController,
+} from "./GardenButterflyController"
+import {
+  resolveThemeTokenColor,
+  type ThemeColorResolver,
+} from "../resolveThemeColor"
 import { DEFAULT_ATMOSPHERE_SEED } from "./seededRandom"
 
 export interface GardenAtmosphereInput {
@@ -66,6 +73,13 @@ export interface GardenAtmosphereInput {
   /** Sun-holder world position (logical px). Non-null enables the
    *  `SUN_SAFE_RADIUS` exclusion; null disables it (back-compatible). */
   sunPosition?: { x: number; y: number } | null
+  /**
+   * Color resolver for theme-token lookups. FU-L: the aggregator
+   * resolves `--color-accent` once at scene-bind time and threads
+   * the numeric value into `GardenButterflyController`. Tests stub
+   * this to skip the DOM lookup.
+   */
+  resolveColor?: ThemeColorResolver
 }
 
 export interface BoundGardenAtmosphere {
@@ -79,6 +93,8 @@ export interface BoundGardenAtmosphere {
   getMoteCount(): number
   getGustLeafCount(): number
   getGustLeafCapacity(): number
+  getButterflyCount(): number
+  getButterflyActive(): boolean
   getWindSample(): number
   getElapsedSeconds(): number
 }
@@ -121,6 +137,22 @@ export function createGardenAtmosphere(
     windLeafTextures: options.windLeafTextures ?? [],
     palette: options.palette,
   })
+  // FU-L: ambient butterfly (Plan §7.2). Single-pool, gated on
+  // quality === "high" + !reducedMotion inside the controller. The
+  // aggregator resolves `--color-accent` once (when a `resolveColor`
+  // is provided) and threads the numeric value through so the
+  // controller itself stays DOM-free for the unit tests (which run
+  // under `node`, not jsdom).
+  const butterflyBodyColor = options.resolveColor
+    ? options.resolveColor("--color-accent" as never)
+    : undefined
+  const butterfly = new GardenButterflyController({
+    seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+    quality: options.quality,
+    ambient: options.ambient,
+    reducedMotion: options.prefersReducedMotion,
+    bodyColor: butterflyBodyColor,
+  })
 
   let destroyed = false
 
@@ -130,6 +162,7 @@ export function createGardenAtmosphere(
     const sample = wind.update(clamped)
     birds.update(clamped)
     particles.update(clamped, sample)
+    butterfly.update(clamped)
   }
 
   function destroy(): void {
@@ -137,6 +170,7 @@ export function createGardenAtmosphere(
     destroyed = true
     birds.destroy()
     particles.destroy()
+    butterfly.destroy()
   }
 
   return {
@@ -149,6 +183,8 @@ export function createGardenAtmosphere(
     getMoteCount: () => particles.getMoteCount(),
     getGustLeafCount: () => particles.getGustLeafCount(),
     getGustLeafCapacity: () => particles.getGustLeafCapacity(),
+    getButterflyCount: () => butterfly.getCapacity(),
+    getButterflyActive: () => butterfly.getIsAlive(),
     getWindSample: () => wind.getSample(),
     getElapsedSeconds: () => wind.getElapsedSeconds(),
   }
@@ -168,6 +204,8 @@ function createNoopAtmosphere(): BoundGardenAtmosphere {
     getMoteCount: () => 0,
     getGustLeafCount: () => 0,
     getGustLeafCapacity: () => 0,
+    getButterflyCount: () => 0,
+    getButterflyActive: () => false,
     getWindSample: () => 0,
     getElapsedSeconds: () => 0,
   }

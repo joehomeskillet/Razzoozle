@@ -60,17 +60,20 @@ function makeAtmosphereOptions(overrides: Record<string, unknown> = {}) {
 }
 
 describe("createGardenAtmosphere", () => {
-  it("binds all three sub-controllers (bird pool + mote pool + wind sample)", () => {
+  it("binds all three sub-controllers (bird pool + mote pool + wind sample) and the butterfly (FU-L)", () => {
     const opts = makeAtmosphereOptions({
       birdTextures: { up: Texture.WHITE, down: Texture.WHITE },
       windLeafTextures: [Texture.WHITE],
       moteTexture: Texture.WHITE,
     })
     const a = createGardenAtmosphere(opts)
-    expect(a.getBirdCount()).toBe(2)
+    expect(a.getBirdCount()).toBe(5)
     expect(a.getMoteCount()).toBeGreaterThan(0)
     expect(a.getGustLeafCapacity()).toBeGreaterThan(0)
     expect(typeof a.getWindSample()).toBe("number")
+    // FU-L: butterfly pool size = 1 at high quality.
+    expect(a.getButterflyCount()).toBe(1)
+    expect(a.getButterflyActive()).toBe(false)
     a.destroy()
   })
 
