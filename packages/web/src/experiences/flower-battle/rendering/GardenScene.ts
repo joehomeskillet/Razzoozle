@@ -76,6 +76,7 @@ import type {
 } from "./atmosphere"
 import { createGardenAtmosphere } from "./atmosphere"
 import type { GardenAtmosphereTextures } from "../assets/loadGardenSceneAssets"
+import type { GardenButterflyRenderer } from "./atmosphere/GardenButterflyController"
 
 /**
  * Plot-band safe-zone footprint (logical px). Anchors are plot *centres*
@@ -185,13 +186,21 @@ export interface CreateGardenSceneOptions {
   prefersReducedMotion?: boolean
   /** Diagnostics snapshot for E2E / window probe. */
   assetDiagnostics?: GardenAssetDiagnostics | null
+/**
+ * Optional wind / bird / mote / gust-leaf atmosphere (Task 2). When
+ * present the scene drives the controller from the existing ticker.
+ * Undefined keeps the legacy no-atmosphere path (existing tests stay
+ * green).
+ */
+atmosphere?: GardenAtmosphereInput
   /**
-   * Optional wind / bird / mote / gust-leaf atmosphere (Task 2). When
-   * present the scene drives the controller from the existing ticker.
-   * Undefined keeps the legacy no-atmosphere path (existing tests stay
-   * green).
+   * FU-Q: Pixi renderer adapter (typically `app.renderer`) threaded
+   * through to `GardenButterflyController` so the procedural 16-frame
+   * butterfly bake can run via `renderer.generateTexture(g)` instead of
+   * falling through to the test-only Canvas2D / Texture.WHITE path.
+   * When omitted, the controller bakes via the best available path.
    */
-  atmosphere?: GardenAtmosphereInput
+  butterflyRenderer?: GardenButterflyRenderer | null
 }
 
 /**
@@ -344,6 +353,9 @@ export function createGardenScene(
       moteTexture: tex ? tex.mote : null,
       safeZones,
       sunPosition: sunPos,
+      // FU-Q: pass the renderer through so the butterfly bake uses
+      // `renderer.generateTexture(...)` for the 16 textures.
+      renderer: options.butterflyRenderer ?? null,
     }
     // Lazy import to keep GardenScene.ts free of the sub-controller
     // graph (the scene only depends on the factory + input shape).

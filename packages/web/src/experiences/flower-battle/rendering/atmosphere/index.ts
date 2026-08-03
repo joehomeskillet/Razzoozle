@@ -19,6 +19,7 @@
 
 export {
   createGardenAtmosphere,
+  GardenWindField,
   type BoundGardenAtmosphere,
   type CreateGardenAtmosphereOptions,
   type GardenAtmosphereInput,
@@ -38,8 +39,26 @@ export {
 
 export {
   GardenButterflyController,
+  type ButterflySlot,
   type GardenButterflyControllerOptions,
 } from "./GardenButterflyController"
+
+export {
+  type ButterflyFrame,
+  type ButterflyTypeConfig,
+  type ButterflyTypeId,
+  BUTTERFLY_TYPES,
+  BUTTERFLY_TEXTURE_HEIGHT,
+  BUTTERFLY_TEXTURE_WIDTH,
+} from "./ButterflyTypeGenerator"
+
+export {
+  bakeButterflyTextures,
+  clearButterflyTextureCache,
+  getButterflyTextureCacheSource,
+  type BakeFramePair,
+  type ButterflyTextureBaker,
+} from "./ButterflyTypeBake"
 
 export {
   GardenWindController,
@@ -70,14 +89,18 @@ export {
   BIRD_GROUP_HORIZONTAL_OFFSET_RANGE,
   BIRD_Y_BAND,
   BUTTERFLY_BASE_Y_RANGE,
+  BUTTERFLY_FLAP_FREQ_RANGE,
   BUTTERFLY_FIRST_SPAWN_RANGE_MS,
+  BUTTERFLY_POOL_SIZE,
   BUTTERFLY_SPEED_RANGE,
+  BUTTERFLY_TYPE_POOL,
   GUST_LEAF_COUNTS,
   GUST_LEAF_MID_COUNT,
   GUST_LEAF_PEACH,
   GUST_LEAF_CORAL,
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_SPEED_RANGE,
+  GUST_LEAF_SPAWN_CORRIDOR_MARGIN,
   GUST_PERIOD_RANGE,
   GUST_RAMP_RANGE,
   GUST_DECAY_RANGE,
@@ -89,11 +112,14 @@ export {
   MOTE_Y_BAND,
   WIND_FREQ_PRIMARY,
   WIND_FREQ_SECONDARY,
-  WIND_LINE_COUNT,
-  WIND_LINE_COLOR,
+  WIND_FIELD_FLIP_INTERVAL_RANGE,
   WIND_LINE_BASE_ALPHA,
+  WIND_LINE_COLOR,
+  WIND_LINE_COUNT,
+  WIND_LINE_CORRIDOR_HEIGHT,
   WIND_LINE_GUST_ALPHA_GAIN,
   WIND_LINE_HEIGHT,
   WIND_LINE_SPEED_RANGE,
+  type WindFieldState,
   resolveGustLeafColors,
 } from "./garden-atmosphere.constants"

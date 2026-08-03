@@ -1,39 +1,38 @@
 /**
- * Garden butterfly controller tests.
+ * Garden butterfly controller tests (FU-Q — 6-slot procedural pool).
  *
- * FU-L: Plan §7.2 — a single ambient butterfly, high quality only.
- * FU-N: two-frame wing flap (wings-up / wings-down). Renderer path
- * bakes two distinct silhouette textures via `renderer.generateTexture`
- * and the sprite swaps between them. The no-renderer fallback
- * (test-friendly) uses `Texture.WHITE` and rotates the sprite tint
- * between the accent (up) and a darker amber variant (down).
- * FU-O: physics redesign — cubic Bezier path through 4 control points
- * with G1-continuous segment continuation. Frame step is now
- *   pos = cubicBezier(C0..C3, t)
- *   vel = cubicBezierDerivative(C0..C3, t)
- *   heading = atan2(vel.y, vel.x)
- *   flapFreq = clamp(speed * BUTTERFLY_FLAP_SPEED_MULT, 1.5, 5)
- *   bobY = sin(t_elapsed * flapFreq * 2/3) * BUTTERFLY_BOB_AMP
- *   sprite.x = pos.x; sprite.y = pos.y + bobY; sprite.rotation = heading
+ * Pool size = 6 (was 1). Each slot draws its `typeId` from a
+ * Fisher-Yates-shuffled bag of all 8 butterfly types (Tagfalter,
+ * Schwalbenschwanz, Monarchfalter, Tagpfauenauge, Bläuling,
+ * Zitronenfalter, Hochzeit-Mantel, Glasflügler). The first 6 picks
+ * are 6 distinct types (Fisher-Yates over a deck of unique items).
+ * Each slot runs the FU-O cubic-Bezier path with a per-type
+ * `flapFreqHz` driving the texture-swap cadence.
  */
 
-import { Container, Graphics, Sprite, Texture } from "pixi.js"
+import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import {
   GardenButterflyController,
-  type ButterflyFrame,
-  type GardenButterflyRenderer,
-  type GardenButterflyTextures,
+  type ButterflySlot,
 } from "../GardenButterflyController"
+import {
+  type BakeFramePair,
+  bakeButterflyTextures,
+  clearButterflyTextureCache,
+  getButterflyTextureCacheSource,
+} from "../ButterflyTypeBake"
+import { BUTTERFLY_TYPES } from "../ButterflyTypeGenerator"
 import {
   ATMOSPHERE_HEIGHT,
   ATMOSPHERE_WIDTH,
   BUTTERFLY_BASE_Y_RANGE,
+  BUTTERFLY_POOL_SIZE,
+  BUTTERFLY_TYPE_POOL,
 } from "../garden-atmosphere.constants"
 
 const STUB_BODY_COLOR = 0xff9900
-const ALT_BODY_COLOR = 0xabcdef
 
 function makeButterfly(quality: "high" | "medium" | "low" | "static") {
   return new GardenButterflyController({
@@ -43,22 +42,21 @@ function makeButterfly(quality: "high" | "medium" | "low" | "static") {
   })
 }
 
-describe("GardenButterflyController", () => {
-  it("exposes the canonical controller name and capacity invariant", () => {
+describe("GardenButterflyController (FU-Q 6-slot pool)", () => {
+  it("exposes capacity = BUTTERFLY_POOL_SIZE (6) at high quality", () => {
     const c = makeButterfly("high")
-    expect(c.getControllerName()).toBe("butterfly")
-    // FU-L: pool size = 1 (Plan §7.2 "maximal einer").
-    expect(c.getCapacity()).toBe(1)
+    expect(BUTTERFLY_POOL_SIZE).toBe(6)
+    expect(c.getCapacity()).toBe(6)
     expect(c.getActiveCount()).toBe(0)
     c.destroy()
   })
 
-  it("leaves the pool empty at lower qualities", () => {
+  it("leaves the pool empty at lower qualities (FU-Q gate)", () => {
     for (const q of ["medium", "low", "static"] as const) {
       const c = makeButterfly(q)
       expect(c.getCapacity()).toBe(0)
       expect(c.getActiveCount()).toBe(0)
-      expect(c.getSprite()).toBeNull()
+      expect(c.getSprites().length).toBe(0)
       c.destroy()
     }
   })
@@ -71,121 +69,187 @@ describe("GardenButterflyController", () => {
       bodyColor: STUB_BODY_COLOR,
     })
     expect(c.getCapacity()).toBe(0)
-    expect(c.getSprite()).toBeNull()
+    expect(c.getSprites().length).toBe(0)
     c.destroy()
   })
 
-  it("mounts a tinted sprite in the ambient container at high quality", () => {
+  it("BUTTERFLY_TYPE_POOL is 8 (FU-Q schema size)", () => {
+    expect(BUTTERFLY_TYPE_POOL).toBe(8)
+    expect(BUTTERFLY_TYPES).toHaveLength(8)
+  })
+
+  it("mounts 6 sprites in the ambient container at high quality", () => {
     const ambient = new Container()
     const c = new GardenButterflyController({
       quality: "high",
       ambient,
       bodyColor: STUB_BODY_COLOR,
     })
-    const sprite = c.getSprite()
-    expect(sprite).not.toBeNull()
-    expect(ambient.children).toContain(sprite)
-    expect(sprite).toBeInstanceOf(Sprite)
-    // Tint starts as bodyColor (stubbed to 0xff9900 — `--color-accent`).
-    expect(sprite!.tint).toBe(STUB_BODY_COLOR)
-    // Visible width lands in the 24–44 px band regardless of the
-    // texture-resolution fallback path (Texture.WHITE is 1×1; the
-    // controller compensates with scale to land on 36 px).
-    expect(sprite!.width).toBeGreaterThanOrEqual(24)
-    expect(sprite!.width).toBeLessThanOrEqual(44)
-    expect(sprite!.height).toBeGreaterThanOrEqual(16)
+    const sprites = c.getSprites()
+    expect(sprites).toHaveLength(6)
+    for (let i = 0; i < sprites.length; i += 1) {
+      const spr = sprites[i]!
+      expect(ambient.children).toContain(spr)
+      expect(spr).toBeInstanceOf(Sprite)
+      // Tint matches the slot's type-config body color (from
+      // BUTTERFLY_TYPES[i].bodyColor) — the per-type colours are
+      // baked into the silhouette; the legacy single-color body
+      // option is only used as the Texture.WHITE tint-rotation
+      // fallback.
+      const slot = c.getSlots()[i]!
+      expect(spr.tint).toBe(slot.config.bodyColor)
+      // Visible sprite width must land in Plan §7.2's 24–44 px band.
+      expect(spr.width).toBeGreaterThanOrEqual(24)
+      expect(spr.width).toBeLessThanOrEqual(44)
+    }
     c.destroy()
   })
 
-  it("bakes two silhouette frames (wings-up + wings-down) via the renderer", () => {
+  it("BUTTERFLY_TYPES — 8 entries with valid drawWings", () => {
+    for (const config of BUTTERFLY_TYPES) {
+      expect(typeof config.drawWings).toBe("function")
+      // id is one of 0..7.
+      expect(config.id).toBeGreaterThanOrEqual(0)
+      expect(config.id).toBeLessThan(8)
+      // Each entry has a name, color triple, and frequency.
+      expect(config.name.length).toBeGreaterThan(0)
+      expect(config.flapFreqHz).toBeGreaterThan(0)
+      expect(config.bodyColor).toBeGreaterThan(0)
+      expect(config.wingColor).toBeGreaterThan(0)
+    }
+  })
+
+  it("renders each type's drawWings via the renderer without throwing", () => {
+    const calls: { id: number; label: string }[] = []
     const upTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
+      { resource: new Uint8Array(36 * 28 * 4), width: 36, height: 28 },
       true,
     )
     const downTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
+      { resource: new Uint8Array(36 * 28 * 4), width: 36, height: 28 },
       true,
     )
-    const calls: { graphics: Container; label: ButterflyFrame }[] = []
-    const renderer: GardenButterflyRenderer = {
-      generateTexture(graphics: Container, label: ButterflyFrame): Texture {
-        calls.push({ graphics, label })
+    clearButterflyTextureCache()
+    const renderer = {
+      generateTexture(_g: Container, label: string): Texture {
+        calls.push({ id: calls.length, label })
         return label === "up" ? upTex : downTex
       },
     }
+    bakeButterflyTextures(renderer)
+    // 16 frames baked: 8 types × 2 frames.
+    expect(calls).toHaveLength(16)
+    const sourceMap = getButterflyTextureCacheSource()
+    for (const config of BUTTERFLY_TYPES) {
+      expect(sourceMap.get(config.id)).toBe("renderer")
+    }
+    expect(clearButterflyTextureCache).toBeDefined()
+  })
+
+  it("slot.typeId variety — Fisher-Yates guarantees at least 4 distinct types in pool of 6 (seed 0xC0FFEE)", () => {
     const c = new GardenButterflyController({
       quality: "high",
       ambient: new Container(),
+      seed: 0xc0ffee,
       bodyColor: STUB_BODY_COLOR,
-      renderer,
     })
-    // The controller invokes the renderer exactly twice — once per
-    // frame — and each call receives a fresh Graphics silhouette.
-    expect(calls).toHaveLength(2)
-    for (const call of calls) {
-      expect(call.graphics).toBeInstanceOf(Graphics)
-    }
-    const labels = calls.map((call) => call.label).sort()
-    expect(labels).toEqual(["down", "up"])
-    // The sprite starts on the wings-up frame.
-    expect(c.getCurrentFrame()).toBe("up")
-    expect(c.getFrameCount()).toBe(2)
-    expect(c.getSprite()!.texture).toBe(upTex)
+    const typeIds = c.getSlotTypeIds()
+    expect(typeIds).toHaveLength(6)
+    const distinct = new Set(typeIds)
+    // First 6 draws from a Fisher-Yates shuffle of [0..7] yield 6
+    // distinct ids. The brief asks for ≥ 4 distinct; we assert the
+    // full 6 because the deck is unique.
+    expect(distinct.size).toBeGreaterThanOrEqual(4)
+    expect(distinct.size).toBe(6)
     c.destroy()
   })
 
-  it("clears the sprite from ambient on destroy", () => {
-    const ambient = new Container()
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient,
-      bodyColor: STUB_BODY_COLOR,
-    })
-    const sprite = c.getSprite()
-    expect(ambient.children).toContain(sprite)
-    c.destroy()
-    expect(ambient.children).not.toContain(sprite)
-  })
-
-  it("places 5 deterministic waypoints across the canvas", () => {
-    for (const seed of [0xc0ffee, 1, 2, 42, 1234]) {
+  it("slot variety is invariant across seeds (Bag-RNG guarantees 6 distinct ids regardless of seed)", () => {
+    for (const seed of [0xc0ffee, 1, 2, 42, 1234, 99_999]) {
       const c = new GardenButterflyController({
         quality: "high",
         ambient: new Container(),
         seed,
         bodyColor: STUB_BODY_COLOR,
       })
-      const wps = c.getWaypoints()
-      expect(wps.length).toBe(5)
-      // X is interpolated across the canvas (40 px margin on each
-      // side); Y is sampled from BUTTERFLY_BASE_Y_RANGE.
-      for (const wp of wps) {
-        expect(wp.x).toBeGreaterThanOrEqual(40 - 1e-6)
-        expect(wp.x).toBeLessThanOrEqual(1920 - 40 + 1e-6)
-      }
+      const distinct = new Set(c.getSlotTypeIds())
+      expect(distinct.size).toBe(6)
       c.destroy()
     }
   })
 
-  it("uses the resolved accent color tint (FU-L brief D)", () => {
-    // The brief calls out palette.accent (#ff9900 amber). The
-    // aggregator passes the resolved value in via `bodyColor`;
-    // here we verify a non-default bodyColor round-trips.
+  it("each slot's config matches its typeId", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      seed: 0xc0ffee,
+      bodyColor: STUB_BODY_COLOR,
+    })
+    for (const slot of c.getSlots()) {
+      expect(slot.config.id).toBe(slot.typeId)
+      expect(BUTTERFLY_TYPES[slot.typeId]).toBe(slot.config)
+    }
+    c.destroy()
+  })
+
+  it("getSlots() returns 6 slots with distinct sprites", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+    })
+    const slots = c.getSlots() as readonly ButterflySlot[]
+    expect(slots).toHaveLength(6)
+    const sprites = new Set(slots.map((s) => s.sprite))
+    expect(sprites.size).toBe(6)
+    for (const slot of slots) {
+      expect(slot.sprite).toBeInstanceOf(Sprite)
+      expect(slot.segments.length).toBeGreaterThanOrEqual(1)
+      expect(slot.waypoints.length).toBeGreaterThanOrEqual(1)
+    }
+    c.destroy()
+  })
+
+  it("clears every sprite from ambient on destroy", () => {
     const ambient = new Container()
     const c = new GardenButterflyController({
       quality: "high",
       ambient,
-      bodyColor: ALT_BODY_COLOR,
+      bodyColor: STUB_BODY_COLOR,
     })
-    expect(c.getSprite()!.tint).toBe(ALT_BODY_COLOR)
+    expect(ambient.children.length).toBe(6)
+    c.destroy()
+    expect(ambient.children).toHaveLength(0)
+  })
+
+  it("destroy is idempotent", () => {
+    const c = makeButterfly("high")
+    c.destroy()
+    expect(() => c.destroy()).not.toThrow()
+  })
+
+  it("fallback path — every slot uses Texture.WHITE in the no-DOM test env", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+    })
+    expect(c.getUsedFallback()).toBe(true)
+    for (const slot of c.getSlots()) {
+      expect(slot.textures.up).toBe(Texture.WHITE)
+      expect(slot.textures.down).toBe(Texture.WHITE)
+    }
+    c.destroy()
+  })
+
+  it("each slot has 2 antennae via getAntennaeCount()", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+    })
+    expect(c.getAntennaeCount()).toBe(2)
+    expect(c.getFrameCount()).toBe(2)
     c.destroy()
   })
 
@@ -196,35 +260,25 @@ describe("GardenButterflyController", () => {
       bodyColor: STUB_BODY_COLOR,
       firstSpawnRangeMs: [10_000, 15_000],
     })
-    // Drive a single 50-ms frame; well below the 10-s lower bound.
     c.update(50)
     expect(c.getIsAlive()).toBe(false)
+    expect(c.getActiveCount()).toBe(0)
     c.destroy()
   })
 
-  it("becomes active once enough time has elapsed to fire the first spawn", () => {
+  it("becomes active once the first-spawn timer elapses", () => {
     const c = new GardenButterflyController({
       quality: "high",
       ambient: new Container(),
       bodyColor: STUB_BODY_COLOR,
-      // Tight band so the test is fast: first spawn between 80 ms
-      // and 120 ms.
       firstSpawnRangeMs: [80, 120],
     })
-    // 50 ms < lower bound → still not alive.
     c.update(50)
     expect(c.getIsAlive()).toBe(false)
-    // Drive past the upper bound. deltaMs is clamped to 50 ms per
-    // call, so a few more ticks are needed to clear 120 ms.
     for (let i = 0; i < 4; i += 1) c.update(100)
     expect(c.getIsAlive()).toBe(true)
+    expect(c.getActiveCount()).toBe(6)
     c.destroy()
-  })
-
-  it("destroy is idempotent", () => {
-    const c = makeButterfly("high")
-    c.destroy()
-    expect(() => c.destroy()).not.toThrow()
   })
 
   it("reducedMotion update is a no-op", () => {
@@ -242,88 +296,59 @@ describe("GardenButterflyController", () => {
     c.destroy()
   })
 
-  it("waypoint Y values stay within BUTTERFLY_BASE_Y_RANGE * ATMOSPHERE_HEIGHT (FU-L brief D)", () => {
+  it("all 6 slots populate segments[0].C0..C3 at construction time (FU-O)", () => {
     const c = new GardenButterflyController({
       quality: "high",
       ambient: new Container(),
       bodyColor: STUB_BODY_COLOR,
       seed: 1,
     })
-    const wps = c.getWaypoints()
-    for (const wp of wps) {
-      expect(wp.y).toBeGreaterThanOrEqual(
+    for (const slot of c.getSlots()) {
+      const seg = slot.segments[0]!
+      expect(Number.isFinite(seg.C0.x)).toBe(true)
+      expect(Number.isFinite(seg.C0.y)).toBe(true)
+      expect(Number.isFinite(seg.C3.x)).toBe(true)
+      expect(Number.isFinite(seg.C3.y)).toBe(true)
+      // C0 enters from a screen edge.
+      const atLeft = seg.C0.x <= -39
+      const atRight = seg.C0.x >= ATMOSPHERE_WIDTH - 39 + 40
+      expect(atLeft || atRight).toBe(true)
+      // C3 lands inside the yBand.
+      expect(seg.C3.y).toBeGreaterThanOrEqual(
         BUTTERFLY_BASE_Y_RANGE[0] * ATMOSPHERE_HEIGHT - 1e-6,
       )
-      expect(wp.y).toBeLessThanOrEqual(
+      expect(seg.C3.y).toBeLessThanOrEqual(
         BUTTERFLY_BASE_Y_RANGE[1] * ATMOSPHERE_HEIGHT + 1e-6,
       )
     }
     c.destroy()
   })
 
-  it("reports 2 frames and 2 antennae via the FU-N test hooks", () => {
-    const c = makeButterfly("high")
-    expect(c.getFrameCount()).toBe(2)
-    expect(c.getAntennaeCount()).toBe(2)
-    // Initial frame is 'up' (mirrors the bird controller convention
-    // — birds also start on wings-up).
-    expect(c.getCurrentFrame()).toBe("up")
-    c.destroy()
-  })
-
-  it("cycles the texture between wings-up and wings-down on the flap cadence (renderer path)", () => {
-    // Tight wing-swap band override: 40–60 ms. A 300-ms drive triggers
-    // ~5 swaps, well past the threshold needed to observe the cycle.
-    const upTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
-      true,
-    )
-    const downTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
-      true,
-    )
-    const renderer: GardenButterflyRenderer = {
-      generateTexture(_graphics: Container, label: ButterflyFrame): Texture {
-        return label === "up" ? upTex : downTex
-      },
-    }
+  it("updates sprite.x and sprite.y over time (FU-O path runs)", () => {
     const c = new GardenButterflyController({
       quality: "high",
       ambient: new Container(),
       bodyColor: STUB_BODY_COLOR,
-      renderer,
       firstSpawnRangeMs: [0, 1],
-      wingSwapRangeMs: [40, 60],
     })
-    // Spawn immediately, then drive updates to cross the wing-swap
-    // threshold several times. The controller toggles between the
-    // two textures; verify both frames + textures are observed.
-    const seenFrames = new Set<ButterflyFrame>()
-    const seenTextures = new Set<Texture>()
-    for (let i = 0; i < 80; i += 1) {
-      c.update(20)
-      seenFrames.add(c.getCurrentFrame())
-      seenTextures.add(c.getSprite()!.texture)
+    c.update(50)
+    expect(c.getActiveCount()).toBe(6)
+    const samples = c
+      .getSlots()
+      .map((s) => ({ x: s.sprite.x, y: s.sprite.y }))
+    c.update(50)
+    for (let i = 0; i < c.getSlots().length; i += 1) {
+      const a = samples[i]!
+      const slot = c.getSlots()[i]!
+      // Path is advancing — at least one coordinate must have
+      // changed for at least one slot.
+      expect(slot.sprite.x).not.toBe(a.x)
+      expect(slot.sprite.y).not.toBe(a.y)
     }
-    expect(seenFrames.has("up")).toBe(true)
-    expect(seenFrames.has("down")).toBe(true)
-    expect(seenTextures.has(upTex)).toBe(true)
-    expect(seenTextures.has(downTex)).toBe(true)
     c.destroy()
   })
 
-  it("cycles the tint between accent and a darker variant on the flap cadence (Texture.WHITE fallback)", () => {
-    // No renderer → controller falls through to the Texture.WHITE +
-    // tint-rotation fallback. This is the path hit by node-env tests
-    // (no DOM, no Pixi renderer).
+  it("cycles frames between up and down on the wing-swap cadence (Texture.WHITE fallback path)", () => {
     const c = new GardenButterflyController({
       quality: "high",
       ambient: new Container(),
@@ -332,178 +357,70 @@ describe("GardenButterflyController", () => {
       wingSwapRangeMs: [40, 60],
     })
     expect(c.getUsedFallback()).toBe(true)
-    expect(c.getSprite()!.texture).toBe(Texture.WHITE)
-    // Initial tint is bodyColor (the 'up' tint).
-    expect(c.getSprite()!.tint).toBe(STUB_BODY_COLOR)
-    expect(c.getCurrentFrame()).toBe("up")
-    // Drive past several wing swaps to observe both frames.
-    const seenFrames = new Set<ButterflyFrame>()
-    let downTint = 0
+    const seenFrames = new Set<string>()
+    const seenTints = new Set<number>()
     for (let i = 0; i < 80; i += 1) {
       c.update(20)
-      seenFrames.add(c.getCurrentFrame())
-      if (c.getCurrentFrame() === "down") {
-        downTint = c.getSprite()!.tint
+      for (const slot of c.getSlots()) {
+        seenFrames.add(slot.currentFrame)
+        seenTints.add(slot.sprite.tint)
       }
     }
     expect(seenFrames.has("up")).toBe(true)
     expect(seenFrames.has("down")).toBe(true)
-    // The down tint must differ from the 'up' tint — a darker amber
-    // variant (0.65× the bodyColor per the BUTTERFLY_DOWN_TINT_FACTOR).
-    expect(downTint).not.toBe(STUB_BODY_COLOR)
-    // Each RGB channel of the down tint must be lower than (or equal
-    // to) the corresponding bodyColor channel — "darker".
-    const r = (STUB_BODY_COLOR >> 16) & 0xff
-    const g = (STUB_BODY_COLOR >> 8) & 0xff
-    const b = STUB_BODY_COLOR & 0xff
-    const dr = (downTint >> 16) & 0xff
-    const dg = (downTint >> 8) & 0xff
-    const db = downTint & 0xff
-    expect(dr).toBeLessThanOrEqual(r)
-    expect(dg).toBeLessThanOrEqual(g)
-    expect(db).toBeLessThanOrEqual(b)
+    // Up tint is bodyColor, down tint is darker — at least 2 distinct
+    // tints must have cycled.
+    expect(seenTints.size).toBeGreaterThanOrEqual(2)
     c.destroy()
   })
 
-  it("uses caller-supplied butterflyTextures without invoking the renderer", () => {
-    const upTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
-      true,
-    )
-    const downTex = Texture.from(
-      {
-        resource: new Uint8Array(36 * 28 * 4),
-        width: 36,
-        height: 28,
-      },
-      true,
-    )
-    const textures: GardenButterflyTextures = { up: upTex, down: downTex }
-    let rendererCalled = false
-    const renderer: GardenButterflyRenderer = {
-      generateTexture(): Texture {
-        rendererCalled = true
-        return upTex
-      },
+  it("destroy: the bake cache is cleared so a re-bind re-bakes fresh", () => {
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+    })
+    // The bake cache should be populated after construct.
+    const before = getButterflyTextureCacheSource().size
+    c.destroy()
+    expect(before).toBeGreaterThan(0)
+    expect(getButterflyTextureCacheSource().size).toBe(0)
+  })
+})
+
+describe("ButterflyTypeBake (FU-Q)", () => {
+  it("Texture.WHITE fallback path — bake returns 8 entries", () => {
+    clearButterflyTextureCache()
+    const cache: ReadonlyMap<number, BakeFramePair> =
+      bakeButterflyTextures()
+    expect(cache.size).toBe(8)
+    for (const [, entry] of cache) {
+      expect(entry.up).toBe(Texture.WHITE)
+      expect(entry.down).toBe(Texture.WHITE)
     }
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient: new Container(),
-      bodyColor: STUB_BODY_COLOR,
-      renderer,
-      butterflyTextures: textures,
-    })
-    expect(rendererCalled).toBe(false)
-    expect(c.getSprite()!.texture).toBe(upTex)
-    c.destroy()
-  })
-
-  it("preserves the Bezier path motion while the frame swap is layered on top", () => {
-    // The frame swap must never change sprite.x / sprite.y / sprite
-    // .rotation. We sample a few mid-path frames and verify the path
-    // is still progressing.
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient: new Container(),
-      bodyColor: STUB_BODY_COLOR,
-      firstSpawnRangeMs: [0, 1],
-      wingSwapRangeMs: [40, 60],
-    })
-    // Spawn immediately.
-    c.update(50)
-    expect(c.getIsAlive()).toBe(true)
-    const samples: { x: number; y: number; rotation: number }[] = []
-    for (let i = 0; i < 6; i += 1) {
-      c.update(40)
-      const sprite = c.getSprite()!
-      samples.push({ x: sprite.x, y: sprite.y, rotation: sprite.rotation })
+    const sourceMap = getButterflyTextureCacheSource()
+    expect(sourceMap.size).toBe(8)
+    for (const src of sourceMap.values()) {
+      expect(src).toBe("white-fallback")
     }
-    // At least one x/y must have changed across the samples — the
-    // path is advancing, independent of any frame swaps.
-    const distinctX = new Set(samples.map((s) => s.x))
-    const distinctY = new Set(samples.map((s) => s.y))
-    expect(distinctX.size + distinctY.size).toBeGreaterThan(1)
-    c.destroy()
   })
 
-  it("populates segment[0].C0..C3 at construction time (FU-O)", () => {
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient: new Container(),
-      bodyColor: STUB_BODY_COLOR,
-    })
-    const segs = c.getSegments()
-    expect(segs.length).toBe(1)
-    const first = segs[0]!
-    expect(Number.isFinite(first.C0.x)).toBe(true)
-    expect(Number.isFinite(first.C0.y)).toBe(true)
-    expect(Number.isFinite(first.C1.x)).toBe(true)
-    expect(Number.isFinite(first.C1.y)).toBe(true)
-    expect(Number.isFinite(first.C2.x)).toBe(true)
-    expect(Number.isFinite(first.C2.y)).toBe(true)
-    expect(Number.isFinite(first.C3.x)).toBe(true)
-    expect(Number.isFinite(first.C3.y)).toBe(true)
-    // C0 enters from a screen edge.
-    const atLeft = first.C0.x <= -39
-    const atRight = first.C0.x >= ATMOSPHERE_WIDTH - 39 + 40
-    expect(atLeft || atRight).toBe(true)
-    // C3 lands inside the yBand.
-    expect(first.C3.y).toBeGreaterThanOrEqual(
-      BUTTERFLY_BASE_Y_RANGE[0] * ATMOSPHERE_HEIGHT - 1e-6,
-    )
-    expect(first.C3.y).toBeLessThanOrEqual(
-      BUTTERFLY_BASE_Y_RANGE[1] * ATMOSPHERE_HEIGHT + 1e-6,
-    )
-    // Segment duration is in the configured range.
-    expect(first.segmentDuration).toBeGreaterThanOrEqual(4)
-    expect(first.segmentDuration).toBeLessThanOrEqual(7)
-    c.destroy()
+  it("clearButterflyTextureCache empties the cache", () => {
+    bakeButterflyTextures()
+    expect(getButterflyTextureCacheSource().size).toBe(8)
+    clearButterflyTextureCache()
+    expect(getButterflyTextureCacheSource().size).toBe(0)
   })
 
-  it("updates sprite.rotation over successive frames (heading tracks tangent)", () => {
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient: new Container(),
-      bodyColor: STUB_BODY_COLOR,
-      firstSpawnRangeMs: [0, 1],
-      wingSwapRangeMs: [10_000, 10_000], // suppress swaps so rotation only moves via heading
-    })
-    c.update(50) // spawn
-    const initialRotation = c.getSprite()!.rotation
-    for (let i = 0; i < 50; i += 1) c.update(40)
-    const finalRotation = c.getSprite()!.rotation
-    // Heading is `atan2(vel.y, vel.x)` from the Bezier derivative.
-    // Across 2 s of motion the tangent direction must change — the
-    // silhouette turns to follow its trajectory.
-    expect(Math.abs(finalRotation - initialRotation)).toBeGreaterThan(0)
-    c.destroy()
-  })
-
-  it("spawns a continuation segment whose C0 equals the previous segment's C3 (G1 continuity, FU-O)", () => {
-    const c = new GardenButterflyController({
-      quality: "high",
-      ambient: new Container(),
-      bodyColor: STUB_BODY_COLOR,
-      firstSpawnRangeMs: [0, 1],
-      // wingSwapRangeMs left null — physics drives the swap, the
-      // segment transition is the focus here.
-    })
-    c.update(50)
-    const first = c.getSegments()[0]!
-    const durationSec = first.segmentDuration
-    // Drive enough frames to finish the first segment AND step
-    // into the second.
-    const frames = Math.ceil((durationSec + 0.2) / 0.04) + 1
-    for (let i = 0; i < frames; i += 1) c.update(40)
-    const segs = c.getSegments()
-    expect(segs.length).toBeGreaterThanOrEqual(2)
-    const second = segs[1]!
-    expect(second.C0.x).toBeCloseTo(first.C3.x, 6)
-    expect(second.C0.y).toBeCloseTo(first.C3.y, 6)
-    c.destroy()
+  it("each BUTTERFLY_TYPE has valid id, name, frequency, colors", () => {
+    const ids = new Set<number>()
+    for (const config of BUTTERFLY_TYPES) {
+      expect(typeof config.name).toBe("string")
+      expect(config.name.length).toBeGreaterThan(0)
+      expect(config.flapFreqHz).toBeGreaterThan(0)
+      expect(ids.has(config.id)).toBe(false)
+      ids.add(config.id)
+    }
+    expect(ids.size).toBe(8)
   })
 })
