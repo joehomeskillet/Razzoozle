@@ -468,3 +468,20 @@ export const WIND_LINE_HEIGHT = 36
 
 /** Per-line horizontal speed band (px/s, leftward). */
 export const WIND_LINE_SPEED_RANGE: readonly [number, number] = [80, 140]
+
+/** FU-R: bird egg drop constants. */
+export const EGG_GRAVITY = 0.38
+export const EGG_TERMINAL_VEL = 10.0
+export const PIECE_GRAVITY = 0.40
+export const EGG_FALL_SPAWN_INTERVAL_RANGE_MS: readonly [number, number] = [
+  3_000, 6_000,
+]
+export const EGG_IMPACT_Y_FRACTION = 0.78
+export const EGG_SHATTER_PIECE_COUNT_RANGE: readonly [number, number] = [3, 5]
+export const EGG_YOLK_FADE_DURATION_SEC = 1.5
+export const EGG_YOLK_FADE_DURATION_RANGE: readonly [number, number] = [
+  1.0, 2.5,
+]
+export const EGG_POOL_SIZE = 6
+export const EGG_SHATTER_POOL_SIZE = 32
+export const EGG_YOLK_POOL_SIZE = 12

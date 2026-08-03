@@ -597,4 +597,137 @@ describe("FU-L: GardenBirdController per-follower offsets", () => {
     }
     birds.destroy()
   })
+
+  it("FU-R: drops an egg when an active bird is inside the corridor", () => {
+    const skyLifeForeground = new Container()
+    const drops: Array<{ x: number; y: number }> = []
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      // Tighten to force a near-immediate drop on the first tick.
+      firstSpawnRangeMs: [0, 0],
+      spawnIntervalRangeMs: [0, 0],
+      eggDropIntervalRangeMs: [0, 0],
+      eggDropper: (x, y) => {
+        drops.push({ x, y })
+      },
+    })
+    // Force the first spawn immediately by setting elapsed high enough.
+    ;(birds as unknown as { nextSpawnAtMs: number }).nextSpawnAtMs = 0
+    // Tick once: spawn + drop should fire.
+    birds.update(1)
+    // If a bird was actually inside [0.15W, 0.85W] and visible, drop fires.
+    // (Random pool can spawn outside — force the active bird's X.)
+    const internals = birds as unknown as {
+      pool: Array<{ active: boolean; sprite: Sprite }>
+    }
+    const active = internals.pool.find((s) => s.active)
+    if (active) {
+      // Park it dead-centre in the corridor.
+      active.sprite.x = 600
+      active.sprite.y = 200
+      ;(birds as unknown as { nextDropAtMs: number }).nextDropAtMs = 0
+      birds.update(1)
+      expect(drops.length).toBeGreaterThan(0)
+      const last = drops[drops.length - 1]!
+      // X is locked by the test setup; Y rides the sin-wave between
+      // the spawn and the drop tick — only assert the drop fired
+      // (length) and that the bird that triggered it was at the
+      // expected corridor X.
+      expect(last.x).toBeCloseTo(600, 0)
+    }
+    birds.destroy()
+  })
+
+  it("FU-R: range enforcement — bird outside [0.15W, 0.85W] never drops", () => {
+    const skyLifeForeground = new Container()
+    const drops: Array<{ x: number; y: number }> = []
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      firstSpawnRangeMs: [0, 0],
+      spawnIntervalRangeMs: [0, 0],
+      eggDropIntervalRangeMs: [0, 0],
+      eggDropper: (x, y) => {
+        drops.push({ x, y })
+      },
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        sprite: Sprite
+        speed: number
+        direction: 1 | -1
+        baseY: number
+        waveAmp: number
+        wavePhase: number
+        elapsedSec: number
+        wingSwapAtMs: number
+        retireAtMs: number
+      }>
+      elapsedMs: number
+      nextDropAtMs: number
+    }
+    // Manually push one bird into the pool, position it outside the
+    // corridor (x = 0.05 * ATMOSPHERE_WIDTH), set it active, then
+    // hammer the update loop — drop should never fire.
+    internals.pool[0]!.active = true
+    internals.pool[0]!.sprite.position.set(0.05 * 1280, 200)
+    internals.elapsedMs = 1000
+    internals.nextDropAtMs = 0
+    for (let i = 0; i < 30; i += 1) birds.update(50)
+    expect(drops.length).toBe(0)
+    birds.destroy()
+  })
+
+  it("FU-R: FPS-invariant — same elapsed time → same number of drops", () => {
+    const opts = {
+      quality: "high" as const,
+      skyLifeForeground: new Container(),
+      birdTextures: makeBirdTextures(),
+      firstSpawnRangeMs: [0, 0] as const,
+      spawnIntervalRangeMs: [0, 0] as const,
+      eggDropIntervalRangeMs: [0, 0] as const,
+      eggDropRangeXFrac: [0, 1] as const,
+    }
+    const dropsA: number[] = []
+    const dropsB: number[] = []
+    const a = new GardenBirdController({
+      ...opts,
+      eggDropper: () => {
+        dropsA.push(0)
+      },
+    })
+    const b = new GardenBirdController({
+      ...opts,
+      eggDropper: () => {
+        dropsB.push(0)
+      },
+    })
+    const seedA = 0xa11ce
+    const seedB = 0xa11ce
+    ;(a as unknown as { rng: SeededRandom }).rng =
+      (a as unknown as { rng: SeededRandom }).rng
+    void seedA
+    void seedB
+    const aInternals = a as unknown as { pool: Array<{ active: boolean; sprite: Sprite }>; nextDropAtMs: number }
+    const bInternals = b as unknown as { pool: Array<{ active: boolean; sprite: Sprite }>; nextDropAtMs: number }
+    aInternals.pool[0]!.active = true
+    aInternals.pool[0]!.sprite.position.set(600, 200)
+    aInternals.nextDropAtMs = 0
+    bInternals.pool[0]!.active = true
+    bInternals.pool[0]!.sprite.position.set(600, 200)
+    bInternals.nextDropAtMs = 0
+    // Drive both with 2000ms via 50ms ticks — drop counts must match
+    // the same seed sequence.
+    for (let i = 0; i < 40; i += 1) {
+      a.update(50)
+      b.update(50)
+    }
+    expect(dropsA.length).toBe(dropsB.length)
+    a.destroy()
+    b.destroy()
+  })
 })

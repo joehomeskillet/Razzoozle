@@ -1,0 +1,140 @@
+/**
+ * Garden egg controller tests (FU-R).
+ *
+ * Verifies:
+ *   - Constructor wires the three pools + their dedicated containers.
+ *   - `spawn(birdX, birdY)` creates an active egg and positions it.
+ *   - `update(dt)` integrates gravity; on impact the egg is released
+ *     and shell pieces + yolk splat slots are acquired.
+ *   - `destroy()` empties every pool and detaches the sprites.
+ */
+
+import { Container } from "pixi.js"
+import { describe, expect, it } from "vitest"
+
+import { GardenEggController } from "../GardenEggController"
+import {
+  EGG_POOL_SIZE,
+  EGG_SHATTER_POOL_SIZE,
+  EGG_SHATTER_PIECE_COUNT_RANGE,
+  EGG_YOLK_POOL_SIZE,
+  EGG_IMPACT_Y_FRACTION,
+  ATMOSPHERE_HEIGHT,
+} from "../garden-atmosphere.constants"
+
+function makeEggController(seed = 0xe99) {
+  const egg = new Container()
+  const shatter = new Container()
+  const yolk = new Container()
+  const c = new GardenEggController({
+    eggContainer: egg,
+    shatterContainer: shatter,
+    yolkContainer: yolk,
+    seed,
+  })
+  return { c, egg, shatter, yolk }
+}
+
+describe("GardenEggController", () => {
+  it("constructor populates all three pools and mounts their sprites", () => {
+    const { c, egg, shatter, yolk } = makeEggController()
+    expect(egg.children.length).toBe(EGG_POOL_SIZE)
+    expect(shatter.children.length).toBe(EGG_SHATTER_POOL_SIZE)
+    expect(yolk.children.length).toBe(EGG_YOLK_POOL_SIZE)
+    c.destroy()
+  })
+
+  it("spawn positions the egg at (birdX, birdY) and marks it active", () => {
+    const { c, egg } = makeEggController()
+    c.spawn(120, 50)
+    const stats = c.getStats()
+    expect(stats.activeEggs).toBe(1)
+    const visible = egg.children.filter((s) => s.visible)
+    expect(visible.length).toBe(1)
+    expect(visible[0]!.x).toBe(120)
+    expect(visible[0]!.y).toBe(50)
+    c.destroy()
+  })
+
+  it("update integrates gravity and triggers shatter on impact", () => {
+    const { c } = makeEggController()
+    c.spawn(120, 10)
+    const internals = c as unknown as { eggPool: Array<{ impactY: number; y: number }> }
+    internals.eggPool[0]!.impactY = 12
+    c.update(500)
+    const stats = c.getStats()
+    expect(stats.activeEggs).toBe(0)
+    expect(stats.activeShatters).toBeGreaterThan(0)
+    expect(stats.activeYolks).toBeGreaterThan(0)
+    c.destroy()
+  })
+
+  it("falls back to ATMOSPHERE_HEIGHT × EGG_IMPACT_Y_FRACTION when no anchors", () => {
+    const { c } = makeEggController()
+    c.spawn(120, 0)
+    const internals = c as unknown as {
+      eggPool: Array<{ impactY: number }>
+    }
+    expect(internals.eggPool[0]!.impactY).toBeCloseTo(
+      ATMOSPHERE_HEIGHT * EGG_IMPACT_Y_FRACTION,
+      5,
+    )
+    c.destroy()
+  })
+
+  it("uses the closest flower anchor's y as impactY when anchors are present", () => {
+    const egg = new Container()
+    const shatter = new Container()
+    const yolk = new Container()
+    const c = new GardenEggController({
+      eggContainer: egg,
+      shatterContainer: shatter,
+      yolkContainer: yolk,
+      flowerAnchors: [
+        { x: 100, y: 220 },
+        { x: 500, y: 260 },
+        { x: 900, y: 200 },
+      ],
+    })
+    c.spawn(495, 10)
+    const internals = c as unknown as { eggPool: Array<{ impactY: number }> }
+    expect(internals.eggPool[0]!.impactY).toBe(260)
+    c.destroy()
+  })
+
+  it("spawn respects the configured piece count range", () => {
+    const { c } = makeEggController(0x1234)
+    c.spawn(0, 0)
+    const internals = c as unknown as { eggPool: Array<{ impactY: number; y: number }> }
+    internals.eggPool[0]!.impactY = 0
+    c.update(500)
+    const stats = c.getStats()
+    const [min, max] = EGG_SHATTER_PIECE_COUNT_RANGE
+    expect(stats.activeShatters).toBeGreaterThanOrEqual(min)
+    expect(stats.activeShatters).toBeLessThanOrEqual(max)
+    c.destroy()
+  })
+
+  it("destroy() empties pools and detaches sprites", () => {
+    const { c, egg, shatter, yolk } = makeEggController()
+    c.destroy()
+    expect(egg.children.length).toBe(0)
+    expect(shatter.children.length).toBe(0)
+    expect(yolk.children.length).toBe(0)
+  })
+
+  it("shell pieces and yolk splats fade out over their duration", () => {
+    const { c } = makeEggController()
+    c.spawn(120, 0)
+    const internals = c as unknown as { eggPool: Array<{ impactY: number; y: number }> }
+    internals.eggPool[0]!.impactY = 0
+    c.update(16)
+    let stats = c.getStats()
+    expect(stats.activeShatters).toBeGreaterThan(0)
+    for (let i = 0; i < 200; i += 1) c.update(50)
+    stats = c.getStats()
+    expect(stats.activeShatters).toBe(0)
+    expect(stats.activeYolks).toBe(0)
+    c.destroy()
+  })
+})

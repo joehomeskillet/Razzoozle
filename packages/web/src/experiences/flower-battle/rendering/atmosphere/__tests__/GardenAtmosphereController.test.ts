@@ -194,4 +194,15 @@ describe("createGardenAtmosphere", () => {
     expect(Number.isFinite(sample)).toBe(true)
     a.destroy()
   })
+
+  it("FU-R: exposes an egg subsystem (smoke test)", () => {
+    const a = createGardenAtmosphere(makeAtmosphereOptions())
+    const stats = a.getEggStats()
+    expect(stats).toEqual({
+      activeEggs: 0,
+      activeShatters: 0,
+      activeYolks: 0,
+    })
+    a.destroy()
+  })
 })

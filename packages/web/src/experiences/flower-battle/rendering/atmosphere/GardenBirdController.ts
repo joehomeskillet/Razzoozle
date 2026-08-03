@@ -30,6 +30,7 @@ import {
   BIRD_SPAWN_RETRY_LIMIT,
   HUD_SAFE_TOP_FRACTION,
   SUN_SAFE_RADIUS,
+  EGG_FALL_SPAWN_INTERVAL_RANGE_MS,
 } from "./garden-atmosphere.constants"
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
@@ -94,6 +95,16 @@ export interface GardenBirdControllerOptions {
    *  When null (default), the sun safe zone is disabled — back-compatible
    *  with callers that do not have a sun holder. */
   sunPosition?: { x: number; y: number } | null
+  /** FU-R: egg-drop callback (birdX, birdY) — invoked when an active
+   *  bird is over the flower-bed corridor. Default = no-op. */
+  eggDropper?: (x: number, y: number) => void
+  /** FU-R: override the egg drop interval band (ms). Tests tighten to
+   *  make assertions deterministic. */
+  eggDropIntervalRangeMs?: readonly [number, number]
+  /** FU-R: x-range fraction of the atmosphere width inside which a
+   *  bird is considered to be over the flower bed (default
+   *  `[0.15, 0.85]`). */
+  eggDropRangeXFrac?: readonly [number, number]
 }
 
 export interface BirdSafeZone {
@@ -127,6 +138,12 @@ export class GardenBirdController {
   private readonly birdTextures: GardenBirdTextures | null
   /** Sun-holder world position. Null disables the sun safe radius. */
   private readonly sunPosition: { x: number; y: number } | null
+  /** FU-R: shared drop hook. */
+  private readonly eggDropper: (x: number, y: number) => void
+  private readonly eggDropIntervalRangeMs: readonly [number, number]
+  private readonly eggDropRangeXFrac: readonly [number, number]
+  /** FU-R: ms from bind when the next egg drop is allowed. */
+  private nextDropAtMs = 0
   private destroyed = false
 
   constructor(options: GardenBirdControllerOptions) {
@@ -149,6 +166,10 @@ export class GardenBirdController {
       options.spawnIntervalRangeMs ?? BIRD_SPAWN_INTERVAL_RANGE_MS
     this.firstSpawnRangeMs =
       options.firstSpawnRangeMs ?? BIRD_FIRST_SPAWN_RANGE_MS
+    this.eggDropper = options.eggDropper ?? (() => {})
+    this.eggDropIntervalRangeMs =
+      options.eggDropIntervalRangeMs ?? EGG_FALL_SPAWN_INTERVAL_RANGE_MS
+    this.eggDropRangeXFrac = options.eggDropRangeXFrac ?? [0.15, 0.85]
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
 
     const poolSize = BIRD_COUNTS[this.quality]
@@ -179,6 +200,15 @@ export class GardenBirdController {
         wingSwapAtMs: 0,
         retireAtMs: 0,
       })
+    }
+
+    if (this.reducedMotion) {
+      this.nextDropAtMs = Number.POSITIVE_INFINITY
+    } else {
+      this.nextDropAtMs = this.rng.rangeInt(
+        this.eggDropIntervalRangeMs[0],
+        this.eggDropIntervalRangeMs[1],
+      )
     }
 
     // Stagger the first spawn so we don't dump everything at t=0. Uses
@@ -257,6 +287,39 @@ export class GardenBirdController {
         slot.sprite.visible = false
       }
     }
+
+    this.maybeDropEgg()
+  }
+
+  private maybeDropEgg(): void {
+    if (this.destroyed || this.reducedMotion) return
+    if (this.elapsedMs < this.nextDropAtMs) return
+    const xMin = ATMOSPHERE_WIDTH * this.eggDropRangeXFrac[0]
+    const xMax = ATMOSPHERE_WIDTH * this.eggDropRangeXFrac[1]
+    let dropper: BirdSlot | null = null
+    for (const slot of this.pool) {
+      if (!slot.active) continue
+      if (slot.sprite.x < xMin || slot.sprite.x > xMax) continue
+      if (dropper === null || slot.sprite.x > dropper.sprite.x) {
+        dropper = slot
+      }
+    }
+    if (!dropper) {
+      this.nextDropAtMs = this.elapsedMs + 250
+      return
+    }
+    this.eggDropper(dropper.sprite.x, dropper.sprite.y)
+    this.nextDropAtMs =
+      this.elapsedMs +
+      this.rng.rangeInt(
+        this.eggDropIntervalRangeMs[0],
+        this.eggDropIntervalRangeMs[1],
+      )
+  }
+
+  /** FU-R: test hook — force the next drop to be eligible now. */
+  forceNextDrop(): void {
+    this.nextDropAtMs = this.elapsedMs
   }
 
   private trySpawn(): void {
