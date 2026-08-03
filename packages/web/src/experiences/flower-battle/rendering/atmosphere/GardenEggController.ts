@@ -84,6 +84,7 @@ const EGG_TINT = 0xfff4ba
 const EGG_OUTLINE = 0x6b4423
 const YOLK_TINT = 0xf4a261
 const YOLK_OUTLINE = 0xd97a3a
+const YOLK_TEXTURE_SEED = 0xe995
 
 const EGG_TINT_HEX = hexToCssColor(EGG_TINT)
 const EGG_OUTLINE_HEX = hexToCssColor(EGG_OUTLINE)
@@ -190,7 +191,7 @@ export class GardenEggController {
     const yolkTexture = buildYolkTexture()
     const miniYolkTextures = Array.from(
       { length: EGG_YOLK_POOL_SIZE - 1 },
-      (_, i) => buildMiniYolkTexture(0xe995 + i),
+      (_, i) => buildMiniYolkTexture(YOLK_TEXTURE_SEED + i),
     )
 
     for (let i = 0; i < EGG_POOL_SIZE; i += 1) {
@@ -491,7 +492,7 @@ function buildShardTexture(variant: ShardVariant): Texture {
 function buildYolkTexture(): Texture {
   const w = 24
   const h = 9
-  const points = buildIrregularOvalPoints(w, h, 11, 4, 12, 0xe995)
+  const points = buildIrregularOvalPoints(w, h, 11, 4, 12, YOLK_TEXTURE_SEED)
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(w, h, (x, y) => {
       const point = { x: x + 0.5, y: y + 0.5 }

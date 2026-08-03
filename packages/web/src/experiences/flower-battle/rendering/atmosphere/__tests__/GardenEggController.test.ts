@@ -62,6 +62,28 @@ describe("GardenEggController", () => {
     c.destroy()
   })
 
+  it("bakes the mini-yolk as a 6×6 irregular amber dot", () => {
+    const { c, yolk } = makeEggController()
+    const mini = yolk.children[1]!
+    expect(mini.texture.source.width).toBe(6)
+    expect(mini.texture.source.height).toBe(6)
+    const resource = mini.texture.source.resource as Uint8Array
+    let hasAmber = false
+    for (let i = 0; i < resource.length; i += 4) {
+      if (resource[i + 3] === 0) continue
+      if (
+        resource[i] === 244 &&
+        resource[i + 1] === 162 &&
+        resource[i + 2] === 97
+      ) {
+        hasAmber = true
+        break
+      }
+    }
+    expect(hasAmber).toBe(true)
+    c.destroy()
+  })
+
   it("spawn positions the egg at (birdX, birdY) and marks it active", () => {
     const { c, egg } = makeEggController()
     c.spawn(120, 50)
