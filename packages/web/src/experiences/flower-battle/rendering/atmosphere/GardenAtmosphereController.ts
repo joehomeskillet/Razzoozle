@@ -46,11 +46,14 @@ import {
 } from "../resolveThemeColor"
 import {
   ATMOSPHERE_HEIGHT,
-  DEFAULT_ATMOSPHERE_SEED,
   WIND_FIELD_FLIP_INTERVAL_RANGE,
   type WindFieldState,
 } from "./garden-atmosphere.constants"
-import { createSeededRandom, type SeededRandom } from "./seededRandom"
+import {
+  DEFAULT_ATMOSPHERE_SEED,
+  createSeededRandom,
+  type SeededRandom,
+} from "./seededRandom"
 
 export interface GardenAtmosphereInput {
   /**
