@@ -46,6 +46,7 @@ import {
   MOTE_SCALE_RANGE,
   MOTE_ALPHA_RANGE,
   MOTE_Y_BAND,
+  resolveGustLeafColors,
 } from "./garden-atmosphere.constants"
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
@@ -356,14 +357,13 @@ export class GardenParticleController {
     // midground, plantLeaf, grass, bushBack, hillMid — so the larger
     // 6-variant leaf set reads as a natural spectrum rather than a
     // single hue band.)
-    const tints: number[] = [
-      this.palette.foreground,
-      this.palette.midground,
-      this.palette.plantLeaf,
-      this.palette.grass,
-      this.palette.bushBack,
-      this.palette.hillMid,
-    ]
+    //
+    // FU-P: the leaf palette grows to 8 channels — the original six
+    // green/olive bands plus AGY's warm autumn accents (peach +
+    // coral). Each leaf picks one channel via `rng.rangeInt`; the
+    // vein is darkened from the body tint (existing VEIN_TINT_FACTOR)
+    // so a coral leaf still gets a coherent darker vein.
+    const tints = resolveGustLeafColors(this.palette)
     for (let i = 0; i < count; i += 1) {
       const tex = this.windLeafTextures[i % this.windLeafTextures.length]!
       const container = new Container()

@@ -31,6 +31,9 @@ import {
   type GardenButterflyRenderer,
 } from "./GardenButterflyController"
 import {
+  GardenWindLineController,
+} from "./GardenWindLineController"
+import {
   resolveThemeTokenColor,
   type ThemeColorResolver,
 } from "../resolveThemeColor"
@@ -156,6 +159,18 @@ export function createGardenAtmosphere(
     bodyColor: butterflyBodyColor,
     renderer: options.renderer,
   })
+  // FU-P: cream-yellow Bezier speed-lines in the weather layer. The
+  // controller is pure visual (no internal wind integration); it
+  // receives the same `windSample` we feed to particles. The
+  // `weather` container is reserved for future wind-blown leaves /
+  // pollen so we mount the lines there rather than polluting the
+  // ambient layer.
+  const windLines = options.weather
+    ? new GardenWindLineController({
+        weather: options.weather,
+        seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+      })
+    : null
 
   let destroyed = false
 
@@ -166,6 +181,7 @@ export function createGardenAtmosphere(
     birds.update(clamped)
     particles.update(clamped, sample)
     butterfly.update(clamped)
+    if (windLines) windLines.update(clamped, sample)
   }
 
   function destroy(): void {
@@ -174,6 +190,7 @@ export function createGardenAtmosphere(
     birds.destroy()
     particles.destroy()
     butterfly.destroy()
+    if (windLines) windLines.destroy()
   }
 
   return {

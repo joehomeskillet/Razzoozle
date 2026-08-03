@@ -8,6 +8,7 @@
 
 import { GARDEN_LOGICAL_HEIGHT, GARDEN_LOGICAL_WIDTH } from "../gardenViewport"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
+import type { GardenPalette } from "../gardenPalette"
 
 /**
  * Quality-tier pool counts. Static is defensive — the host should
@@ -62,11 +63,46 @@ export const MOTE_MID_COUNT: Record<GardenRenderQuality, number> = {
   static: 0,
 }
 
+/**
+ * Gust-leaf pool size per quality tier (FU-P). Doubled vs. FU-J so
+ * the gust reads as a multi-leaf burst rather than a single drifting
+ * silhouette. `static` and `low` keep a small pool so even constrained
+ * devices show *some* leaf life during a wind event.
+ */
 export const GUST_LEAF_MID_COUNT: Record<GardenRenderQuality, number> = {
-  high: 2,
-  medium: 1,
-  low: 0,
+  high: 6,
+  medium: 4,
+  low: 2,
   static: 0,
+}
+
+/**
+ * Adventure-Time autumn leaf palette (FU-P). The first six channels
+ * are sampled from the resolved GardenPalette so the leaf set stays
+ * visually tied to the active palette; the last two channels
+ * (`GUST_LEAF_PEACH` and `GUST_LEAF_CORAL`) are AGY's warm autumn
+ * accents that the design system does not expose as a leaf token.
+ *
+ * Exposed as a builder rather than a flat array: the constants module
+ * stays palette-free at import time, and tests can resolve the array
+ * against a stub palette for deterministic assertions.
+ */
+export const GUST_LEAF_PEACH = 0xf4a261
+export const GUST_LEAF_CORAL = 0xe76f51
+
+export function resolveGustLeafColors(
+  palette: GardenPalette,
+): readonly number[] {
+  return [
+    palette.foreground,
+    palette.midground,
+    palette.plantLeaf,
+    palette.grass,
+    palette.bushBack,
+    palette.hillMid,
+    GUST_LEAF_PEACH,
+    GUST_LEAF_CORAL,
+  ]
 }
 
 /** Y band for birds — fraction of GARDEN_LOGICAL_HEIGHT. */
@@ -345,3 +381,28 @@ export const LEAF_FLIGHT_STUCK_THRESHOLD = 0.55
  * threshold for at least this long is retired. FU-O physics redesign.
  */
 export const LEAF_FLIGHT_STUCK_DURATION = 2.0
+
+/**
+ * Wind-line (Adventure-Time speed-line) constants (FU-P). Four
+ * horizontal Bezier curves live in the weather layer; their alpha
+ * scales with `|windSample|` so a calm scene hides them and a gust
+ * makes them visibly streak across the canvas.
+ */
+
+/** Number of wind-line Graphics mounted into the weather container. */
+export const WIND_LINE_COUNT = 4
+
+/** Cream-yellow color (AGY: matches the speed-line palette). */
+export const WIND_LINE_COLOR = 0xfff5d1
+
+/** Base alpha when `windSample === 0` (lines are subtle, not invisible). */
+export const WIND_LINE_BASE_ALPHA = 0.35
+
+/** Alpha gain per `|windSample|`; total alpha clamped to 1. */
+export const WIND_LINE_GUST_ALPHA_GAIN = 0.45
+
+/** Line stroke width (logical px). */
+export const WIND_LINE_HEIGHT = 28
+
+/** Per-line horizontal speed band (px/s, leftward). */
+export const WIND_LINE_SPEED_RANGE: readonly [number, number] = [80, 140]

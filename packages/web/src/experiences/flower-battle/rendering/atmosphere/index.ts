@@ -50,6 +50,11 @@ export {
 } from "./GardenWindController"
 
 export {
+  GardenWindLineController,
+  type GardenWindLineControllerOptions,
+} from "./GardenWindLineController"
+
+export {
   createSeededRandom,
   DEFAULT_ATMOSPHERE_SEED,
   type SeededRandom,
@@ -69,6 +74,8 @@ export {
   BUTTERFLY_SPEED_RANGE,
   GUST_LEAF_COUNTS,
   GUST_LEAF_MID_COUNT,
+  GUST_LEAF_PEACH,
+  GUST_LEAF_CORAL,
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_SPEED_RANGE,
   GUST_PERIOD_RANGE,
@@ -82,4 +89,11 @@ export {
   MOTE_Y_BAND,
   WIND_FREQ_PRIMARY,
   WIND_FREQ_SECONDARY,
+  WIND_LINE_COUNT,
+  WIND_LINE_COLOR,
+  WIND_LINE_BASE_ALPHA,
+  WIND_LINE_GUST_ALPHA_GAIN,
+  WIND_LINE_HEIGHT,
+  WIND_LINE_SPEED_RANGE,
+  resolveGustLeafColors,
 } from "./garden-atmosphere.constants"

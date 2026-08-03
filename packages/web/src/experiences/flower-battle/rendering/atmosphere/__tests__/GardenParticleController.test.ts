@@ -12,7 +12,10 @@ import { describe, expect, it } from "vitest"
 
 import { GardenParticleController } from "../GardenParticleController"
 import {
+  GUST_LEAF_CORAL,
   GUST_LEAF_LIFETIME_RANGE,
+  GUST_LEAF_MID_COUNT,
+  GUST_LEAF_PEACH,
   GUST_LEAF_SCALE_RANGE,
   GUST_LEAF_VEIN_SCALE_RATIO,
   LEAF_DRAG_K,
@@ -22,6 +25,7 @@ import {
   LEAF_GRAVITY,
   LEAF_ROT_DRAG_K,
   LEAF_ROTATION_LIFT,
+  resolveGustLeafColors,
 } from "../garden-atmosphere.constants"
 import type { GardenPalette } from "../../gardenPalette"
 
@@ -215,7 +219,7 @@ describe("GardenParticleController", () => {
         palette: TEST_PALETTE,
       })
       for (let i = 0; i < 200; i += 1) controller.update(50, 1)
-      const expected = quality === "high" ? 2 : 1
+      const expected = quality === "high" ? 6 : 4
       expect(controller.getGustLeafCapacity()).toBe(expected)
       // Never exceeds the configured maximum even under sustained wind.
       expect(controller.getGustLeafCount()).toBeLessThanOrEqual(expected)
@@ -236,7 +240,7 @@ describe("GardenParticleController", () => {
       const before = controller.getGustLeafCount()
       controller.update(50, 1) // strong positive wind — activates gust
       const after = controller.getGustLeafCount()
-      const expected = quality === "high" ? 2 : 1
+      const expected = quality === "high" ? 6 : 4
       expect(after - before).toBeLessThanOrEqual(expected)
       controller.destroy()
     }
@@ -524,6 +528,8 @@ describe("GardenParticleController", () => {
       palette.grass,
       palette.bushBack,
       palette.hillMid,
+      GUST_LEAF_PEACH,
+      GUST_LEAF_CORAL,
     ])
     let observedNonForeground = false
     let observedCount = 0
@@ -567,6 +573,34 @@ describe("GardenParticleController", () => {
     expect(observedNonForeground).toBe(true)
     // Sanity check: every observed leaf was one of the 6 allowed tints.
     expect(observedCount).toBeGreaterThan(0)
+  })
+
+  it("FU-P: GUST_LEAF_MID_COUNT grows to 6/4/2 across quality tiers", () => {
+    // The FU-P mid-count bump (2 → 6 at high) doubles the simultaneous
+    // leaf pool so the gust reads as a multi-leaf burst. The tiers
+    // scale down so even low-tier devices show some leaf activity.
+    expect(GUST_LEAF_MID_COUNT.high).toBe(6)
+    expect(GUST_LEAF_MID_COUNT.medium).toBe(4)
+    expect(GUST_LEAF_MID_COUNT.low).toBe(2)
+    expect(GUST_LEAF_MID_COUNT.static).toBe(0)
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    expect(controller.getGustLeafCapacity()).toBe(6)
+    controller.destroy()
+  })
+
+  it("FU-P: resolveGustLeafColors returns 8 channels (6 palette + peach + coral)", () => {
+    const colors = resolveGustLeafColors(TEST_PALETTE)
+    expect(colors).toHaveLength(8)
+    expect(colors).toContain(GUST_LEAF_PEACH)
+    expect(colors).toContain(GUST_LEAF_CORAL)
   })
 
   it("retires leaves whose currentY exceeds the stuck threshold for ≥ STUCK_DURATION (FU-O)", () => {

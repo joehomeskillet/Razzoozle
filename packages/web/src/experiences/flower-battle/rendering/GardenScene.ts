@@ -361,6 +361,22 @@ export function createGardenScene(
       const speed = far ? 0.35 : 0.7
       spr.x = cloudBaseX[i]! + Math.sin(parallaxT * speed + i) * amp
     }
+    // FU-P: cloud stretch rides the same wind envelope as the speed-
+    // lines + gust leaves. We compute the band-limited wind sample
+    // inline (same `parallaxT` phase as the parallax loop, same
+    // primary/secondary frequencies as WIND_FREQ_PRIMARY /
+    // WIND_FREQ_SECONDARY) so the visible stretch is in lock-step
+    // with the parallax drift and the wind-lines alpha.
+    if (cloudSprites.length > 0) {
+      const windSample =
+        Math.sin(parallaxT * 0.55) * 0.55 +
+        Math.sin(parallaxT * 0.17) * 0.25
+      const stretch = Math.min(0.05, Math.abs(windSample) * 0.05)
+      for (let i = 0; i < cloudSprites.length; i += 1) {
+        const spr = cloudSprites[i]!
+        spr.scale.x = 1 + stretch
+      }
+    }
     // Atmosphere drives wind / birds / motes / gust leaves off the SAME
     // ticker. Delta clamped to [0, 50] ms per the brief.
     if (atmosphere) {
