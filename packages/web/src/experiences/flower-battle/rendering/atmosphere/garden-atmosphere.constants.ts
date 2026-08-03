@@ -9,12 +9,17 @@
 import { GARDEN_LOGICAL_HEIGHT, GARDEN_LOGICAL_WIDTH } from "../gardenViewport"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
 
-/** Quality-tier pool counts. Static is defensive — the host should
- *  never bind an atmosphere for static quality. */
+/**
+ * Quality-tier pool counts. Static is defensive — the host should
+ *  never bind an atmosphere for static quality. (FU-J: high=5, medium=4,
+ *  low=2 — pool must be large enough to host 2-3-bird flocks; low still
+ *  gets a small flock so the garden has visible sky-life even on
+ *  constrained devices.)
+ */
 export const BIRD_COUNTS: Record<GardenRenderQuality, number> = {
-  high: 2,
-  medium: 1,
-  low: 0,
+  high: 5,
+  medium: 4,
+  low: 2,
   static: 0,
 }
 
@@ -42,11 +47,11 @@ export const GUST_LEAF_COUNTS: Record<GardenRenderQuality, [number, number]> = {
   static: [0, 0],
 }
 
-/** Mid counts derived for tests + non-randomised lookups. */
+/** Mid counts derived for tests + non-randomised lookups. (FU-J.) */
 export const BIRD_MID_COUNT: Record<GardenRenderQuality, number> = {
-  high: 2,
-  medium: 1,
-  low: 0,
+  high: 5,
+  medium: 4,
+  low: 2,
   static: 0,
 }
 
@@ -103,6 +108,42 @@ export const BIRD_SCALE_RANGE: readonly [number, number] = [0.14, 0.21]
 
 /** Wing swap every 180–280 ms. */
 export const BIRD_WING_SWAP_RANGE: readonly [number, number] = [180, 280]
+
+/**
+ * Number of birds in a single flock spawn wave (FU-J). The leader picks
+ * a safe destination; followers share direction + baseY with a small
+ * vertical offset (±15 px) and a wingPhase offset for visual variety.
+ * When the pool doesn't have enough free slots, the controller fills
+ * what is available.
+ */
+export const BIRD_GROUP_SIZE_RANGE: readonly [number, number] = [2, 3]
+
+/** Follower vertical offset range (px) — keeps the flock compact. */
+export const BIRD_FOLLOWER_OFFSET_RANGE: readonly [number, number] = [
+  -15, 15,
+]
+
+/** Off-canvas margin (px) where gust leaves enter the canvas. (FU-J.) */
+export const GUST_LEAF_EDGE_INSET = 40
+
+/**
+ * Gust-leaf base horizontal speed (px/s). The leaf travels the full
+ * canvas width: startX at one edge, retire at the opposite edge, so
+ * the speed band is wider than the pre-FU-J cloud-style dance. (FU-J.)
+ */
+export const GUST_LEAF_SPEED_RANGE: readonly [number, number] = [70, 130]
+
+/** Gust-leaf lifetime (s). (FU-J: 4-7 s, longer than the pre-FU-J 3-5 s
+ *  because the leaf now spans the full canvas width.) */
+export const GUST_LEAF_LIFETIME_RANGE: readonly [number, number] = [4.0, 7.0]
+
+/** Gust-leaf vertical drop (px/s) — small but visible. (FU-J.) */
+export const GUST_LEAF_VY_RANGE: readonly [number, number] = [3, 7]
+
+/** Gust-leaf rotation drift (rad/s). (FU-J.) */
+export const GUST_LEAF_ROTATION_RANGE: readonly [number, number] = [
+  -0.8, 0.8,
+]
 
 /** Vertical wave amplitude (px) for in-flight drift. */
 export const BIRD_VERTICAL_WAVE_RANGE: readonly [number, number] = [4, 8]

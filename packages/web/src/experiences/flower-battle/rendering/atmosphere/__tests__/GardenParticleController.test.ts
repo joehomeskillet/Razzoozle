@@ -371,7 +371,7 @@ describe("GardenParticleController", () => {
     controller.destroy()
   })
 
-  it("spawns gust leaves with vy in [2, 8] and vx in [60, 110] along a single direction (FU-H)", () => {
+  it("spawns gust leaves with vy in [3, 7] and vx in [70, 130] along a single direction (FU-J)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -393,15 +393,103 @@ describe("GardenParticleController", () => {
     const active = internals.gustLeaves.filter((s) => s.active)
     expect(active.length).toBeGreaterThan(0)
     for (const slot of active) {
-      expect(slot.vy).toBeGreaterThanOrEqual(2)
-      expect(slot.vy).toBeLessThanOrEqual(8)
+      expect(slot.vy).toBeGreaterThanOrEqual(3)
+      expect(slot.vy).toBeLessThanOrEqual(7)
       const speed = Math.abs(slot.vx)
-      expect(speed).toBeGreaterThanOrEqual(60)
-      expect(speed).toBeLessThanOrEqual(110)
+      expect(speed).toBeGreaterThanOrEqual(70)
+      expect(speed).toBeLessThanOrEqual(130)
       // Direction must be consistent: vx carries the sign of `direction`.
       expect(Math.sign(slot.vx)).toBe(slot.direction)
     }
     controller.destroy()
+  })
+
+  it("spawns gust leaves at a screen edge so they span the full canvas (FU-J)", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1)
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        sprite: Sprite
+        direction: 1 | -1
+      }>
+    }
+    const active = internals.gustLeaves.filter((s) => s.active)
+    expect(active.length).toBeGreaterThan(0)
+    for (const slot of active) {
+      const x = slot.sprite.x
+      // Edge: -40 (left) or ATMOSPHERE_WIDTH + 40 (right).
+      // ATMOSPHERE_WIDTH = 1920 for the standard garden viewport.
+      const atLeftEdge = Math.abs(x - -40) < 0.5
+      const atRightEdge = Math.abs(x - (1920 + 40)) < 0.5
+      expect(atLeftEdge || atRightEdge).toBe(true)
+      if (atLeftEdge) expect(slot.direction).toBe(1)
+      if (atRightEdge) expect(slot.direction).toBe(-1)
+    }
+    controller.destroy()
+  })
+
+  it("assigns every gust leaf a tint from the multi-green palette (FU-J)", () => {
+    // Use a multi-distinct palette so we can assert that the
+    // multi-green wiring actually fires. Walk a handful of seeds
+    // so the property is observed on at least one (the full pool
+    // is only 2 leaves at high quality, so a single seed could
+    // happen to draw the foreground tint twice — the 4-channel
+    // sweep makes that < 1 in 16 with 2 leaves, and walking 4
+    // seeds gives near-zero flake).
+    const palette: GardenPalette = {
+      ...TEST_PALETTE,
+      foreground: 0x112233,
+      midground: 0x445566,
+      plantLeaf: 0x778899,
+      grass: 0xaabbcc,
+    }
+    const allowed = new Set([
+      palette.foreground,
+      palette.midground,
+      palette.plantLeaf,
+      palette.grass,
+    ])
+    let observedNonForeground = false
+    for (const seed of [0xc0ffee, 1, 7, 42]) {
+      const ambient = new Container()
+      const controller = new GardenParticleController({
+        quality: "high",
+        ambient,
+        grass: new Container(),
+        moteTexture: makeMoteTexture(),
+        windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
+        palette,
+        seed,
+      })
+      const leafSprites = ambient.children.filter(
+        (c): c is Sprite =>
+          c instanceof Sprite &&
+          typeof c.label === "string" &&
+          c.label.startsWith("gust-leaf-"),
+      )
+      expect(leafSprites.length).toBeGreaterThan(0)
+      for (const sprite of leafSprites) {
+        expect(allowed.has(sprite.tint)).toBe(true)
+      }
+      const observed = new Set(leafSprites.map((s) => s.tint))
+      const nonForeground = [...observed].filter(
+        (t) => t !== palette.foreground,
+      )
+      if (nonForeground.length > 0) observedNonForeground = true
+      controller.destroy()
+    }
+    // Across the seed sweep, at least one leaf must use a tint other
+    // than foreground — proves the multi-green wiring actually fires.
+    expect(observedNonForeground).toBe(true)
   })
 
   it("oscillates each gust leaf vertically by ±6 px around its baseY (FU-H)", () => {
@@ -423,10 +511,14 @@ describe("GardenParticleController", () => {
         waveAmp: number
         wavePhase: number
         ageSec: number
+        lifetimeSec: number
       }>
     }
     const slot = internals.gustLeaves.find((s) => s.active)
     expect(slot).toBeDefined()
+    // FU-J: lifetime widened to 4-7 s (was 3-5 s in FU-H).
+    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(4.0)
+    expect(slot!.lifetimeSec).toBeLessThanOrEqual(7.0)
     let honorsAmplitude = false
     for (let i = 0; i < 10; i += 1) {
       controller.update(50, 1)

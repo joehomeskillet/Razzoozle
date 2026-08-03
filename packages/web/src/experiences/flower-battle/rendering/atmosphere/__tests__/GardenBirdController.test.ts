@@ -23,7 +23,7 @@ function makeBirdTextures(): { up: Texture; down: Texture } {
 }
 
 describe("GardenBirdController", () => {
-  it("matches pool size to quality (high=2, medium=1, low=0, static=0)", () => {
+  it("matches pool size to quality (high=5, medium=4, low=2, static=0) (FU-J)", () => {
     const layers = {
       high: new Container(),
       medium: new Container(),
@@ -36,7 +36,7 @@ describe("GardenBirdController", () => {
       skyLifeForeground,
       birdTextures: makeBirdTextures(),
     })
-    expect(birds.getBirdCount()).toBe(2)
+    expect(birds.getBirdCount()).toBe(5)
     birds.destroy()
 
     const medium = new GardenBirdController({
@@ -44,7 +44,7 @@ describe("GardenBirdController", () => {
       skyLifeForeground: layers.medium,
       birdTextures: makeBirdTextures(),
     })
-    expect(medium.getBirdCount()).toBe(1)
+    expect(medium.getBirdCount()).toBe(4)
     medium.destroy()
 
     const low = new GardenBirdController({
@@ -52,7 +52,7 @@ describe("GardenBirdController", () => {
       skyLifeForeground: layers.low,
       birdTextures: makeBirdTextures(),
     })
-    expect(low.getBirdCount()).toBe(0)
+    expect(low.getBirdCount()).toBe(2)
     low.destroy()
 
     const stat = new GardenBirdController({
@@ -76,7 +76,7 @@ describe("GardenBirdController", () => {
     birds.destroy()
   })
 
-  it("never activates more than 2 birds simultaneously", () => {
+  it("never activates more than 5 birds simultaneously (high quality pool size)", () => {
     const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
@@ -88,7 +88,7 @@ describe("GardenBirdController", () => {
     // Hammer updates to spawn many birds.
     for (let i = 0; i < 200; i += 1) {
       birds.update(20)
-      expect(birds.getActiveBirdCount()).toBeLessThanOrEqual(2)
+      expect(birds.getActiveBirdCount()).toBeLessThanOrEqual(5)
     }
     birds.destroy()
   })
@@ -312,7 +312,7 @@ describe("FU-I: GardenBirdController skyLifeForeground back-compat", () => {
       birdTextures: makeBirdTextures(),
     })
     // Birds must mount into the foreground container, never the legacy one.
-    expect(foreground.children.length).toBe(2)
+    expect(foreground.children.length).toBe(5)
     expect(legacy.children.length).toBe(0)
     birds.destroy()
   })
@@ -325,7 +325,7 @@ describe("FU-I: GardenBirdController skyLifeForeground back-compat", () => {
       birdTextures: makeBirdTextures(),
     })
     // Pre-FU-I callers still get birds mounted in their legacy layer.
-    expect(legacy.children.length).toBe(2)
+    expect(legacy.children.length).toBe(5)
     birds.destroy()
   })
 
@@ -337,5 +337,100 @@ describe("FU-I: GardenBirdController skyLifeForeground back-compat", () => {
           birdTextures: makeBirdTextures(),
         }),
     ).toThrow(/skyLifeForeground or skyLife/)
+  })
+})
+
+describe("FU-J: GardenBirdController flock behaviour", () => {
+  it("spawns a flock of 2-3 birds per wave with matching direction and tight offsets", () => {
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        sprite: Sprite
+        baseY: number
+        direction: 1 | -1
+      }>
+      trySpawn: () => void
+    }
+
+    // Try several seeds to exercise both flock sizes (2 and 3) and
+    // both directions. We assert the invariant: every active bird in
+    // a single wave shares direction and stays within ±30 px of the
+    // leader's baseY.
+    let sawFlockOf2 = false
+    let sawFlockOf3 = false
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      // Reset by destroying & rebuilding with a new seed.
+      birds.destroy()
+      const seeded = new GardenBirdController({
+        quality: "high",
+        skyLifeForeground: new Container(),
+        birdTextures: makeBirdTextures(),
+        seed: attempt * 7 + 11,
+        spawnIntervalRangeMs: [1, 2],
+        firstSpawnRangeMs: [1, 2],
+      })
+      const internalsN = seeded as unknown as {
+        pool: Array<{
+          active: boolean
+          sprite: Sprite
+          baseY: number
+          direction: 1 | -1
+        }>
+        trySpawn: () => void
+      }
+      internalsN.trySpawn()
+      const active = internalsN.pool.filter((s) => s.active)
+      expect(active.length).toBeGreaterThanOrEqual(2)
+      expect(active.length).toBeLessThanOrEqual(3)
+      if (active.length === 2) sawFlockOf2 = true
+      if (active.length === 3) sawFlockOf3 = true
+      const dir = active[0]!.direction
+      const leaderBaseY = active[0]!.baseY
+      for (const slot of active) {
+        expect(slot.direction).toBe(dir)
+        expect(Math.abs(slot.baseY - leaderBaseY)).toBeLessThanOrEqual(30)
+      }
+      seeded.destroy()
+    }
+    expect(sawFlockOf2).toBe(true)
+    expect(sawFlockOf3).toBe(true)
+    birds.destroy()
+  })
+
+  it("fills what is available when the pool has fewer free slots than the group size", () => {
+    const skyLifeForeground = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground,
+      birdTextures: makeBirdTextures(),
+      spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
+    })
+    const internals = birds as unknown as {
+      pool: Array<{ active: boolean; sprite: Sprite; baseY: number; direction: 1 | -1 }>
+      trySpawn: () => void
+    }
+    // Pre-occupy 4 of 5 slots so only 1 free slot remains.
+    for (let i = 0; i < 4; i += 1) {
+      internals.pool[i]!.active = true
+    }
+    internals.trySpawn()
+    // The flock must have filled exactly 1 slot (the only free one),
+    // never blocked on a partial group.
+    expect(internals.pool.filter((s) => s.active).length).toBe(5)
+    // The newly-spawned bird shares direction with the (mock) flock
+    // it joined: a deterministic direction is fine here, the test is
+    // that the spawn happened at all.
+    const lastActive = internals.pool.find((s) => s.active && s.baseY !== 0) ?? internals.pool[4]!
+    expect(lastActive.active).toBe(true)
+    birds.destroy()
   })
 })

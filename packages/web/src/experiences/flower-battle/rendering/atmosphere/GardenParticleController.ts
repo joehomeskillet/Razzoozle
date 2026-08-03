@@ -19,8 +19,13 @@ import { Container, Sprite, Texture } from "pixi.js"
 import {
   GUST_LEAF_ACTIVATION_THRESHOLD,
   GUST_LEAF_COUNTS,
+  GUST_LEAF_EDGE_INSET,
+  GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_MID_COUNT,
+  GUST_LEAF_ROTATION_RANGE,
   GUST_LEAF_SCALE_RANGE,
+  GUST_LEAF_SPEED_RANGE,
+  GUST_LEAF_VY_RANGE,
   GRASS_TUFT_COUNTS,
   GRASS_WIND_SWEEP_RANGE,
   MOTE_BASE_SPEED_RANGE,
@@ -244,12 +249,27 @@ export class GardenParticleController {
     const count = GUST_LEAF_MID_COUNT[this.quality]
     if (count === 0) return
     if (this.windLeafTextures.length === 0) return
+    // FU-J: each leaf picks a tint from a multi-green palette so the
+    // gust reads as natural foliage rather than a single hue. The
+    // tints come from the resolved GardenPalette channels; null
+    // channels fall back to foreground so the pool never renders
+    // un-tinted.
+    const tints: number[] = [
+      this.palette.foreground,
+      this.palette.midground,
+      this.palette.plantLeaf,
+      this.palette.grass,
+    ]
     for (let i = 0; i < count; i += 1) {
       const tex = this.windLeafTextures[i % this.windLeafTextures.length]!
       const sprite = new Sprite(tex)
       sprite.label = `gust-leaf-${i}`
       sprite.anchor.set(0.5, 0.5)
-      sprite.tint = this.palette.foreground
+      // rng.rangeInt over the tint index gives a deterministic per-leaf
+      // pick. rangeInt is inclusive on both ends; the [0, 3] band maps
+      // onto the four tints above.
+      const tintIndex = this.rng.rangeInt(0, tints.length - 1)
+      sprite.tint = tints[tintIndex]!
       sprite.scale.set(
         this.rng.range(
           GUST_LEAF_SCALE_RANGE[0],
@@ -305,19 +325,34 @@ export class GardenParticleController {
           slot.sprite.visible = false
         }
       } else if (activeGust) {
-        // Cloud-style spawn: pick a start X, then commit to a single
-        // travel direction (always reading left→right from the spawn
-        // side). Vertical motion is almost negligible (2–8 px/s) and
-        // the wave handles the visible up-and-down. (FU-H.)
-        const startX = this.rng.range(80, 1880)
-        slot.direction = startX < ATMOSPHERE_WIDTH / 2 ? 1 : -1
-        const speed = this.rng.range(60, 110)
+        // FU-J: startX always at a screen edge so the leaf spans the
+        // full canvas width (no premature disappearance mid-screen).
+        // 50/50 left vs right — the choice sets the travel direction
+        // and vx sign.
+        const fromLeft = this.rng.next() < 0.5
+        const startX = fromLeft
+          ? -GUST_LEAF_EDGE_INSET
+          : ATMOSPHERE_WIDTH + GUST_LEAF_EDGE_INSET
+        slot.direction = fromLeft ? 1 : -1
+        const speed = this.rng.range(
+          GUST_LEAF_SPEED_RANGE[0],
+          GUST_LEAF_SPEED_RANGE[1],
+        )
         slot.vx = speed * slot.direction
-        slot.vy = this.rng.range(2, 8)
-        slot.rotationSpeed = this.rng.range(-0.6, 0.6)
+        slot.vy = this.rng.range(
+          GUST_LEAF_VY_RANGE[0],
+          GUST_LEAF_VY_RANGE[1],
+        )
+        slot.rotationSpeed = this.rng.range(
+          GUST_LEAF_ROTATION_RANGE[0],
+          GUST_LEAF_ROTATION_RANGE[1],
+        )
         slot.waveAmp = 6
         slot.wavePhase = this.rng.range(0, Math.PI * 2)
-        slot.lifetimeSec = this.rng.range(3.0, 5.0)
+        slot.lifetimeSec = this.rng.range(
+          GUST_LEAF_LIFETIME_RANGE[0],
+          GUST_LEAF_LIFETIME_RANGE[1],
+        )
         slot.ageSec = 0
         const baseY = this.rng.range(
           ATMOSPHERE_HEIGHT * 0.18,
