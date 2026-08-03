@@ -26,6 +26,7 @@ import type {
 import type {
   GardenE2EIdentity,
   GardenPixiApplicationHandle,
+  GardenRenderQuality,
   GardenScene,
 } from "../garden-pixi.types"
 import {
@@ -68,6 +69,11 @@ import {
   resolveThemeTokenColor,
   type ThemeColorResolver,
 } from "./resolveThemeColor"
+import type {
+  BoundGardenAtmosphere,
+  CreateGardenAtmosphereOptions,
+} from "./atmosphere"
+import { createGardenAtmosphere } from "./atmosphere"
 
 export interface GardenSceneTeamSnapshot {
   name: string
@@ -149,6 +155,24 @@ export interface CreateGardenSceneOptions {
   prefersReducedMotion?: boolean
   /** Diagnostics snapshot for E2E / window probe. */
   assetDiagnostics?: GardenAssetDiagnostics | null
+  /**
+   * Optional wind / bird / mote / gust-leaf atmosphere (Task 2). When
+   * present the scene drives the controller from the existing ticker.
+   * Undefined keeps the legacy no-atmosphere path (existing tests stay
+   * green).
+   */
+  atmosphere?: GardenAtmosphereInput
+}
+
+/**
+ * Lightweight input the host passes through to opt into the garden
+ * atmosphere. The scene pulls containers / palette from itself and feeds
+ * them to `createGardenAtmosphere`.
+ */
+export interface GardenAtmosphereInput {
+  prefersReducedMotion?: boolean
+  quality?: GardenRenderQuality
+  seed?: number
 }
 
 type StageHost = GardenPixiApplicationHandle & {
@@ -220,6 +244,27 @@ export function createGardenScene(
     (c) => typeof c.label === "string" && c.label.startsWith("cloud-sprite-"),
   )
   const cloudBaseX = cloudSprites.map((c) => c.x)
+
+  // Task 2: optional atmosphere (wind / birds / motes / gust leaves).
+  // When `atmosphere` is undefined the legacy code path is unchanged.
+  let atmosphere: BoundGardenAtmosphere | null = null
+  if (options.atmosphere) {
+    const atmosInput = options.atmosphere
+    const atmosOptions: CreateGardenAtmosphereOptions = {
+      skyLife: layers.skyLife,
+      ambient: layers.ambient,
+      weather: layers.weather,
+      grass: layers.grass,
+      palette,
+      quality: atmosInput.quality ?? "high",
+      prefersReducedMotion: atmosInput.prefersReducedMotion ?? false,
+      seed: atmosInput.seed,
+    }
+    // Lazy import to keep GardenScene.ts free of the sub-controller
+    // graph (the scene only depends on the factory + input shape).
+    atmosphere = createGardenAtmosphere(atmosOptions)
+  }
+
   let parallaxT = 0
   const onTick = (ticker: { deltaTime: number }): void => {
     if (destroyed) return
@@ -230,6 +275,15 @@ export function createGardenScene(
       const amp = far ? 18 : 36
       const speed = far ? 0.35 : 0.7
       spr.x = cloudBaseX[i]! + Math.sin(parallaxT * speed + i) * amp
+    }
+    // Atmosphere drives wind / birds / motes / gust leaves off the SAME
+    // ticker. Delta clamped to [0, 50] ms per the brief.
+    if (atmosphere) {
+      const deltaMs = Math.min(
+        50,
+        Math.max(0, ticker.deltaTime * (1000 / 60)),
+      )
+      atmosphere.update(deltaMs)
     }
     // Drive per-plant stage transitions (AssetPlantView only; no-op otherwise).
     for (const plant of plants) {
@@ -579,6 +633,10 @@ export function createGardenScene(
     destroy(): void {
       if (destroyed) return
       destroyed = true
+      // Task 2: tear down the atmosphere BEFORE removing the ticker so
+      // any in-flight `update()` cannot race a half-destroyed controller.
+      atmosphere?.destroy()
+      atmosphere = null
       if (typeof stageHost.ticker?.remove === "function") {
         stageHost.ticker.remove(onTick)
       }
