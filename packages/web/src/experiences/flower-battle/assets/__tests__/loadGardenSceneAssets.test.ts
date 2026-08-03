@@ -433,18 +433,22 @@ describe("Garden atmosphere assets (Task 3)", () => {
   })
 
   it("exposes a Vite-resolved URL for every atmosphere alias", () => {
+    // Contract: every atmosphere alias must resolve to a non-empty URL that
+    // contains the unhashed filename stem (e.g. "bird-distant-wings-up"). In
+    // production Vite flat-emits assets > the inline threshold to
+    // /assets/<stem>-<hash>.<ext> (the source subdirectory is dropped); small
+    // SVGs (e.g. wind-leaf) may be inlined as data: URIs by Vite's asset
+    // handling. Both shapes satisfy the contract — the file stem appears in
+    // the hashed path, and a data: URI is an accepted alternative. The
+    // earlier assertion that the URL contained `/optimized/atmosphere/`
+    // reflected the source path, not the runtime path, so it failed in
+    // production; this assertion tracks the runtime contract instead.
     for (const alias of ATMOSPHERE_ALIASES) {
       const url = GARDEN_SCENE_ASSET_URLS[alias]
       expect(url, alias).toBeTruthy()
       expect(typeof url, alias).toBe("string")
-      // Vite may inline small SVGs as data URLs (asset inline threshold). Accept
-      // either the hashed public asset path OR a data: URI carrying the alias's
-      // file name so the contract stays observable across build configs.
       const fileStem = alias.replace(/^env_/, "").replace(/_/g, "-")
-      const ok =
-        url.includes(`/optimized/atmosphere/${fileStem}`) ||
-        url.includes(encodeURIComponent(fileStem)) ||
-        url.startsWith("data:")
+      const ok = url.includes(fileStem) || url.startsWith("data:")
       expect(ok, `${alias}=${url}`).toBe(true)
     }
   })

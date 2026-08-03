@@ -78,6 +78,18 @@ export type PlantVariantTextures = Partial<
  */
 const GARDEN_TEXTURE_ALIASES = new WeakMap<Texture, GardenSceneAssetAlias>()
 
+/** Atmosphere aliases whose resolved URL is printed once in DEV for diagnostics. */
+const ATMOSPHERE_DIAG_ALIASES = [
+  "env_bird_distant_wings_up",
+  "env_bird_distant_wings_down",
+  "env_wind_leaf_01",
+  "env_wind_leaf_02",
+  "env_mote_soft",
+  "env_pollen_soft",
+  "env_sparkle_soft",
+  "env_ring_soft",
+] as const satisfies readonly GardenSceneAssetAlias[]
+
 export function registerGardenTextureAlias(
   alias: GardenSceneAssetAlias,
   texture: Texture,
@@ -714,6 +726,15 @@ export async function loadGardenSceneAssets(
   const aliases = Object.keys(
     GARDEN_SCENE_ASSET_URLS,
   ) as GardenSceneAssetAlias[]
+
+  if (import.meta.env.DEV) {
+    for (const alias of ATMOSPHERE_DIAG_ALIASES) {
+      const url = GARDEN_SCENE_ASSET_URLS[alias]
+      if (url) {
+        console.info(`[garden] ${alias} -> ${url}`)
+      }
+    }
+  }
 
   // Sequential load keeps memory + main-thread rasterisation predictable.
   const texturesByAlias: Record<string, Texture> = {}
