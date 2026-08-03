@@ -31,6 +31,7 @@ import type { PlotAnchor } from "./plotAnchors"
 
 export const LAYER_LABELS = [
   "layer-sky",
+  "layer-sky-life",
   "layer-distant-hills",
   "layer-distant-bushes",
   // Lawn first, then far trees (so trunks aren't buried under solid grass),
@@ -56,6 +57,7 @@ export type LayerLabel = (typeof LAYER_LABELS)[number]
 
 export interface GardenLayerSet {
   sky: Container
+  skyLife: Container
   distantHills: Container
   distantBushes: Container
   grass: Container
@@ -336,6 +338,18 @@ export function buildSkyLayer(
     layer.addChild(g)
   }
 
+  return layer
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Sky life — empty anchor container for airborne atmosphere objects (birds,
+ * drifting leaf/petal bursts, far-off balloon glints, etc.). Sits between
+ * the sky and distant hills so depth reads top→bottom. The container starts
+ * empty; the atmosphere controller (Task 2) populates it.
+ * ────────────────────────────────────────────────────────────────────── */
+export function buildSkyLifeLayer(): Container {
+  const layer = new Container()
+  layer.label = "layer-sky-life"
   return layer
 }
 
@@ -1047,12 +1061,11 @@ export function buildForegroundFrame(
         x: number
         scale: number
         flip: boolean
-        alpha: number
       }> = [
-        { x: 220, scale: 0.55, flip: false, alpha: 0.85 },
-        { x: 520, scale: 0.45, flip: true, alpha: 0.75 },
-        { x: 1400, scale: 0.5, flip: false, alpha: 0.8 },
-        { x: 1700, scale: 0.55, flip: true, alpha: 0.85 },
+        { x: 220, scale: 0.55, flip: false },
+        { x: 520, scale: 0.45, flip: true },
+        { x: 1400, scale: 0.5, flip: false },
+        { x: 1700, scale: 0.55, flip: true },
       ]
       for (let i = 0; i < bushPlacements.length; i += 1) {
         const p = bushPlacements[i]!
@@ -1062,7 +1075,10 @@ export function buildForegroundFrame(
         bush.position.set(p.x, GARDEN_LOGICAL_HEIGHT)
         const s = (220 * p.scale) / bushTexture.height
         bush.scale.set(p.flip ? -s : s, s)
-        bush.alpha = p.alpha
+        // P0: per-bush transparency was reading as washed-out grey; opaque
+        // bushes match the rest of the foreground foliage and keep the
+        // bottom-band silhouette readable on every theme.
+        bush.alpha = 1
         bush.tint = palette.foreground
         layer.addChild(bush)
       }
@@ -1121,6 +1137,7 @@ export function createGardenLayers(
   assets?: LayerAssets,
 ): GardenLayerSet {
   const sky = buildSkyLayer(palette, assets)
+  const skyLife = buildSkyLifeLayer()
   const distantHills = buildDistantHillsLayer(palette, assets)
   const distantBushes = buildDistantBushesLayer(palette, assets)
   const grass = buildGrassLayer(palette, assets)
@@ -1143,6 +1160,7 @@ export function createGardenLayers(
 
   const ordered: Container[] = [
     sky,
+    skyLife,
     distantHills,
     distantBushes,
     grass,
@@ -1162,6 +1180,7 @@ export function createGardenLayers(
   ]
   return {
     sky,
+    skyLife,
     distantHills,
     distantBushes,
     grass,

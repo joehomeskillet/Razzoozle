@@ -14,12 +14,14 @@ import { describe, expect, it } from "vitest"
 
 import {
   buildFarTreesLayer,
+  buildForegroundFrame,
   buildMidTreesLayer,
   buildNearTreesLayer,
   FAR_TREE_LAYER_OPACITY,
   LAYER_LABELS,
   MID_TREE_LAYER_OPACITY,
   NEAR_TREE_LAYER_OPACITY,
+  buildSkyLifeLayer,
   createGardenLayers,
   type LayerAssets,
 } from "../gardenLayers"
@@ -179,5 +181,75 @@ describe("FB-HUD4: tree layering (far / mid / near)", () => {
     for (const sprite of collectTreeSprites(nearLayer)) {
       expect(sprite.alpha).toBe(1)
     }
+  })
+})
+
+describe("P0 opacity: foreground-bush and per-tree alpha = 1", () => {
+  function collectForegroundBushes(layer: Container): Sprite[] {
+    return layer.children.filter(
+      (c): c is Sprite =>
+        c instanceof Sprite &&
+        typeof c.label === "string" &&
+        c.label.startsWith("foreground-bush-"),
+    )
+  }
+
+  it("every foreground-bush Sprite has alpha = 1 in the textured branch", () => {
+    const tex = Texture.WHITE
+    const layer = buildForegroundFrame(TEST_PALETTE, {
+      foregroundBush: tex,
+    })
+    const bushes = collectForegroundBushes(layer)
+    expect(bushes.length).toBeGreaterThan(0)
+    for (const bush of bushes) {
+      expect(bush.alpha).toBe(1)
+    }
+  })
+
+  it("every mid-tree Sprite has alpha = 1 (depth fade lives on the layer)", () => {
+    const texA = Texture.WHITE
+    const texB = Texture.WHITE
+    const assets: LayerAssets = { trees: [texA, texB] }
+    const midLayer = buildMidTreesLayer(TEST_PALETTE, assets)
+    const midSprites = collectTreeSprites(midLayer)
+    expect(midSprites.length).toBeGreaterThan(0)
+    for (const sprite of midSprites) {
+      expect(sprite.alpha).toBe(1)
+    }
+  })
+
+  it("every far-tree Sprite has alpha = 1 (depth fade lives on the layer)", () => {
+    const texA = Texture.WHITE
+    const texB = Texture.WHITE
+    const assets: LayerAssets = { trees: [texA, texB] }
+    const farLayer = buildFarTreesLayer(TEST_PALETTE, assets)
+    const farSprites = collectTreeSprites(farLayer)
+    expect(farSprites.length).toBeGreaterThan(0)
+    for (const sprite of farSprites) {
+      expect(sprite.alpha).toBe(1)
+    }
+  })
+})
+
+describe("sky-life layer container (atmosphere hook point)", () => {
+  it("buildSkyLifeLayer produces a labeled, empty container", () => {
+    const layer = buildSkyLifeLayer()
+    expect(layer.label).toBe("layer-sky-life")
+    expect(layer.children).toHaveLength(0)
+  })
+
+  it("createGardenLayers exposes skyLife and orders it between sky and distant-hills", () => {
+    const layers = createGardenLayers(TEST_PALETTE)
+    expect(layers.skyLife.label).toBe("layer-sky-life")
+    const ordered = layers.ordered.map((c) => c.label)
+    const skyIdx = ordered.indexOf("layer-sky")
+    const lifeIdx = ordered.indexOf("layer-sky-life")
+    const hillsIdx = ordered.indexOf("layer-distant-hills")
+    expect(skyIdx).toBeGreaterThanOrEqual(0)
+    expect(lifeIdx).toBeGreaterThanOrEqual(0)
+    expect(hillsIdx).toBeGreaterThanOrEqual(0)
+    expect(skyIdx).toBeLessThan(lifeIdx)
+    expect(lifeIdx).toBeLessThan(hillsIdx)
+    expect(LAYER_LABELS).toContain("layer-sky-life")
   })
 })
