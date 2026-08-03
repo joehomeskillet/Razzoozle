@@ -95,6 +95,8 @@ export const BIRD_SPAWN_RETRY_LIMIT = 8
 export const MOTE_LIFETIME_RANGE: readonly [number, number] = [5, 10]
 /** Mote drift speed (px/s baseline before wind). */
 export const MOTE_BASE_SPEED_RANGE: readonly [number, number] = [8, 14]
+export const MOTE_ALPHA_RANGE: readonly [number, number] = [0.15, 0.42]
+
 /** Mote scale (sprite scale). */
 export const MOTE_SCALE_RANGE: readonly [number, number] = [0.6, 1.1]
 

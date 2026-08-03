@@ -43,6 +43,7 @@ interface BirdSlot {
   direction: 1 | -1
   /** Speed in logical px/s. */
   speed: number
+  baseY: number
   /** Vertical wave amplitude (px). */
   waveAmp: number
   /** Vertical wave phase (radians). */
@@ -126,6 +127,7 @@ export class GardenBirdController {
         active: false,
         direction: 1,
         speed: 0,
+        baseY: 0,
         waveAmp: 0,
         wavePhase: 0,
         elapsedSec: 0,
@@ -179,7 +181,7 @@ export class GardenBirdController {
       const step = (slot.speed * clamped) / 1000
       slot.sprite.x += slot.direction * step
       slot.sprite.y =
-        slot.sprite.y + Math.sin(slot.elapsedSec * 4 + slot.wavePhase) * 0.4
+        slot.baseY + Math.sin(slot.elapsedSec * 4 + slot.wavePhase) * slot.waveAmp
       // Wing swap on the configured cadence.
       if (this.elapsedMs >= slot.wingSwapAtMs) {
         slot.wingSwapAtMs =
@@ -217,7 +219,8 @@ export class GardenBirdController {
       if (!destination) return
       const dir: 1 | -1 = destination.x < ATMOSPHERE_WIDTH / 2 ? 1 : -1
       const startX = dir === 1 ? -40 : ATMOSPHERE_WIDTH + 40
-      slot.sprite.position.set(startX, destination.y)
+      slot.baseY = destination.y
+      slot.sprite.position.set(startX, slot.baseY)
       slot.direction = dir
       slot.speed = this.rng.range(
         BIRD_SPEED_RANGE[0],

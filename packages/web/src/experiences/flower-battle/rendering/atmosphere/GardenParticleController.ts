@@ -27,6 +27,7 @@ import {
   MOTE_LIFETIME_RANGE,
   MOTE_MID_COUNT,
   MOTE_SCALE_RANGE,
+  MOTE_ALPHA_RANGE,
   MOTE_Y_BAND,
 } from "./garden-atmosphere.constants"
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
@@ -152,7 +153,10 @@ export class GardenParticleController {
       const sprite = new Sprite(this.moteTexture)
       sprite.label = `atmosphere-mote-${i}`
       sprite.anchor.set(0.5, 0.5)
-      sprite.alpha = 0.6
+      sprite.alpha = this.rng.range(
+        MOTE_ALPHA_RANGE[0],
+        MOTE_ALPHA_RANGE[1],
+      )
       const scale = this.rng.range(
         MOTE_SCALE_RANGE[0],
         MOTE_SCALE_RANGE[1],

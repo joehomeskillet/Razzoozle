@@ -128,6 +128,42 @@ describe("GardenBirdController", () => {
     birds.destroy()
   })
 
+  it("applies vertical wave from stable base Y using configured amplitude", () => {
+    const skyLife = new Container()
+    const birds = new GardenBirdController({
+      quality: "medium",
+      skyLife,
+      birdTextures: makeBirdTextures(),
+      seed: 123,
+      spawnIntervalRangeMs: [1, 2],
+    })
+    const internals = birds as unknown as {
+      pool: Array<{
+        active: boolean
+        sprite: Sprite
+        baseY: number
+        waveAmp: number
+        wavePhase: number
+        elapsedSec: number
+      }>
+      trySpawn: () => void
+    }
+    internals.trySpawn()
+    const slot = internals.pool[0]
+    expect(slot.active).toBe(true)
+    const baseY = slot.sprite.y
+    let honorsAmplitude = false
+    for (let i = 0; i < 10; i += 1) {
+      birds.update(50)
+      const expectedY =
+        baseY + Math.sin(slot.elapsedSec * 4 + slot.wavePhase) * slot.waveAmp
+      expect(slot.sprite.y).toBeCloseTo(expectedY, 6)
+      if (Math.abs(slot.sprite.y - baseY) > 0.1) honorsAmplitude = true
+    }
+    expect(honorsAmplitude).toBe(true)
+    birds.destroy()
+  })
+
   it("returns retired birds to the pool without allocating new sprites", () => {
     const skyLife = new Container()
     const birds = new GardenBirdController({

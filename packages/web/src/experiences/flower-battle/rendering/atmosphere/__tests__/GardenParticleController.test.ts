@@ -47,6 +47,28 @@ describe("GardenParticleController", () => {
     make("static")
   })
 
+  it("assigns every mote an alpha within the configured range", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+    })
+    const moteSprites = ambient.children.filter(
+      (child): child is Sprite =>
+        child instanceof Sprite &&
+        typeof child.label === "string" &&
+        child.label.startsWith("atmosphere-mote-"),
+    )
+    expect(moteSprites).toHaveLength(controller.getMoteCount())
+    for (const sprite of moteSprites) {
+      expect(sprite.alpha).toBeGreaterThanOrEqual(0.15)
+      expect(sprite.alpha).toBeLessThanOrEqual(0.42)
+    }
+    controller.destroy()
+  })
+
   it("mote pool size stays stable across many updates", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
