@@ -26,6 +26,7 @@ import {
   type BirdSafeZone,
   type GardenBirdTextures,
 } from "./GardenBirdController"
+import { GardenEggController } from "./GardenEggController"
 import {
   GardenParticleController,
 } from "./GardenParticleController"
@@ -97,6 +98,22 @@ export interface GardenAtmosphereInput {
    */
   resolveColor?: ThemeColorResolver
   renderer?: GardenButterflyRenderer | null
+  /**
+   * FU-R: dedicated container for falling egg sprites. Birds drop
+   * via the `GardenEggController` mounted on this layer. Falls back
+   * to a private container when omitted (so unit tests can omit it).
+   */
+  eggContainer?: Container
+  /** FU-R: dedicated container for shell-shatter sprites. */
+  eggShatterContainer?: Container
+  /** FU-R: dedicated container for yolk splats. */
+  eggYolkContainer?: Container
+  /**
+   * FU-R: plant anchor positions (logical px) used to pick the
+   * impact-Y line for falling eggs. Empty array → use the constant
+   * fall-line (`EGG_IMPACT_Y_FRACTION` × `ATMOSPHERE_HEIGHT`).
+   */
+  flowerAnchors?: readonly { x: number; y: number }[]
 }
 
 export interface BoundGardenAtmosphere {
@@ -124,6 +141,12 @@ export interface BoundGardenAtmosphere {
   getButterflyActive(): boolean
   getWindSample(): number
   getElapsedSeconds(): number
+  /** FU-R: stats for the egg subsystem (active eggs, shell pieces, yolk splats). */
+  getEggStats(): {
+    activeEggs: number
+    activeShatters: number
+    activeYolks: number
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -195,6 +218,17 @@ export function createGardenAtmosphere(
     reducedMotion: options.prefersReducedMotion,
   })
   const windField = new GardenWindField(seed)
+  const eggContainer = options.eggContainer ?? new Container()
+  const eggShatterContainer =
+    options.eggShatterContainer ?? new Container()
+  const eggYolkContainer = options.eggYolkContainer ?? new Container()
+  const eggs = new GardenEggController({
+    eggContainer,
+    shatterContainer: eggShatterContainer,
+    yolkContainer: eggYolkContainer,
+    flowerAnchors: options.flowerAnchors ?? [],
+    seed,
+  })
   const birds = new GardenBirdController({
     seed,
     quality: options.quality,
@@ -207,6 +241,8 @@ export function createGardenAtmosphere(
     birdTextures: options.birdTextures ?? null,
     safeZones: options.safeZones ?? [],
     sunPosition: options.sunPosition ?? null,
+    // FU-R: wire bird drops into the egg controller.
+    eggDropper: (x, y) => eggs.spawn(x, y),
   })
   const particles = new GardenParticleController({
     seed,
@@ -255,6 +291,7 @@ export function createGardenAtmosphere(
     const sample = wind.update(clamped)
     windField.update(clamped)
     birds.update(clamped)
+    eggs.update(clamped)
     particles.update(clamped, sample)
     butterfly.update(clamped)
     if (windLines) windLines.update(clamped, sample)
@@ -264,6 +301,7 @@ export function createGardenAtmosphere(
     if (destroyed) return
     destroyed = true
     birds.destroy()
+    eggs.destroy()
     particles.destroy()
     butterfly.destroy()
     if (windLines) windLines.destroy()
@@ -289,6 +327,7 @@ export function createGardenAtmosphere(
     getButterflyActive: () => butterfly.getIsAlive(),
     getWindSample: () => wind.getSample(),
     getElapsedSeconds: () => wind.getElapsedSeconds(),
+    getEggStats: () => eggs.getStats(),
   }
 }
 
@@ -312,5 +351,6 @@ function createNoopAtmosphere(): BoundGardenAtmosphere {
     getButterflyActive: () => false,
     getWindSample: () => 0,
     getElapsedSeconds: () => 0,
+    getEggStats: () => ({ activeEggs: 0, activeShatters: 0, activeYolks: 0 }),
   }
 }

@@ -33,6 +33,12 @@ export {
 } from "./GardenBirdController"
 
 export {
+  GardenEggController,
+  type GardenEggControllerOptions,
+  type GardenEggStats,
+} from "./GardenEggController"
+
+export {
   GardenParticleController,
   type GardenParticleControllerOptions,
 } from "./GardenParticleController"
@@ -120,6 +126,17 @@ export {
   WIND_LINE_GUST_ALPHA_GAIN,
   WIND_LINE_HEIGHT,
   WIND_LINE_SPEED_RANGE,
+  EGG_GRAVITY,
+  EGG_TERMINAL_VEL,
+  PIECE_GRAVITY,
+  EGG_FALL_SPAWN_INTERVAL_RANGE_MS,
+  EGG_IMPACT_Y_FRACTION,
+  EGG_SHATTER_PIECE_COUNT_RANGE,
+  EGG_YOLK_FADE_DURATION_SEC,
+  EGG_YOLK_FADE_DURATION_RANGE,
+  EGG_POOL_SIZE,
+  EGG_SHATTER_POOL_SIZE,
+  EGG_YOLK_POOL_SIZE,
   type WindFieldState,
   resolveGustLeafColors,
 } from "./garden-atmosphere.constants"

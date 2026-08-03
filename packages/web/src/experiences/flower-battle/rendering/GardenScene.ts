@@ -318,6 +318,18 @@ export function createGardenScene(
         ? { up: tex.birdUp, down: tex.birdDown }
         : null
     safeZones = anchorsToSafeZones(anchors)
+    // FU-R: bird drops target the closest plot anchor (impactY).
+    const flowerAnchors = anchors.map((a) => ({ x: a.x, y: a.y }))
+    // FU-R: dedicated Pixi containers for the falling-egg system. The
+    // scene owns the three sublayers so the bird drops always render
+    // inside the scene graph (no orphan Containers).
+    const eggLayer = new Container()
+    eggLayer.label = "layer-eggs"
+    const eggShatterLayer = new Container()
+    eggShatterLayer.label = "layer-egg-shatter"
+    const eggYolkLayer = new Container()
+    eggYolkLayer.label = "layer-egg-yolk"
+    layers.ambient.addChild(eggLayer, eggShatterLayer, eggYolkLayer)
     // FU-A (Minor-1): plumb the sun-holder position to the bird controller
     // so its sun-safe exclusion is the post-letterbox value, not the
     // default fallback. The full `scene.updateLayout()` runs again at the
@@ -356,6 +368,14 @@ export function createGardenScene(
       // FU-Q: pass the renderer through so the butterfly bake uses
       // `renderer.generateTexture(...)` for the 16 textures.
       renderer: options.butterflyRenderer ?? null,
+      // FU-R: plumb the plot anchors + dedicated egg layers so bird
+      // drops can shatter on the actual plant height. The host can
+      // keep the default `new Container()` fallback by omitting them
+      // (tests do this).
+      eggContainer: eggLayer,
+      eggShatterContainer: eggShatterLayer,
+      eggYolkContainer: eggYolkLayer,
+      flowerAnchors,
     }
     // Lazy import to keep GardenScene.ts free of the sub-controller
     // graph (the scene only depends on the factory + input shape).
@@ -491,6 +511,18 @@ export function createGardenScene(
     // (2 → 3 → 4 teams). The closure-local snapshot mirrors anchors; the
     // bird controller's frozen copy was already populated at bind time.
     safeZones = anchorsToSafeZones(anchors)
+    // FU-R: bird drops target the closest plot anchor (impactY).
+    const flowerAnchors = anchors.map((a) => ({ x: a.x, y: a.y }))
+    // FU-R: dedicated Pixi containers for the falling-egg system. The
+    // scene owns the three sublayers so the bird drops always render
+    // inside the scene graph (no orphan Containers).
+    const eggLayer = new Container()
+    eggLayer.label = "layer-eggs"
+    const eggShatterLayer = new Container()
+    eggShatterLayer.label = "layer-egg-shatter"
+    const eggYolkLayer = new Container()
+    eggYolkLayer.label = "layer-egg-yolk"
+    layers.ambient.addChild(eggLayer, eggShatterLayer, eggYolkLayer)
     lastTeamCount = teamCount
     ensureTeamTints(teamCount)
     syncPlotSoil(
