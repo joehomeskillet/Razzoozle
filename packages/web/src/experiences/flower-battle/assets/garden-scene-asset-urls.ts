@@ -56,6 +56,16 @@ import plantOrangeFullUrl from "../../../assets/experiences/flower-battle/optimi
 import plantGreenBudUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/bud.svg?url"
 import plantGreenHalfUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/half-bloom.svg?url"
 import plantGreenFullUrl from "../../../assets/experiences/flower-battle/optimized/plants/green-blossom/full-bloom.svg?url"
+// Atmosphere (Task 3) — bird wings, gust leaves, motes. CC0 Kenney sources
+// (flappy-box / kenney-foliage / kenney-particle). See SOURCES.md.
+import birdDistantWingsUpUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/bird-distant-wings-up.png?url"
+import birdDistantWingsDownUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/bird-distant-wings-down.png?url"
+import windLeaf01Url from "../../../assets/experiences/flower-battle/optimized/atmosphere/wind-leaf-01.svg?url"
+import windLeaf02Url from "../../../assets/experiences/flower-battle/optimized/atmosphere/wind-leaf-02.svg?url"
+import moteSoftUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/mote-soft.png?url"
+import pollenSoftUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/pollen-soft.png?url"
+import sparkleSoftUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/sparkle-soft.png?url"
+import ringSoftUrl from "../../../assets/experiences/flower-battle/optimized/atmosphere/ring-soft.png?url"
 
 /** Stable Pixi / diagnostics alias → Vite-hashed asset URL. */
 export const GARDEN_SCENE_ASSET_URLS = {
@@ -108,6 +118,15 @@ export const GARDEN_SCENE_ASSET_URLS = {
   plant_green_bud: plantGreenBudUrl,
   plant_green_half: plantGreenHalfUrl,
   plant_green_full: plantGreenFullUrl,
+  /** Garden atmosphere (Task 3) — bird wings, gust leaves, motes. */
+  env_bird_distant_wings_up: birdDistantWingsUpUrl,
+  env_bird_distant_wings_down: birdDistantWingsDownUrl,
+  env_wind_leaf_01: windLeaf01Url,
+  env_wind_leaf_02: windLeaf02Url,
+  env_mote_soft: moteSoftUrl,
+  env_pollen_soft: pollenSoftUrl,
+  env_sparkle_soft: sparkleSoftUrl,
+  env_ring_soft: ringSoftUrl,
 } as const
 
 export type GardenSceneAssetAlias = keyof typeof GARDEN_SCENE_ASSET_URLS
@@ -151,6 +170,15 @@ export const GARDEN_SCENE_REQUIRED_ALIASES = [
   "plant_green_bud",
   "plant_green_half",
   "plant_green_full",
+  /** Garden atmosphere (Task 3) — bird wings, gust leaves, motes. */
+  "env_bird_distant_wings_up",
+  "env_bird_distant_wings_down",
+  "env_wind_leaf_01",
+  "env_wind_leaf_02",
+  "env_mote_soft",
+  "env_pollen_soft",
+  "env_sparkle_soft",
+  "env_ring_soft",
 ] as const satisfies readonly GardenSceneAssetAlias[]
 
 export type GardenSceneRequiredAlias =

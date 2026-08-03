@@ -122,6 +122,12 @@ export interface GardenSceneLoadedAssets {
    * so only their slots use the procedural fallback.
    */
   plantVariants: PlantVariantTextures | null
+  /**
+   * Atmosphere (Task 3) — bird wings / gust leaves / motes, decoded from the
+   * dedicated `env_*` atmosphere aliases. Null fields are tolerated by every
+   * atmosphere controller (each pool falls back to an empty pool on null).
+   */
+  atmosphere: GardenAtmosphereTextures
   texturesByAlias: Record<string, Texture>
   diagnostics: GardenAssetDiagnostics
   /** True when every required alias loaded a usable Texture. */
@@ -131,6 +137,58 @@ export interface GardenSceneLoadedAssets {
    * Optional for compatibility with injected test/static asset maps.
    */
   release?: () => void
+}
+
+/**
+ * Decoded atmosphere textures (Task 3). The shape mirrors the input the
+ * atmosphere controllers (`GardenBirdController` / `GardenParticleController`)
+ * accept directly: bird pair, gust leaves, motes.
+ *
+ * - `birdUp` / `birdDown`     — wings-up / wings-down bird frames; controllers
+ *                                short-circuit to an empty pool when either is null.
+ * - `windLeaves`              — gust-leaf sprites; non-empty enables leaf bursts.
+ * - `mote`                    — soft mote sprite for the ambient pool; null = no motes.
+ *
+ * The brief labels `pollen` / `sparkle` / `ring` separately; today no
+ * controller consumes them so they remain observation-only diagnostics.
+ */
+export interface GardenAtmosphereTextures {
+  birdUp: Texture | null
+  birdDown: Texture | null
+  windLeaves: Texture[]
+  mote: Texture | null
+  pollen: Texture | null
+  sparkle: Texture | null
+  ring: Texture | null
+}
+
+/**
+ * Pull the eight atmosphere textures out of the flat alias → texture map.
+ * Pure helper (no side effects, no I/O) — exposed for tests so they can
+ * assert the loader's expected output shape without standing up an Image
+ * stub or a Pixi TextureSource.
+ *
+ * Missing entries resolve to `null` (or empty arrays) so callers can still
+ * drive the controllers with partial bundles; the controllers themselves
+ * downgrade to empty pools on null.
+ */
+export function buildAtmosphereTextures(
+  texturesByAlias: Readonly<Record<string, Texture>>,
+): GardenAtmosphereTextures {
+  const windLeaves: Texture[] = []
+  const w1 = texturesByAlias.env_wind_leaf_01
+  const w2 = texturesByAlias.env_wind_leaf_02
+  if (w1) windLeaves.push(w1)
+  if (w2) windLeaves.push(w2)
+  return {
+    birdUp: texturesByAlias.env_bird_distant_wings_up ?? null,
+    birdDown: texturesByAlias.env_bird_distant_wings_down ?? null,
+    windLeaves,
+    mote: texturesByAlias.env_mote_soft ?? null,
+    pollen: texturesByAlias.env_pollen_soft ?? null,
+    sparkle: texturesByAlias.env_sparkle_soft ?? null,
+    ring: texturesByAlias.env_ring_soft ?? null,
+  }
 }
 
 /** Convert 0xRRGGBB to #rrggbb for SVG attribute injection. */
@@ -625,6 +683,19 @@ function paletteFillForAlias(
     plant_green_bud: 0xffffff,
     plant_green_half: 0xffffff,
     plant_green_full: 0xffffff,
+    // Atmosphere (Task 3) — wind leaves keep their baked white fill so Pixi
+    // can tint at runtime (the particle controller does not tint them today,
+    // but the alias contract leaves room for future controllers). PNG aliases
+    // (bird / mote / pollen / sparkle / ring) are unreachable for SVG baking
+    // because `isRasterUrl()` routes them through `loadRasterTexture` first.
+    env_bird_distant_wings_up: 0xffffff,
+    env_bird_distant_wings_down: 0xffffff,
+    env_wind_leaf_01: 0xffffff,
+    env_wind_leaf_02: 0xffffff,
+    env_mote_soft: 0xffffff,
+    env_pollen_soft: 0xffffff,
+    env_sparkle_soft: 0xffffff,
+    env_ring_soft: 0xffffff,
   }
   return {
     fill: hexToCssColor(map[alias]),
@@ -737,6 +808,8 @@ export async function loadGardenSceneAssets(
     pot: texturesByAlias.plant_pot_01,
   }
 
+  const atmosphere = buildAtmosphereTextures(texturesByAlias)
+
   const requiredMissing = GARDEN_SCENE_REQUIRED_ALIASES.filter(
     (a) => !loadedAliases.includes(a),
   )
@@ -759,6 +832,7 @@ export async function loadGardenSceneAssets(
     plantHeads,
     plantBody,
     plantVariants: buildPlantVariants(texturesByAlias),
+    atmosphere,
     texturesByAlias,
     diagnostics,
     complete: requiredMissing.length === 0,

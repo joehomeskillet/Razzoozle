@@ -74,6 +74,7 @@ import type {
   CreateGardenAtmosphereOptions,
 } from "./atmosphere"
 import { createGardenAtmosphere } from "./atmosphere"
+import type { GardenAtmosphereTextures } from "../assets/loadGardenSceneAssets"
 
 export interface GardenSceneTeamSnapshot {
   name: string
@@ -168,11 +169,19 @@ export interface CreateGardenSceneOptions {
  * Lightweight input the host passes through to opt into the garden
  * atmosphere. The scene pulls containers / palette from itself and feeds
  * them to `createGardenAtmosphere`.
+ *
+ * Task 3: `atmosphereTextures` carries the loaded bird / wind-leaf / mote
+ * textures (and observation-only pollen / sparkle / ring). When provided
+ * the scene unpacks the bird pair, leaves, and mote into the controller
+ * options. When omitted every controller degrades to an empty pool, so
+ * pre-Task 3 tests that pass only `{ seed }` continue to work.
  */
 export interface GardenAtmosphereInput {
   prefersReducedMotion?: boolean
   quality?: GardenRenderQuality
   seed?: number
+  /** Task 3 production wiring (optional; null leaves keep their empty pool). */
+  atmosphereTextures?: GardenAtmosphereTextures | null
 }
 
 type StageHost = GardenPixiApplicationHandle & {
@@ -250,6 +259,16 @@ export function createGardenScene(
   let atmosphere: BoundGardenAtmosphere | null = null
   if (options.atmosphere) {
     const atmosInput = options.atmosphere
+    // Task 3: unpack the loaded atmosphere textures into the controller
+    // factory. Bird pair → GardenBirdTextures; windLeaves/mote →
+    // GardenParticleController. The legacy `birdTextures`/`windLeafTextures`/
+    // `moteTexture` fields on the controller input are unchanged — we just
+    // bridge the new host-facing `atmosphereTextures` into them.
+    const tex = atmosInput.atmosphereTextures ?? null
+    const birdTextures =
+      tex && tex.birdUp && tex.birdDown
+        ? { up: tex.birdUp, down: tex.birdDown }
+        : null
     const atmosOptions: CreateGardenAtmosphereOptions = {
       skyLife: layers.skyLife,
       ambient: layers.ambient,
@@ -259,6 +278,9 @@ export function createGardenScene(
       quality: atmosInput.quality ?? "high",
       prefersReducedMotion: atmosInput.prefersReducedMotion ?? false,
       seed: atmosInput.seed,
+      birdTextures,
+      windLeafTextures: tex ? tex.windLeaves : [],
+      moteTexture: tex ? tex.mote : null,
     }
     // Lazy import to keep GardenScene.ts free of the sub-controller
     // graph (the scene only depends on the factory + input shape).

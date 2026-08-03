@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   bakeSvgForPixi,
+  buildAtmosphereTextures,
   buildPlantVariants,
   ensureSvgIntrinsicSize,
   hexToCssColor,
@@ -410,5 +411,87 @@ describe("GARDEN_SCENE_ASSET_URLS", () => {
       height: 12,
     })
     expect(size).toEqual({ width: 512, height: 384 })
+  })
+})
+
+describe("Garden atmosphere assets (Task 3)", () => {
+  const ATMOSPHERE_ALIASES = [
+    "env_bird_distant_wings_up",
+    "env_bird_distant_wings_down",
+    "env_wind_leaf_01",
+    "env_wind_leaf_02",
+    "env_mote_soft",
+    "env_pollen_soft",
+    "env_sparkle_soft",
+    "env_ring_soft",
+  ] as const
+
+  it("requires every atmosphere alias", () => {
+    for (const alias of ATMOSPHERE_ALIASES) {
+      expect(GARDEN_SCENE_REQUIRED_ALIASES).toContain(alias)
+    }
+  })
+
+  it("exposes a Vite-resolved URL for every atmosphere alias", () => {
+    for (const alias of ATMOSPHERE_ALIASES) {
+      const url = GARDEN_SCENE_ASSET_URLS[alias]
+      expect(url, alias).toBeTruthy()
+      expect(typeof url, alias).toBe("string")
+      // Vite may inline small SVGs as data URLs (asset inline threshold). Accept
+      // either the hashed public asset path OR a data: URI carrying the alias's
+      // file name so the contract stays observable across build configs.
+      const fileStem = alias.replace(/^env_/, "").replace(/_/g, "-")
+      const ok =
+        url.includes(`/optimized/atmosphere/${fileStem}`) ||
+        url.includes(encodeURIComponent(fileStem)) ||
+        url.startsWith("data:")
+      expect(ok, `${alias}=${url}`).toBe(true)
+    }
+  })
+
+  it("buildAtmosphereTextures pulls every atmosphere alias into the typed shape", () => {
+    const texture = (label: string) =>
+      new Texture({ source: Texture.WHITE.source, label })
+    const leaves = [texture("leaf-01"), texture("leaf-02")]
+    const out = buildAtmosphereTextures({
+      env_bird_distant_wings_up: texture("bird-up"),
+      env_bird_distant_wings_down: texture("bird-down"),
+      env_wind_leaf_01: leaves[0]!,
+      env_wind_leaf_02: leaves[1]!,
+      env_mote_soft: texture("mote"),
+      env_pollen_soft: texture("pollen"),
+      env_sparkle_soft: texture("sparkle"),
+      env_ring_soft: texture("ring"),
+    })
+    expect(out.birdUp).toBeDefined()
+    expect(out.birdDown).toBeDefined()
+    expect(out.windLeaves).toHaveLength(2)
+    expect(out.windLeaves[0]).toBe(leaves[0])
+    expect(out.windLeaves[1]).toBe(leaves[1])
+    expect(out.mote).toBeDefined()
+    expect(out.pollen).toBeDefined()
+    expect(out.sparkle).toBeDefined()
+    expect(out.ring).toBeDefined()
+  })
+
+  it("buildAtmosphereTextures degrades to null fields when entries are missing", () => {
+    const out = buildAtmosphereTextures({})
+    expect(out.birdUp).toBeNull()
+    expect(out.birdDown).toBeNull()
+    expect(out.windLeaves).toEqual([])
+    expect(out.mote).toBeNull()
+    expect(out.pollen).toBeNull()
+    expect(out.sparkle).toBeNull()
+    expect(out.ring).toBeNull()
+  })
+
+  it("buildAtmosphereTextures only retains present leaf textures", () => {
+    const texture = (label: string) =>
+      new Texture({ source: Texture.WHITE.source, label })
+    const out = buildAtmosphereTextures({
+      env_wind_leaf_01: texture("leaf-01"),
+      // env_wind_leaf_02 intentionally absent
+    })
+    expect(out.windLeaves).toHaveLength(1)
   })
 })

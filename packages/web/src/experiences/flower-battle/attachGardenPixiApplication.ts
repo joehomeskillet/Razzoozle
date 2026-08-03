@@ -16,6 +16,7 @@ import {
   loadGardenSceneAssets,
   publishGardenAssetDiagnostics,
   type GardenAssetDiagnostics,
+  type GardenAtmosphereTextures,
   type PlantBodyTextures,
   type PlantHeadTextures,
   type PlantVariantTextures,
@@ -265,6 +266,7 @@ export async function attachGardenPixiApplication(
       let plantHeads: Partial<PlantHeadTextures> | undefined
       let plantBody: PlantBodyTextures | undefined
       let plantVariants: PlantVariantTextures | null = null
+      let atmosphereTextures: GardenAtmosphereTextures | null = null
       let assetDiagnostics: GardenAssetDiagnostics | null = null
       try {
         const loaded = await loadGardenSceneAssets(palette)
@@ -273,6 +275,7 @@ export async function attachGardenPixiApplication(
         plantHeads = loaded.plantHeads
         plantBody = loaded.plantBody
         plantVariants = loaded.plantVariants
+        atmosphereTextures = loaded.atmosphere
         assetDiagnostics = loaded.diagnostics
         publishGardenAssetDiagnostics(loaded.diagnostics)
         diagnosticsPublished = true
@@ -315,7 +318,16 @@ export async function attachGardenPixiApplication(
         plantHeads,
         plantBody,
         plantVariants,
-        prefersReducedMotion,
+        // Task 3: production wiring feeds the loaded bird / wind-leaf / mote
+        // textures into the atmosphere controllers. `quality` is not exposed
+        // on this attach surface yet — the controllers default to 'high' for
+        // production hosts (matches GardenScene.ts `quality: atmosInput.quality
+        // ?? 'high'`). A future host can extend AttachGardenPixiOptions with
+        // a `quality` knob and forward it here.
+        atmosphere: {
+          prefersReducedMotion,
+          atmosphereTextures,
+        },
         assetDiagnostics,
       })
     } else {
