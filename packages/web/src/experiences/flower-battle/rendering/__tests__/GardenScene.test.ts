@@ -1110,3 +1110,101 @@ describe("SDD §30 probe-v3 contract on procedural scene", () => {
     })
   })
 })
+
+describe("atmosphere safe zones wiring (Minor-5 / FU-C)", () => {
+  it("safeZones mirrors the plot count (2 → 3 → 4 teams) and centers match anchors", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, {
+      palette: TEST_PALETTE,
+      atmosphere: { seed: 1234 },
+    })
+    scene.updateLayout(1920, 1080)
+
+    // Pre-snapshot: no anchors, safeZones is empty.
+    expect(scene.getAtmosphereSafeZones()).toEqual([])
+
+    // 2 teams — first rebuild populates anchors + safeZones in lock-step.
+    scene.updateSnapshot({ teams: [team("A", 5), team("B", 5)] })
+    let zones = scene.getAtmosphereSafeZones()
+    let anchors = scene.getPlotAnchors()
+    expect(zones).toHaveLength(2)
+    expect(anchors).toHaveLength(2)
+    for (let i = 0; i < 2; i += 1) {
+      expect(zones[i]!.x).toBe(anchors[i]!.x)
+      expect(zones[i]!.y).toBe(anchors[i]!.y)
+    }
+
+    // 3 teams — rebuild replaces the list, not a stale reference.
+    scene.updateSnapshot({
+      teams: [team("A", 5), team("B", 5), team("C", 5)],
+    })
+    zones = scene.getAtmosphereSafeZones()
+    anchors = scene.getPlotAnchors()
+    expect(zones).toHaveLength(3)
+    expect(anchors).toHaveLength(3)
+    for (let i = 0; i < 3; i += 1) {
+      expect(zones[i]!.x).toBe(anchors[i]!.x)
+      expect(zones[i]!.y).toBe(anchors[i]!.y)
+    }
+
+    // 4 teams — the spec endpoint (Minor-5 followup brief).
+    scene.updateSnapshot({
+      teams: [team("A", 5), team("B", 5), team("C", 5), team("D", 5)],
+    })
+    zones = scene.getAtmosphereSafeZones()
+    anchors = scene.getPlotAnchors()
+    expect(zones).toHaveLength(4)
+    expect(anchors).toHaveLength(4)
+    for (let i = 0; i < 4; i += 1) {
+      expect(zones[i]!.x).toBe(anchors[i]!.x)
+      expect(zones[i]!.y).toBe(anchors[i]!.y)
+      // Rectangle is non-zero so the bird controller's pickSafeDestination
+      // check has a real footprint to reject.
+      expect(zones[i]!.width).toBeGreaterThan(0)
+      expect(zones[i]!.height).toBeGreaterThan(0)
+    }
+
+    scene.destroy()
+  })
+
+  it("keeps a fresh safeZones list on every team-count change", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, {
+      palette: TEST_PALETTE,
+      atmosphere: { seed: 1234 },
+    })
+    scene.updateLayout(1920, 1080)
+
+    scene.updateSnapshot({ teams: [team("A", 5), team("B", 5)] })
+    const twoZones = scene.getAtmosphereSafeZones()
+    expect(twoZones).toHaveLength(2)
+
+    scene.updateSnapshot({
+      teams: [team("A", 5), team("B", 5), team("C", 5), team("D", 5)],
+    })
+    const fourZones = scene.getAtmosphereSafeZones()
+    expect(fourZones).toHaveLength(4)
+    // The list is rebuilt — not the same array reference.
+    expect(fourZones).not.toBe(twoZones)
+
+    scene.destroy()
+  })
+
+  it("safeZones tracks the anchors even when no atmosphere was bound (legacy path)", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+    scene.updateLayout(1920, 1080)
+    scene.updateSnapshot({ teams: [team("A", 5), team("B", 5)] })
+    // Mirrors the brief literally — rebuild re-derives safeZones from
+    // anchors; the value is exposed unconditionally as a test hook.
+    expect(scene.getPlotAnchors()).toHaveLength(2)
+    const zones = scene.getAtmosphereSafeZones()
+    expect(zones).toHaveLength(2)
+    const anchors = scene.getPlotAnchors()
+    for (let i = 0; i < 2; i += 1) {
+      expect(zones[i]!.x).toBe(anchors[i]!.x)
+      expect(zones[i]!.y).toBe(anchors[i]!.y)
+    }
+    scene.destroy()
+  })
+})

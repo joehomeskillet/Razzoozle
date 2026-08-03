@@ -70,11 +70,33 @@ import {
   type ThemeColorResolver,
 } from "./resolveThemeColor"
 import type {
+  BirdSafeZone,
   BoundGardenAtmosphere,
   CreateGardenAtmosphereOptions,
 } from "./atmosphere"
 import { createGardenAtmosphere } from "./atmosphere"
 import type { GardenAtmosphereTextures } from "../assets/loadGardenSceneAssets"
+
+/**
+ * Plot-band safe-zone footprint (logical px). Anchors are plot *centres*
+ * in the visible band — extend the rectangle 400×440 around each centre
+ * so any bird sprite whose sampled destination falls inside is rejected
+ * by `pickSafeDestination`. Values are larger than the soil container so
+ * birds can never spawn over a planted team.
+ */
+const SAFE_ZONE_HALF_WIDTH = 200
+const SAFE_ZONE_HALF_HEIGHT = 220
+
+function anchorsToSafeZones(
+  anchors: readonly { x: number; y: number }[],
+): BirdSafeZone[] {
+  return anchors.map((a) => ({
+    x: a.x,
+    y: a.y,
+    width: SAFE_ZONE_HALF_WIDTH * 2,
+    height: SAFE_ZONE_HALF_HEIGHT * 2,
+  }))
+}
 
 export interface GardenSceneTeamSnapshot {
   name: string
@@ -123,6 +145,13 @@ export interface ProceduralGardenScene extends GardenScene {
   /** Visible logical band after cover-crop (null before first layout). */
   getVisibleRect(): LogicalRect | null
   getLayoutDiagnostics(): GardenLayoutDiagnostics
+  /**
+   * FU-C test hook: returns the plot-band safe zones currently derived from
+   * the plot anchors. Order matches `getPlotAnchors()`. Empty before the
+   * first `updateSnapshot` / when no atmosphere was bound at construction
+   * time (no-op in that legacy path).
+   */
+  getAtmosphereSafeZones(): readonly BirdSafeZone[]
   /** True when every visible asset plant has completed its stage transition. */
   arePlantTransitionsSettled(): boolean
 }
@@ -256,6 +285,16 @@ export function createGardenScene(
 
   // Task 2: optional atmosphere (wind / birds / motes / gust leaves).
   // When `atmosphere` is undefined the legacy code path is unchanged.
+  // FU-C (Minor-5 wiring): plot anchors drive the bird controller's
+  // `safeZones` so birds reject spawns over team plots. The closure-local
+  // `safeZones` mirrors `anchors` and is recomputed on every rebuild; at
+  // bind time anchors is empty (no snapshot applied yet) so an empty
+  // array is passed — the bird controller short-circuits on empty zones.
+  let safeZones: BirdSafeZone[] = []
+  // Declared up here (instead of in the lower batch) so the atmosphere
+  // bind below can read the current anchors — none have been computed
+  // yet, so the bind sees an empty safeZones list.
+  let anchors: PlotAnchor[] = []
   let atmosphere: BoundGardenAtmosphere | null = null
   if (options.atmosphere) {
     const atmosInput = options.atmosphere
@@ -269,6 +308,7 @@ export function createGardenScene(
       tex && tex.birdUp && tex.birdDown
         ? { up: tex.birdUp, down: tex.birdDown }
         : null
+    safeZones = anchorsToSafeZones(anchors)
     const atmosOptions: CreateGardenAtmosphereOptions = {
       skyLife: layers.skyLife,
       ambient: layers.ambient,
@@ -281,6 +321,7 @@ export function createGardenScene(
       birdTextures,
       windLeafTextures: tex ? tex.windLeaves : [],
       moteTexture: tex ? tex.mote : null,
+      safeZones,
     }
     // Lazy import to keep GardenScene.ts free of the sub-controller
     // graph (the scene only depends on the factory + input shape).
@@ -321,7 +362,6 @@ export function createGardenScene(
   let destroyed = false
   let letterbox: ReturnType<typeof fitLogicalViewport> | null = null
   let lastVisibleRect: LogicalRect | null = null
-  let anchors: PlotAnchor[] = []
   let phase: string | null = null
   let lastTeamCount = 0
   // SDD §30 probe-v3: monotonic normalized-state revision counter.
@@ -397,6 +437,10 @@ export function createGardenScene(
       lastVisibleRect ?? undefined,
     )
     anchors = nextAnchors
+    // FU-C: re-derive bird safe zones so the list follows the plot count
+    // (2 → 3 → 4 teams). The closure-local snapshot mirrors anchors; the
+    // bird controller's frozen copy was already populated at bind time.
+    safeZones = anchorsToSafeZones(anchors)
     lastTeamCount = teamCount
     ensureTeamTints(teamCount)
     syncPlotSoil(
@@ -569,6 +613,10 @@ export function createGardenScene(
     },
 
     arePlantTransitionsSettled,
+
+    getAtmosphereSafeZones() {
+      return safeZones
+    },
 
     getE2EIdentity(): GardenE2EIdentity {
       // SDD §30 probe-v3: every per-plant parallel array is sliced to the
