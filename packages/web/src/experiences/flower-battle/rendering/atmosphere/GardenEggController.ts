@@ -83,10 +83,71 @@ const EGG_TEXTURE_SIZE = 18
 const EGG_TINT = 0xfff4ba
 const EGG_OUTLINE = 0x6b4423
 const YOLK_TINT = 0xf4a261
+const YOLK_OUTLINE = 0xd97a3a
 
 const EGG_TINT_HEX = hexToCssColor(EGG_TINT)
 const EGG_OUTLINE_HEX = hexToCssColor(EGG_OUTLINE)
 const YOLK_TINT_HEX = hexToCssColor(YOLK_TINT)
+const YOLK_OUTLINE_HEX = hexToCssColor(YOLK_OUTLINE)
+
+/**
+ * FU-V (SHARD-V): three jagged zig-zag shell-shard variants baked once
+ * per module. Each variant is a distinct 8-angle polygon with radii
+ * sampled in [0.45 × maxR, 1.0 × maxR] so the outline is highly
+ * irregular — NOT a square, NOT a clean diamond. Mulberry32 seeds
+ * (0xa1, 0xa2, 0xa3) keep the variant outlines deterministic.
+ *
+ * Bake sizes match the FU-T "5× from original 4×4" target; the three
+ * distinct sizes (18, 20, 22) also give the pool a small visible
+ * baseline variety before any per-piece scale variance is applied.
+ */
+const SHARD_VARIANT_COUNT = 3
+const SHARD_BAKE_SIZES = [18, 20, 22] as const
+const SHARD_TINTS = [0xfff4ba, 0xfff9d6, 0xffe6b3] as const
+const SHARD_OUTLINE_HEX = "#6b4423"
+const SHARD_ANGLE_COUNT = 8
+const SHARD_RADIUS_MIN_FRACTION = 0.45
+const SHARD_RADIUS_MAX_FRACTION = 1.0
+
+interface ShardVariant {
+  readonly size: number
+  readonly tint: number
+  readonly points: ReadonlyArray<readonly [number, number]>
+}
+
+const SHARD_VARIANTS: readonly ShardVariant[] = (() => {
+  const out: ShardVariant[] = []
+  for (let i = 0; i < SHARD_VARIANT_COUNT; i += 1) {
+    const rng = createSeededRandom(0xa1 + i)
+    const size = SHARD_BAKE_SIZES[i]!
+    const tint = SHARD_TINTS[i]!
+    const cx = size / 2
+    const cy = size / 2
+    const maxR = size / 2 - 1
+    const points: Array<readonly [number, number]> = []
+    for (let j = 0; j < SHARD_ANGLE_COUNT; j += 1) {
+      const baseTheta = (j / SHARD_ANGLE_COUNT) * Math.PI * 2
+      const jitter = rng.range(0, Math.PI / 8)
+      const theta = baseTheta + jitter
+      const r =
+        rng.range(SHARD_RADIUS_MIN_FRACTION, SHARD_RADIUS_MAX_FRACTION) *
+        maxR
+      points.push([cx + Math.cos(theta) * r, cy + Math.sin(theta) * r])
+    }
+    out.push({ size, tint, points })
+  }
+  return out
+})()
+
+/**
+ * FU-V (SHARD-V): per-piece fade-duration jitter (±15 %) and per-piece
+ * size-variance range (0.7× – 1.3×). Both sampled at shatter time so
+ * different pieces vanish at different times and land at different
+ * sizes — the brief's "unterschiedliche grösse beim zerbrechen,
+ * zerfallsmuster".
+ */
+const SHARD_FADE_DURATION_JITTER: readonly [number, number] = [0.85, 1.15]
+const SHARD_SCALE_RANGE: readonly [number, number] = [0.7, 1.3]
 
 /**
  * Test escape hatch from `scratchpad/followups/fu-s-brief.md`:
@@ -113,6 +174,7 @@ export class GardenEggController {
   private readonly eggPool: EggSlot[] = []
   private readonly shatterPool: ShellSlot[] = []
   private readonly yolkPool: YolkSlot[] = []
+  private readonly shardTextures: Texture[]
   private destroyed = false
 
   constructor(options: GardenEggControllerOptions) {
@@ -123,13 +185,13 @@ export class GardenEggController {
     this.rng = createSeededRandom(options.seed ?? 0xe995)
 
     const eggTexture = buildEggTexture()
-    const shellTextures: Texture[] = [
-      buildShellTexture(15, 0xfff4ba),
-      buildShellTexture(20, 0xfff9d6),
-      buildShellTexture(15, 0xffe6b3),
-    ]
+    const shardTextures: Texture[] = SHARD_VARIANTS.map(buildShardTexture)
+    this.shardTextures = shardTextures
     const yolkTexture = buildYolkTexture()
-    const miniYolkTexture = buildMiniYolkTexture()
+    const miniYolkTextures = Array.from(
+      { length: EGG_YOLK_POOL_SIZE - 1 },
+      (_, i) => buildMiniYolkTexture(0xe995 + i),
+    )
 
     for (let i = 0; i < EGG_POOL_SIZE; i += 1) {
       const sprite = new Sprite(eggTexture)
@@ -149,7 +211,7 @@ export class GardenEggController {
       })
     }
     for (let i = 0; i < EGG_SHATTER_POOL_SIZE; i += 1) {
-      const tex = shellTextures[i % shellTextures.length]!
+      const tex = shardTextures[i % shardTextures.length]!
       const sprite = new Sprite(tex)
       sprite.label = `shell-${i}`
       sprite.anchor.set(0.5, 0.5)
@@ -168,7 +230,7 @@ export class GardenEggController {
       })
     }
     for (let i = 0; i < EGG_YOLK_POOL_SIZE; i += 1) {
-      const tex = i === 0 ? yolkTexture : miniYolkTexture
+      const tex = i === 0 ? yolkTexture : miniYolkTextures[i - 1]!
       const sprite = new Sprite(tex)
       sprite.label = `yolk-${i}`
       sprite.anchor.set(0.5, 0.5)
@@ -308,18 +370,33 @@ export class GardenEggController {
       slot.vRot = this.rng.range(-0.15, 0.15)
       slot.landed = false
       slot.fadeSec = 0
-      slot.fadeDuration = this.rng.range(
-        EGG_SHELL_FADE_DURATION_RANGE[0],
-        EGG_SHELL_FADE_DURATION_RANGE[1],
-      )
+      // FU-V (SHARD-V): per-piece ±15 % fade-duration jitter so shards
+      // vanish at slightly different times (some pieces persist up to
+      // ~1.5 s longer than others — staggered decay).
+      slot.fadeDuration =
+        this.rng.range(
+          EGG_SHELL_FADE_DURATION_RANGE[0],
+          EGG_SHELL_FADE_DURATION_RANGE[1],
+        ) *
+        this.rng.range(
+          SHARD_FADE_DURATION_JITTER[0],
+          SHARD_FADE_DURATION_JITTER[1],
+        )
       slot.groundY = impactY + this.rng.range(0, 3)
+      // FU-V (SHARD-V): each piece draws a random shard variant so the
+      // shatter looks like a mix of distinct zig-zag fragments rather
+      // than 32 copies of the same polygon.
+      const variantIdx = this.rng.rangeInt(0, SHARD_VARIANT_COUNT - 1)
+      slot.sprite.texture = this.shardTextures[variantIdx]!
       slot.sprite.position.set(x, y)
       slot.sprite.rotation = 0
       slot.sprite.alpha = 1
       slot.sprite.visible = true
+      // FU-V (SHARD-V): widen per-piece scale to ±30 % (was [0.7, 1.0])
+      // so fragments visibly differ in size.
       slot.sprite.scale.set(
-        this.rng.range(0.7, 1.0),
-        this.rng.range(0.7, 1.0),
+        this.rng.range(SHARD_SCALE_RANGE[0], SHARD_SCALE_RANGE[1]),
+        this.rng.range(SHARD_SCALE_RANGE[0], SHARD_SCALE_RANGE[1]),
       )
       slot.active = true
     }
@@ -377,25 +454,72 @@ function buildEggTexture(): Texture {
     )
   }
   return textureFromCanvas(
-    createEggCanvas(EGG_TEXTURE_SIZE, EGG_TINT, EGG_OUTLINE, 1, 0.5),
+    createCubistEggCanvas(EGG_TEXTURE_SIZE, EGG_TINT, EGG_OUTLINE, 1.5),
   )
 }
 
-function buildShellTexture(size: number, tint: number): Texture {
+function buildShardTexture(variant: ShardVariant): Texture {
+  const { size, tint, points } = variant
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(size, size, (x, y) =>
-      isShellPixel(x, y, size, size, 0.25) ? EGG_OUTLINE : tint,
+      isShardPixel(x, y, points) ? tint : 0,
     )
   }
-  return textureFromCanvas(createEggCanvas(size, tint, EGG_OUTLINE, 0.5, 0.25))
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d")
+  if (!ctx) {
+    return bufferTexture(size, size, (x, y) =>
+      isShardPixel(x, y, points) ? tint : 0,
+    )
+  }
+  ctx.fillStyle = hexToCssColor(tint)
+  ctx.strokeStyle = SHARD_OUTLINE_HEX
+  ctx.lineWidth = 0.5
+  ctx.beginPath()
+  ctx.moveTo(points[0]![0], points[0]![1])
+  for (let i = 1; i < points.length; i += 1) {
+    ctx.lineTo(points[i]![0], points[i]![1])
+  }
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  return textureFromCanvas(canvas)
 }
 
 function buildYolkTexture(): Texture {
   const w = 24
   const h = 9
+  const points = buildIrregularOvalPoints(w, h, 11, 4, 12, 0xe995)
+  if (SKIP_CANVAS_BAKE) {
+    return bufferTexture(w, h, (x, y) => {
+      const point = { x: x + 0.5, y: y + 0.5 }
+      if (!isPointInPolygon(point, points)) return 0
+      return distanceToPolygon(point, points) <= 0.8 ? YOLK_OUTLINE : YOLK_TINT
+    })
+  }
+  const canvas = document.createElement("canvas")
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return bufferTexture(w, h, () => 0)
+  drawYolkPath(ctx, points)
+  ctx.fillStyle = YOLK_TINT_HEX
+  ctx.fill()
+  ctx.strokeStyle = YOLK_OUTLINE_HEX
+  ctx.lineWidth = 0.8
+  ctx.stroke()
+  return Texture.from(canvas)
+}
+
+function buildMiniYolkTexture(seed: number): Texture {
+  const w = 6
+  const h = 6
+  const points = buildIrregularOvalPoints(w, h, 2.4, 2.4, 6, seed)
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(w, h, (x, y) =>
-      isYolkPixel(x, y, w, h, 12, 4.5) ? YOLK_TINT : 0,
+      isPointInPolygon({ x: x + 0.5, y: y + 0.5 }, points) ? YOLK_TINT : 0,
     )
   }
   const canvas = document.createElement("canvas")
@@ -403,31 +527,74 @@ function buildYolkTexture(): Texture {
   canvas.height = h
   const ctx = canvas.getContext("2d")
   if (!ctx) return bufferTexture(w, h, () => 0)
+  drawYolkPath(ctx, points)
   ctx.fillStyle = YOLK_TINT_HEX
-  ctx.beginPath()
-  ctx.ellipse(12, 4.5, 12, 4.5, 0, 0, Math.PI * 2)
   ctx.fill()
   return Texture.from(canvas)
 }
 
-function buildMiniYolkTexture(): Texture {
-  const w = 6
-  const h = 6
-  if (SKIP_CANVAS_BAKE) {
-    return bufferTexture(w, h, (x, y) =>
-      isMiniYolkPixel(x, y, w, h) ? YOLK_TINT : 0,
-    )
-  }
-  const canvas = document.createElement("canvas")
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return bufferTexture(w, h, () => 0)
-  ctx.fillStyle = YOLK_TINT_HEX
+interface YolkPoint {
+  x: number
+  y: number
+}
+
+function buildIrregularOvalPoints(
+  w: number,
+  h: number,
+  rx: number,
+  ry: number,
+  count: number,
+  seed: number,
+): YolkPoint[] {
+  const rng = createSeededRandom(seed)
+  const cx = w / 2
+  const cy = h / 2
+  return Array.from({ length: count }, (_, i) => {
+    const theta = (i / count) * Math.PI * 2
+    const cos = Math.cos(theta)
+    const sin = Math.sin(theta)
+    const baseRadius = 1 / Math.sqrt((cos * cos) / (rx * rx) + (sin * sin) / (ry * ry))
+    const radius = baseRadius * (0.75 + 0.5 * rng.next())
+    return { x: cx + cos * radius, y: cy + sin * radius }
+  })
+}
+
+function drawYolkPath(ctx: CanvasRenderingContext2D, points: readonly YolkPoint[]): void {
   ctx.beginPath()
-  ctx.arc(3, 3, 2.4, 0, Math.PI * 2)
-  ctx.fill()
-  return Texture.from(canvas)
+  for (const point of points) ctx.lineTo(point.x, point.y)
+  ctx.closePath()
+}
+
+function isPointInPolygon(point: YolkPoint, points: readonly YolkPoint[]): boolean {
+  let inside = false
+  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+    const a = points[i]!
+    const b = points[j]!
+    if (
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+function distanceToPolygon(point: YolkPoint, points: readonly YolkPoint[]): number {
+  let distance = Number.POSITIVE_INFINITY
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i]!
+    const b = points[(i + 1) % points.length]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const lengthSquared = dx * dx + dy * dy
+    const t = Math.max(
+      0,
+      Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared),
+    )
+    distance = Math.min(distance, Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy)))
+  }
+  return distance
 }
 
 function textureFromCanvas(canvas: HTMLCanvasElement): Texture {
@@ -468,6 +635,49 @@ function createEggCanvas(
   return canvas
 }
 
+function createCubistEggCanvas(
+  size: number,
+  fill: number,
+  stroke: number,
+  lineWidth: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return canvas
+  const cx = size / 2
+  const cy = size / 2
+  const baseR = 7
+  const points = 10
+  // Fixed phase from canonical seed 0xe995 (FU-V): every egg bake shares
+  // the same facet wobble so the silhouette is deterministic across
+  // spawns and controller instances.
+  const facetRng = createSeededRandom(0xe995)
+  const phi = facetRng.range(0, Math.PI * 2)
+  ctx.beginPath()
+  for (let i = 0; i < points; i += 1) {
+    const theta = (i / points) * Math.PI * 2
+    const facet = 0.85 + 0.3 * Math.sin(theta * 3 + phi)
+    const sy = Math.sin(theta)
+    const topPinch = Math.max(0, -sy)
+    const bottomPinch = Math.max(0, sy)
+    const pinch = 1 - topPinch * 0.45 - bottomPinch * 0.3
+    const r = baseR * facet * pinch
+    const x = cx + Math.cos(theta) * r
+    const y = cy + sy * r
+    if (i === 0) ctx.moveTo(x, y)
+    else ctx.lineTo(x, y)
+  }
+  ctx.closePath()
+  ctx.fillStyle = hexToCssColor(fill)
+  ctx.fill()
+  ctx.lineWidth = lineWidth
+  ctx.strokeStyle = hexToCssColor(stroke)
+  ctx.stroke()
+  return canvas
+}
+
 function bufferTexture(
   w: number,
   h: number,
@@ -501,27 +711,32 @@ function isShellPixel(
   return onTop || onLeft
 }
 
-function isYolkPixel(
+/**
+ * FU-V (SHARD-V): ray-cast point-in-polygon for the buffer-fallback
+ * path. The Canvas2D real path draws via `ctx.fill()`, but in the node
+ * vitest env we synthesize the texture from a per-pixel RGBA buffer and
+ * need an integer-friendly polygon test. Pixel-center is `(x + 0.5,
+ * y + 0.5)`.
+ */
+function isShardPixel(
   x: number,
   y: number,
-  w: number,
-  h: number,
-  rx: number,
-  ry: number,
+  points: ReadonlyArray<readonly [number, number]>,
 ): boolean {
-  const cx = w / 2
-  const cy = h / 2
-  const dx = (x + 0.5 - cx) / rx
-  const dy = (y + 0.5 - cy) / ry
-  return dx * dx + dy * dy <= 1
-}
-
-function isMiniYolkPixel(x: number, y: number, w: number, h: number): boolean {
-  const cx = w / 2
-  const cy = h / 2
-  const dx = x + 0.5 - cx
-  const dy = y + 0.5 - cy
-  return dx * dx + dy * dy <= 2.4 * 2.4
+  const px = x + 0.5
+  const py = y + 0.5
+  let inside = false
+  for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+    const a = points[i]!
+    const b = points[j]!
+    if (
+      a[1] > py !== b[1] > py &&
+      px < ((b[0] - a[0]) * (py - a[1])) / (b[1] - a[1]) + a[0]
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
 }
 
 function hexToCssColor(n: number): string {
