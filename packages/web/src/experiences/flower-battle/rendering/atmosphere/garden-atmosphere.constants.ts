@@ -75,8 +75,13 @@ export const BIRD_SPAWN_INTERVAL_RANGE: readonly [number, number] = [
   12_000, 25_000,
 ]
 
-/** Bird visual scale. */
-export const BIRD_SCALE_RANGE: readonly [number, number] = [0.55, 0.9]
+/**
+ * Bird visual scale. Source frame is 259×146, so 0.14 → ~36 px wide,
+ * 0.21 → ~54 px wide — matches Plan §5.3's "36–54 logical px"
+ * window so birds read as small and far rather than dominating the
+ * sky-life layer.
+ */
+export const BIRD_SCALE_RANGE: readonly [number, number] = [0.14, 0.21]
 
 /** Wing swap every 180–280 ms. */
 export const BIRD_WING_SWAP_RANGE: readonly [number, number] = [180, 280]
@@ -97,8 +102,13 @@ export const MOTE_LIFETIME_RANGE: readonly [number, number] = [5, 10]
 export const MOTE_BASE_SPEED_RANGE: readonly [number, number] = [8, 14]
 export const MOTE_ALPHA_RANGE: readonly [number, number] = [0.15, 0.42]
 
-/** Mote scale (sprite scale). */
-export const MOTE_SCALE_RANGE: readonly [number, number] = [0.6, 1.1]
+/**
+ * Mote scale (sprite scale). Source PNG is 512×512, so 0.003 → ~1.5 px
+ * diameter, 0.007 → ~3.6 px — matches Plan §6.1's "1.5–3.5 px pollen
+ * dust" target so motes read as ambient atmosphere, not foreground
+ * circles. (FU-G: was [0.6, 1.1].)
+ */
+export const MOTE_SCALE_RANGE: readonly [number, number] = [0.003, 0.007]
 
 /** Gust default schedule (ms). */
 export const GUST_PERIOD_RANGE: readonly [number, number] = [9_000, 18_000]

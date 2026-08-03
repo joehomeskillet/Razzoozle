@@ -6,6 +6,31 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenParticleController } from "../GardenParticleController"
+import type { GardenPalette } from "../../gardenPalette"
+
+/** Deterministic palette — particle tests only assert tint wiring, not colors. */
+const TEST_PALETTE: GardenPalette = {
+  sky: 0,
+  sun: 0,
+  cloud: 0,
+  hillBack: 0,
+  hillMid: 0,
+  bushBack: 0,
+  bushMid: 0,
+  midground: 0,
+  fence: 0,
+  grass: 0,
+  soil: 0,
+  soilEdge: 0,
+  foreground: 0x2f6b2f,
+  plantStem: 0,
+  plantLeaf: 0,
+  plantPetal: 0,
+  hillsFar: 0,
+  hillsNear: 0,
+  clouds: 0,
+  teamMeterFrame: 0,
+}
 
 function makeMoteTexture(): Texture {
   return Texture.WHITE
@@ -29,6 +54,7 @@ describe("GardenParticleController", () => {
         ambient: layers[quality],
         grass: new Container(),
         moteTexture: makeMoteTexture(),
+        palette: TEST_PALETTE,
       })
       const expected =
         quality === "high"
@@ -54,6 +80,7 @@ describe("GardenParticleController", () => {
       ambient,
       grass: new Container(),
       moteTexture: makeMoteTexture(),
+      palette: TEST_PALETTE,
     })
     const moteSprites = ambient.children.filter(
       (child): child is Sprite =>
@@ -76,6 +103,7 @@ describe("GardenParticleController", () => {
       ambient,
       grass: new Container(),
       moteTexture: makeMoteTexture(),
+      palette: TEST_PALETTE,
     })
     const initial = controller.getMoteCount()
     const ambientChildCount = () =>
@@ -99,6 +127,7 @@ describe("GardenParticleController", () => {
       grass: new Container(),
       moteTexture: makeMoteTexture(),
       windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
     })
     const moteChildren = () =>
       ambient.children.filter(
@@ -127,6 +156,7 @@ describe("GardenParticleController", () => {
       grass: new Container(),
       windLeafTextures: [makeLeafTexture()],
       reducedMotion: true,
+      palette: TEST_PALETTE,
     })
     for (let i = 0; i < 100; i += 1) controller.update(50, 1)
     expect(controller.getGustLeafCount()).toBe(0)
@@ -140,6 +170,7 @@ describe("GardenParticleController", () => {
       ambient,
       grass: new Container(),
       windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
     })
     for (let i = 0; i < 100; i += 1) controller.update(50, 1)
     expect(controller.getGustLeafCount()).toBe(0)
@@ -155,6 +186,7 @@ describe("GardenParticleController", () => {
         ambient,
         grass: new Container(),
         windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
+        palette: TEST_PALETTE,
       })
       for (let i = 0; i < 200; i += 1) controller.update(50, 1)
       const expected = quality === "high" ? 2 : 1
@@ -173,6 +205,7 @@ describe("GardenParticleController", () => {
         ambient,
         grass: new Container(),
         windLeafTextures: [makeLeafTexture()],
+        palette: TEST_PALETTE,
       })
       const before = controller.getGustLeafCount()
       controller.update(50, 1) // strong positive wind — activates gust
@@ -198,6 +231,7 @@ describe("GardenParticleController", () => {
       ambient: new Container(),
       grass,
       moteTexture: makeMoteTexture(),
+      palette: TEST_PALETTE,
     })
     const before = grass.children.map((c) => (c as Sprite).rotation)
     controller.update(100, 0.8)
@@ -215,6 +249,7 @@ describe("GardenParticleController", () => {
       grass: new Container(),
       moteTexture: makeMoteTexture(),
       windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
     })
     controller.destroy()
     expect(() => controller.destroy()).not.toThrow()
@@ -239,6 +274,7 @@ describe("GardenParticleController", () => {
       grass,
       moteTexture: makeMoteTexture(),
       reducedMotion: true,
+      palette: TEST_PALETTE,
     })
     const before = grass.children.map((c) => (c as Sprite).rotation)
     controller.update(500, 1)
@@ -256,6 +292,7 @@ describe("GardenParticleController", () => {
       moteTexture: makeMoteTexture(),
       windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
       reducedMotion: true,
+      palette: TEST_PALETTE,
     })
     const leafSprites = ambient.children.filter(
       (c) => typeof c.label === "string" && c.label.startsWith("gust-leaf-"),
@@ -281,6 +318,7 @@ describe("GardenParticleController", () => {
       ambient: new Container(),
       grass,
       moteTexture: makeMoteTexture(),
+      palette: TEST_PALETTE,
     })
     controller.update(100, 0.8)
     controller.update(100, 0.8)
@@ -295,6 +333,7 @@ describe("GardenParticleController", () => {
       ambient: new Container(),
       grass,
       moteTexture: makeMoteTexture(),
+      palette: TEST_PALETTE,
     })
     controller2.destroy()
     for (let i = 0; i < baseRotations.length; i += 1) {

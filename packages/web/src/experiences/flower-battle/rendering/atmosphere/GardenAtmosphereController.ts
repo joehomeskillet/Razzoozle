@@ -105,6 +105,7 @@ export function createGardenAtmosphere(
     grass: options.grass,
     moteTexture: options.moteTexture ?? null,
     windLeafTextures: options.windLeafTextures ?? [],
+    palette: options.palette,
   })
 
   let destroyed = false

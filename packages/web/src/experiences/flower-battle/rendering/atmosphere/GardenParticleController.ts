@@ -32,6 +32,7 @@ import {
 } from "./garden-atmosphere.constants"
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
+import type { GardenPalette } from "../gardenPalette"
 import { ATMOSPHERE_HEIGHT } from "./garden-atmosphere.constants"
 
 export interface GardenParticleControllerOptions {
@@ -42,6 +43,9 @@ export interface GardenParticleControllerOptions {
   grass: Container
   moteTexture?: Texture | null
   windLeafTextures?: readonly Texture[]
+  /** Resolved palette — used to tint motes and gust leaves so they
+   *  read as green/foliage, not the source PNG's raw white fill. */
+  palette: GardenPalette
 }
 
 interface MoteSlot {
@@ -71,6 +75,7 @@ export class GardenParticleController {
   private readonly grass: Container
   private readonly moteTexture: Texture | null
   private readonly windLeafTextures: readonly Texture[]
+  private readonly palette: GardenPalette
   private readonly motes: MoteSlot[] = []
   private readonly gustLeaves: GustLeafSlot[] = []
   /** Precomputed rotation phases for the grass tuft sweep. */
@@ -87,6 +92,7 @@ export class GardenParticleController {
     this.grass = options.grass
     this.moteTexture = options.moteTexture ?? null
     this.windLeafTextures = options.windLeafTextures ?? []
+    this.palette = options.palette
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
 
     this.initMotes()
@@ -156,6 +162,7 @@ export class GardenParticleController {
       const sprite = new Sprite(this.moteTexture)
       sprite.label = `atmosphere-mote-${i}`
       sprite.anchor.set(0.5, 0.5)
+      sprite.tint = this.palette.foreground
       sprite.alpha = this.rng.range(
         MOTE_ALPHA_RANGE[0],
         MOTE_ALPHA_RANGE[1],
@@ -230,6 +237,7 @@ export class GardenParticleController {
       const sprite = new Sprite(tex)
       sprite.label = `gust-leaf-${i}`
       sprite.anchor.set(0.5, 0.5)
+      sprite.tint = this.palette.foreground
       sprite.visible = false
       this.ambient.addChild(sprite)
       this.gustLeaves.push({

@@ -13,40 +13,44 @@ import { Container, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { createGardenAtmosphere } from "../GardenAtmosphereController"
+import type { GardenPalette } from "../../gardenPalette"
+
+/** Deterministic palette for atmosphere aggregator tests — non-zero
+ *  foreground so tint wiring (where it matters) is observable. */
+const TEST_PALETTE: GardenPalette = {
+  sky: 0,
+  sun: 0,
+  cloud: 0,
+  hillBack: 0,
+  hillMid: 0,
+  bushBack: 0,
+  bushMid: 0,
+  midground: 0,
+  fence: 0,
+  grass: 0,
+  soil: 0,
+  soilEdge: 0,
+  foreground: 0x2f6b2f,
+  plantStem: 0,
+  plantLeaf: 0,
+  plantPetal: 0,
+  hillsFar: 0,
+  hillsNear: 0,
+  clouds: 0,
+  teamMeterFrame: 0,
+}
 
 function makeAtmosphereOptions(overrides: Record<string, unknown> = {}) {
   const ambient = new Container()
   const skyLife = new Container()
   const weather = new Container()
   const grass = new Container()
-  const palette = {
-    sky: 0,
-    sun: 0,
-    cloud: 0,
-    hillBack: 0,
-    hillMid: 0,
-    bushBack: 0,
-    bushMid: 0,
-    midground: 0,
-    fence: 0,
-    grass: 0,
-    soil: 0,
-    soilEdge: 0,
-    foreground: 0,
-    plantStem: 0,
-    plantLeaf: 0,
-    plantPetal: 0,
-    hillsFar: 0,
-    hillsNear: 0,
-    clouds: 0,
-    teamMeterFrame: 0,
-  }
   return {
     skyLife,
     ambient,
     weather,
     grass,
-    palette,
+    palette: TEST_PALETTE,
     quality: "high" as const,
     prefersReducedMotion: false,
     ...overrides,
