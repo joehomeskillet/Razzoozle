@@ -462,9 +462,19 @@ function buildEggTexture(): Texture {
       isShellPixel(x, y, EGG_TEXTURE_SIZE, EGG_TEXTURE_SIZE, 0.5) ? EGG_OUTLINE : EGG_TINT,
     )
   }
-  return textureFromCanvas(
-    createCubistEggCanvas(EGG_TEXTURE_SIZE, EGG_TINT, EGG_OUTLINE, 1.5),
-  )
+  const canvas = document.createElement("canvas")
+  canvas.width = 18
+  canvas.height = 18
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return bufferTexture(18, 18, () => EGG_TINT)
+  ctx.fillStyle = "#fff4ba"
+  ctx.fillRect(0, 0, 18, 18)
+  ctx.strokeStyle = "#6b4423"
+  ctx.lineWidth = 2
+  ctx.strokeRect(1, 1, 16, 16)
+  ctx.fillStyle = "rgba(255,255,255,0.35)"
+  ctx.fillRect(3, 3, 5, 5)
+  return Texture.from(canvas)
 }
 
 function buildShardTexture(variant: ShardVariant): Texture {
