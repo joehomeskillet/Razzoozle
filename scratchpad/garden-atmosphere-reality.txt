@@ -1,0 +1,6 @@
+
+GARDEN-ATMOSPHERE-REALITY (Task 4 FINAL — 2026-08-03)
+FINAL Visual evidence = headless probe (4 scenarios × 60 s simulated ticks) → scratchpad/atmosphere-probe.txt
+FINAL Probe output: ALL_SCENARIOS_PASS=true, 4/4 scenarios, root.children stable 17→17, trees/bushes alpha=1, sky+ambient populated per quality tier, wind=-0.0591 ∈ [-1, 1]
+FINAL Honest gap: 5 screenshots / 2 videos from plan §11 NOT produced — Playwright+WebGL pipeline excluded by the allowed-files budget; probe is the substitute
+FINAL Commit scope: scratchpad/* only (4 new + 1 append); no source files modified, `pnpm --filter @razzoozle/web test` still 165 files / 1764 tests pass
