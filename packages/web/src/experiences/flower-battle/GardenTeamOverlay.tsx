@@ -21,7 +21,7 @@
  *    resizes without drift between DOM and PixiJS.
  */
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 
 import { computePlotAnchors, type PlotAnchor } from "./rendering/plotAnchors"
 import {
@@ -74,6 +74,14 @@ interface AnchorScreen {
 const toPercent = (value: number): number =>
   Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0
 
+const clampPercent = (value: number, min: number, max: number): number =>
+  Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : min
+
+const OVERLAY_CARD_WIDTH_PERCENT = 14
+const OVERLAY_CARD_MIN_HEIGHT_PERCENT = 10
+const OVERLAY_CARD_BOTTOM_INSET_PERCENT = 1
+const FALLBACK_VIEWPORT: TeamSlotViewport = { width: 1024, height: 768 }
+
 /**
  * Project a logical anchor through the given letterbox into host-space
  * percentages. Same arithmetic for the live scene path and the
@@ -107,10 +115,52 @@ export const GardenTeamOverlay = ({
   const { scene } = useGardenPixiApplication()
   const hostWidth = viewport.width
   const hostHeight = viewport.height
+  const viewportFallbackRef = useRef<TeamSlotViewport>(FALLBACK_VIEWPORT)
+  const lastAnchorScreensRef = useRef<AnchorScreen[]>([])
+
+  const hostViewport = useMemo<TeamSlotViewport>(() => {
+    if (hostWidth > 0 && hostHeight > 0) {
+      viewportFallbackRef.current = {
+        width: hostWidth,
+        height: hostHeight,
+      }
+      return { width: hostWidth, height: hostHeight }
+    }
+    return viewportFallbackRef.current
+  }, [hostWidth, hostHeight])
+
+  const fallbackAnchorScreens = useMemo<AnchorScreen[]>(() => {
+    if (teams.length === 0) return []
+    const effectiveWidth = hostViewport.width
+    const effectiveHeight = hostViewport.height
+    if (effectiveWidth <= 0 || effectiveHeight <= 0) return []
+
+    const fallbackAnchors = computePlotAnchors(
+      teams.length,
+      GARDEN_LOGICAL_WIDTH,
+      GARDEN_LOGICAL_HEIGHT,
+    )
+    const fallbackLetterbox = fitLogicalViewport(
+      effectiveWidth,
+      effectiveHeight,
+      GARDEN_LOGICAL_WIDTH,
+      GARDEN_LOGICAL_HEIGHT,
+    )
+
+    return fallbackAnchors
+      .slice(0, teams.length)
+      .map((anchor) =>
+        projectAnchor(anchor, fallbackLetterbox, effectiveWidth, effectiveHeight),
+      )
+  }, [teams.length, hostViewport.width, hostViewport.height])
 
   const anchorScreens = useMemo<AnchorScreen[]>(() => {
     if (teams.length === 0) return []
-    if (hostWidth <= 0 || hostHeight <= 0) return []
+    const effectiveWidth = hostViewport.width
+    const effectiveHeight = hostViewport.height
+    if (effectiveWidth <= 0 || effectiveHeight <= 0) return []
+
+    const screens = fallbackAnchorScreens.slice()
 
     // Live-scene path: pull the exact anchors and letterbox the procedural
     // scene already computed, so the overlay is bit-identical to the plants
@@ -118,35 +168,33 @@ export const GardenTeamOverlay = ({
     if (hasSceneAnchors(scene)) {
       const sceneLetterbox = scene.getLetterbox()
       if (sceneLetterbox && sceneLetterbox.scale > 0) {
-        return scene
-          .getPlotAnchors()
-          .slice(0, teams.length)
-          .map((anchor) =>
-            projectAnchor(anchor, sceneLetterbox, hostWidth, hostHeight),
+        const sceneAnchors = scene.getPlotAnchors()
+        for (let index = 0; index < teams.length; index += 1) {
+          const sceneAnchor = sceneAnchors[index]
+          if (!sceneAnchor) continue
+          screens[index] = projectAnchor(
+            sceneAnchor,
+            sceneLetterbox,
+            effectiveWidth,
+            effectiveHeight,
           )
+        }
+        return screens
       }
     }
 
-    // Fallback path: deterministic recompute of the same algorithm the scene
-    // uses. Identical to what the scene will publish as soon as it is ready,
-    // so cards never jump between fallback and live frames.
-    const fallbackAnchors = computePlotAnchors(
-      teams.length,
-      GARDEN_LOGICAL_WIDTH,
-      GARDEN_LOGICAL_HEIGHT,
-    )
-    const fallbackLetterbox = fitLogicalViewport(
-      hostWidth,
-      hostHeight,
-      GARDEN_LOGICAL_WIDTH,
-      GARDEN_LOGICAL_HEIGHT,
-    )
-    return fallbackAnchors
-      .slice(0, teams.length)
-      .map((anchor) =>
-        projectAnchor(anchor, fallbackLetterbox, hostWidth, hostHeight),
-      )
-  }, [scene, teams.length, hostWidth, hostHeight])
+    return screens
+  }, [scene, teams.length, hostViewport.width, hostViewport.height, fallbackAnchorScreens])
+
+  const resolvedAnchorScreens = anchorScreens.length
+    ? anchorScreens
+    : lastAnchorScreensRef.current
+
+  useEffect(() => {
+    if (resolvedAnchorScreens.length > 0) {
+      lastAnchorScreensRef.current = resolvedAnchorScreens
+    }
+  }, [resolvedAnchorScreens])
 
   if (teams.length === 0) return null
 
@@ -157,15 +205,24 @@ export const GardenTeamOverlay = ({
       className="pointer-events-none absolute inset-0 z-10"
     >
       {teams.map((team, index) => {
-        const screen = anchorScreens[index]
+        const screen = resolvedAnchorScreens[index]
         if (!screen) return null
         const cardProps = plantTeamCardPropsFromTeam(team, index)
         // Card box: horizontally centred on the plant anchor, vertically
         // starts at the soil line and extends down to a small bottom inset
         // (mirrors the `pb-2` the static fallback uses).
-        const cardLeftPercent = toPercent(screen.xPercent - 7)
-        const cardTopPercent = toPercent(screen.yPercent)
-        const cardBottomInsetPercent = 1
+        const cardLeftPercent = clampPercent(
+          screen.xPercent - OVERLAY_CARD_WIDTH_PERCENT / 2,
+          0,
+          100 - OVERLAY_CARD_WIDTH_PERCENT,
+        )
+        const cardTopPercent = clampPercent(
+          screen.yPercent,
+          0,
+          100 -
+            OVERLAY_CARD_BOTTOM_INSET_PERCENT -
+            OVERLAY_CARD_MIN_HEIGHT_PERCENT,
+        )
         return (
           <div
             key={`garden-team-overlay-${index}`}
@@ -175,8 +232,8 @@ export const GardenTeamOverlay = ({
             style={{
               left: `${cardLeftPercent}%`,
               top: `${cardTopPercent}%`,
-              width: "14%",
-              height: `calc(${100 - cardTopPercent - cardBottomInsetPercent}% )`,
+              width: `${OVERLAY_CARD_WIDTH_PERCENT}%`,
+              height: `calc(${100 - cardTopPercent - OVERLAY_CARD_BOTTOM_INSET_PERCENT}% )`,
             }}
           >
             <div className="pointer-events-auto w-full max-w-[clamp(168px,14vw,230px)] pb-2">

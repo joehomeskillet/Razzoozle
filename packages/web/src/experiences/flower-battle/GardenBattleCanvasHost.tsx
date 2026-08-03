@@ -308,6 +308,7 @@ export function GardenBattleCanvasHost({
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
   const disposeRef = useRef<(() => void) | undefined>(undefined)
+  const teamSnapshotRef = useRef<FlowerBattleCanvasHostProps["teams"]>([])
   const [app, setApp] = useState<Application | null>(null)
   const [scene, setScene] = useState<GardenScene | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -346,6 +347,18 @@ export function GardenBattleCanvasHost({
     setCurrentEvent(null)
   }, [])
 
+  const renderedTeams =
+    teams.length > 0 ? teams : teamSnapshotRef.current
+
+  // Keep the last non-empty roster for transient wire glitches. This avoids
+  // empty packets blanking HUD cards while Pixi/overlay re-anchor.
+  useEffect(() => {
+    if (teams.length <= 0) return
+    teamSnapshotRef.current = teams.map((team) => ({
+      ...team,
+    }))
+  }, [teams])
+
   // WP-D-2: subscribe to POWERUP_APPLIED so the bubble replaces the prior event
   // (no stacking per SDD §20.5). Guarded against null payloads defensively.
   useEvent(EVENTS.FLOWER_BATTLE.POWERUP_APPLIED, (payload) => {
@@ -372,9 +385,16 @@ export function GardenBattleCanvasHost({
         typeof host.getBoundingClientRect === "function"
           ? host.getBoundingClientRect()
           : ({ width: 0, height: 0 } as DOMRect)
-      setOverlayViewport({
+      const next = {
         width: Math.round(rect.width ?? 0),
         height: Math.round(rect.height ?? 0),
+      }
+      // Ignore transient 0x0 measurements during mount/read-to-ready handoff.
+      // Keeping prior overlay dimensions avoids one-frame disappearances on
+      // initial paint.
+      setOverlayViewport((current) => {
+        if (next.width > 0 && next.height > 0) return next
+        return current
       })
     }
     update()
@@ -384,7 +404,7 @@ export function GardenBattleCanvasHost({
       ro.observe(host)
     }
     return () => ro?.disconnect()
-  }, [isReady])
+  }, [])
 
   useEffect(() => {
     if (effectiveQuality === "static") {
@@ -459,13 +479,13 @@ export function GardenBattleCanvasHost({
   useEffect(() => {
     if (!scene || typeof scene.updateSnapshot !== "function") return
     scene.updateSnapshot({
-      teams: teams.map((team) => ({
+      teams: renderedTeams.map((team) => ({
         name: team.name,
         growthStage: team.growthStage,
       })),
       phase,
     })
-  }, [scene, teams, phase])
+  }, [scene, renderedTeams, phase])
 
   // Guarded canvas-local E2E identity probe (no window global).
   // Only when `?gardenE2EProbe=1` and a real scene exposes getE2EIdentity.
@@ -492,8 +512,8 @@ export function GardenBattleCanvasHost({
   )
 
   const staticNode = (
-    <GardenStaticFallback
-      teams={teams}
+      <GardenStaticFallback
+      teams={renderedTeams}
       seed={seed}
       recipeVersion={recipeVersion}
       fallback={fallback}
@@ -514,7 +534,7 @@ export function GardenBattleCanvasHost({
         }}
         fallback={(_boundaryError) => (
           <GardenStaticFallback
-            teams={teams}
+            teams={renderedTeams}
             seed={seed}
             recipeVersion={recipeVersion}
             fallback={fallback}
@@ -558,7 +578,10 @@ export function GardenBattleCanvasHost({
               {/* FB-HUD4: DOM overlay of PlantTeamCards anchored over the
                   canvas. Renders only when teams exist; static-fallback path
                   already covers the cards via FlowerGardenScene. */}
-              <GardenTeamOverlay teams={teams} viewport={overlayViewport} />
+              <GardenTeamOverlay
+                teams={renderedTeams}
+                viewport={overlayViewport}
+              />
               {/* WP-D-2: transient comic speech bubble for power-up events
                   (SDD §20.5). Sits in the top safe area so it never covers a
                   plant or the presenter HUD shell. */}
