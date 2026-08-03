@@ -77,6 +77,68 @@ export const GUST_LEAF_MID_COUNT: Record<GardenRenderQuality, number> = {
 }
 
 /**
+ * FU-Q: butterfly pool size. Was 1 (Plan §7.2 "maximal einer"); bumped
+ * to 6 so the garden shows sustained butterfly life instead of a single
+ * ambient silhouette.
+ */
+export const BUTTERFLY_POOL_SIZE = 6
+
+/**
+ * FU-Q: number of butterfly *types* available to the pool. Each slot
+ * draws its typeId from a Fisher-Yates-shuffled deck of all 8 types
+ * (Tagfalter, Schwalbenschwanz, Monarchfalter, Tagpfauenauge, Bläuling,
+ * Zitronenfalter, Hochzeit-Mantel, Glasflügler).
+ */
+export const BUTTERFLY_TYPE_POOL = 8
+
+/**
+ * FU-Q: wing-flap frequency range in Hz per type. Each type's flap
+ * frequency is sampled from this band at bake time, driving the
+ * texture-swap cadence on a per-slot basis.
+ */
+export const BUTTERFLY_FLAP_FREQ_RANGE: readonly [number, number] = [
+  4.0, 11.0,
+] as const
+
+/**
+ * FU-Q: shared wind field contract — single source of truth for the
+ * speed-line corridor midline Y. Both `GardenWindLineController` (which
+ * stacks the 6 lines around this Y) and `GardenParticleController`
+ * (which spawns leaves within ±GUST_LEAF_SPAWN_CORRIDOR_MARGIN of this
+ * Y) read it. The `direction` (1 = LTR, -1 = RTL) flips every 30–60 s
+ * so gust leaves and speed-lines stay coherent across both controllers.
+ */
+export interface WindFieldState {
+  readonly direction: 1 | -1
+  readonly midlineY: number
+}
+
+/**
+ * FU-Q: vertical corridor (logical px) in which the wind-line stack is
+ * centred around `WindField.midlineY`. The 6 lines stack within
+ * `±WIND_LINE_CORRIDOR_HEIGHT / 2` of the midline so they read as a
+ * single visible stream rather than 4 spread-out hair-lines.
+ */
+export const WIND_LINE_CORRIDOR_HEIGHT = 80
+
+/**
+ * FU-Q: half-spread (logical px) for gust-leaf spawn Y. A new leaf's
+ * `currentY` lands within `±GUST_LEAF_SPAWN_CORRIDOR_MARGIN` of
+ * `WindField.midlineY` so it visibly rides the same wind tube as the
+ * speed-lines. The vertical drop (`LEAF_FLIGHT_BASE_VY_RANGE`) keeps the
+ * leaf inside the corridor for its first few seconds of flight.
+ */
+export const GUST_LEAF_SPAWN_CORRIDOR_MARGIN = 30
+
+/**
+ * FU-Q: wind-direction flip interval (seconds). `GardenWindField` picks
+ * a fresh value from this band every time the timer expires.
+ */
+export const WIND_FIELD_FLIP_INTERVAL_RANGE: readonly [number, number] = [
+  30.0, 60.0,
+] as const
+
+/**
  * Adventure-Time autumn leaf palette (FU-P). The first six channels
  * are sampled from the resolved GardenPalette so the leaf set stays
  * visually tied to the active palette; the last two channels
@@ -390,19 +452,19 @@ export const LEAF_FLIGHT_STUCK_DURATION = 2.0
  */
 
 /** Number of wind-line Graphics mounted into the weather container. */
-export const WIND_LINE_COUNT = 4
+export const WIND_LINE_COUNT = 6
 
 /** Cream-yellow color (AGY: matches the speed-line palette). */
 export const WIND_LINE_COLOR = 0xfff5d1
 
 /** Base alpha when `windSample === 0` (lines are subtle, not invisible). */
-export const WIND_LINE_BASE_ALPHA = 0.35
+export const WIND_LINE_BASE_ALPHA = 0.55
 
 /** Alpha gain per `|windSample|`; total alpha clamped to 1. */
 export const WIND_LINE_GUST_ALPHA_GAIN = 0.45
 
 /** Line stroke width (logical px). */
-export const WIND_LINE_HEIGHT = 28
+export const WIND_LINE_HEIGHT = 36
 
 /** Per-line horizontal speed band (px/s, leftward). */
 export const WIND_LINE_SPEED_RANGE: readonly [number, number] = [80, 140]

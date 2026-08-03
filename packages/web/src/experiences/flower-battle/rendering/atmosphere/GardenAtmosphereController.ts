@@ -1,14 +1,20 @@
 /**
  * Garden atmosphere aggregator.
  *
- * Single facade that owns the wind, bird, and particle sub-controllers.
- * The scene drives this through `update(deltaMs)` after each Pixi ticker
- * frame. Idempotent `destroy()` tears down every owned child.
+ * Single facade that owns the wind, bird, particle, butterfly, and
+ * wind-line sub-controllers. The scene drives this through
+ * `update(deltaMs)` after each Pixi ticker frame. Idempotent
+ * `destroy()` tears down every owned child.
  *
- * Why this exists: keeps the three sub-controllers decoupled for unit
+ * Why this exists: keeps the sub-controllers decoupled for unit
  * testing while presenting a single, stable API to `GardenScene`. The
  * facade never adds allocation pressure — `update()` only writes to
  * pre-built Pixi nodes.
+ *
+ * FU-Q: a single `GardenWindField` instance is created here and
+ * shared with `GardenWindLineController` and
+ * `GardenParticleController` so speed-lines and gust leaves stay
+ * coherent (same wind direction + same corridor midline).
  */
 
 import { Container, type Texture } from "pixi.js"
@@ -37,7 +43,13 @@ import {
   resolveThemeTokenColor,
   type ThemeColorResolver,
 } from "../resolveThemeColor"
-import { DEFAULT_ATMOSPHERE_SEED } from "./seededRandom"
+import {
+  ATMOSPHERE_HEIGHT,
+  DEFAULT_ATMOSPHERE_SEED,
+  WIND_FIELD_FLIP_INTERVAL_RANGE,
+  type WindFieldState,
+} from "./garden-atmosphere.constants"
+import { createSeededRandom, type SeededRandom } from "./seededRandom"
 
 export interface GardenAtmosphereInput {
   /**
@@ -98,10 +110,72 @@ export interface BoundGardenAtmosphere {
   getMoteCount(): number
   getGustLeafCount(): number
   getGustLeafCapacity(): number
+  /**
+   * FU-Q backward-compat shim — preserved as the legacy "is there a
+   * butterfly pool?" sentinel (returns 1 when the butterfly pool is
+   * non-empty). New callers should reach for `getButterflyCapacity()`
+   * (the actual pool size, 6 at high quality per FU-Q).
+   */
   getButterflyCount(): number
+  /** FU-Q: actual butterfly pool capacity (= `BUTTERFLY_POOL_SIZE`). */
+  getButterflyCapacity(): number
+  /** FU-Q: number of currently-spawned butterflies (≤ capacity). */
+  getActiveButterflyCount(): number
   getButterflyActive(): boolean
   getWindSample(): number
   getElapsedSeconds(): number
+}
+
+/* --------------------------------------------------------------------------
+ * Shared WindField (FU-Q).
+ *
+ * Single source of truth for `direction` (1 = LTR, -1 = RTL) and
+ * `midlineY` (the speed-line corridor centre). The aggregator creates
+ * one instance and threads it into both the wind-line controller
+ * (which stacks the 6 lines around `midlineY`) and the particle
+ * controller (which spawns leaves within ±30 px of `midlineY`).
+ * ------------------------------------------------------------------------*/
+
+const DEFAULT_WIND_MIDLINE_FRAC = 0.4
+
+export class GardenWindField {
+  private state: WindFieldState = {
+    direction: 1,
+    midlineY: ATMOSPHERE_HEIGHT * DEFAULT_WIND_MIDLINE_FRAC,
+  }
+  private readonly rng: SeededRandom
+  private elapsedSec = 0
+  private nextFlipAtSec: number
+
+  constructor(seed: number) {
+    this.rng = createSeededRandom(seed)
+    this.nextFlipAtSec = this.rng.range(
+      WIND_FIELD_FLIP_INTERVAL_RANGE[0],
+      WIND_FIELD_FLIP_INTERVAL_RANGE[1],
+    )
+  }
+
+  getState(): WindFieldState {
+    return this.state
+  }
+
+  update(deltaMs: number): void {
+    const clamped = Math.min(50, Math.max(0, deltaMs))
+    const dt = clamped / 1000
+    this.elapsedSec += dt
+    if (this.elapsedSec >= this.nextFlipAtSec) {
+      const flipped: 1 | -1 = this.state.direction === 1 ? -1 : 1
+      this.state = {
+        direction: flipped,
+        midlineY: this.state.midlineY,
+      }
+      this.elapsedSec = 0
+      this.nextFlipAtSec = this.rng.range(
+        WIND_FIELD_FLIP_INTERVAL_RANGE[0],
+        WIND_FIELD_FLIP_INTERVAL_RANGE[1],
+      )
+    }
+  }
 }
 
 export interface CreateGardenAtmosphereOptions extends GardenAtmosphereInput {}
@@ -115,12 +189,14 @@ export function createGardenAtmosphere(
     return createNoopAtmosphere()
   }
 
+  const seed = options.seed ?? DEFAULT_ATMOSPHERE_SEED
   const wind = new GardenWindController({
-    seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+    seed,
     reducedMotion: options.prefersReducedMotion,
   })
+  const windField = new GardenWindField(seed)
   const birds = new GardenBirdController({
-    seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+    seed,
     quality: options.quality,
     reducedMotion: options.prefersReducedMotion,
     // FU-I: plumb the new foreground layer so birds render above distant
@@ -133,7 +209,7 @@ export function createGardenAtmosphere(
     sunPosition: options.sunPosition ?? null,
   })
   const particles = new GardenParticleController({
-    seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+    seed,
     quality: options.quality,
     reducedMotion: options.prefersReducedMotion,
     ambient: options.ambient,
@@ -141,34 +217,33 @@ export function createGardenAtmosphere(
     moteTexture: options.moteTexture ?? null,
     windLeafTextures: options.windLeafTextures ?? [],
     palette: options.palette,
+    windField,
   })
-  // FU-L: ambient butterfly (Plan §7.2). Single-pool, gated on
-  // quality === "high" + !reducedMotion inside the controller. The
-  // aggregator resolves `--color-accent` once (when a `resolveColor`
-  // is provided) and threads the numeric value through so the
-  // controller itself stays DOM-free for the unit tests (which run
-  // under `node`, not jsdom).
+  // FU-L: ambient butterfly (Plan §7.2). Pool-of-6 gated on quality
+  // === "high" + !reducedMotion inside the controller. The aggregator
+  // resolves `--color-accent` once (when a `resolveColor` is
+  // provided) and threads the numeric value through so the controller
+  // itself stays DOM-free for the unit tests (which run under `node`,
+  // not jsdom).
   const butterflyBodyColor = options.resolveColor
     ? options.resolveColor("--color-accent" as never)
     : undefined
   const butterfly = new GardenButterflyController({
-    seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+    seed,
     quality: options.quality,
     ambient: options.ambient,
     reducedMotion: options.prefersReducedMotion,
     bodyColor: butterflyBodyColor,
     renderer: options.renderer,
   })
-  // FU-P: cream-yellow Bezier speed-lines in the weather layer. The
-  // controller is pure visual (no internal wind integration); it
-  // receives the same `windSample` we feed to particles. The
-  // `weather` container is reserved for future wind-blown leaves /
-  // pollen so we mount the lines there rather than polluting the
-  // ambient layer.
+  // FU-P, FU-Q: cream-yellow Bezier speed-lines in the weather layer.
+  // The 6 lines stack tightly around the shared `WindField.midlineY`
+  // and drift in the current `windField.direction`.
   const windLines = options.weather
     ? new GardenWindLineController({
         weather: options.weather,
-        seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
+        seed,
+        windField,
       })
     : null
 
@@ -178,6 +253,7 @@ export function createGardenAtmosphere(
     if (destroyed) return
     const clamped = Math.min(50, Math.max(0, deltaMs))
     const sample = wind.update(clamped)
+    windField.update(clamped)
     birds.update(clamped)
     particles.update(clamped, sample)
     butterfly.update(clamped)
@@ -203,7 +279,13 @@ export function createGardenAtmosphere(
     getMoteCount: () => particles.getMoteCount(),
     getGustLeafCount: () => particles.getGustLeafCount(),
     getGustLeafCapacity: () => particles.getGustLeafCapacity(),
-    getButterflyCount: () => butterfly.getCapacity(),
+    // FU-Q backward-compat: legacy single-slot semantic — returns 1
+    // when the butterfly pool is non-empty (capacity > 0), else 0.
+    // The internal pool is 6 slots; use `getButterflyCapacity()` for
+    // the new contract.
+    getButterflyCount: () => (butterfly.getCapacity() > 0 ? 1 : 0),
+    getButterflyCapacity: () => butterfly.getCapacity(),
+    getActiveButterflyCount: () => butterfly.getActiveCount(),
     getButterflyActive: () => butterfly.getIsAlive(),
     getWindSample: () => wind.getSample(),
     getElapsedSeconds: () => wind.getElapsedSeconds(),
@@ -225,6 +307,8 @@ function createNoopAtmosphere(): BoundGardenAtmosphere {
     getGustLeafCount: () => 0,
     getGustLeafCapacity: () => 0,
     getButterflyCount: () => 0,
+    getButterflyCapacity: () => 0,
+    getActiveButterflyCount: () => 0,
     getButterflyActive: () => false,
     getWindSample: () => 0,
     getElapsedSeconds: () => 0,

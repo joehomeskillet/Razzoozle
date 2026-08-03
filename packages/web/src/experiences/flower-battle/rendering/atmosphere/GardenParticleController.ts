@@ -26,6 +26,7 @@ import {
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_MID_COUNT,
   GUST_LEAF_SCALE_RANGE,
+  GUST_LEAF_SPAWN_CORRIDOR_MARGIN,
   GUST_LEAF_VEIN_SCALE_RATIO,
   GUST_LEAF_VEIN_TINT_FACTOR,
   GRASS_TUFT_COUNTS,
@@ -47,6 +48,7 @@ import {
   MOTE_ALPHA_RANGE,
   MOTE_Y_BAND,
   resolveGustLeafColors,
+  type WindFieldState,
 } from "./garden-atmosphere.constants"
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
@@ -67,6 +69,15 @@ export interface GardenParticleControllerOptions {
   /** Resolved palette — used to tint motes and gust leaves so they
    *  read as green/foliage, not the source PNG's raw white fill. */
   palette: GardenPalette
+  /**
+   * Shared `WindField` instance (FU-Q). The controller reads
+   * `direction` (to pick the entry side) and `midlineY` (to anchor
+   * the spawn band inside the wind corridor) on every leaf spawn
+   * so leaves and speed-lines stay coherent. Defaults to a static
+   * direction=1 / midlineY=0.4*H field when omitted (legacy single-
+   * controller tests).
+   */
+  windField?: { getState(): WindFieldState }
 }
 
 interface MoteSlot {
@@ -164,6 +175,18 @@ function darkenColor(color: number, factor: number): number {
   return (red << 16) | (green << 8) | blue
 }
 
+/** Tiny default wind field used when the controller is constructed
+ *  without a `windField` option (legacy single-controller tests, where
+ *  the direction is fixed = 1 and the corridor midline sits at the
+ *  traditional garden-centre). */
+const DEFAULT_WIND_MIDLINE_FRAC = 0.4
+function defaultWindFieldState(): WindFieldState {
+  return {
+    direction: 1,
+    midlineY: ATMOSPHERE_HEIGHT * DEFAULT_WIND_MIDLINE_FRAC,
+  }
+}
+
 export class GardenParticleController {
   private readonly rng: SeededRandom
   private readonly quality: GardenRenderQuality
@@ -173,6 +196,7 @@ export class GardenParticleController {
   private readonly moteTexture: Texture | null
   private readonly windLeafTextures: readonly Texture[]
   private readonly palette: GardenPalette
+  private readonly windField: { getState(): WindFieldState }
   private veinTexture: Texture | null = null
   private veinTextureOwned = false
   private readonly motes: MoteSlot[] = []
@@ -192,11 +216,19 @@ export class GardenParticleController {
     this.moteTexture = options.moteTexture ?? null
     this.windLeafTextures = options.windLeafTextures ?? []
     this.palette = options.palette
+    this.windField = options.windField ?? { getState: defaultWindFieldState }
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
 
     this.initMotes()
     this.initGustLeaves()
     this.initGrass()
+  }
+
+  /** Read-only accessor for the windfield state (test seam — the FU-Q
+   *  brief asks the corridor-margin test to assert leaf spawn Y
+   *  against `WindField.midlineY`). */
+  getWindFieldState(): WindFieldState {
+    return this.windField.getState()
   }
 
   /** Mote pool size (= configured maximum motes, matches quality). */
@@ -467,14 +499,19 @@ export class GardenParticleController {
           slot.sprite.visible = false
         }
       } else if (activeGust) {
-        // FU-O spawn: startX at screen edge, vx sign follows direction,
-        // vy / angVel / baseY / currentRotation sampled from the new
+        // FU-O spawn: startX at the windward edge (direction comes from
+        // the shared WindField so leaves and speed-lines stay
+        // coherent), vy / angVel / currentRotation sampled from the
         // ballistic ranges.
-        const fromLeft = this.rng.next() < 0.5
+        // FU-Q spawn Y: anchored to `WindField.midlineY` ±
+        // GUST_LEAF_SPAWN_CORRIDOR_MARGIN so the leaf visibly rides the
+        // same wind tube as the speed-lines.
+        const wind = this.windField.getState()
+        const fromLeft = wind.direction === 1
         const startX = fromLeft
           ? -GUST_LEAF_EDGE_INSET
           : ATMOSPHERE_WIDTH + GUST_LEAF_EDGE_INSET
-        slot.direction = fromLeft ? 1 : -1
+        slot.direction = wind.direction
         const speed = this.rng.range(
           LEAF_FLIGHT_BASE_V_RANGE[0],
           LEAF_FLIGHT_BASE_V_RANGE[1],
@@ -488,11 +525,20 @@ export class GardenParticleController {
           LEAF_FLIGHT_ANG_VEL_RANGE[0],
           LEAF_FLIGHT_ANG_VEL_RANGE[1],
         )
-        const baseYFrac = this.rng.range(
-          LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[0],
-          LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[1],
+        const baseYJitter = this.rng.signed() * GUST_LEAF_SPAWN_CORRIDOR_MARGIN
+        slot.baseY =
+          wind.midlineY + baseYJitter * 0.6
+        // Clamp into a band that still respects the legacy spawn
+        // range so existing ballistic tests (vy range, etc.) keep
+        // hitting — the corridor band sits comfortably inside
+        // LEAF_FLIGHT_SPAWN_BASE_Y_RANGE.
+        slot.baseY = Math.max(
+          LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[0] * ATMOSPHERE_HEIGHT,
+          Math.min(
+            LEAF_FLIGHT_SPAWN_BASE_Y_RANGE[1] * ATMOSPHERE_HEIGHT,
+            slot.baseY,
+          ),
         )
-        slot.baseY = baseYFrac * ATMOSPHERE_HEIGHT
         slot.lifetimeSec = this.rng.range(
           GUST_LEAF_LIFETIME_RANGE[0],
           GUST_LEAF_LIFETIME_RANGE[1],
