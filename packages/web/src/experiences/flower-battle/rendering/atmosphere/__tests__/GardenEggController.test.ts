@@ -179,7 +179,7 @@ describe("GardenEggController", () => {
     c.update(16)
     let stats = c.getStats()
     expect(stats.activeShatters).toBeGreaterThan(0)
-    for (let i = 0; i < 200; i += 1) c.update(50)
+    for (let i = 0; i < 300; i += 1) c.update(50)
     stats = c.getStats()
     expect(stats.activeShatters).toBe(0)
     expect(stats.activeYolks).toBe(0)
@@ -189,6 +189,114 @@ describe("GardenEggController", () => {
   it("FU-T: shell fade duration range is [4.0, 10.0] seconds", () => {
     expect(EGG_SHELL_FADE_DURATION_RANGE[0]).toBe(4.0)
     expect(EGG_SHELL_FADE_DURATION_RANGE[1]).toBe(10.0)
+  })
+
+  it("FU-V (DECAY-V): triggerShatter staggers per-piece fadeDuration (±15 % jitter)", () => {
+    const { c } = makeEggController(0xabc)
+    c.spawn(0, 0)
+    const eggInternals = c as unknown as {
+      eggPool: Array<{ impactY: number; y: number }>
+    }
+    eggInternals.eggPool[0]!.impactY = 0
+    c.update(500)
+    const shatterInternals = c as unknown as {
+      shatterPool: Array<{ active: boolean; fadeDuration: number }>
+    }
+    const active = shatterInternals.shatterPool.filter((p) => p.active)
+    expect(active.length).toBeGreaterThanOrEqual(2)
+    const fadeDurations = active.map((p) => p.fadeDuration)
+    // Stagger = per-piece jitter produces DIFFERENT fadeDuration values
+    // for different pieces within the same shatter event.
+    const allSame = fadeDurations.every((d) => d === fadeDurations[0])
+    expect(allSame).toBe(false)
+    // Sanity bound: every per-piece value stays within ±15 % of its base
+    // (which is itself in EGG_SHELL_FADE_DURATION_RANGE = [4.0, 10.0]).
+    for (const d of fadeDurations) {
+      expect(d).toBeGreaterThan(EGG_SHELL_FADE_DURATION_RANGE[0] * 0.85)
+      expect(d).toBeLessThan(EGG_SHELL_FADE_DURATION_RANGE[1] * 1.15)
+    }
+    c.destroy()
+  })
+
+  it("FU-V (DECAY-V): shell alpha curve is ease-out and monotonically decreasing", () => {
+    const { c } = makeEggController()
+    c.spawn(0, 0)
+    const eggInternals = c as unknown as {
+      eggPool: Array<{ impactY: number; y: number }>
+    }
+    eggInternals.eggPool[0]!.impactY = 0
+    c.update(500)
+    const shatterInternals = c as unknown as {
+      shatterPool: Array<{
+        active: boolean
+        landed: boolean
+        fadeSec: number
+        fadeDuration: number
+        sprite: { alpha: number }
+      }>
+    }
+    const piece = shatterInternals.shatterPool.find((p) => p.active)
+    expect(piece).toBeDefined()
+    // Skip physics landing so fadeSec is the only thing that advances.
+    piece!.landed = true
+    piece!.fadeDuration = 10
+    const alphas: number[] = []
+    const tValues = [0, 0.25, 0.5, 0.75, 1.0]
+    for (const t of tValues) {
+      piece!.fadeSec = t * piece!.fadeDuration
+      // dt=0 → fadeSec won't advance; alpha readback is from this very tick.
+      c.update(0)
+      alphas.push(piece!.sprite.alpha)
+    }
+    // ease-out: alpha = (1 - t)²  →  1.0, 0.5625, 0.25, 0.0625, 0
+    expect(alphas[0]).toBeCloseTo(1.0, 5)
+    expect(alphas[1]).toBeCloseTo(0.5625, 5)
+    expect(alphas[2]).toBeCloseTo(0.25, 5)
+    expect(alphas[3]).toBeCloseTo(0.0625, 5)
+    expect(alphas[4]).toBeCloseTo(0, 5)
+    // monotonically decreasing across the whole fade
+    for (let i = 1; i < alphas.length; i += 1) {
+      expect(alphas[i]).toBeLessThanOrEqual(alphas[i - 1]!)
+    }
+    c.destroy()
+  })
+
+  it("FU-V (DECAY-V): yolk alpha curve stays linear (1 - fadeSec/fadeDuration)", () => {
+    const { c } = makeEggController()
+    c.spawn(0, 0)
+    const eggInternals = c as unknown as {
+      eggPool: Array<{ impactY: number; y: number }>
+    }
+    eggInternals.eggPool[0]!.impactY = 0
+    c.update(500)
+    const yolkInternals = c as unknown as {
+      yolkPool: Array<{
+        active: boolean
+        fadeSec: number
+        fadeDuration: number
+        sprite: { alpha: number }
+      }>
+    }
+    const yolk = yolkInternals.yolkPool.find((p) => p.active)
+    expect(yolk).toBeDefined()
+    yolk!.fadeDuration = 10
+    const alphas: number[] = []
+    const tValues = [0, 0.25, 0.5, 0.75, 1.0]
+    for (const t of tValues) {
+      yolk!.fadeSec = t * yolk!.fadeDuration
+      c.update(0)
+      alphas.push(yolk!.sprite.alpha)
+    }
+    // linear: alpha = 1 - t  →  1.0, 0.75, 0.5, 0.25, 0
+    expect(alphas[0]).toBeCloseTo(1.0, 5)
+    expect(alphas[1]).toBeCloseTo(0.75, 5)
+    expect(alphas[2]).toBeCloseTo(0.5, 5)
+    expect(alphas[3]).toBeCloseTo(0.25, 5)
+    expect(alphas[4]).toBeCloseTo(0, 5)
+    for (let i = 1; i < alphas.length; i += 1) {
+      expect(alphas[i]).toBeLessThanOrEqual(alphas[i - 1]!)
+    }
+    c.destroy()
   })
 
   it("FU-V (SHARD-V): shard pool is EGG_SHATTER_POOL_SIZE and at least one shard texture source is >= 18 px wide", () => {

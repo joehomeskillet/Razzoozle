@@ -295,8 +295,16 @@ export class GardenEggController {
       }
       piece.fadeSec += dt
       const t = 1 - piece.fadeSec / piece.fadeDuration
-      piece.sprite.alpha = Math.max(0, t)
-      if (t <= 0) {
+      // FU-V (DECAY-V): ease-out fade (alpha = (clamp(t, 0, 1))²) so
+      // shells linger a bit at full opacity then drop off — combined
+      // with the per-piece ±15 % jitter above, different shards within
+      // the same shatter event vanish at slightly different times.
+      // Clamp-then-square (not square-then-clamp) is required so that
+      // alpha actually reaches 0 once fadeSec ≥ fadeDuration and the
+      // recycle branch below fires.
+      const alpha = Math.max(0, t) ** 2
+      piece.sprite.alpha = alpha
+      if (alpha <= 0) {
         this.releaseShatter(piece)
       }
     }
