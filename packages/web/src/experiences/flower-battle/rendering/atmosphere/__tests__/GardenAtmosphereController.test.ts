@@ -43,10 +43,12 @@ const TEST_PALETTE: GardenPalette = {
 function makeAtmosphereOptions(overrides: Record<string, unknown> = {}) {
   const ambient = new Container()
   const skyLife = new Container()
+  const skyLifeForeground = new Container()
   const weather = new Container()
   const grass = new Container()
   return {
     skyLife,
+    skyLifeForeground,
     ambient,
     weather,
     grass,

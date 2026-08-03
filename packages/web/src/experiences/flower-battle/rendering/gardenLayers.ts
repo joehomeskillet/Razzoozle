@@ -34,6 +34,11 @@ export const LAYER_LABELS = [
   "layer-sky-life",
   "layer-distant-hills",
   "layer-distant-bushes",
+  // FU-I: foreground sky-life sits ABOVE distant hills/bushes so birds
+  // stay readable, but BELOW grass/trees/fence/plots/flowers so the
+  // foreground silhouettes still occlude them. The base `layer-sky-life`
+  // remains behind distant-hills for future background sky objects.
+  "layer-sky-life-foreground",
   // Lawn first, then far trees (so trunks aren't buried under solid grass),
   // then mid + near trees, then fence in front of trunks, then plots/flowers.
   "layer-grass",
@@ -60,6 +65,12 @@ export interface GardenLayerSet {
   skyLife: Container
   distantHills: Container
   distantBushes: Container
+  /**
+   * FU-I: foreground sky-life layer — sits between distant bushes and grass
+   * so birds render ABOVE the hill silhouettes but BELOW the trees / fence /
+   * plots / flowers that should still occlude them.
+   */
+  skyLifeForeground: Container
   grass: Container
   farTrees: Container
   midTrees: Container
@@ -350,6 +361,21 @@ export function buildSkyLayer(
 export function buildSkyLifeLayer(): Container {
   const layer = new Container()
   layer.label = "layer-sky-life"
+  return layer
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Sky life foreground — FU-I z-index fix. Empty anchor container for
+ * airborne atmosphere objects that must render ABOVE distant hills / bushes
+ * (so birds don't disappear behind the hill silhouettes) but BELOW grass /
+ * trees / fence / plots / flowers (so the foreground still occludes them).
+ * Sits between distant-bushes and grass in LAYER_LABELS. The bird controller
+ * mounts into this layer by default; the older `layer-sky-life` stays behind
+ * distant hills for future background sky objects.
+ * ────────────────────────────────────────────────────────────────────── */
+export function buildSkyLifeForegroundLayer(): Container {
+  const layer = new Container()
+  layer.label = "layer-sky-life-foreground"
   return layer
 }
 
@@ -1140,6 +1166,8 @@ export function createGardenLayers(
   const skyLife = buildSkyLifeLayer()
   const distantHills = buildDistantHillsLayer(palette, assets)
   const distantBushes = buildDistantBushesLayer(palette, assets)
+  // FU-I: foreground sky-life for birds — see buildSkyLifeForegroundLayer.
+  const skyLifeForeground = buildSkyLifeForegroundLayer()
   const grass = buildGrassLayer(palette, assets)
   // FB-HUD4 / Gartenmodus-Korrektur: trees split into three depth layers.
   // Opacity is on the whole layer, never on individual trees.
@@ -1163,6 +1191,10 @@ export function createGardenLayers(
     skyLife,
     distantHills,
     distantBushes,
+    // FU-I: sky-life-foreground sits between distant bushes and grass so
+    // birds render above the hill silhouettes but below the grass / trees /
+    // fence / plots / flowers that should still occlude them.
+    skyLifeForeground,
     grass,
     farTrees,
     midTrees,
@@ -1183,6 +1215,7 @@ export function createGardenLayers(
     skyLife,
     distantHills,
     distantBushes,
+    skyLifeForeground,
     grass,
     farTrees,
     midTrees,

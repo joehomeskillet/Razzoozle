@@ -330,6 +330,8 @@ export function createGardenScene(
     const sunPos = sunHolder ? { x: sunHolder.x, y: sunHolder.y } : null
     const atmosOptions: CreateGardenAtmosphereOptions = {
       skyLife: layers.skyLife,
+      // FU-I: pass the foreground layer so birds render above distant hills.
+      skyLifeForeground: layers.skyLifeForeground,
       ambient: layers.ambient,
       weather: layers.weather,
       grass: layers.grass,

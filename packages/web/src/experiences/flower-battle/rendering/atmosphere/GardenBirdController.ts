@@ -62,8 +62,19 @@ export interface GardenBirdControllerOptions {
   quality: GardenRenderQuality
   /** When true, suppress all motion (no spawns, no animation). */
   reducedMotion?: boolean
-  /** Layer the bird sprites are mounted on. */
-  skyLife: Container
+  /**
+   * Layer the bird sprites are mounted on. Deprecated — prefer
+   * `skyLifeForeground` (FU-I: birds render above distant hills).
+   * Kept as a back-compat alias: when only `skyLife` is passed, the
+   * controller still mounts there so pre-FU-I callers do not break.
+   */
+  skyLife?: Container
+  /**
+   * FU-I: foreground sky-life layer — birds render ABOVE distant hills /
+   * bushes, BELOW grass / trees / fence / plots / flowers. Takes priority
+   * over `skyLife` when both are provided.
+   */
+  skyLifeForeground?: Container
   /** Pair of textures for wings-up / wings-down. Null = graceful empty pool. */
   birdTextures?: GardenBirdTextures | null
   /** Rectangles (logical px) the controller must avoid. Tests pass plot
@@ -93,6 +104,13 @@ export class GardenBirdController {
   private readonly rng: SeededRandom
   private readonly quality: GardenRenderQuality
   private readonly reducedMotion: boolean
+  /**
+   * FU-I: foreground sky-life layer — the mount point for bird sprites.
+   * Prefers `options.skyLifeForeground`; falls back to `options.skyLife` for
+   * back-compat with pre-FU-I callers. Both are accepted in the constructor.
+   */
+  private readonly skyLifeForeground: Container
+  /** Deprecated back-compat alias of `skyLifeForeground`. */
   private readonly skyLife: Container
   private readonly pool: BirdSlot[] = []
   private readonly spawnIntervalRangeMs: readonly [number, number]
@@ -111,7 +129,16 @@ export class GardenBirdController {
   constructor(options: GardenBirdControllerOptions) {
     this.quality = options.quality
     this.reducedMotion = options.reducedMotion ?? false
-    this.skyLife = options.skyLife
+    // FU-I: prefer the new foreground layer; fall back to the legacy
+    // `skyLife` option so existing tests / pre-FU-I callers keep working.
+    const foreground = options.skyLifeForeground ?? options.skyLife
+    if (!foreground) {
+      throw new Error(
+        "GardenBirdController requires either skyLifeForeground or skyLife",
+      )
+    }
+    this.skyLifeForeground = foreground
+    this.skyLife = foreground
     this.birdTextures = options.birdTextures ?? null
     this.safeZones = options.safeZones ?? []
     this.sunPosition = options.sunPosition ?? null
@@ -136,7 +163,7 @@ export class GardenBirdController {
       sprite.label = `bird-${i}`
       sprite.anchor.set(0.5, 0.5)
       sprite.visible = false
-      this.skyLife.addChild(sprite)
+      this.skyLifeForeground.addChild(sprite)
       this.pool.push({
         sprite,
         active: false,

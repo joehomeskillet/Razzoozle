@@ -1111,6 +1111,52 @@ describe("SDD §30 probe-v3 contract on procedural scene", () => {
   })
 })
 
+describe("FU-I: sky-life foreground layer (birds above distant hills, below trees)", () => {
+  it("adds layer-sky-life-foreground to LAYER_LABELS between distant-bushes and grass", () => {
+    // LAYER_LABELS must have grown by exactly 1 (the new foreground layer).
+    const labels = [...LAYER_LABELS]
+    const bushesIdx = labels.indexOf("layer-distant-bushes")
+    const grassIdx = labels.indexOf("layer-grass")
+    const foregroundIdx = labels.indexOf("layer-sky-life-foreground")
+    expect(bushesIdx).toBeGreaterThanOrEqual(0)
+    expect(grassIdx).toBeGreaterThanOrEqual(0)
+    expect(foregroundIdx).toBeGreaterThanOrEqual(0)
+    // Strict order: … distant-bushes → sky-life-foreground → grass …
+    expect(foregroundIdx).toBe(bushesIdx + 1)
+    expect(foregroundIdx).toBeLessThan(grassIdx)
+  })
+
+  it("createGardenLayers exposes skyLifeForeground, ordered between distant-bushes and grass", () => {
+    const app = fakeApp()
+    const scene = createGardenScene(app, { palette: TEST_PALETTE })
+
+    // The layer is exposed on the GardenLayerSet.
+    expect(scene.layers.skyLifeForeground).toBeDefined()
+    expect(scene.layers.skyLifeForeground.label).toBe("layer-sky-life-foreground")
+    expect(scene.layers.skyLifeForeground.children).toHaveLength(0)
+
+    // Ordered children mirror LAYER_LABELS (existing test contract).
+    expect(scene.root.children.map((c) => c.label)).toEqual([...LAYER_LABELS])
+    expect(scene.layers.ordered.map((l) => l.label)).toEqual([...LAYER_LABELS])
+
+    // Strict ordering of the new layer between distant-bushes and grass.
+    const ordered = scene.layers.ordered.map((l) => l.label)
+    const bushesIdx = ordered.indexOf("layer-distant-bushes")
+    const foregroundIdx = ordered.indexOf("layer-sky-life-foreground")
+    const grassIdx = ordered.indexOf("layer-grass")
+    expect(foregroundIdx).toBe(bushesIdx + 1)
+    expect(foregroundIdx).toBeLessThan(grassIdx)
+
+    // The base layer-sky-life (behind distant-hills) is still present.
+    expect(ordered.indexOf("layer-sky-life")).toBeGreaterThanOrEqual(0)
+    expect(ordered.indexOf("layer-distant-hills")).toBeGreaterThan(
+      ordered.indexOf("layer-sky-life"),
+    )
+
+    scene.destroy()
+  })
+})
+
 describe("atmosphere safe zones wiring (Minor-5 / FU-C)", () => {
   it("safeZones mirrors the plot count (2 → 3 → 4 teams) and centers match anchors", () => {
     const app = fakeApp()

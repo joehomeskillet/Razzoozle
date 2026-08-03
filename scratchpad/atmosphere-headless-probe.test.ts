@@ -122,7 +122,7 @@ function atmosphereTextures(): GardenAtmosphereTextures {
 const TICK_COUNT = 3600
 const DELTA_TIME = 1 // 1 unit at 60 fps = 16.67 ms
 
-interface ScenarioResult {
+  interface ScenarioResult {
   scenario: string
   quality: "high" | "medium" | "low" | "static"
   reducedMotion: boolean
@@ -138,6 +138,7 @@ interface ScenarioResult {
   foregroundBushAlpha1: number
   foregroundBushTotal: number
   layerSkyLifeChildren: number
+  layerSkyLifeForegroundChildren: number
   layerAmbientChildren: number
   layerWeatherChildren: number
   finalWindSample: number
@@ -251,10 +252,12 @@ function runScenario(
   )
 
   const layerSkyLifeChildren = scene.layers.skyLife.children.length
+  const layerSkyLifeForegroundChildren = scene.layers.skyLifeForeground.children.length
   const layerAmbientChildren = scene.layers.ambient.children.length
   const layerWeatherChildren = scene.layers.weather.children.length
   assertions.push(
     `layer-sky-life children: ${layerSkyLifeChildren}`,
+    `layer-sky-life-foreground children: ${layerSkyLifeForegroundChildren}`,
     `layer-ambient children: ${layerAmbientChildren}`,
     `layer-weather children: ${layerWeatherChildren}`,
   )
@@ -327,6 +330,14 @@ function runScenario(
     destroyed &&
     destroyIdempotent
 
+  // FU-I: assert birds actually mount in skyLifeForeground for high / medium
+  // qualities (non-reduced-motion) — this is the bug fix the probe verifies.
+  if (expectSkyLife) {
+    assertions.push(
+      `layer-sky-life-foreground populated: ${layerSkyLifeForegroundChildren}`,
+    )
+  }
+
   return {
     scenario,
     quality,
@@ -343,6 +354,7 @@ function runScenario(
     foregroundBushAlpha1: fgBushes.alpha1,
     foregroundBushTotal: fgBushes.total,
     layerSkyLifeChildren,
+    layerSkyLifeForegroundChildren,
     layerAmbientChildren,
     layerWeatherChildren,
     finalWindSample,
@@ -424,7 +436,7 @@ function runAll(): void {
       captured.push(`  ${line}`)
     }
     captured.push(
-      `  pass=${r.pass}  root=${r.rootChildCountBefore}->${r.rootChildCountAfter}  trees(f/m/n)=${r.farTreeAlpha1}/${r.farTreeTotal} ${r.midTreeAlpha1}/${r.midTreeTotal} ${r.nearTreeAlpha1}/${r.nearTreeTotal}  bushes=${r.foregroundBushAlpha1}/${r.foregroundBushTotal}  sky=${r.layerSkyLifeChildren}  ambient=${r.layerAmbientChildren}  weather=${r.layerWeatherChildren}  wind=${r.finalWindSample.toFixed(4)}`,
+      `  pass=${r.pass}  root=${r.rootChildCountBefore}->${r.rootChildCountAfter}  trees(f/m/n)=${r.farTreeAlpha1}/${r.farTreeTotal} ${r.midTreeAlpha1}/${r.midTreeTotal} ${r.nearTreeAlpha1}/${r.nearTreeTotal}  bushes=${r.foregroundBushAlpha1}/${r.foregroundBushTotal}  sky=${r.layerSkyLifeChildren}/fg=${r.layerSkyLifeForegroundChildren}  ambient=${r.layerAmbientChildren}  weather=${r.layerWeatherChildren}  wind=${r.finalWindSample.toFixed(4)}`,
     )
     captured.push("")
   }
@@ -474,6 +486,13 @@ function runAll(): void {
     .map((c) => `${c.label}@(${c.x.toFixed(0)},${c.y.toFixed(0)})`)
   captured.push(`  layer-sky-life first ${Math.min(30, skyLabels.length)} children:`)
   for (const l of skyLabels) captured.push(`    ${l}`)
+  const skyForegroundLabels = dumpScene.layers.skyLifeForeground.children
+    .slice(0, 30)
+    .map((c) => `${c.label}@(${c.x.toFixed(0)},${c.y.toFixed(0)})`)
+  captured.push(
+    `  layer-sky-life-foreground first ${Math.min(30, skyForegroundLabels.length)} children:`,
+  )
+  for (const l of skyForegroundLabels) captured.push(`    ${l}`)
   const ambientLabels = dumpScene.layers.ambient.children
     .slice(0, 30)
     .map((c) => `${c.label}@(${c.x.toFixed(0)},${c.y.toFixed(0)})`)
@@ -490,7 +509,7 @@ function runAll(): void {
   captured.push("── summary ──")
   for (const r of summary) {
     captured.push(
-      `  ${r.scenario}: pass=${r.pass} rootStable=${r.rootChildCountStable} trees(f/m/n)=${r.farTreeAlpha1}/${r.farTreeTotal}|${r.midTreeAlpha1}/${r.midTreeTotal}|${r.nearTreeAlpha1}/${r.nearTreeTotal} bushes=${r.foregroundBushAlpha1}/${r.foregroundBushTotal} sky=${r.layerSkyLifeChildren} ambient=${r.layerAmbientChildren} weather=${r.layerWeatherChildren} wind=${r.finalWindSample.toFixed(4)} destroy=${r.destroyed}/idempotent=${r.destroyIdempotent}`,
+      `  ${r.scenario}: pass=${r.pass} rootStable=${r.rootChildCountStable} trees(f/m/n)=${r.farTreeAlpha1}/${r.farTreeTotal}|${r.midTreeAlpha1}/${r.midTreeTotal}|${r.nearTreeAlpha1}/${r.nearTreeTotal} bushes=${r.foregroundBushAlpha1}/${r.foregroundBushTotal} sky=${r.layerSkyLifeChildren}/fg=${r.layerSkyLifeForegroundChildren} ambient=${r.layerAmbientChildren} weather=${r.layerWeatherChildren} wind=${r.finalWindSample.toFixed(4)} destroy=${r.destroyed}/idempotent=${r.destroyIdempotent}`,
     )
   }
   const allPass = summary.every((r) => r.pass)
@@ -530,6 +549,11 @@ describe("garden atmosphere headless probe (Task 4 visual-evidence substitute)",
       const expectAmbient = !s.reducedMotion
       if (expectSkyLife) {
         expect(r.layerSkyLifeChildren, `${s.name} sky-life populated`).toBeGreaterThan(0)
+        // FU-I: birds actually live in the foreground layer now.
+        expect(
+          r.layerSkyLifeForegroundChildren,
+          `${s.name} sky-life-foreground populated`,
+        ).toBeGreaterThan(0)
       }
       if (expectAmbient) {
         expect(r.layerAmbientChildren, `${s.name} ambient populated`).toBeGreaterThan(0)

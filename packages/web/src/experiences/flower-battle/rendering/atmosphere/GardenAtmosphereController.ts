@@ -29,8 +29,18 @@ import {
 import { DEFAULT_ATMOSPHERE_SEED } from "./seededRandom"
 
 export interface GardenAtmosphereInput {
-  /** Pixi sky-life layer — birds mount here. */
+  /**
+   * Pixi sky-life layer (background — behind distant hills). Reserved for
+   * future sky objects. Deprecated for birds: see `skyLifeForeground`.
+   * Kept so pre-FU-I callers continue to compile.
+   */
   skyLife: Container
+  /**
+   * FU-I: Pixi sky-life foreground layer — birds mount here so they render
+   * ABOVE distant hills / bushes and BELOW grass / trees / fence / plots /
+   * flowers. Plumbed straight through to GardenBirdController.
+   */
+  skyLifeForeground: Container
   /** Pixi ambient layer — motes + gust leaves. */
   ambient: Container
   /** Pixi weather layer — reserved for future wind-blown leaves / pollen. */
@@ -92,6 +102,10 @@ export function createGardenAtmosphere(
     seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,
     quality: options.quality,
     reducedMotion: options.prefersReducedMotion,
+    // FU-I: plumb the new foreground layer so birds render above distant
+    // hills. The legacy `skyLife` option is also passed so pre-FU-I code
+    // paths remain covered if a caller sets only one.
+    skyLifeForeground: options.skyLifeForeground,
     skyLife: options.skyLife,
     birdTextures: options.birdTextures ?? null,
     safeZones: options.safeZones ?? [],

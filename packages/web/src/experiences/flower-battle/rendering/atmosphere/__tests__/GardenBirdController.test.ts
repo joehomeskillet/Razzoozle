@@ -30,10 +30,10 @@ describe("GardenBirdController", () => {
       low: new Container(),
       static: new Container(),
     }
-    const skyLife = layers.high
+    const skyLifeForeground = layers.high
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
     })
     expect(birds.getBirdCount()).toBe(2)
@@ -41,7 +41,7 @@ describe("GardenBirdController", () => {
 
     const medium = new GardenBirdController({
       quality: "medium",
-      skyLife: layers.medium,
+      skyLifeForeground: layers.medium,
       birdTextures: makeBirdTextures(),
     })
     expect(medium.getBirdCount()).toBe(1)
@@ -49,7 +49,7 @@ describe("GardenBirdController", () => {
 
     const low = new GardenBirdController({
       quality: "low",
-      skyLife: layers.low,
+      skyLifeForeground: layers.low,
       birdTextures: makeBirdTextures(),
     })
     expect(low.getBirdCount()).toBe(0)
@@ -57,7 +57,7 @@ describe("GardenBirdController", () => {
 
     const stat = new GardenBirdController({
       quality: "static",
-      skyLife: layers.static,
+      skyLifeForeground: layers.static,
       birdTextures: makeBirdTextures(),
     })
     expect(stat.getBirdCount()).toBe(0)
@@ -65,22 +65,22 @@ describe("GardenBirdController", () => {
   })
 
   it("leaves the pool empty when bird textures are null", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: null,
     })
     expect(birds.getBirdCount()).toBe(0)
-    expect(skyLife.children.length).toBe(0)
+    expect(skyLifeForeground.children.length).toBe(0)
     birds.destroy()
   })
 
   it("never activates more than 2 birds simultaneously", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [10, 20],
       firstSpawnRangeMs: [1, 2],
@@ -94,10 +94,10 @@ describe("GardenBirdController", () => {
   })
 
   it("advances each active bird in +x or -x over time", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [1, 2],
       firstSpawnRangeMs: [1, 2],
@@ -106,7 +106,7 @@ describe("GardenBirdController", () => {
     // again at t1+dt and verify x moved in a consistent direction.
     birds.update(20)
     const birdSprites = () =>
-      skyLife.children.filter(
+      skyLifeForeground.children.filter(
         (c) =>
           c instanceof Sprite &&
           typeof c.label === "string" &&
@@ -134,10 +134,10 @@ describe("GardenBirdController", () => {
   })
 
   it("applies vertical wave from stable base Y using configured amplitude", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "medium",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       seed: 123,
       spawnIntervalRangeMs: [1, 2],
@@ -171,10 +171,10 @@ describe("GardenBirdController", () => {
   })
 
   it("returns retired birds to the pool without allocating new sprites", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [1, 2],
       firstSpawnRangeMs: [1, 2],
@@ -188,7 +188,7 @@ describe("GardenBirdController", () => {
     // Pool size is invariant across the lifetime of the controller.
     expect(birds.getBirdCount()).toBe(poolSize)
     // No additional Sprites were ever added beyond the pool size.
-    const birdChildren = skyLife.children.filter(
+    const birdChildren = skyLifeForeground.children.filter(
       (c) => typeof c.label === "string" && c.label.startsWith("bird-"),
     )
     expect(birdChildren.length).toBe(poolSize)
@@ -196,10 +196,10 @@ describe("GardenBirdController", () => {
   })
 
   it("respects reduced-motion: pool size is 0 and update is a no-op", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       reducedMotion: true,
     })
@@ -210,15 +210,15 @@ describe("GardenBirdController", () => {
   })
 
   it("destroy is idempotent and detaches every sprite", () => {
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
     })
     birds.destroy()
     expect(() => birds.destroy()).not.toThrow()
-    expect(skyLife.children.length).toBe(0)
+    expect(skyLifeForeground.children.length).toBe(0)
   })
 
   it("rejects spawn candidates inside SUN_SAFE_RADIUS of the configured sunPosition", () => {
@@ -227,10 +227,10 @@ describe("GardenBirdController", () => {
     // (X draws from [40, ~1880], Y from [yMin, yMax] which is ~[151, 346]).
     // Both fall inside SUN_SAFE_RADIUS of (500, 200), so after
     // BIRD_SPAWN_RETRY_LIMIT attempts the controller must give up.
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       sunPosition: { x: 500, y: 200 },
     })
@@ -255,10 +255,10 @@ describe("GardenBirdController", () => {
     // Same deterministic rng as the rejection test — without a sun the same
     // draws must be accepted (no safe-zone rejection), proving the null
     // path is the only thing keeping the spawn alive.
-    const skyLife = new Container()
+    const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
-      skyLife,
+      skyLifeForeground,
       birdTextures: makeBirdTextures(),
       sunPosition: null,
     })
@@ -285,10 +285,10 @@ describe("GardenBirdController", () => {
     // (rangeInt is inclusive on both ends, so allow the lower bound to
     // appear and the upper bound to appear.)
     for (const seed of [0xc0ffee, 1, 2, 42, 1234, 0xdeadbeef]) {
-      const skyLife = new Container()
+      const skyLifeForeground = new Container()
       const birds = new GardenBirdController({
         quality: "high",
-        skyLife,
+        skyLifeForeground,
         birdTextures: makeBirdTextures(),
         seed,
       })
@@ -298,5 +298,44 @@ describe("GardenBirdController", () => {
       expect(next).toBeLessThanOrEqual(BIRD_FIRST_SPAWN_RANGE_MS[1])
       birds.destroy()
     }
+  })
+})
+
+describe("FU-I: GardenBirdController skyLifeForeground back-compat", () => {
+  it("prefers skyLifeForeground over the legacy skyLife option when both are passed", () => {
+    const foreground = new Container()
+    const legacy = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLifeForeground: foreground,
+      skyLife: legacy,
+      birdTextures: makeBirdTextures(),
+    })
+    // Birds must mount into the foreground container, never the legacy one.
+    expect(foreground.children.length).toBe(2)
+    expect(legacy.children.length).toBe(0)
+    birds.destroy()
+  })
+
+  it("falls back to the legacy skyLife option when skyLifeForeground is omitted", () => {
+    const legacy = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLife: legacy,
+      birdTextures: makeBirdTextures(),
+    })
+    // Pre-FU-I callers still get birds mounted in their legacy layer.
+    expect(legacy.children.length).toBe(2)
+    birds.destroy()
+  })
+
+  it("throws when neither skyLifeForeground nor skyLife is supplied", () => {
+    expect(
+      () =>
+        new GardenBirdController({
+          quality: "high",
+          birdTextures: makeBirdTextures(),
+        }),
+    ).toThrow(/skyLifeForeground or skyLife/)
   })
 })
