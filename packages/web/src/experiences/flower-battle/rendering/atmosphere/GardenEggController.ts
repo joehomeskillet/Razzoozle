@@ -79,7 +79,7 @@ interface YolkSlot {
   isMini: boolean
 }
 
-const EGG_TEXTURE_SIZE = 30
+const EGG_TEXTURE_SIZE = 18
 const EGG_TINT = 0xfff4ba
 const EGG_OUTLINE = 0x6b4423
 const YOLK_TINT = 0xf4a261
@@ -135,7 +135,7 @@ export class GardenEggController {
       const sprite = new Sprite(eggTexture)
       sprite.label = `egg-${i}`
       sprite.anchor.set(0.5, 0.5)
-      // A 30×30 source at 1.5 scale renders as a visible 45×45 logical-pixel egg.
+      // An 18×18 source at 1.5 scale renders as a visible 27×27 logical-pixel egg (FU-U: 3× original 6×6).
       sprite.scale.set(1.5, 1.5)
       sprite.visible = false
       this.eggContainer.addChild(sprite)
@@ -391,11 +391,11 @@ function buildShellTexture(size: number, tint: number): Texture {
 }
 
 function buildYolkTexture(): Texture {
-  const w = 40
-  const h = 15
+  const w = 24
+  const h = 9
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(w, h, (x, y) =>
-      isYolkPixel(x, y, w, h, 20, 7.5) ? YOLK_TINT : 0,
+      isYolkPixel(x, y, w, h, 12, 4.5) ? YOLK_TINT : 0,
     )
   }
   const canvas = document.createElement("canvas")
@@ -405,7 +405,7 @@ function buildYolkTexture(): Texture {
   if (!ctx) return bufferTexture(w, h, () => 0)
   ctx.fillStyle = YOLK_TINT_HEX
   ctx.beginPath()
-  ctx.ellipse(20, 7.5, 20, 7.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(12, 4.5, 12, 4.5, 0, 0, Math.PI * 2)
   ctx.fill()
   return Texture.from(canvas)
 }

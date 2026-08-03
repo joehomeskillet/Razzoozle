@@ -55,7 +55,9 @@ describe("GardenEggController", () => {
     expect(visible.length).toBe(1)
     expect(visible[0]!.visible).toBe(true)
     expect(visible[0]!.alpha).toBe(1)
-    expect(visible[0]!.width).toBeGreaterThanOrEqual(30)
+    // FU-U: egg bake is 18×18 (3× original 6×6); assert the texture source,
+    // not the scaled sprite width (sprite.width = source.width × 1.5 = 27).
+    expect(visible[0]!.texture.source.width).toBeGreaterThanOrEqual(18)
     expect(visible[0]!.x).toBe(120)
     expect(visible[0]!.y).toBe(50)
     c.destroy()
