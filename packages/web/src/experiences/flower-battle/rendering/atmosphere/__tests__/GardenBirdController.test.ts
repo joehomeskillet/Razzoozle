@@ -11,6 +11,7 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenBirdController } from "../GardenBirdController"
+import type { SeededRandom } from "../seededRandom"
 
 function makeBirdTextures(): { up: Texture; down: Texture } {
   return {
@@ -212,5 +213,63 @@ describe("GardenBirdController", () => {
     birds.destroy()
     expect(() => birds.destroy()).not.toThrow()
     expect(skyLife.children.length).toBe(0)
+  })
+
+  it("rejects spawn candidates inside SUN_SAFE_RADIUS of the configured sunPosition", () => {
+    // Replace the rng so every pickSafeDestination draw lands at (500, 200)
+    // — the X and Y call signature is distinguished by the `min` argument
+    // (X draws from [40, ~1880], Y from [yMin, yMax] which is ~[151, 346]).
+    // Both fall inside SUN_SAFE_RADIUS of (500, 200), so after
+    // BIRD_SPAWN_RETRY_LIMIT attempts the controller must give up.
+    const skyLife = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLife,
+      birdTextures: makeBirdTextures(),
+      sunPosition: { x: 500, y: 200 },
+    })
+    const internals = birds as unknown as {
+      rng: SeededRandom
+      trySpawn: () => void
+      pool: Array<{ active: boolean; baseY: number; sprite: Sprite }>
+    }
+    internals.rng = {
+      state: 0,
+      next: () => 0,
+      range: (min: number) => (min < 100 ? 500 : 200),
+      rangeInt: (min: number) => min,
+      signed: () => 0,
+    }
+    internals.trySpawn()
+    expect(internals.pool[0]!.active).toBe(false)
+    birds.destroy()
+  })
+
+  it("allows spawn candidates inside SUN_SAFE_RADIUS when sunPosition is null", () => {
+    // Same deterministic rng as the rejection test — without a sun the same
+    // draws must be accepted (no safe-zone rejection), proving the null
+    // path is the only thing keeping the spawn alive.
+    const skyLife = new Container()
+    const birds = new GardenBirdController({
+      quality: "high",
+      skyLife,
+      birdTextures: makeBirdTextures(),
+      sunPosition: null,
+    })
+    const internals = birds as unknown as {
+      rng: SeededRandom
+      trySpawn: () => void
+      pool: Array<{ active: boolean; baseY: number; sprite: Sprite }>
+    }
+    internals.rng = {
+      state: 0,
+      next: () => 0,
+      range: (min: number) => (min < 100 ? 500 : 200),
+      rangeInt: (min: number) => min,
+      signed: () => 0,
+    }
+    internals.trySpawn()
+    expect(internals.pool[0]!.active).toBe(true)
+    birds.destroy()
   })
 })

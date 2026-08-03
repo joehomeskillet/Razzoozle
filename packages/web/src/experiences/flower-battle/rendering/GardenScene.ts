@@ -309,6 +309,25 @@ export function createGardenScene(
         ? { up: tex.birdUp, down: tex.birdDown }
         : null
     safeZones = anchorsToSafeZones(anchors)
+    // FU-A (Minor-1): plumb the sun-holder position to the bird controller
+    // so its sun-safe exclusion is the post-letterbox value, not the
+    // default fallback. The full `scene.updateLayout()` runs again at the
+    // bottom of this function and is idempotent for the sun on the same
+    // host size. We re-derive the post-layout sun x/y here (same source
+    // `layoutSkyForVisibleRect` uses) and refresh the cloud parallax base
+    // so the first onTick doesn't drift from the initial cloud position.
+    const initialWidth = app.renderer?.width ?? GARDEN_LOGICAL_WIDTH
+    const initialHeight = app.renderer?.height ?? GARDEN_LOGICAL_HEIGHT
+    const initialLetterbox = fitLogicalViewport(initialWidth, initialHeight)
+    const initialVisibleRect = computeVisibleLogicalRect(initialLetterbox)
+    layoutSkyForVisibleRect(layers.sky, initialVisibleRect)
+    for (let i = 0; i < cloudSprites.length; i += 1) {
+      cloudBaseX[i] = cloudSprites[i]!.x
+    }
+    const sunHolder = layers.sky.children.find(
+      (c) => c.label === "sun-holder",
+    )
+    const sunPos = sunHolder ? { x: sunHolder.x, y: sunHolder.y } : null
     const atmosOptions: CreateGardenAtmosphereOptions = {
       skyLife: layers.skyLife,
       ambient: layers.ambient,
@@ -322,6 +341,7 @@ export function createGardenScene(
       windLeafTextures: tex ? tex.windLeaves : [],
       moteTexture: tex ? tex.mote : null,
       safeZones,
+      sunPosition: sunPos,
     }
     // Lazy import to keep GardenScene.ts free of the sub-controller
     // graph (the scene only depends on the factory + input shape).

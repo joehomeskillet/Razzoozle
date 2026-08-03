@@ -53,6 +53,9 @@ export interface GardenAtmosphereInput {
   moteTexture?: Texture | null
   /** Plot-band safe zones (logical px). Birds reject spawns inside these. */
   safeZones?: readonly BirdSafeZone[]
+  /** Sun-holder world position (logical px). Non-null enables the
+   *  `SUN_SAFE_RADIUS` exclusion; null disables it (back-compatible). */
+  sunPosition?: { x: number; y: number } | null
 }
 
 export interface BoundGardenAtmosphere {
@@ -92,6 +95,7 @@ export function createGardenAtmosphere(
     skyLife: options.skyLife,
     birdTextures: options.birdTextures ?? null,
     safeZones: options.safeZones ?? [],
+    sunPosition: options.sunPosition ?? null,
   })
   const particles = new GardenParticleController({
     seed: options.seed ?? DEFAULT_ATMOSPHERE_SEED,

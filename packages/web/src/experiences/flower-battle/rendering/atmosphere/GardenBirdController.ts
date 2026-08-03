@@ -71,6 +71,11 @@ export interface GardenBirdControllerOptions {
   /** Override the spawn interval (ms). Tests tighten to make assertions
    *  deterministic. */
   spawnIntervalRangeMs?: readonly [number, number]
+  /** Sun-holder world position (logical px). When non-null, the controller
+   *  rejects spawn destinations within `SUN_SAFE_RADIUS` of this point.
+   *  When null (default), the sun safe zone is disabled — back-compatible
+   *  with callers that do not have a sun holder. */
+  sunPosition?: { x: number; y: number } | null
 }
 
 export interface BirdSafeZone {
@@ -94,6 +99,8 @@ export class GardenBirdController {
   /** Safe zones to avoid (HUD strip + sun safe radius + plot band). */
   private readonly safeZones: readonly BirdSafeZone[]
   private readonly birdTextures: GardenBirdTextures | null
+  /** Sun-holder world position. Null disables the sun safe radius. */
+  private readonly sunPosition: { x: number; y: number } | null
   private destroyed = false
 
   constructor(options: GardenBirdControllerOptions) {
@@ -102,6 +109,7 @@ export class GardenBirdController {
     this.skyLife = options.skyLife
     this.birdTextures = options.birdTextures ?? null
     this.safeZones = options.safeZones ?? []
+    this.sunPosition = options.sunPosition ?? null
     this.spawnIntervalRangeMs =
       options.spawnIntervalRangeMs ?? BIRD_SPAWN_INTERVAL_RANGE
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
@@ -262,17 +270,15 @@ export class GardenBirdController {
     const yMin = ATMOSPHERE_HEIGHT * BIRD_Y_BAND[0]
     const yMax = ATMOSPHERE_HEIGHT * BIRD_Y_BAND[1]
     const hudBottom = ATMOSPHERE_HEIGHT * HUD_SAFE_TOP_FRACTION
-
-    const sunHolder = this.skyLife.parent?.children
-      .flatMap((c) => (c.label === "sun-holder" ? [c] : []))[0]
-    const sunX = sunHolder?.x ?? ATMOSPHERE_WIDTH * 0.86
-    const sunY = sunHolder?.y ?? ATMOSPHERE_HEIGHT * 0.2
+    const sunR2 = SUN_SAFE_RADIUS * SUN_SAFE_RADIUS
 
     const isInSafeZone = (x: number, y: number): boolean => {
       if (y < hudBottom) return true
-      const dx = x - sunX
-      const dy = y - sunY
-      if (dx * dx + dy * dy < SUN_SAFE_RADIUS * SUN_SAFE_RADIUS) return true
+      if (this.sunPosition) {
+        const dx = x - this.sunPosition.x
+        const dy = y - this.sunPosition.y
+        if (dx * dx + dy * dy < sunR2) return true
+      }
       for (const zone of this.safeZones) {
         if (
           x >= zone.x &&
