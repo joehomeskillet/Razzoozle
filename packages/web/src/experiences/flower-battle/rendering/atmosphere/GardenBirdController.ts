@@ -17,8 +17,9 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { ATMOSPHERE_HEIGHT, ATMOSPHERE_WIDTH } from "./garden-atmosphere.constants"
 import {
   BIRD_COUNTS,
+  BIRD_FIRST_SPAWN_RANGE_MS,
   BIRD_SCALE_RANGE,
-  BIRD_SPAWN_INTERVAL_RANGE,
+  BIRD_SPAWN_INTERVAL_RANGE_MS,
   BIRD_SPEED_RANGE,
   BIRD_VERTICAL_WAVE_RANGE,
   BIRD_WING_SWAP_RANGE,
@@ -71,6 +72,9 @@ export interface GardenBirdControllerOptions {
   /** Override the spawn interval (ms). Tests tighten to make assertions
    *  deterministic. */
   spawnIntervalRangeMs?: readonly [number, number]
+  /** Override the first-spawn delay (ms). Same purpose as the interval
+   *  override — keeps the test surface symmetric. */
+  firstSpawnRangeMs?: readonly [number, number]
   /** Sun-holder world position (logical px). When non-null, the controller
    *  rejects spawn destinations within `SUN_SAFE_RADIUS` of this point.
    *  When null (default), the sun safe zone is disabled — back-compatible
@@ -92,6 +96,7 @@ export class GardenBirdController {
   private readonly skyLife: Container
   private readonly pool: BirdSlot[] = []
   private readonly spawnIntervalRangeMs: readonly [number, number]
+  private readonly firstSpawnRangeMs: readonly [number, number]
   /** ms from bind when next bird becomes eligible to spawn. */
   private nextSpawnAtMs = 0
   /** ms at which the controller was bound (anchor for spawn timing). */
@@ -111,7 +116,9 @@ export class GardenBirdController {
     this.safeZones = options.safeZones ?? []
     this.sunPosition = options.sunPosition ?? null
     this.spawnIntervalRangeMs =
-      options.spawnIntervalRangeMs ?? BIRD_SPAWN_INTERVAL_RANGE
+      options.spawnIntervalRangeMs ?? BIRD_SPAWN_INTERVAL_RANGE_MS
+    this.firstSpawnRangeMs =
+      options.firstSpawnRangeMs ?? BIRD_FIRST_SPAWN_RANGE_MS
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
 
     const poolSize = BIRD_COUNTS[this.quality]
@@ -144,10 +151,12 @@ export class GardenBirdController {
       })
     }
 
-    // Stagger the first spawn so we don't dump everything at t=0.
+    // Stagger the first spawn so we don't dump everything at t=0. Uses
+    // the dedicated first-spawn band (2.5–6 s) so the user actually sees
+    // a bird during normal observation. (FU-H.)
     this.nextSpawnAtMs = this.rng.rangeInt(
-      this.spawnIntervalRangeMs[0],
-      this.spawnIntervalRangeMs[1],
+      this.firstSpawnRangeMs[0],
+      this.firstSpawnRangeMs[1],
     )
   }
 

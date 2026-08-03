@@ -6,6 +6,7 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenParticleController } from "../GardenParticleController"
+import { GUST_LEAF_SCALE_RANGE } from "../garden-atmosphere.constants"
 import type { GardenPalette } from "../../gardenPalette"
 
 /** Deterministic palette — particle tests only assert tint wiring, not colors. */
@@ -339,5 +340,106 @@ describe("GardenParticleController", () => {
     for (let i = 0; i < baseRotations.length; i += 1) {
       expect(grass.children[i]!.rotation).toBeCloseTo(baseRotations[i]!)
     }
+  })
+
+  it("initializes every gust leaf at a scale inside GUST_LEAF_SCALE_RANGE (FU-H)", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    const leafSprites = ambient.children.filter(
+      (c): c is Sprite =>
+        c instanceof Sprite &&
+        typeof c.label === "string" &&
+        c.label.startsWith("gust-leaf-"),
+    )
+    expect(leafSprites.length).toBe(controller.getGustLeafCapacity())
+    expect(leafSprites.length).toBeGreaterThan(0)
+    for (const sprite of leafSprites) {
+      // sprite.scale.x is set in initGustLeaves from the GUST_LEAF band;
+      // it must be inside [0.06, 0.10] and never near the BIRD scale.
+      expect(sprite.scale.x).toBeGreaterThanOrEqual(GUST_LEAF_SCALE_RANGE[0])
+      expect(sprite.scale.x).toBeLessThanOrEqual(GUST_LEAF_SCALE_RANGE[1])
+      expect(sprite.scale.x).toBeLessThan(0.14)
+      expect(sprite.scale.y).toBe(sprite.scale.x)
+    }
+    controller.destroy()
+  })
+
+  it("spawns gust leaves with vy in [2, 8] and vx in [60, 110] along a single direction (FU-H)", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1) // activates gust envelope
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        vx: number
+        vy: number
+        direction: 1 | -1
+      }>
+    }
+    const active = internals.gustLeaves.filter((s) => s.active)
+    expect(active.length).toBeGreaterThan(0)
+    for (const slot of active) {
+      expect(slot.vy).toBeGreaterThanOrEqual(2)
+      expect(slot.vy).toBeLessThanOrEqual(8)
+      const speed = Math.abs(slot.vx)
+      expect(speed).toBeGreaterThanOrEqual(60)
+      expect(speed).toBeLessThanOrEqual(110)
+      // Direction must be consistent: vx carries the sign of `direction`.
+      expect(Math.sign(slot.vx)).toBe(slot.direction)
+    }
+    controller.destroy()
+  })
+
+  it("oscillates each gust leaf vertically by ±6 px around its baseY (FU-H)", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      moteTexture: makeMoteTexture(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    controller.update(50, 1) // activates gust envelope, spawns at least one leaf
+    const internals = controller as unknown as {
+      gustLeaves: Array<{
+        active: boolean
+        sprite: Sprite
+        baseY: number
+        waveAmp: number
+        wavePhase: number
+        ageSec: number
+      }>
+    }
+    const slot = internals.gustLeaves.find((s) => s.active)
+    expect(slot).toBeDefined()
+    let honorsAmplitude = false
+    for (let i = 0; i < 10; i += 1) {
+      controller.update(50, 1)
+      const expectedY =
+        slot!.baseY +
+        Math.sin(slot!.ageSec * 2 + slot!.wavePhase) * slot!.waveAmp
+      expect(slot!.sprite.y).toBeCloseTo(expectedY, 6)
+      expect(slot!.waveAmp).toBe(6)
+      if (Math.abs(slot!.sprite.y - slot!.baseY) > 0.1) {
+        honorsAmplitude = true
+      }
+    }
+    expect(honorsAmplitude).toBe(true)
+    controller.destroy()
   })
 })

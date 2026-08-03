@@ -5,12 +5,14 @@
  * - Tolerates missing bird textures.
  * - Birds travel in the configured direction (always +x or -x).
  * - Recycling returns birds to the pool without allocating new sprites.
+ * - First spawn falls in the dedicated [2.5 s, 6 s] band. (FU-H.)
  */
 
 import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenBirdController } from "../GardenBirdController"
+import { BIRD_FIRST_SPAWN_RANGE_MS } from "../garden-atmosphere.constants"
 import type { SeededRandom } from "../seededRandom"
 
 function makeBirdTextures(): { up: Texture; down: Texture } {
@@ -81,6 +83,7 @@ describe("GardenBirdController", () => {
       skyLife,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [10, 20],
+      firstSpawnRangeMs: [1, 2],
     })
     // Hammer updates to spawn many birds.
     for (let i = 0; i < 200; i += 1) {
@@ -97,6 +100,7 @@ describe("GardenBirdController", () => {
       skyLife,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
     })
     // Spawn a bird immediately and capture its position at t1, then
     // again at t1+dt and verify x moved in a consistent direction.
@@ -137,6 +141,7 @@ describe("GardenBirdController", () => {
       birdTextures: makeBirdTextures(),
       seed: 123,
       spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
     })
     const internals = birds as unknown as {
       pool: Array<{
@@ -172,6 +177,7 @@ describe("GardenBirdController", () => {
       skyLife,
       birdTextures: makeBirdTextures(),
       spawnIntervalRangeMs: [1, 2],
+      firstSpawnRangeMs: [1, 2],
     })
     const poolSize = birds.getBirdCount()
     expect(poolSize).toBeGreaterThan(0)
@@ -271,5 +277,26 @@ describe("GardenBirdController", () => {
     internals.trySpawn()
     expect(internals.pool[0]!.active).toBe(true)
     birds.destroy()
+  })
+
+  it("schedules the first spawn within the [2.5 s, 6 s] band (FU-H)", () => {
+    // Walk several seeds — every one must place nextSpawnAtMs inside
+    // [BIRD_FIRST_SPAWN_RANGE_MS[0], BIRD_FIRST_SPAWN_RANGE_MS[1]].
+    // (rangeInt is inclusive on both ends, so allow the lower bound to
+    // appear and the upper bound to appear.)
+    for (const seed of [0xc0ffee, 1, 2, 42, 1234, 0xdeadbeef]) {
+      const skyLife = new Container()
+      const birds = new GardenBirdController({
+        quality: "high",
+        skyLife,
+        birdTextures: makeBirdTextures(),
+        seed,
+      })
+      const internals = birds as unknown as { nextSpawnAtMs: number }
+      const next = internals.nextSpawnAtMs
+      expect(next).toBeGreaterThanOrEqual(BIRD_FIRST_SPAWN_RANGE_MS[0])
+      expect(next).toBeLessThanOrEqual(BIRD_FIRST_SPAWN_RANGE_MS[1])
+      birds.destroy()
+    }
   })
 })

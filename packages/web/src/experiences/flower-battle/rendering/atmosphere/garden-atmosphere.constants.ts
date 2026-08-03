@@ -70,10 +70,28 @@ export const BIRD_Y_BAND: readonly [number, number] = [0.14, 0.32]
 /** Speed in logical px/s. */
 export const BIRD_SPEED_RANGE: readonly [number, number] = [35, 65]
 
-/** Spawn interval between birds (ms). */
-export const BIRD_SPAWN_INTERVAL_RANGE: readonly [number, number] = [
-  12_000, 25_000,
+/**
+ * First-bird delay (ms) — separate from the steady-state interval so the
+ * first bird appears within 2.5–6 s of bind (previously 12–25 s, which
+ * made birds invisible during normal live-test observation). (FU-H.)
+ */
+export const BIRD_FIRST_SPAWN_RANGE_MS: readonly [number, number] = [
+  2_500, 6_000,
 ]
+
+/** Spawn interval between subsequent birds (ms). (FU-H.) */
+export const BIRD_SPAWN_INTERVAL_RANGE_MS: readonly [number, number] = [
+  6_000, 12_000,
+]
+
+/**
+ * @deprecated Kept as a backward-compat alias for the renamed
+ * `BIRD_SPAWN_INTERVAL_RANGE_MS`. New callers must use the `_MS` name —
+ * the explicit ms suffix documents the unit, and the new value is
+ * narrower (6–12 s) so it must never be confused with the legacy band.
+ */
+export const BIRD_SPAWN_INTERVAL_RANGE: readonly [number, number] =
+  BIRD_SPAWN_INTERVAL_RANGE_MS
 
 /**
  * Bird visual scale. Source frame is 259×146, so 0.14 → ~36 px wide,
@@ -109,6 +127,16 @@ export const MOTE_ALPHA_RANGE: readonly [number, number] = [0.15, 0.42]
  * circles. (FU-G: was [0.6, 1.1].)
  */
 export const MOTE_SCALE_RANGE: readonly [number, number] = [0.003, 0.007]
+
+/**
+ * Gust-leaf scale (sprite scale). Source frames are 106.7×137.55
+ * (wind-leaf-01) and 128×120 (wind-leaf-02), so 0.06 → ~7.7 px wide
+ * (height ~8 px) and 0.10 → ~12.8 px wide (height ~12 px) — small,
+ * unassertive flying leaves that read as wind debris rather than
+ * foreground props. (FU-H: was sampled at the much larger BIRD_SCALE
+ * range, producing oversized leaves.)
+ */
+export const GUST_LEAF_SCALE_RANGE: readonly [number, number] = [0.06, 0.10]
 
 /** Gust default schedule (ms). */
 export const GUST_PERIOD_RANGE: readonly [number, number] = [9_000, 18_000]

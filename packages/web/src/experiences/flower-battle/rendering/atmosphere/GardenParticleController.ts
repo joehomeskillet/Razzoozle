@@ -20,6 +20,7 @@ import {
   GUST_LEAF_ACTIVATION_THRESHOLD,
   GUST_LEAF_COUNTS,
   GUST_LEAF_MID_COUNT,
+  GUST_LEAF_SCALE_RANGE,
   GRASS_TUFT_COUNTS,
   GRASS_WIND_SWEEP_RANGE,
   MOTE_BASE_SPEED_RANGE,
@@ -33,7 +34,10 @@ import {
 import { createSeededRandom, type SeededRandom } from "./seededRandom"
 import type { GardenRenderQuality } from "../../garden-pixi.types"
 import type { GardenPalette } from "../gardenPalette"
-import { ATMOSPHERE_HEIGHT } from "./garden-atmosphere.constants"
+import {
+  ATMOSPHERE_HEIGHT,
+  ATMOSPHERE_WIDTH,
+} from "./garden-atmosphere.constants"
 
 export interface GardenParticleControllerOptions {
   seed?: number
@@ -62,6 +66,14 @@ interface GustLeafSlot {
   rotationSpeed: number
   vy: number
   vx: number
+  /** Y anchor around which the vertical wave oscillates. */
+  baseY: number
+  /** Vertical wave amplitude (px) — cloud-style ±6 px. */
+  waveAmp: number
+  /** Vertical wave phase (radians). */
+  wavePhase: number
+  /** Travel direction (-1 = left, +1 = right). Drives retirement. */
+  direction: 1 | -1
   ageSec: number
   lifetimeSec: number
   active: boolean
@@ -238,6 +250,12 @@ export class GardenParticleController {
       sprite.label = `gust-leaf-${i}`
       sprite.anchor.set(0.5, 0.5)
       sprite.tint = this.palette.foreground
+      sprite.scale.set(
+        this.rng.range(
+          GUST_LEAF_SCALE_RANGE[0],
+          GUST_LEAF_SCALE_RANGE[1],
+        ),
+      )
       sprite.visible = false
       this.ambient.addChild(sprite)
       this.gustLeaves.push({
@@ -245,6 +263,10 @@ export class GardenParticleController {
         rotationSpeed: 0,
         vy: 0,
         vx: 0,
+        baseY: 0,
+        waveAmp: 0,
+        wavePhase: 0,
+        direction: 1,
         ageSec: 0,
         lifetimeSec: 0,
         active: false,
@@ -258,31 +280,52 @@ export class GardenParticleController {
     for (const slot of this.gustLeaves) {
       if (slot.active) {
         slot.ageSec += dt
-        slot.sprite.x += slot.vx * dt + windSample * 18 * dt
-        slot.sprite.y += slot.vy * dt
+        // Cloud-style horizontal dance: steady horizontal velocity +
+        // gentle vertical drop + small rotation drift + a ±6 px
+        // vertical sin wave (≈2 Hz) layered on top of the base Y.
+        // (FU-H.)
+        slot.sprite.x += slot.vx * dt
+        slot.sprite.y =
+          slot.baseY +
+          Math.sin(slot.ageSec * 2 + slot.wavePhase) * slot.waveAmp
         slot.sprite.rotation += slot.rotationSpeed * dt
+        // Retire when the leaf has cleared the canvas horizontally
+        // (with 60 px margin) OR its lifetime has elapsed.
+        const margin = 60
+        const offRight =
+          slot.direction === 1 && slot.sprite.x > ATMOSPHERE_WIDTH + margin
+        const offLeft =
+          slot.direction === -1 && slot.sprite.x < -margin
         if (
           slot.ageSec >= slot.lifetimeSec ||
-          slot.sprite.y > ATMOSPHERE_HEIGHT + 40
+          offRight ||
+          offLeft
         ) {
           slot.active = false
           slot.sprite.visible = false
         }
       } else if (activeGust) {
-        // Spawn a fresh leaf, biased toward the upper-mid canvas.
-        slot.vx = this.rng.range(-22, 22)
-        slot.vy = this.rng.range(14, 32)
-        slot.rotationSpeed = this.rng.range(-2.4, 2.4)
-        slot.lifetimeSec = this.rng.range(2.5, 4.5)
+        // Cloud-style spawn: pick a start X, then commit to a single
+        // travel direction (always reading left→right from the spawn
+        // side). Vertical motion is almost negligible (2–8 px/s) and
+        // the wave handles the visible up-and-down. (FU-H.)
+        const startX = this.rng.range(80, 1880)
+        slot.direction = startX < ATMOSPHERE_WIDTH / 2 ? 1 : -1
+        const speed = this.rng.range(60, 110)
+        slot.vx = speed * slot.direction
+        slot.vy = this.rng.range(2, 8)
+        slot.rotationSpeed = this.rng.range(-0.6, 0.6)
+        slot.waveAmp = 6
+        slot.wavePhase = this.rng.range(0, Math.PI * 2)
+        slot.lifetimeSec = this.rng.range(3.0, 5.0)
         slot.ageSec = 0
-        slot.sprite.position.set(
-          this.rng.range(120, 1820),
-          this.rng.range(
-            ATMOSPHERE_HEIGHT * 0.18,
-            ATMOSPHERE_HEIGHT * 0.55,
-          ),
+        const baseY = this.rng.range(
+          ATMOSPHERE_HEIGHT * 0.18,
+          ATMOSPHERE_HEIGHT * 0.55,
         )
-        slot.sprite.rotation = this.rng.range(0, Math.PI * 2)
+        slot.baseY = baseY
+        slot.sprite.position.set(startX, baseY)
+        slot.sprite.rotation = 0
         slot.sprite.visible = true
         slot.active = true
       }
