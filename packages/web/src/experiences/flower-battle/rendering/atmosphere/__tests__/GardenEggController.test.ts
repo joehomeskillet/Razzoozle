@@ -17,6 +17,7 @@ import {
   EGG_POOL_SIZE,
   EGG_SHATTER_POOL_SIZE,
   EGG_SHATTER_PIECE_COUNT_RANGE,
+  EGG_SHELL_FADE_DURATION_RANGE,
   EGG_YOLK_POOL_SIZE,
   EGG_IMPACT_Y_FRACTION,
   ATMOSPHERE_HEIGHT,
@@ -54,7 +55,7 @@ describe("GardenEggController", () => {
     expect(visible.length).toBe(1)
     expect(visible[0]!.visible).toBe(true)
     expect(visible[0]!.alpha).toBe(1)
-    expect(visible[0]!.width).toBeGreaterThanOrEqual(6)
+    expect(visible[0]!.width).toBeGreaterThanOrEqual(30)
     expect(visible[0]!.x).toBe(120)
     expect(visible[0]!.y).toBe(50)
     c.destroy()
@@ -140,5 +141,10 @@ describe("GardenEggController", () => {
     expect(stats.activeShatters).toBe(0)
     expect(stats.activeYolks).toBe(0)
     c.destroy()
+  })
+
+  it("FU-T: shell fade duration range is [4.0, 10.0] seconds", () => {
+    expect(EGG_SHELL_FADE_DURATION_RANGE[0]).toBe(4.0)
+    expect(EGG_SHELL_FADE_DURATION_RANGE[1]).toBe(10.0)
   })
 })

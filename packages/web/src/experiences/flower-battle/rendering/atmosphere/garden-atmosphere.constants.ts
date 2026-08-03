@@ -482,6 +482,16 @@ export const EGG_YOLK_FADE_DURATION_SEC = 1.5
 export const EGG_YOLK_FADE_DURATION_RANGE: readonly [number, number] = [
   1.0, 2.5,
 ]
+/**
+ * FU-T: shell pieces fade ~4× longer than yolks so the broken shell is
+ * visibly readable on the ground for several seconds. Old default was
+ * the same `EGG_YOLK_FADE_DURATION_RANGE = [1.0, 2.5]`; the new band
+ * keeps the yolk short (yolk still uses the yolk range below) and
+ * gives shells their own `[4.0, 10.0]` persistence window.
+ */
+export const EGG_SHELL_FADE_DURATION_RANGE: readonly [number, number] = [
+  4.0, 10.0,
+] as const
 export const EGG_POOL_SIZE = 6
 export const EGG_SHATTER_POOL_SIZE = 32
 export const EGG_YOLK_POOL_SIZE = 12

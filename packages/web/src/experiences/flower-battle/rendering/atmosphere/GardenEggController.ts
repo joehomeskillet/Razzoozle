@@ -27,6 +27,7 @@ import {
   EGG_POOL_SIZE,
   EGG_SHATTER_POOL_SIZE,
   EGG_SHATTER_PIECE_COUNT_RANGE,
+  EGG_SHELL_FADE_DURATION_RANGE,
   EGG_TERMINAL_VEL,
   EGG_YOLK_FADE_DURATION_RANGE,
   EGG_YOLK_POOL_SIZE,
@@ -78,7 +79,7 @@ interface YolkSlot {
   isMini: boolean
 }
 
-const EGG_TEXTURE_SIZE = 6
+const EGG_TEXTURE_SIZE = 30
 const EGG_TINT = 0xfff4ba
 const EGG_OUTLINE = 0x6b4423
 const YOLK_TINT = 0xf4a261
@@ -123,9 +124,9 @@ export class GardenEggController {
 
     const eggTexture = buildEggTexture()
     const shellTextures: Texture[] = [
-      buildShellTexture(3, 0xfff4ba),
-      buildShellTexture(4, 0xfff9d6),
-      buildShellTexture(3, 0xffe6b3),
+      buildShellTexture(15, 0xfff4ba),
+      buildShellTexture(20, 0xfff9d6),
+      buildShellTexture(15, 0xffe6b3),
     ]
     const yolkTexture = buildYolkTexture()
     const miniYolkTexture = buildMiniYolkTexture()
@@ -134,7 +135,7 @@ export class GardenEggController {
       const sprite = new Sprite(eggTexture)
       sprite.label = `egg-${i}`
       sprite.anchor.set(0.5, 0.5)
-      // A 6×6 source at 1.5 scale renders as a visible 9×9 logical-pixel egg.
+      // A 30×30 source at 1.5 scale renders as a visible 45×45 logical-pixel egg.
       sprite.scale.set(1.5, 1.5)
       sprite.visible = false
       this.eggContainer.addChild(sprite)
@@ -308,8 +309,8 @@ export class GardenEggController {
       slot.landed = false
       slot.fadeSec = 0
       slot.fadeDuration = this.rng.range(
-        EGG_YOLK_FADE_DURATION_RANGE[0],
-        EGG_YOLK_FADE_DURATION_RANGE[1],
+        EGG_SHELL_FADE_DURATION_RANGE[0],
+        EGG_SHELL_FADE_DURATION_RANGE[1],
       )
       slot.groundY = impactY + this.rng.range(0, 3)
       slot.sprite.position.set(x, y)
@@ -390,11 +391,11 @@ function buildShellTexture(size: number, tint: number): Texture {
 }
 
 function buildYolkTexture(): Texture {
-  const w = 8
-  const h = 3
+  const w = 40
+  const h = 15
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(w, h, (x, y) =>
-      isYolkPixel(x, y, w, h, 4, 1.5) ? YOLK_TINT : 0,
+      isYolkPixel(x, y, w, h, 20, 7.5) ? YOLK_TINT : 0,
     )
   }
   const canvas = document.createElement("canvas")
@@ -404,14 +405,14 @@ function buildYolkTexture(): Texture {
   if (!ctx) return bufferTexture(w, h, () => 0)
   ctx.fillStyle = YOLK_TINT_HEX
   ctx.beginPath()
-  ctx.ellipse(4, 1.5, 4, 1.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(20, 7.5, 20, 7.5, 0, 0, Math.PI * 2)
   ctx.fill()
   return Texture.from(canvas)
 }
 
 function buildMiniYolkTexture(): Texture {
-  const w = 3
-  const h = 3
+  const w = 6
+  const h = 6
   if (SKIP_CANVAS_BAKE) {
     return bufferTexture(w, h, (x, y) =>
       isMiniYolkPixel(x, y, w, h) ? YOLK_TINT : 0,
@@ -424,7 +425,7 @@ function buildMiniYolkTexture(): Texture {
   if (!ctx) return bufferTexture(w, h, () => 0)
   ctx.fillStyle = YOLK_TINT_HEX
   ctx.beginPath()
-  ctx.arc(1.5, 1.5, 1.2, 0, Math.PI * 2)
+  ctx.arc(3, 3, 2.4, 0, Math.PI * 2)
   ctx.fill()
   return Texture.from(canvas)
 }
@@ -520,7 +521,7 @@ function isMiniYolkPixel(x: number, y: number, w: number, h: number): boolean {
   const cy = h / 2
   const dx = x + 0.5 - cx
   const dy = y + 0.5 - cy
-  return dx * dx + dy * dy <= 1.2 * 1.2
+  return dx * dx + dy * dy <= 2.4 * 2.4
 }
 
 function hexToCssColor(n: number): string {
