@@ -6,7 +6,11 @@ import { Container, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenParticleController } from "../GardenParticleController"
-import { GUST_LEAF_SCALE_RANGE } from "../garden-atmosphere.constants"
+import {
+  GUST_LEAF_LIFETIME_RANGE,
+  GUST_LEAF_SCALE_RANGE,
+  GUST_LEAF_VEIN_SCALE_RATIO,
+} from "../garden-atmosphere.constants"
 import type { GardenPalette } from "../../gardenPalette"
 
 /** Deterministic palette — particle tests only assert tint wiring, not colors. */
@@ -39,6 +43,15 @@ function makeMoteTexture(): Texture {
 
 function makeLeafTexture(): Texture {
   return Texture.WHITE
+}
+
+function leafChild(leaf: Container, prefix: string): Sprite | undefined {
+  return leaf.children.find(
+    (child): child is Sprite =>
+      child instanceof Sprite &&
+      typeof child.label === "string" &&
+      child.label.startsWith(prefix),
+  )
 }
 
 describe("GardenParticleController", () => {
@@ -342,7 +355,7 @@ describe("GardenParticleController", () => {
     }
   })
 
-  it("initializes every gust leaf at a scale inside GUST_LEAF_SCALE_RANGE (FU-K)", () => {
+  it("initializes every gust leaf body at a scale inside GUST_LEAF_SCALE_RANGE (FU-K)", () => {
     const ambient = new Container()
     const controller = new GardenParticleController({
       quality: "high",
@@ -352,23 +365,54 @@ describe("GardenParticleController", () => {
       windLeafTextures: [makeLeafTexture(), makeLeafTexture()],
       palette: TEST_PALETTE,
     })
-    const leafSprites = ambient.children.filter(
-      (c): c is Sprite =>
-        c instanceof Sprite &&
+    const leafContainers = ambient.children.filter(
+      (c): c is Container =>
+        c instanceof Container &&
         typeof c.label === "string" &&
         c.label.startsWith("gust-leaf-"),
     )
-    expect(leafSprites.length).toBe(controller.getGustLeafCapacity())
-    expect(leafSprites.length).toBeGreaterThan(0)
-    for (const sprite of leafSprites) {
-      // FU-K: scale sampled from [0.16, 0.28] — bumped up from the
-      // pre-FU-K [0.06, 0.10] so the new 6-variant leaf set is large
-      // enough to read as actual leaves, not green dots.
-      expect(sprite.scale.x).toBeGreaterThanOrEqual(0.16)
-      expect(sprite.scale.x).toBeLessThanOrEqual(0.28)
-      expect(sprite.scale.x).toBeGreaterThanOrEqual(GUST_LEAF_SCALE_RANGE[0])
-      expect(sprite.scale.x).toBeLessThanOrEqual(GUST_LEAF_SCALE_RANGE[1])
-      expect(sprite.scale.y).toBe(sprite.scale.x)
+    expect(leafContainers.length).toBe(controller.getGustLeafCapacity())
+    expect(leafContainers.length).toBeGreaterThan(0)
+    for (const leaf of leafContainers) {
+      const body = leafChild(leaf, "gust-leaf-body-")
+      const vein = leafChild(leaf, "gust-leaf-vein-")
+      expect(body).toBeInstanceOf(Sprite)
+      expect(vein).toBeInstanceOf(Sprite)
+      expect(body!.scale.x).toBeGreaterThanOrEqual(GUST_LEAF_SCALE_RANGE[0])
+      expect(body!.scale.x).toBeLessThanOrEqual(GUST_LEAF_SCALE_RANGE[1])
+      expect(body!.scale.y).toBe(body!.scale.x)
+      expect(vein!.scale.x).toBeCloseTo(
+        body!.scale.x * GUST_LEAF_VEIN_SCALE_RATIO,
+      )
+      expect(vein!.scale.y).toBeCloseTo(
+        body!.scale.y * GUST_LEAF_VEIN_SCALE_RATIO,
+      )
+    }
+    controller.destroy()
+  })
+
+  it("caches a vein texture and mounts body and vein children", () => {
+    const ambient = new Container()
+    const controller = new GardenParticleController({
+      quality: "high",
+      ambient,
+      grass: new Container(),
+      windLeafTextures: [makeLeafTexture()],
+      palette: TEST_PALETTE,
+    })
+    const veinTexture = controller.getVeinTexture()
+    expect(veinTexture).toBeInstanceOf(Texture)
+    expect(controller.getVeinTexture()).toBe(veinTexture)
+    const leafContainers = ambient.children.filter(
+      (c): c is Container =>
+        c instanceof Container &&
+        typeof c.label === "string" &&
+        c.label.startsWith("gust-leaf-"),
+    )
+    expect(leafContainers).toHaveLength(controller.getGustLeafCapacity())
+    for (const leaf of leafContainers) {
+      expect(leafChild(leaf, "gust-leaf-body-")).toBeInstanceOf(Sprite)
+      expect(leafChild(leaf, "gust-leaf-vein-")).toBeInstanceOf(Sprite)
     }
     controller.destroy()
   })
@@ -422,7 +466,7 @@ describe("GardenParticleController", () => {
     const internals = controller as unknown as {
       gustLeaves: Array<{
         active: boolean
-        sprite: Sprite
+        sprite: Container
         direction: 1 | -1
       }>
     }
@@ -480,18 +524,24 @@ describe("GardenParticleController", () => {
         palette,
         seed,
       })
-      const leafSprites = ambient.children.filter(
-        (c): c is Sprite =>
-          c instanceof Sprite &&
+      const leafContainers = ambient.children.filter(
+        (c): c is Container =>
+          c instanceof Container &&
           typeof c.label === "string" &&
           c.label.startsWith("gust-leaf-"),
       )
-      expect(leafSprites.length).toBeGreaterThan(0)
-      for (const sprite of leafSprites) {
-        expect(allowed.has(sprite.tint)).toBe(true)
+      expect(leafContainers.length).toBeGreaterThan(0)
+      for (const leaf of leafContainers) {
+        const body = leafChild(leaf, "gust-leaf-body-")
+        expect(body).toBeInstanceOf(Sprite)
+        expect(allowed.has(body!.tint)).toBe(true)
         observedCount += 1
       }
-      const observed = new Set(leafSprites.map((s) => s.tint))
+      const observed = new Set(
+        leafContainers.map(
+          (leaf) => (leafChild(leaf, "gust-leaf-body-") as Sprite).tint,
+        ),
+      )
       const nonForeground = [...observed].filter(
         (t) => t !== palette.foreground,
       )
@@ -519,7 +569,7 @@ describe("GardenParticleController", () => {
     const internals = controller as unknown as {
       gustLeaves: Array<{
         active: boolean
-        sprite: Sprite
+        sprite: Container
         baseY: number
         waveAmp: number
         wavePhase: number
@@ -529,11 +579,9 @@ describe("GardenParticleController", () => {
     }
     const slot = internals.gustLeaves.find((s) => s.active)
     expect(slot).toBeDefined()
-    // FU-L: lifetime widened to 5-9 s so the leaves reliably reach
-    // (and cross) the centre of the canvas instead of retiring
-    // mid-frame (was 4-7 s in FU-J).
-    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(5.0)
-    expect(slot!.lifetimeSec).toBeLessThanOrEqual(9.0)
+    // FU-M: lifetime widened to 25-45 s so leaves remain visible for a full crossing.
+    expect(slot!.lifetimeSec).toBeGreaterThanOrEqual(GUST_LEAF_LIFETIME_RANGE[0])
+    expect(slot!.lifetimeSec).toBeLessThanOrEqual(GUST_LEAF_LIFETIME_RANGE[1])
     let honorsAmplitude = false
     for (let i = 0; i < 10; i += 1) {
       controller.update(50, 1)

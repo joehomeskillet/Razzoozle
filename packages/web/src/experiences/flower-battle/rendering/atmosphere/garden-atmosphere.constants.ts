@@ -126,7 +126,7 @@ export const BIRD_GROUP_SIZE_RANGE: readonly [number, number] = [2, 3]
  * above/below the leader.)
  */
 export const BIRD_GROUP_VERTICAL_OFFSET_RANGE: readonly [number, number] = [
-  20, 40,
+  50, 80,
 ]
 
 /**
@@ -135,7 +135,7 @@ export const BIRD_GROUP_VERTICAL_OFFSET_RANGE: readonly [number, number] = [
  * pure-line look. (FU-L.)
  */
 export const BIRD_GROUP_HORIZONTAL_OFFSET_RANGE: readonly [number, number] = [
-  10, 18,
+  25, 45,
 ]
 
 /** Off-canvas margin (px) where gust leaves enter the canvas. (FU-J.) */
@@ -151,11 +151,13 @@ export const GUST_LEAF_EDGE_INSET = 40
 export const GUST_LEAF_SPEED_RANGE: readonly [number, number] = [55, 100]
 
 /**
- * Gust-leaf lifetime (s). FU-L: widened from the pre-FU-L 4–7 s band to
- * 5–9 s so the leaves reliably reach (and cross) the centre of the
- * canvas instead of retiring mid-frame.
+ * Gust-leaf lifetime (s). FU-M: extended from the previous 5–9 s band to
+ * 25–45 s so leaves can remain visible for a full wind crossing.
  */
-export const GUST_LEAF_LIFETIME_RANGE: readonly [number, number] = [5.0, 9.0]
+export const GUST_LEAF_LIFETIME_RANGE: readonly [number, number] = [25.0, 45.0]
+
+export const GUST_LEAF_VEIN_SCALE_RATIO = 0.55
+export const GUST_LEAF_VEIN_TINT_FACTOR = 0.55
 
 /** Gust-leaf vertical drop (px/s) — small but visible. (FU-J.) */
 export const GUST_LEAF_VY_RANGE: readonly [number, number] = [3, 7]

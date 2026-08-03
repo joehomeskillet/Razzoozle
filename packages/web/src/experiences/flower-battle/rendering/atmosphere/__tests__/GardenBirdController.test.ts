@@ -367,7 +367,7 @@ describe("FU-J: GardenBirdController flock behaviour", () => {
     // Try several seeds to exercise both flock sizes (2 and 3) and
     // both directions. We assert the invariant: every active bird in
     // a single wave shares direction. FU-L widened the per-follower
-    // vertical spread to BIRD_GROUP_VERTICAL_OFFSET_RANGE = [20, 40],
+    // vertical spread to BIRD_GROUP_VERTICAL_OFFSET_RANGE = [50, 80],
     // so the leader-vs-follower distance is bounded by that range.
     let sawFlockOf2 = false
     let sawFlockOf3 = false
@@ -447,8 +447,8 @@ describe("FU-J: GardenBirdController flock behaviour", () => {
 describe("FU-L: GardenBirdController per-follower offsets", () => {
   it("places each follower verticalOffset inside BIRD_GROUP_VERTICAL_OFFSET_RANGE and horizontalOffset inside BIRD_GROUP_HORIZONTAL_OFFSET_RANGE * (i+1) * 0.5", () => {
     // FU-L: V-formation spread widened from the pre-FU-L ±15 px band.
-    // Vertical = (i % 2 === 0 ? 1 : -1) * rng.range(20, 40)
-    // Horizontal = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(10, 18) * (i+1) * 0.5
+    // Vertical = (i % 2 === 0 ? 1 : -1) * rng.range(50, 80)
+    // Horizontal = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(25, 45) * (i+1) * 0.5
     const skyLifeForeground = new Container()
     const birds = new GardenBirdController({
       quality: "high",
@@ -494,9 +494,9 @@ describe("FU-L: GardenBirdController per-follower offsets", () => {
       // must satisfy the new ranges.
       for (let k = 1; k < active.length; k += 1) {
         const vOff = Math.abs(active[k]!.baseY - leaderBaseY)
-        // FU-L: verticalOffset in [20, 40].
-        expect(vOff).toBeGreaterThanOrEqual(20)
-        expect(vOff).toBeLessThanOrEqual(40)
+        // FU-L: verticalOffset in [50, 80].
+        expect(vOff).toBeGreaterThanOrEqual(50)
+        expect(vOff).toBeLessThanOrEqual(80)
       }
       seeded.destroy()
     }
@@ -552,16 +552,16 @@ describe("FU-L: GardenBirdController per-follower offsets", () => {
     internals.trySpawn()
     const active = internals.pool.filter((s) => s.active)
     const leaderStartX = active[0]!.sprite.x
-    // FU-L: horizontalOffset = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(10, 18) * (i+1) * 0.5
-    // For a 3-bird flock: follower[1] (i=1) → ((1+1)%2 === 0 ? 1 : -1) = 1, magnitude = rng(10,18) * 2 * 0.5 = [10, 18].
-    // For follower[2] (i=2) → ((2+1)%2 === 0 ? 1 : -1) = -1, magnitude = rng(10,18) * 3 * 0.5 = [15, 27].
+    // FU-L: horizontalOffset = ((i+1) % 2 === 0 ? 1 : -1) * rng.range(25, 45) * (i+1) * 0.5
+    // For a 3-bird flock: follower[1] (i=1) → ((1+1)%2 === 0 ? 1 : -1) = 1, magnitude = rng(25,45) * 2 * 0.5 = [25, 45].
+    // For follower[2] (i=2) → ((2+1)%2 === 0 ? 1 : -1) = -1, magnitude = rng(25,45) * 3 * 0.5 = [37.5, 67.5].
     for (let k = 1; k < active.length; k += 1) {
       const hOff = Math.abs(active[k]!.sprite.x - leaderStartX)
       // Lower bound: smallest possible magnitude across both flock sizes.
-      expect(hOff).toBeGreaterThanOrEqual(10 - 1e-6)
+      expect(hOff).toBeGreaterThanOrEqual(25 - 1e-6)
       // Upper bound: largest possible magnitude across both flock sizes
-      // (follower index 2 in a 3-bird flock: 27 px).
-      expect(hOff).toBeLessThanOrEqual(27 + 1e-6)
+      // (follower index 2 in a 3-bird flock: 67.5 px).
+      expect(hOff).toBeLessThanOrEqual(67.5 + 1e-6)
     }
     birds.destroy()
   })
@@ -587,13 +587,13 @@ describe("FU-L: GardenBirdController per-follower offsets", () => {
     const active = internals.pool.filter((s) => s.active)
     const leaderBaseY = active[0]!.baseY
     // The followers' baseY must differ from the leader's by at least
-    // 20 px (FU-L lower bound) and at most 40 px (FU-L upper bound).
+    // 50 px (FU-L lower bound) and at most 80 px (FU-L upper bound).
     // This proves the new V-formation spread is applied — not the
     // pre-FU-L ±15 px tight pack.
     for (let k = 1; k < active.length; k += 1) {
       const diff = Math.abs(active[k]!.baseY - leaderBaseY)
-      expect(diff).toBeGreaterThanOrEqual(20 - 1e-6)
-      expect(diff).toBeLessThanOrEqual(40 + 1e-6)
+      expect(diff).toBeGreaterThanOrEqual(50 - 1e-6)
+      expect(diff).toBeLessThanOrEqual(80 + 1e-6)
     }
     birds.destroy()
   })

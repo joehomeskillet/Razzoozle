@@ -18,18 +18,18 @@ import { Container, Sprite, Texture } from "pixi.js"
 
 import {
   GUST_LEAF_ACTIVATION_THRESHOLD,
-  GUST_LEAF_COUNTS,
   GUST_LEAF_EDGE_INSET,
   GUST_LEAF_LIFETIME_RANGE,
   GUST_LEAF_MID_COUNT,
   GUST_LEAF_ROTATION_RANGE,
   GUST_LEAF_SCALE_RANGE,
   GUST_LEAF_SPEED_RANGE,
+  GUST_LEAF_VEIN_SCALE_RATIO,
+  GUST_LEAF_VEIN_TINT_FACTOR,
   GUST_LEAF_VY_RANGE,
   GRASS_TUFT_COUNTS,
   GRASS_WIND_SWEEP_RANGE,
   MOTE_BASE_SPEED_RANGE,
-  MOTE_COUNTS,
   MOTE_LIFETIME_RANGE,
   MOTE_MID_COUNT,
   MOTE_SCALE_RANGE,
@@ -67,7 +67,7 @@ interface MoteSlot {
 }
 
 interface GustLeafSlot {
-  sprite: Sprite
+  sprite: Container
   rotationSpeed: number
   vy: number
   vx: number
@@ -84,6 +84,65 @@ interface GustLeafSlot {
   active: boolean
 }
 
+interface VeinTextureResult {
+  texture: Texture
+  owned: boolean
+}
+
+function createVeinTexture(): VeinTextureResult {
+  if (typeof document !== "undefined") {
+    let canvasTexture: Texture | null = null
+    try {
+      const canvas = document.createElement("canvas")
+      canvas.width = 8
+      canvas.height = 64
+      const context = canvas.getContext("2d")
+      if (context) {
+        context.fillStyle = "white"
+        context.fillRect(3, 0, 2, 64)
+        canvasTexture = Texture.from(canvas, true)
+      }
+    } catch {
+      canvasTexture = null
+    }
+    if (canvasTexture) return { texture: canvasTexture, owned: true }
+  }
+
+  try {
+    const pixels = new Uint8Array(8 * 64 * 4)
+    for (let y = 0; y < 64; y += 1) {
+      const offset = (y * 8 + 3) * 4
+      const next = offset + 4
+      pixels[offset] = 255
+      pixels[offset + 1] = 255
+      pixels[offset + 2] = 255
+      pixels[offset + 3] = 255
+      if (next + 4 <= pixels.length) {
+        pixels[next] = 255
+        pixels[next + 1] = 255
+        pixels[next + 2] = 255
+        pixels[next + 3] = 255
+      }
+    }
+    return {
+      texture: Texture.from(
+        { resource: pixels, width: 8, height: 64 },
+        true,
+      ),
+      owned: true,
+    }
+  } catch {
+    return { texture: Texture.WHITE, owned: false }
+  }
+}
+
+function darkenColor(color: number, factor: number): number {
+  const red = Math.round(((color >> 16) & 0xff) * factor)
+  const green = Math.round(((color >> 8) & 0xff) * factor)
+  const blue = Math.round((color & 0xff) * factor)
+  return (red << 16) | (green << 8) | blue
+}
+
 export class GardenParticleController {
   private readonly rng: SeededRandom
   private readonly quality: GardenRenderQuality
@@ -93,6 +152,8 @@ export class GardenParticleController {
   private readonly moteTexture: Texture | null
   private readonly windLeafTextures: readonly Texture[]
   private readonly palette: GardenPalette
+  private veinTexture: Texture | null = null
+  private veinTextureOwned = false
   private readonly motes: MoteSlot[] = []
   private readonly gustLeaves: GustLeafSlot[] = []
   /** Precomputed rotation phases for the grass tuft sweep. */
@@ -136,6 +197,15 @@ export class GardenParticleController {
     return this.gustLeaves.length
   }
 
+  getVeinTexture(): Texture {
+    if (!this.veinTexture) {
+      const generated = createVeinTexture()
+      this.veinTexture = generated.texture
+      this.veinTextureOwned = generated.owned
+    }
+    return this.veinTexture
+  }
+
   update(deltaMs: number, windSample: number): void {
     if (this.destroyed || this.reducedMotion) return
     const clamped = Math.min(50, Math.max(0, deltaMs))
@@ -161,9 +231,18 @@ export class GardenParticleController {
       if (slot.sprite.parent) {
         slot.sprite.parent.removeChild(slot.sprite)
       }
-      slot.sprite.destroy()
+      slot.sprite.destroy({ children: true })
     }
     this.gustLeaves.length = 0
+    if (
+      this.veinTextureOwned &&
+      this.veinTexture &&
+      !this.veinTexture.destroyed
+    ) {
+      this.veinTexture.destroy(true)
+    }
+    this.veinTexture = null
+    this.veinTextureOwned = false
     for (let i = 0; i < this.grassTufts.length; i += 1) {
       this.grassTufts[i]!.rotation = this.grassBaseRotations[i]!
     }
@@ -267,24 +346,32 @@ export class GardenParticleController {
     ]
     for (let i = 0; i < count; i += 1) {
       const tex = this.windLeafTextures[i % this.windLeafTextures.length]!
-      const sprite = new Sprite(tex)
-      sprite.label = `gust-leaf-${i}`
-      sprite.anchor.set(0.5, 0.5)
-      // rng.rangeInt over the tint index gives a deterministic per-leaf
-      // pick. rangeInt is inclusive on both ends; the [0, 3] band maps
-      // onto the four tints above.
+      const container = new Container()
+      container.label = `gust-leaf-${i}`
+      const body = new Sprite(tex)
+      body.label = `gust-leaf-body-${i}`
+      body.anchor.set(0.5, 0.5)
       const tintIndex = this.rng.rangeInt(0, tints.length - 1)
-      sprite.tint = tints[tintIndex]!
-      sprite.scale.set(
-        this.rng.range(
-          GUST_LEAF_SCALE_RANGE[0],
-          GUST_LEAF_SCALE_RANGE[1],
-        ),
+      const bodyTint = tints[tintIndex]!
+      body.tint = bodyTint
+      const scale = this.rng.range(
+        GUST_LEAF_SCALE_RANGE[0],
+        GUST_LEAF_SCALE_RANGE[1],
       )
-      sprite.visible = false
-      this.ambient.addChild(sprite)
+      body.scale.set(scale)
+
+      const vein = new Sprite(this.getVeinTexture())
+      vein.label = `gust-leaf-vein-${i}`
+      vein.anchor.set(0.5, 0.5)
+      vein.tint = darkenColor(bodyTint, GUST_LEAF_VEIN_TINT_FACTOR)
+      vein.scale.set(scale * GUST_LEAF_VEIN_SCALE_RATIO)
+      vein.position.set(0, 0)
+
+      container.addChild(body, vein)
+      container.visible = false
+      this.ambient.addChild(container)
       this.gustLeaves.push({
-        sprite,
+        sprite: container,
         rotationSpeed: 0,
         vy: 0,
         vx: 0,

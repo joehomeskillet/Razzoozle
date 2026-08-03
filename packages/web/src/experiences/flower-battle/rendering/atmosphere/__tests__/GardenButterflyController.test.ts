@@ -5,7 +5,7 @@
  * Bezier-like waypoint path with sin perturbation.
  */
 
-import { Container, Sprite } from "pixi.js"
+import { Container, Graphics, Sprite, Texture } from "pixi.js"
 import { describe, expect, it } from "vitest"
 
 import { GardenButterflyController } from "../GardenButterflyController"
@@ -70,9 +70,39 @@ describe("GardenButterflyController", () => {
     expect(sprite).toBeInstanceOf(Sprite)
     // Tint = bodyColor (stubbed to 0xff9900 — `--color-accent`).
     expect(sprite!.tint).toBe(STUB_BODY_COLOR)
+    expect(sprite!.width).toBeGreaterThanOrEqual(12)
+    expect(sprite!.texture.width).toBeGreaterThanOrEqual(12)
+    expect(sprite!.texture.height).toBeGreaterThanOrEqual(8)
+    expect(sprite!.scale.x).toBe(1)
     c.destroy()
   })
 
+  it("uses the supplied renderer to bake the butterfly silhouette", () => {
+    const generated = Texture.from(
+      {
+        resource: new Uint8Array(24 * 16 * 4),
+        width: 24,
+        height: 16,
+      },
+      true,
+    )
+    let target: Container | null = null
+    const renderer = {
+      generateTexture(graphics: Container): Texture {
+        target = graphics
+        return generated
+      },
+    }
+    const c = new GardenButterflyController({
+      quality: "high",
+      ambient: new Container(),
+      bodyColor: STUB_BODY_COLOR,
+      renderer,
+    })
+    expect(target).toBeInstanceOf(Graphics)
+    expect(c.getSprite()!.texture).toBe(generated)
+    c.destroy()
+  })
   it("clears the sprite from ambient on destroy", () => {
     const ambient = new Container()
     const c = new GardenButterflyController({

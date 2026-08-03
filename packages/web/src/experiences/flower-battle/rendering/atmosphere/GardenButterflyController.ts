@@ -11,20 +11,13 @@
  *   - Static / low / medium → no spawn (pool stays empty).
  *   - Reduced-motion → no spawn, no update.
  *
- * Sprite: a single Pixi Sprite backed by `Texture.WHITE` and tinted
- * with the resolved body color (default `#ff9900` amber —
- * `--color-accent` in the theme). Drawing a Graphics-to-texture
- * silhouette would require an attached Pixi renderer, which the unit
- * tests do not have; the brief explicitly endorses "Sprite with white
- * default texture + tint" as the minimal acceptable path (FU-L brief,
- * alternative wing).
  *
  * Route: 4–5 deterministic waypoints through BUTTERFLY_BASE_Y_RANGE;
  * the controller walks t ∈ [0, 1] linearly along segment-pairs with
  * a sin perturbation layered on top of baseY for organic motion.
  */
 
-import { Container, Sprite, Texture } from "pixi.js"
+import { Container, Graphics, Sprite, Texture } from "pixi.js"
 
 import {
   ATMOSPHERE_HEIGHT,
@@ -44,6 +37,18 @@ const DEFAULT_BUTTERFLY_BODY_COLOR = 0xff9900
 
 const BUTTERFLY_WAYPOINT_COUNT = 5
 const BUTTERFLY_WAVE_AMP_PX = 6
+const BUTTERFLY_TEXTURE_WIDTH = 24
+const BUTTERFLY_TEXTURE_HEIGHT = 16
+const BUTTERFLY_VEIN_TINT_FACTOR = 0.55
+
+export interface GardenButterflyRenderer {
+  generateTexture: (target: Container) => Texture
+}
+
+interface ButterflyTextureResult {
+  texture: Texture
+  owned: boolean
+}
 
 export interface GardenButterflyControllerOptions {
   seed?: number
@@ -59,11 +64,151 @@ export interface GardenButterflyControllerOptions {
    *  `--color-accent` so unit tests don't need a DOM. Defaults to
    *  `#ff9900` (the project's `--color-accent` default). */
   bodyColor?: number
+  renderer?: GardenButterflyRenderer | null
 }
 
 interface ButterflyWaypoint {
   x: number
   y: number
+}
+
+function darkenColor(color: number, factor: number): number {
+  const red = Math.round(((color >> 16) & 0xff) * factor)
+  const green = Math.round(((color >> 8) & 0xff) * factor)
+  const blue = Math.round((color & 0xff) * factor)
+  return (red << 16) | (green << 8) | blue
+}
+
+function colorToCss(color: number): string {
+  const red = (color >> 16) & 0xff
+  const green = (color >> 8) & 0xff
+  const blue = color & 0xff
+  return `rgb(${red} ${green} ${blue})`
+}
+
+function fillCanvasEllipse(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radiusX: number,
+  radiusY: number,
+): void {
+  context.beginPath()
+  context.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2)
+  context.fill()
+}
+
+function createCanvasButterflyTexture(
+  bodyColor: number,
+): ButterflyTextureResult | null {
+  if (typeof document === "undefined") return null
+  try {
+    const canvas = document.createElement("canvas")
+    canvas.width = BUTTERFLY_TEXTURE_WIDTH
+    canvas.height = BUTTERFLY_TEXTURE_HEIGHT
+    const context = canvas.getContext("2d")
+    if (!context) return null
+    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = colorToCss(0xffffff)
+    fillCanvasEllipse(context, 6, 8, 6, 7)
+    fillCanvasEllipse(context, 18, 8, 6, 7)
+    context.fillStyle = colorToCss(
+      darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR),
+    )
+    fillCanvasEllipse(context, 12, 8, 1.5, 6)
+    const texture = Texture.from(canvas, true)
+    if (texture.width < 12 || texture.height < 8) {
+      if (texture !== Texture.WHITE && texture !== Texture.EMPTY) {
+        texture.destroy(true)
+      }
+      return null
+    }
+    return { texture, owned: true }
+  } catch {
+    return null
+  }
+}
+
+function createBufferButterflyTexture(
+  bodyColor: number,
+): ButterflyTextureResult | null {
+  try {
+    const pixels = new Uint8Array(
+      BUTTERFLY_TEXTURE_WIDTH * BUTTERFLY_TEXTURE_HEIGHT * 4,
+    )
+    const bodyTint = darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR)
+    for (let y = 0; y < BUTTERFLY_TEXTURE_HEIGHT; y += 1) {
+      for (let x = 0; x < BUTTERFLY_TEXTURE_WIDTH; x += 1) {
+        const leftWing =
+          ((x - 6) / 6) ** 2 + ((y - 8) / 7) ** 2 <= 1
+        const rightWing =
+          ((x - 18) / 6) ** 2 + ((y - 8) / 7) ** 2 <= 1
+        const body =
+          ((x - 12) / 1.5) ** 2 + ((y - 8) / 6) ** 2 <= 1
+        if (!leftWing && !rightWing && !body) continue
+        const color = body ? bodyTint : 0xffffff
+        const offset =
+          (y * BUTTERFLY_TEXTURE_WIDTH + x) * 4
+        pixels[offset] = (color >> 16) & 0xff
+        pixels[offset + 1] = (color >> 8) & 0xff
+        pixels[offset + 2] = color & 0xff
+        pixels[offset + 3] = 255
+      }
+    }
+    const texture = Texture.from(
+      {
+        resource: pixels,
+        width: BUTTERFLY_TEXTURE_WIDTH,
+        height: BUTTERFLY_TEXTURE_HEIGHT,
+      },
+      true,
+    )
+    return { texture, owned: true }
+  } catch {
+    return null
+  }
+}
+
+function createButterflyTexture(
+  renderer: GardenButterflyRenderer | null,
+  bodyColor: number,
+): ButterflyTextureResult {
+  if (renderer) {
+    const graphics = new Graphics()
+      .ellipse(6, 8, 6, 7)
+      .fill(0xffffff)
+      .ellipse(18, 8, 6, 7)
+      .fill(0xffffff)
+      .ellipse(12, 8, 1.5, 6)
+      .fill(darkenColor(bodyColor, BUTTERFLY_VEIN_TINT_FACTOR))
+    let generated: Texture | null = null
+    try {
+      generated = renderer.generateTexture(graphics)
+    } catch {
+      generated = null
+    }
+    graphics.destroy()
+    if (
+      generated &&
+      generated.width >= 12 &&
+      generated.height >= 8
+    ) {
+      return { texture: generated, owned: true }
+    }
+    if (
+      generated &&
+      generated !== Texture.WHITE &&
+      generated !== Texture.EMPTY &&
+      !generated.destroyed
+    ) {
+      generated.destroy(true)
+    }
+  }
+  return (
+    createCanvasButterflyTexture(bodyColor) ??
+    createBufferButterflyTexture(bodyColor) ??
+    { texture: Texture.WHITE, owned: false }
+  )
 }
 
 export class GardenButterflyController {
@@ -72,6 +217,9 @@ export class GardenButterflyController {
   private readonly reducedMotion: boolean
   private readonly ambient: Container
   private readonly sprite: Sprite | null = null
+  private readonly renderer: GardenButterflyRenderer | null
+  private butterflyTexture: Texture | null = null
+  private butterflyTextureOwned = false
   /** Resolved amber color (from `--color-accent` by default). */
   private readonly bodyColor: number
   private readonly firstSpawnRangeMs: readonly [number, number]
@@ -93,6 +241,7 @@ export class GardenButterflyController {
     this.ambient = options.ambient
     this.firstSpawnRangeMs =
       options.firstSpawnRangeMs ?? BUTTERFLY_FIRST_SPAWN_RANGE_MS
+    this.renderer = options.renderer ?? null
     this.rng = createSeededRandom(options.seed ?? 0xc0ffee)
     // `--color-accent` (default #ff9900 — amber) is the project-wide
     // accent. The aggregator resolves it once at scene-bind time
@@ -144,18 +293,19 @@ export class GardenButterflyController {
     )
     this.pathDurationSec = this.pathLength / Math.max(1, this.speed)
 
-    // Single Sprite, white texture, tint = bodyColor. Tests verify
-    // both `sprite.tint` and the presence of the sprite in `ambient`.
-    const sprite = new Sprite(Texture.WHITE)
+    const generatedTexture = createButterflyTexture(
+      this.renderer,
+      this.bodyColor,
+    )
+    const sprite = new Sprite(generatedTexture.texture)
     sprite.label = "garden-butterfly"
     sprite.anchor.set(0.5, 0.5)
     sprite.tint = this.bodyColor
-    // Scale: Texture.WHITE is 1x1, so scale up to a small 16x16
-    // silhouette (the brief's "16-24 px sichtbare Breite").
-    sprite.scale.set(16, 16)
     sprite.visible = false
     this.ambient.addChild(sprite)
     this.sprite = sprite
+    this.butterflyTexture = generatedTexture.texture
+    this.butterflyTextureOwned = generatedTexture.owned
 
     // Schedule first spawn from the dedicated band.
     this.nextSpawnAtMs = this.rng.rangeInt(
@@ -236,6 +386,15 @@ export class GardenButterflyController {
       }
       this.sprite.destroy()
     }
+    if (
+      this.butterflyTextureOwned &&
+      this.butterflyTexture &&
+      !this.butterflyTexture.destroyed
+    ) {
+      this.butterflyTexture.destroy(true)
+    }
+    this.butterflyTexture = null
+    this.butterflyTextureOwned = false
   }
 
   private samplePath(progress: number): {

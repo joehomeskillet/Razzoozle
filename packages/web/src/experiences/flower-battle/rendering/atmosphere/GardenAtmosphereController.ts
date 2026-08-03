@@ -28,6 +28,7 @@ import {
 } from "./GardenWindController"
 import {
   GardenButterflyController,
+  type GardenButterflyRenderer,
 } from "./GardenButterflyController"
 import {
   resolveThemeTokenColor,
@@ -80,6 +81,7 @@ export interface GardenAtmosphereInput {
    * this to skip the DOM lookup.
    */
   resolveColor?: ThemeColorResolver
+  renderer?: GardenButterflyRenderer | null
 }
 
 export interface BoundGardenAtmosphere {
@@ -152,6 +154,7 @@ export function createGardenAtmosphere(
     ambient: options.ambient,
     reducedMotion: options.prefersReducedMotion,
     bodyColor: butterflyBodyColor,
+    renderer: options.renderer,
   })
 
   let destroyed = false
