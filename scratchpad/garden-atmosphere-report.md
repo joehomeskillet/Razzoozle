@@ -182,12 +182,41 @@ This commit does **not** ship the 5 screenshots / 2 videos the plan
    04_reducedMotion:   sky=0  ambient=14 weather=0  wind=-0.0591
    ```
 
-4. **Reduced-motion contract** — `04_reducedMotion` shows the pool
-   sizes match the high run (the controllers' constructors still mount
-   the sprites) but `layer-sky-life` is empty after 60 s (the wind
-   / bird / particle `update()` calls short-circuit on
-   `prefersReducedMotion`). This is the design contract: the pool is
-   pre-allocated but motionless.
+4. **Reduced-motion contract** — `04_reducedMotion` runs with
+   `quality: "high"`, so the controllers' constructors mount the full
+   pool. The particle controller's `initMotes` attaches 11
+   `atmosphere-mote-*` sprites (plus 1 `ambient-particles` graphics +
+   2 `gust-leaf-*` per the captured probe) to `layer-ambient`; the
+   probe therefore reports `ambient=14` for **both** `01_high` and
+   `04_reducedMotion` (`atmosphere-probe.txt:19` and `:67`). However,
+   the particle controller's `update()` early-returns on
+   `prefersReducedMotion`, so those sprites are **mounted but static**
+   — their `position` never drifts and their `alpha` never changes
+   across the 60 s window. The bird controller likewise constructs
+   its 2-sprite pool (`BIRD_COUNTS.high = 2`), but `trySpawn()`
+   short-circuits under reducedMotion, so no bird ever enters flight
+   and `layer-sky-life` is **empty** at t = 60 s (`sky=0`). That is
+   the visible difference vs the high run: the bird pool exists but
+   never flies, while the mote pool exists but never moves. The wind
+   update path also early-returns, so mote drift, gust-leaf spin-up,
+   and grass-tuft rotation all freeze. This is the design contract:
+   motes are mounted-but-static by design, not by oversight (see the
+   "Reduced motion contract" callout below for the three observable
+   invariants).
+
+   > **Reduced motion contract.** Three observable invariants under
+   > `prefersReducedMotion: true` (verified against the 60 s probe
+   > output in `scratchpad/atmosphere-probe.txt`):
+   > 1. `layer-sky-life.children.length === 0` after 60 s
+   >    (probe line 67: `sky=0`).
+   > 2. Mote sprites exist in `layer-ambient` (probe line 68:
+   >    `ambient=14` — 1 graphics + 11 `atmosphere-mote-*` + 2
+   >    `gust-leaf-*`) but their `position` and `alpha` are unchanged
+   >    from their construction-time values across the 60 s window;
+   >    the controller's `update()` is a no-op.
+   > 3. No wind-driven rotation on any grass tuft —
+   >    `tuft.rotation === grassBaseRotations[i]` at every tick (no
+   >    drift across the 60 s window).
 
 5. **A clear explanation of why real screenshots are absent** — see
    the "Reality" section above.
